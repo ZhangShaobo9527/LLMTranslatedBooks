@@ -1,0 +1,1337 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>事件管理与值班</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 10. Incident Management and On-Call" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch10">
+<h1><span class="label"> 第10章. </span>事件管理与值班</h1>
+
+
+<p class="byline">作者：Dan Dennison、David Huska、Garrett Plasky、<span class="keep-together">Jennifer Mace 和 Michelle Brush</span><br/><span class="keep-together">Garrett Holthaus 亦有贡献</span></p>
+
+<p>复杂系统必然会发生故障，这是大规模软件工程无法回避的现实。故障发生后，能否采用有组织的事件管理和值班机制，决定了系统是迅速、平稳地恢复正常运行，还是在不健康或不可用的状态下停留更久。</p>
+
+<p>本章将提供一份应对系统故障的实用指南。我们会介绍如何建立可持续的值班轮换机制，以及如何组织事件响应，以便有效地分诊、缓解和解决服务中断；还会讨论 Google 的事件响应模式，指出常见的组织陷阱，并给出相应的技术和文化解决方案。</p>
+
+<p>我们还会专门讨论人的因素：事件响应需要哪些具体且可习得的技能，以及当一切似乎都在出错时，如何确保团队仍能有效应对。</p>
+
+<p>最后，我们将考察 AI 和 ML 在事件响应中的作用，探讨它们当前及预期具备的能力，以及在这一领域带来的风险。本章以一个案例研究收尾，说明 Etsy 如何将本章讨论的原则应用于自身的事件管理实践。</p>
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Incidents, Outages, and Bugs" data-type="sect1"><div class="sect1" id="ch10_incidents_outages_and_bugs">
+<h1>事件、服务中断与软件缺陷</h1>
+
+<p>首先定义<em>事件</em>，并说明它与<a data-primary="incidents" data-type="indexterm" id="id1779"/>服务中断和软件缺陷之间的关系。事件是指任何表明可能存在以下情况的事情：</p>
+
+<ul>
+<li>
+<p>用户体验不佳。</p>
+</li>
+<li>
+<p>重要的系统属性发生退化。</p>
+</li>
+<li>
+<p>正在发生或即将发生服务中断。</p>
+</li>
+</ul>
+
+<p>“服务中断”<a data-primary="outages" data-type="indexterm" id="id1780"/>通常专指服务或关键功能不可用，或退化严重到无法实现其用途。相比之下，软件缺陷<a data-primary="bugs (software)" data-type="indexterm" id="id1781"/>是未曾预期的系统行为，其严重程度未必会导致服务失效。并非所有缺陷都是事件，也并非所有事件都是服务中断；但问题刚被发现时，往往很难明确区分这几类情况。</p>
+
+<p>为应对这种不确定性，最好制定明确的标准来区分缺陷、事件和服务中断。响应事件本身也可能引入新问题，使情况进一步恶化，因此团队还应规定每种情况下的预期行为。行动的风险和紧迫程度应与组织面临的威胁相称。例如，服务中断可能要求立即主动介入，而普通缺陷或许只需创建工单跟踪。</p>
+
+<p>在大型组织中，内部政治可能影响事件的分类。如果组织把服务中断次数作为绩效指标，团队可能承受不把事件定性为服务中断的压力。反过来，如果将问题称为服务中断就能绕过某项政策或限制，团队又可能有动力过度升级。明确的判定标准有助于抑制这两种倾向。</p>
+
+<p>为避免内部政治主导事件处理，Google 的一项核心原则是：任何人都可以宣布事件，并将其升级为服务中断。为了避免过早升级带来意外后果，如果后来发现情况没有最初想象的严重，可以把该事件<a data-primary="incidents" data-startref="incdnt" data-type="indexterm" id="id1782"/>标记为误报。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Foundations of On-Call" data-type="sect1"><div class="sect1" id="ch10_on_call_and_incident_management">
+<h1>值班机制基础</h1>
+
+<p>事件管理包括<a data-primary="on-call requirement" data-secondary="responsibilities" data-type="indexterm" id="id1783"/>缓解并最终解决事件所需的各项活动。并非所有团队都需要通过值班轮换来处理事件，但由值班团队执行时，事件管理流程通常最为有效。</p>
+
+<p>值班本质上是一种协调紧急工作的机制。不同组织对<a data-primary="on-call rotation" data-secondary="responsibilities" data-type="indexterm" id="id1784"/>值班轮换职责的界定不尽相同，但通常包括响应自动告警、处理紧急运维任务和管理事件。有些值班轮换还会处理客户支持请求或修复缺陷；但主要处理账户咨询、配额提升等日常客服请求的轮换，通常并不负责事件管理。</p>
+
+<p>一些组织<a data-primary="incident management" data-secondary="rotations" data-seealso="on-call requirement" data-type="indexterm" id="id1785"/>不设事件管理轮换，而采用尽力而为的安排，例如出问题时通知整个团队或团队负责人。通知全体成员容易产生旁观者效应：每个人都以为别人会响应，结果无人行动。反之，只依赖经理或技术负责人等某一个人，又会使其成为单点故障。因此，更可取的是采用本章介绍的结构化响应机制，确保始终有具备适当技能和训练的人明确知道自己必须及时响应，并在事件发生前、发生期间和结束后有效运用这些技能。</p>
+
+<p>下面先说明设计值班轮换时需要考虑的关键因素。<a data-type="xref" href="#ch10_incident_response_teams">“事件响应团队”</a>将讨论另一种组织事件响应的方式。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Structuring an On-Call Rotation" data-type="sect1"><div class="sect1" id="ch10_structuring_an_on_call_rotation">
+<h1>设计值班轮换</h1>
+
+<p>为一项服务设计值班轮换，需要考虑告警负载、覆盖时段、响应时间要求、系统属性和客户需求等多种因素。这些因素共同决定值班团队最终的组织方式和规模。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Optimal Paging Load" data-type="sect2"><div class="sect2" id="ch10_optimal_paging_load">
+<h2>最佳告警负载</h2>
+
+<p>设计值班机制时，首要考虑的是<a data-primary="on-call rotation" data-secondary="paging load" data-type="indexterm" id="id1786"/><a data-primary="paging load, on-call rotation" data-type="indexterm" id="id1787"/>预期的告警负载。假设每起事件持续 4～6 小时，理想情况下，一名 SRE 每个班次最多处理两起事件。超过这一负荷，响应人员就会不堪重负，也没有时间彻底调查事件。</p>
+
+<p>负载过重通常会降低响应质量。工程师不断受到打断或任务过载时，修复会更慢、调查会更浅，从事件中学习的时间也会缩短。大量告警还会造成“告警疲劳”，增加遗漏关键告警或延迟响应的风险。</p>
+
+<p>反过来，事件过少会造成负载不足；由于缺乏经验、对系统不够熟悉，响应同样可能变慢、质量下降。顺畅而有效的事件响应离不开练习：必须清楚使用什么工具、如何使用以及何时使用。一个极少触发告警的服务甚至可能不值得由 SRE 支持，因为频繁接触代码库的开发团队往往更有能力响应。不过，团队面对的通常还是事件过多，而非过少。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Hours of Availability" data-type="sect2"><div class="sect2" id="ch10_hours_of_availability">
+<h2>可用时间</h2>
+
+<p>设计值班轮换时，另一个问题是每天需要<a data-primary="on-call rotation" data-secondary="schedules" data-type="indexterm" id="id1788"/><a data-primary="schedules, on-call rotation" data-type="indexterm" id="id1789"/>覆盖哪些时段。并非每项服务或每类用户都需要 24 小时覆盖；无论对组织还是响应人员，这种安排的成本都很高，尤其当轮换人数较少或团队没有跨越多个时区时。值班覆盖范围应由业务风险来证明其必要性。常见的值班安排包括：</p>
+<dl>
+<dt>工作时间(上午8时至下午5时)</dt>
+<dd>
+<p>这一般不被认为是随叫随到的工作,而是由值班工程师轮流对问题迅速作出反应。</p>
+</dd>
+<dt>白天(上午6时至下午8时)</dt>
+<dd>
+<p>对于在相邻的时区支持用户基础的服务,或者在一夜之间发现的问题不需要为多个站点配备人员或召集待命人员来解决的情况下,这一时间表可能是很好的选择。</p>
+</dd>
+<dt>仅覆盖日间时段（例如中欧时间上午 5:30 至美国东部时间晚上 8:30）</dt>
+<dd>
+<p>该时间表提供近21小时的覆盖面,任何人都不必在深夜工作,但需要多地的小组。 确切的覆盖范围取决于所涉及的时区.</p>
+</dd>
+<dt>24小时全程</dt>
+<dd>
+<p>这一时间表对于需要立即、24小时响应的服务至关重要。 为了在不超出最大业务负荷限度的情况下进行可持续管理,各组织可采用“追随太阳”办法,使用地域多样、规模适当的团队(见<a data-type="xref" href="ch06-zh.html#ch06"> 第6章</a>)。 或者,它们可以向待命工程师提供灵活的工作时间、补偿时间或其他支持长期团队健康的措施。</p>
+</dd>
+</dl>
+
+<p>需要注意的是，一些司法辖区对正常工作时间以外的劳动另有法规，因此安排班次时还要考虑这些限制。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Response Time to Notifications" data-type="sect2"><div class="sect2" id="ch10_response_time_to_notifications">
+<h2>通知响应时间</h2>
+
+<p>不同服务<a data-primary="on-call rotation" data-secondary="response time requirements" data-type="indexterm" id="oncll_restmreq"/>对值班响应时间的要求不同。有些服务要求工程师在告警发出后 5 分钟内加入通话或开始操作；另一些则允许 30 分钟甚至 60 分钟内响应。具体时限取决于服务中断给组织造成的财务和声誉损失、服务的 SLO、监管要求等因素。生产环境是否具备自动补救手段，也会影响响应时间的设定。</p>
+
+<p>实践中，凡要求在 3 分钟内响应的轮换，都至少需要两名工程师随时能够在期限内行动，才能兼顾人的基本需求。5 分钟的响应要求稍宽松一些，但两者都需要在通勤时交接，并明确安排个人暂时无法响应的时段。告警可以同时发给所有值班工程师，不过更常见的是设定通知顺序：先通知主值班人员；若其未确认，再通知后备值班人员，依此类推。如此短的响应窗口还要求值班人员在整个班次中始终携带手机、笔记本电脑或两者，具体取决于要求他们在时限内开始处理事件，还是只需确认告警。</p>
+
+<p>如果要求在 30 分钟或更长时间内响应，值班人员就有较大余地：他们可以完成通勤、外出办事，甚至在值班期间与亲友外出用餐。视具体要求而定，他们甚至不必随身携带<a data-primary="on-call rotation" data-secondary="response time requirements" data-startref="oncll_restmreq" data-type="indexterm" id="id1790"/>笔记本电脑。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="System Properties" data-type="sect2"><div class="sect2" id="ch10_system_properties">
+<h2>系统属性</h2>
+
+<p>有些服务<a data-primary="system properties, on-call response time" data-type="indexterm" id="id1791"/><a data-primary="on-call rotation" data-secondary="response time requirements" data-tertiary="effect of system properties" data-type="indexterm" id="id1792"/>可以接受更长的响应时间和较少的覆盖，因为系统设计允许暂时出现服务退化甚至停机。例如，服务不在任何关键用户交互的服务路径上；服务失败时，下游系统能够优雅降级；或者服务具备自愈能力。每天只运行一次、用于清理数据的批处理服务，可能只需在工作时间内有人响应。又如，如果推荐引擎停机时系统可以采用合理的默认值，那么它可能并非关键组件。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Customer Requirements" data-type="sect2"><div class="sect2" id="ch10_customer_requirements">
+<h2>客户要求</h2>
+
+<p>客户要求<a data-primary="on-call rotation" data-secondary="implementation considerations" data-tertiary="customer requirements" data-type="indexterm" id="id1793"/>可能给值班轮换的设计增加约束。例如，一些客户可能要求响应人员实际位于其所在地区或国家；另一些客户可能要求工程师满足特定的公民身份、移民身份或就业身份条件，或持有特定认证或安全许可。</p>
+
+<p>接受这类要求的组织必须组建满足客户所在地、时区和人员条件的响应团队。不过，团队分布的地域越广，值班排班往往还会受到更多限制，例如值班工作的差别薪酬、连续<span class="keep-together">值班</span>天数限制、每周工时限制，或禁止安排值班的特定时段。</p>
+
+<p>满足多种要求可能需要创造性方案，包括借助其他团队、职能部门甚至其他公司来获得必要的地域多样性。这种方式的主要挑战，是确保工具、文档、政策和培训充分到位。此外，更复杂的事件仍可能偶尔需要升级给领域专家，而升级本身也可能受到进一步限制。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Additional Implementation Considerations" data-type="sect2"><div class="sect2" id="ch10_additional_implementation_considerations">
+<h2>其他实施考量</h2>
+
+<p>规划可持续的<a data-primary="on-call rotation" data-secondary="implementation considerations" data-tertiary="managing variables" data-type="indexterm" id="id1794"/>值班轮换，需要平衡众多因素，完全依靠人工会非常耗时。约束求解器可以在不让排班人员负担过重的前提下，确保安排符合当地法律和组织政策。Google 使用内部值班优化器来管理这些变量并保障公平，公开渠道也有类似工具可协助完成这项工作。</p>
+
+<p>如果在现有约束下无解，组织就必须决定放宽哪些条件。例如，如果无法为 24×7 响应配备双站点的“追随太阳”团队，可以适当放宽响应时间要求、提供补休，或采用非常规工作时间。虽然这些折中并不理想，但总好过长期要求员工全天候待命，最终导致职业倦怠。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Escalation Rotations" data-type="sect2"><div class="sect2" id="ch10_escalation_rotations">
+<h2>升级值班轮换</h2>
+
+<p>除各服务的核心值班轮换外，组织通常还需要建立<a data-primary="on-call rotation" data-secondary="escalation rotations" data-type="indexterm" id="id1795"/><a data-primary="escalation rotations, on-call rotation" data-type="indexterm" id="id1796"/>升级轮换。最常见的是事件响应团队（见<a data-type="xref" href="#ch10_incident_response_teams">“事件响应团队”</a>），由经验丰富的响应人员组成，在事件更复杂、持续更久或跨越多个团队乃至职能时被通知介入。升级轮换的启用频率低于产品值班轮换，因此排班可以更灵活；但每次升级带来的认知负担很重，可持续性同样是重要问题。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch10_sidebar_incident_management_at_google">
+<h1>Google 的事件管理</h1>
+<p><em>Google 事件管理</em>（IMAG）是<a data-primary="IMAG (Incident Management at Google)" data-type="indexterm" id="IMAG"/><a data-primary="Incident Management at Google" data-see="IMAG" data-type="indexterm" id="id1797"/><a data-primary="incident management" data-secondary="IMAG" data-type="indexterm" id="incdntman_imag"/>Google 用于有效处理包括服务中断在内各类事件的标准化框架。它改编自美国应急机构开发、并在国际上广泛采用的<a href="https://oreil.ly/4LY28">事件指挥系统</a>，建立了一套角色、职责和沟通渠道均清晰明确的运作结构，可根据眼前形势轻松扩展或收缩。</p>
+
+<p class="pagebreak-before less_space">有三个主要角色:</p>
+<dl>
+<dt>事件指挥官</dt>
+<dd>
+<p>领导并协调整体响应、分派任务和作出决策</p>
+</dd>
+<dt>沟通负责人</dt>
+<dd>
+<p>确保沟通渠道就绪、记录服务中断状态，并定期向利益相关者通报进展</p>
+</dd>
+<dt>行动负责人</dt>
+<dd>
+<p>按照事件指挥官的指示开展调查并采取必要行动，以分诊、缓解和解决服务中断</p>
+</dd>
+</dl>
+
+<p>在职责尚未委派之前，所有角色都由事件指挥官承担。对于简单的服务中断，只要事件指挥官确信自己能够有效沟通、掌控响应过程，并与其他响应人员协作解决事件，就可以兼任全部角色。如果无法同时胜任，就需要启用其他响应角色。</p>
+
+<p>在更复杂的事件中,只有一名事件指挥官负责整个事件,但根据规模,复杂性和其他情况,多人可能担任其他角色. 例如,如果某一事件正在影响客户,则既可以有一个内部通信线索,也可以有一个外部通信线索. 提供给这些受众的信息显然不同。</p>
+
+<p>Google 使用内部事件管理平台跟踪事件，所有参与响应的人都可以查看和更新状态，系统则确保团队遵循既定做法。该平台采用<a data-type="xref" href="#ch10_the_lifecycle_of_an_incident">“事件生命周期”</a>所述的检测、分诊、缓解、解决和学习流程；由于事件的发展往往不是线性的，它允许随时转换到任何状态。</p>
+
+<p class="fix_tracking">对于复杂事件，Google 有时会建立跟踪层级。顶层是父事件，由总事件指挥官协调完整响应，此人通常是事件响应团队的成员；其下是一棵子事件树，每项服务都有自己的响应人员。这样既能分而治之，又能保证整体响应由一人充分协调，避免职责不清，同时让最熟悉各项服务的人在自己的专业领域作出决策。</p>
+
+<p>Google 的事件管理遵循一项关键原则：让决策靠近信息。我们认为，在高压力、高紧迫性的情况下，应由最了解系统的人作出判断。服务中断的事件指挥官获得充分授权，可以作出决策、采取行动，并召集解决<a data-primary="IMAG (Incident Management at Google)" data-startref="IMAG" data-type="indexterm" id="id1798"/><a data-primary="incident management" data-secondary="IMAG" data-startref="incdntman_imag" data-type="indexterm" id="id1799"/>当前局面所需的任何人员。</p>
+</div></aside>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident Response Teams" data-type="sect1"><div class="sect1" id="ch10_incident_response_teams">
+<h1>事件响应团队</h1>
+
+<p>事件响应团队（IRT）<a data-primary="incident response teams" data-see="IRTs" data-type="indexterm" id="id1800"/><a data-primary="IRTs (incident response teams)" data-type="indexterm" id="id1801"/>通常由经验丰富的工程师组成，其中往往包括资深 SRE，负责在重大、复杂或影响广泛的事件中提供支持与协调。其首要目标是迅速缓解影响，并确保所有相关利益方有效沟通，从而高效解决重大问题。</p>
+
+<p>既然 SRE 擅长处理服务中断，为什么还需要 IRT？当事件跨越多个服务或团队，或超出最初响应人员的能力范围时，IRT 通常会通过升级流程介入；如果事件符合特定标准，也可以直接通知 IRT。这类团队是常规 SRE 响应的重要补充，负责在更高层面协调各专业 SRE 团队。</p>
+
+<p>Google的IRT在结构上和/或业务上往往因责任领域不同而不同,但大多数都具有这些特点:</p>
+<dl>
+<dt>事件指挥</dt>
+<dd>
+<p>经常承担事件指挥官的作用,以管理总体反应</p>
+</dd>
+<dt>协调</dt>
+<dd>
+<p>统筹多个团队和响应人员的工作，包括分诊</p>
+</dd>
+<dt>通讯</dt>
+<dd>
+<p>确保与其他团队和利益攸关方,包括领导链上层的利益攸关方进行明确和及时的沟通,并经常与外部客户进行沟通</p>
+</dd>
+<dt>升级</dt>
+<dd>
+<p>知道应通知谁、需要时如何进一步升级，包括联系其他 IRT 或领域专家</p>
+</dd>
+<dt>资源分配</dt>
+<dd>
+<p>寻找和分配资源处理这一事件</p>
+</dd>
+<dt>技术专长</dt>
+<dd>
+<p>提供广泛的技术知识来指导解决问题和减轻影响的努力</p>
+</dd>
+</dl>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Organization" data-type="sect2"><div class="sect2" id="ch10_organization">
+<h2>组织</h2>
+
+<p>事件响应团队的最佳<a data-primary="IRTs (incident response teams)" data-secondary="organization" data-tertiary="federating incident response" data-type="indexterm" id="irt_org_fed"/>结构，很大程度上取决于组织规模和系统复杂度。Google 会针对不同产品领域和职能采用不同的 IRT 模式（见<a data-type="xref" href="ch22.html#ch22_sre_managing_real_world_safety_an_example_with_waymo">“SRE 管理现实世界安全：Waymo 实例”</a>），其他组织则应选择与自身运营状况相匹配的模式。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Large organizations: Federating incident response" data-type="sect3"><div class="sect3" id="ch10_large_organizations_federating_incident_response">
+<h3>大型组织：联邦式事件响应</h3>
+
+<p>拥有广泛产品组合和复杂基础设施的大型组织往往发现,单一的集中式IRT是不够的。 所需的协调开销和领域知识的广度变得太高了。 NIST计算机安全事件处理指南界定了集中和分布式事件响应团队结构;<sup><a data-type="noteref" href="ch10-zh.html#id1802" id="id1802-marker">1</a></sup>,然而在实践中,大型技术公司往往将这些组合成混合或联合模式来平衡中央协调与本地化专业知识.</p>
+
+<p>在这种联合模式中,本组织维持一个“全球”或“核心”IRT,同时维持一个针对特定产品领域的多个IRT:</p>
+<dl>
+<dt>全球IRT</dt>
+<dd>
+<p>该<a data-primary="global IRTs" data-type="indexterm" id="id1803"/>小组处理影响核心基础设施或跨越多个业务单位的事件,作为一个中央协调机构运作。 其成员是大规模协调和危机管理专家。 在Google,Tech IRT履行这个角色,应对影响基本基础设施的重大服务中断.</p>
+</dd>
+<dt>产品领域专属 IRT</dt>
+<dd>
+<p>这些<a data-primary="product area (PA) response teams" data-type="indexterm" id="id1804"/>团队嵌入特定产品领域或业务单元。与核心 IRT 相比，它们掌握更深入的领域背景；与单个服务团队相比，又具备更广泛的系统视野。它们负责处理本领域内的重大事件。在 Google，Cloud IRT、Search IRT 和 YouTube SRE IRT 等团队都采用这一模式，为各自平台提供专业响应。</p>
+</dd>
+</dl>
+
+<p>一些最佳做法有助于向一个已成立的组织成功引进事件响应团队:</p>
+<dl>
+<dt>界定明确的升级触发因素</dt>
+<dd>
+<p>避免对何时应召集哪支团队产生歧义。采用受影响服务数量、影响持续时间或客户受影响程度等客观标准。</p>
+</dd>
+<dt>维持统一的指挥框架</dt>
+<dd>
+<p>即使有多个团队，事件指挥官、沟通负责人和行动负责人等角色也必须保持一致。响应人员从服务团队转入产品领域专属 IRT 时，应面对相同的运作语言和职责预期。</p>
+</dd>
+<dt>促进实践社区</dt>
+<dd>
+<p>核心 IRT 与产品领域专属 IRT 之间定期开展培训和联合演练，有助于建立信任，并确保真实事件中的交接顺畅。</p>
+</dd>
+<dt>注意协调开销</dt>
+<dd>
+<p>加入更多的团队可以增加沟通时间. 确保IRT的参与澄清命令,而不是增加另一层<span class="keep-together">官僚。 </span></p>
+</dd>
+<dt>防止技能萎缩</dt>
+<dd>
+<p>服务团队绝不能过度依赖 IRT。IRT 的主要价值在于协调响应和处理复杂故障模式，而不是承担基本的救火工作。服务团队必须继续具备处理常规<a data-primary="IRTs (incident response teams)" data-secondary="organization" data-startref="irt_org_fed" data-tertiary="federating incident response" data-type="indexterm" id="id1805"/>事件的能力。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Small organizations: Bootstrapping the first IRT" data-type="sect3"><div class="sect3" id="ch10_small_organizations_bootstrapping_the_first_irt">
+<h3>小型组织：从零建立首个 IRT</h3>
+
+<p>对于规模较小的<a data-primary="IRTs (incident response teams)" data-secondary="organization" data-tertiary="per-incident swarm model" data-type="indexterm" id="irt_org_princmod"/>组织，通常没有理由配备专职 IRT：告警量往往不足以维持团队技能，成本也难以承受。更实际的目标，是在不增加专职编制的情况下，建立一套可重复用于处理“黑天鹅”事件的模式。对小型组织而言，一种有效做法是按事件临时集结团队。</p>
+
+<p>这取决于一批经验丰富的高级工程师,他们自愿或被提名参加升级轮调。 他们履行正常职责,但被召入重大事件,以提供协调和高度决策支持。 这一模式利用了现有专门知识,而不需要一个专门小组的费用。</p>
+
+<p>以下是在规模较小的组织中引入IRT的一些最佳做法:</p>
+<dl>
+<dt>通过权力倒置赋予权力</dt>
+<dd>
+<p>吸引IRT的最重要因素是文化,而不是结构。 该组织必须明确授权事件应对者(作为事件指挥官)无论正常的管理级别如何作出决定并直接提供资源。</p>
+</dd>
+<dt>提供商业环境</dt>
+<dd>
+<p>确保应答者在事件发生前能够接触商业环境(例如,哪些客户是关键,哪些数据是敏感的)。 这避免了目前依赖高管做出技术决定的反模式,因为他们是唯一具有必要背景的人.</p>
+</dd>
+<dt>开始小</dt>
+<dd>
+<p>从一个小池子开始 信任的高级工程师。 在扩大人才库之前,注重建立进程并建立信任。</p>
+</dd>
+<dt>避免把事件响应变成“表演”</dt>
+<dd>
+<p>不要把事件电话会议中人数众多等同于管理有效。响应团队应在足以有效工作的前提下尽可能精简。</p>
+</dd>
+<dt>保护志愿者免受倦怠</dt>
+<dd>
+<p>由于参与者有日间工作,确保他们的IRT参与在绩效审查中得到承认,并确保他们不会因为专注于事故而不是正常的项目工作而受到惩罚<a data-primary="IRTs (incident response teams)" data-secondary="organization" data-startref="irt_org_princmod" data-tertiary="per-incident swarm model" data-type="indexterm" id="id1806"/>.</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Influence on Organizational Technical Policy" data-type="sect2"><div class="sect2" id="ch10_influence_on_organizational_technical_policy">
+<h2>对组织技术政策的影响</h2>
+
+<p>除管理危机外，<a data-primary="IRTs (incident response teams)" data-secondary="technical policy influence" data-type="indexterm" id="id1807"/>IRT 还处在影响广泛技术政策的独特位置。这些团队见过整个系统中最复杂的故障，因此能够发现单个服务团队可能忽略的系统性风险，并有力推动全公司的架构改进、标准化平台和更完善的可观测性实践。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Potential Drawbacks" data-type="sect2"><div class="sect2" id="ch10_potential_drawbacks">
+<h2>潜在缺点</h2>
+
+<p class="fix_tracking">实施IRT<a data-primary="IRTs (incident response teams)" data-secondary="trade-offs" data-type="indexterm" id="irts_trdofs"/>涉及取舍,因为它可能带来一些风险. 适当使用的好处大于它们;然而,这里有一些风险需要意识到:</p>
+<dl>
+<dt>协调开销</dt>
+<dd>
+<p>引入IRT会增加更多的人和一层协调. 这需要明确的作用和沟通,以避免混淆。 Google通过要求IRT使用全公司事件响应小组使用的同一种框架来将这一开销降到最低(见侧边栏 <a data-type="xref" href="#ch10_sidebar_incident_management_at_google"> “Google事件管理”</a>)。</p>
+</dd>
+<dt>交接</dt>
+<dd>
+<p>从最初的反应者向IRT转移上下文(一旦事件严重程度降低,可能还会再次返回)必须有效率和有成效。 IRT一般不是受影响服务的所有人,可能比经常处理服务中断的响应者需要更多的上下文.</p>
+</dd>
+<dt>介入延迟</dt>
+<dd>
+<p>团队可能会推迟向IRT求助,希望自己解决问题,但有可能延长并加剧影响。 当IRT早期参与时,其价值被最大化.</p>
+</dd>
+<dt>可用性</dt>
+<dd>
+<p>一些IRT,特别是较小的或最优的ITT,依赖于关键经验丰富的个人的可用性. 如果这些人在有需要时无法到场,则IRT的目的就落空了.</p>
+</dd>
+<dt>技能萎缩</dt>
+<dd>
+<p>如果IRT成为任何中等难度问题的默认升级,服务团队可能会失去独立处理事件的优势. 综合培训组应被视为一个伙伴,是在特殊情况下的资源,而不是取代现有的服务级待命能力。</p>
+</dd>
+<dt>政治考虑</dt>
+<dd>
+<p>如果服务团队乃至整个产品部门认为 IRT 侵犯了其自主权，双方就可能产生摩擦。当 IRT 为降低大型事件造成的<a data-primary="IRTs (incident response teams)" data-secondary="trade-offs" data-startref="irts_trdofs" data-type="indexterm" id="id1808"/>总体影响，不得不作出艰难的分诊决策，导致某个团队或服务承受次优结果时，这种矛盾尤其明显。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Alternatives" data-type="sect2"><div class="sect2" id="ch10_alternatives_to_irt">
+<h2>替代方案</h2>
+
+<p>IRT 并不是<a data-primary="IRTs (incident response teams)" data-secondary="alternatives" data-tertiary="consensus-driven response" data-type="indexterm" id="id1809"/><a data-primary="consensus-driven incident response" data-type="indexterm" id="id1810"/>管理大型复杂事件的唯一办法。有些组织采用共识驱动的模式，另一些则让高管或其他领导主持响应。根据 Google 的经验，这两种方式都会使缓解更慢，并造成更多混乱和压力，因此 Google 更倾向于使用事件响应团队；不过，对其他组织而言，替代方案也可能适用。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Consensus-driven response" data-type="sect3"><div class="sect3" id="ch10_consensus_driven_response">
+<h3>协商一致驱动的反应</h3>
+
+<p>当事件跨越小组时,协调总体对策的一个选择是把所有专题专家聚集在一个论坛——一个情况室、聊天空间、虚拟会议或电话——并让小组就缓解备选办法达成共识。 如果该团体规模小,符合目标,具有高度信任和心理安全的文化,符合韦斯特鲁姆的 " 生成型文化 " 模式(见<a data-type="xref" href="ch04-zh.html#ch04"> 第4章</a>),这种做法就能够奏效。</p>
+
+<p>这种办法的主要缺点是,答复者可能需要一段时间才能达成共识。 此外,如果以牺牲心理安全为代价将共识列为优先事项,则可能导致群体思维和不良结果。 更糟糕的是,如果该组织展示出韦斯特鲁姆的"病理"文化,那么协商一致的方法可以让政治转变,让更多的自信的团队将调查推向可以指责他们的团队或责怪别人的方向.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Executives as incident commanders" data-type="sect3"><div class="sect3" id="ch10_executives_as_incident_commanders">
+<h3>由高管担任事件指挥官</h3>
+
+<p>有些组织<a data-primary="IRTs (incident response teams)" data-secondary="alternatives" data-tertiary="executives as incident commanders" data-type="indexterm" id="id1811"/>不组建响应团队，而默认由高管或其他高级领导担任事实上的事件指挥官。这种做法的优势是，高管善于作出艰难决策，也更有权调集资源。问题在于，高管往往最不了解系统的技术复杂性，也不熟悉可用的缓解方案，包括团队为这类场景预先制定的流程。于是，他们不得不临时向响应人员收集信息、建立系统的心智模型，还可能打乱既有工作流和程序，从而拖慢响应。此外，这还会让少数高级领导成为服务中断期间的瓶颈，甚至单点故障。</p>
+
+<p>人们往往希望高管们做出事件应对决定,因为担心工程师会失去商业背景. 更好的战略是,本组织通过发现、培训或经常交流情况,使熟练的应对人员能够了解业务环境。 例如,Google偶尔必须做出在数据中心关闭某些机架的决定来进行维护或减少冷却系统上的负荷. 能够发现客户是否在这些机架上承担着关键的工作量,对于作出关于哪些机架需要腾空的质量决定至关重要。 因此,事件响应团队可以查询这些资料。</p>
+
+<p>此外,管理人员必须筹集资源的权力可以授予事件响应团队。 Google允许其IRT成员通过先前讨论的权力模式倒置来重新定位能力,征用资源,并拉入任何必要的资源.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Lifecycle of an Incident" data-type="sect1"><div class="sect1" id="ch10_the_lifecycle_of_an_incident">
+<h1>事件生命周期</h1>
+
+<p>事件<a data-primary="incident response" data-secondary="incident lifecycle" data-type="indexterm" id="id1812"/>往往压力巨大、利害攸关。为使事件响应尽可能顺畅，应遵循覆盖各阶段的结构化流程：检测、分诊、调查、缓解、解决和学习。事件并不总会按顺序经过这些步骤；有时一次缓解尝试会触发新的症状，随后又被检测到；也可能缓解失败，需要继续调查。特别复杂的事件甚至会同时开展多条调查和缓解工作流。</p>
+
+<p>本节贯穿了事件生命周期的各个阶段,概述了每个阶段的关键活动和目标. 通过将响应分解为分出的步骤,团队可以在合适的时间集中关注正确的优先事项.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Detection" data-type="sect2"><div class="sect2" id="ch10_detection">
+<h2>检测</h2>
+
+<p>检测是指事件的某种症状<a data-primary="incident response" data-secondary="detection" data-type="indexterm" id="id1813"/>开始被能够响应的人或软件系统察觉。示例包括：</p>
+
+<ul>
+<li>
+<p>基于 SLO 或其他监控自动触发告警</p>
+</li>
+<li>
+<p>客户提交支持工单</p>
+</li>
+<li>
+<p>工程师发现系统不再按预期运行</p>
+</li>
+</ul>
+
+<p>理想的情况是,大多数事件是自动发现的。 然而,由于用户和系统互动的复杂性,这在实践中具有挑战性。 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch08-zh.html#ch08">8 </a>和<a data-type="xref" data-xrefstyle="select:labelnumber" href="ch09-zh.html#ch09">9</a>各章提出了应对这些挑战的想法。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Triage" data-type="sect2"><div class="sect2" id="ch10_triage">
+<h2>分诊</h2>
+
+<p>分诊<a data-primary="incident response" data-secondary="triage" data-type="indexterm" id="incid_lfc_trg"/>旨在了解事态的严重程度，以及应由谁处理。指导原则是以用户体验为中心。事件早期情况不明时，人们很容易直接查看错误率、延迟等容易测量的信号；但在分诊过程中，更优先的是获取能够判断服务用户是否正遭遇功能失效或严重退化的数据。</p>
+
+<p>不知道有问题，就无从分诊，因此应鼓励组织中的<em>任何人</em>尽早宣布事件。宁可先过度升级，随后重新划分严重程度或完全解除响应，也不要因为有人害怕判断错误或惹麻烦而任由服务中断恶化。对于最终被证明是误报的事件声明，不应有任何正式、文化或其他形式的惩罚。当然，调查已声明的服务中断并非没有成本，所以负责分诊的团队应利用自动化、精心设计的仪表板等手段尽量降低成本。还要警惕政治激励：如果团队会因发生服务中断而受罚，他们就会想办法换个名称来分类，结果只是掩盖问题。</p>
+
+<p>响应<a data-primary="outages" data-secondary="triaging" data-type="indexterm" id="id1814"/>服务中断时，你几乎不可能掌握全部事实。在压力下有效分诊，意味着依据不完整的信息作出高质量决策，而不是等待完美诊断。首先要问几个关键问题：</p>
+
+<ul>
+<li>
+<p>有多少用户受到影响?</p>
+</li>
+<li>
+<p>这是全球性问题还是孤立在一个地点?</p>
+</li>
+<li>
+<p>哪些关键用户旅程已经中断？</p>
+</li>
+</ul>
+
+<p>这些问题的答案有助于确定缓解努力中的紧迫程度和对承担风险的容忍度。 用户广泛可见的事件,在选择缓解战略时,往往可以更高的风险容忍度来处理. 事件对用户的影响微乎其微,应更加谨慎地对待,因为意外让事情恶化的机会更大.</p>
+
+<p>分诊期间，易于获取、清晰明确的中断数据，比隐藏在日志中的全面信息更有价值。此外，以下做法可以提高分诊速度和准确性：</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>避免在单一信息来源上过度索引。</p>
+</li>
+<li>
+<p>将自动警报与客户支助报告相结合,以便更清楚地了解影响。 另见<a data-type="xref" href="#ch10_the_role_of_ai_in_incident_response">“AI在事件反应中的作用”</a>和<a data-type="xref" href="ch21.html#ch21_case_study_detectr">“案例研究:探测器”</a>。</p>
+</li>
+<li>
+<p>使用合并的仪表板一起查看关键度量衡,而不是在工具之间切换.</p>
+</li>
+</ul>
+
+<p>工具和仪表板应事先准备,队伍必须精通.</p>
+
+<p>分诊成功的标准不是找到修复方案，而是迅速完成准确分类和适当升级。只要正确判断严重程度、召集合适的响应人员，并止住损失（或升级到能够止损的层级），分诊就已经成功。即使最终只是误报，迅速分诊并快速解除响应仍是胜利，而不是<a data-primary="incident response" data-secondary="triage" data-startref="incid_lfc_trg" data-type="indexterm" id="id1815"/>浪费时间。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Investigation" data-type="sect2"><div class="sect2" id="ch10_investigation">
+<h2>调查</h2>
+
+<p>事件反应调查<a data-primary="incident response" data-secondary="investigation" data-type="indexterm" id="id1816"/>阶段涵盖旨在帮助反应小组形成事件心理模型的活动,以便它们能更有效地确定可能的缓解战略。 这里的优先事项是找到一条减缓措施的道路,而不是深刻了解出了什么问题。 根据系统的复杂性和组织成熟度,调查倾向于遵循三种方法之一:</p>
+
+<ul>
+<li>
+<p>根原因分析</p>
+</li>
+<li>
+<p>OODA(观察、方向、决定、行动)</p>
+</li>
+<li>
+<p>多种假设</p>
+</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Root cause analysis" data-type="sect3"><div class="sect3" id="ch10_root_cause_analysis">
+<h3>根因分析</h3>
+
+<p><a data-primary="incident response" data-secondary="root cause analysis" data-type="indexterm" id="id1817"/><a data-primary="RCA (root cause analysis)" data-secondary="incident response" data-type="indexterm" id="id1818"/>根因分析的理念，是找出系统中出错的“唯一因素”并加以修复。采用这种调查方式时，响应人员往往会投入更多时间排障和调试，还可能尝试在其他环境中复现问题。对根因分析的主要批评如下（<a data-type="xref" href="ch12-zh.html#ch12">第 12 章</a>将进一步讨论）：</p>
+
+<ul>
+<li>
+<p>在任何合理的复杂体系中,很多事情都有可能出错。 试图找到一个单一的“原因”是可减轻的,可能会拖延缓解。</p>
+</li>
+<li>
+<p>调试和排除出问题需要深入的专业知识和时间的奢侈. 高记录事件迅速发生,专家可能无法到场。</p>
+</li>
+<li>
+<p>指定“根本原因”可以是政治性的。 团队可能拒绝加入回应, 领导人可能会纠缠一个错误或缺陷,因为它符合他们对什么构成不良设计或不良行为的偏见。</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="OODA" data-type="sect3"><div class="sect3" id="ch10_ooda">
+<h3>OODA 循环</h3>
+
+<p>OODA 模型最早由美国空军上校约翰·博伊德提出。它<a data-primary="incident response" data-secondary="OODA model" data-type="indexterm" id="id1819"/><a data-primary="OODA model, incident response" data-type="indexterm" id="id1820"/>围绕理解形势和采取行动组织调查，并根据新信息不断校准心智模型，从而弥补根因分析的不足。事件响应人员利用告警、仪表板、日志和系统图进行观察与定位，然后决定行动方案、执行方案，并从系统的反应中学习。</p>
+
+<p>对OODA方法的批评者指出,它仍然提出事件反应的线性模型,其中反应者一次用一个心智模型和动作来工作. 此外,<em>orient</em>和<em>决定方法</em>部分是复杂的认知活动,模型没有就如何最好地处理它们提供指导。 最后,在高度复杂的系统中,可能难以理解某项行动是否真正导致了所察觉的系统行为的变化——所观察到的效果可能是巧合.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Multiple hypotheses" data-type="sect3"><div class="sect3" id="ch10_multiple_hypotheses">
+<h3>多种假设</h3>
+
+<p>多假设调查法<a data-primary="multiple hypotheses approach, incident response" data-type="indexterm" id="id1821"/>让响应人员摆脱线性思维，持续提出并检验新假设，以解释系统行为并寻找可能的缓解方案。在这种方法中，调查就是不断证伪假设，直至留下一个足以支持合理、安全缓解措施的假设。其优点包括：</p>
+
+<ul>
+<li>
+<p>响应者可以平行地追求多种想法.</p>
+</li>
+<li>
+<p>框架要求答复者反驳而不是确认想法,从而减少确认偏差。</p>
+</li>
+<li>
+<p>减缓速度往往更快,因为第一个工作减缓措施获胜。</p>
+</li>
+</ul>
+
+<p>当然,它也有缺点:</p>
+
+<ul>
+<li>
+<p>为了充分实现效率,需要多个应急人员。</p>
+</li>
+<li>
+<p>协调成本更高，必须避免多人同时实施的缓解措施以意外方式叠加或造成混乱。</p>
+</li>
+<li>
+<p>提出假设和实验来测试这些假设和实验是具有挑战性的工作,需要高度的技能、经验和专长。</p>
+</li>
+</ul>
+
+<p>然而,尽管存在挑战,这是Google的首选方法,因为我们已经发现它能产生更快的缓解和更加协调的反应。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Mitigation" data-type="sect2"><div class="sect2" id="ch10_mitigation">
+<h2>缓解</h2>
+
+<p><a data-primary="mitigations" data-secondary="incident response" data-type="indexterm" id="id1822"/><a data-primary="incident response" data-secondary="mitigation" data-type="indexterm" id="id1823"/>事件响应的首要目标，是采取行动降低服务中断对用户的影响；这一目标优先于深入诊断。“缓解优先”的思维认识到，任何服务中断最具破坏性的阶段，都是用户实际遭遇故障的时期。此时速度至关重要，响应人员往往只能在对中断了解有限的情况下行动。应尽快降低对用户的影响，即使无法完全消除，也好过先彻底弄清服务为何故障再采取行动。</p>
+
+<p>最有效的缓解方式，是准备一套<a href="https://oreil.ly/F334I">安全且通用的策略</a>，例如回滚、扩容、重启和流量切换。这些手段无需深入理解事件也能广泛使用。缓解不应被视为与调查割裂的独立阶段，而应与调查交织进行；实施安全的缓解措施本身也可作为诊断实验，在减轻用户损失的同时排除某些假设。缓解成功后，响应人员才有余裕开展更彻底的调查。</p>
+
+<p>安全减轻事故的能力最终是该系统的建筑财产。 一个系统只有在其设计对具体的紧急行动,如滚动重启、后相相容回滚或能力迅速增强时,才能支持广泛的缓解模式。 此外,该组织的文化必须是在减轻影响期间采取的合理行动绝不是责备或惩罚的来源,即使这些行动无意中加剧了事件。 领导人必须避免结果偏差,或“结果偏差”,他们根据当时掌握的信息,而不是根据事后才能知道的结果,判断决定的质量。 在复杂的系统中,因果关系并不总是显而易见的,而某一天看起来安全的行动,由于软件错误或系统假设的变化,下一天很容易不安全.</p>
+
+<p>在减缓期间,安全至关重要。 需要透明度、风险分析和可预测的失败模式,以减少减缓使情况恶化的可能性。 然而,必须指出,不能通过政策和遵守来保障安全。 更常见的情况是,安全是通过一种组织文化来实现的,这种文化使个人感到有道德和专业责任,使最接近信息的人有能力作出决定。 此外,所有行动都必须与无所事事的风险相权衡;在停用的情况下,系统往往被打破,值得采取相对安全但投机的行动来使其重新迅速运作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Resolution" data-type="sect2"><div class="sect2" id="ch10_resolution">
+<h2>解决</h2>
+
+<p>一旦一个事件<a data-primary="incident response" data-secondary="resolution" data-type="indexterm" id="id1824"/>得到缓解,紧急阶段就结束,重点转移到解决。 在这一阶段,系统恢复到事发前的平稳状态:回滚已完全稳定,临时缓解完成等. 缓解通常涉及临时解决或绕行,而不一定知道造成事故的所有因素。 与此不同的是,在解决问题期间,应对者应更深入地了解故障情况,所产生的解决办法应反映这种理解。</p>
+
+<p>在解决阶段,反应速度可以而且应该放慢。 恢复服务的巨大压力被解除了,剩下的响应者可能采取更有节制的方法来寻找稳定的解决方案. 这一过渡使得事件指挥官能够缩小反应小组的规模,使人们能够恢复正常的工作.</p>
+
+<p>在 Google 的事件管理跟踪系统中，事件要从“已缓解”转为“已解决”，必须满足以下一项或多项条件：</p>
+
+<ul>
+<li>
+<p>事件的一个或多个主要原因已经查明，而且有把握认为不会复发。</p>
+</li>
+<li>
+<p>已实施稳定的固定措施,或将主要突破性改变推回并阻止重新部署。</p>
+</li>
+<li>
+<p>该事件不再需要积极,有组织地应对事件,因为系统状态足够好,可以按照正常的时间表和流程来工作.</p>
+</li>
+</ul>
+
+<p>在复杂的事件中,在缓解之后但在完全解决之前宣布“等待并看”中间状态往往是最佳做法。 这样可以进行一段时间的观察,以确认系统是稳定的,也可以让外部当事方或自动测试来核实撞击已经终止. 在涉及分级事件的情况下,父母事件可能处于这种中间状态,直到所有儿童事件得到解决。 这可以防止过早地结束可能再次爆发的事件。</p>
+
+<p>事件指挥官与响应团队其他成员协商并确认事件已彻底解决后，应采取以下行动：</p>
+
+<ul>
+<li>
+<p>完成应急处置措施.</p>
+</li>
+<li>
+<p>明确告知事件解决并关闭了事发期间使用的所有渠道.</p>
+</li>
+</ul>
+
+<p>然后重点转移到最后阶段:通过事后复盘过程从事件中吸取教训。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Learning" data-type="sect2"><div class="sect2" id="ch10_learning">
+<h2>学习</h2>
+
+<p>在解决了<a data-primary="incident response" data-secondary="learning" data-type="indexterm" id="id1825"/><a data-primary="learning" data-secondary="incident response" data-type="indexterm" id="id1826"/>事件后,响应者会选择记录故障,为事故后分析做准备,完成任何剩余的工作,例如创建错误报告来跟踪已知的问题和行动项目. 这也是计划作出更大努力以解决根本的失败模式以防止其再次发生的地方。 (<a data-type="xref" href="ch11-zh.html#ch11">第11章</a>更详细地叙述了各组织如何从事件中吸取教训。 ) 然而,在此必须明确强调,从事件中吸取教训是总体反应的关键部分。</p>
+
+<p>此外，记录响应人员的经历也是学习过程的关键。因此，事件响应工具和流程最好能帮助团队分析响应中的痛点。记录参与者姓名和角色、保存触发的告警与信号、笔记和聊天日志，并自动记录时间线上的关键事件，都能显著提高事后分析的速度和效果。这些数据可以揭示哪些信号最终只是干扰项、哪些工具未按预期工作，以及最终需要哪些人员参与才能解决事件。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Collaboration and Communication" data-type="sect1"><div class="sect1" id="ch10_collaboration_and_communication">
+<h1>协作与沟通</h1>
+
+<p>理想的事件<a data-primary="incident response" data-secondary="collaboration and communication" data-type="indexterm" id="incdresp_colabacomm"/><a data-primary="collaboration" data-secondary="incident response" data-type="indexterm" id="colab_incidresp"/><a data-primary="communication, incident response" data-type="indexterm" id="comms_incdntres"/>响应，是让告警直接送达最有能力分析和缓解问题的人（或者稍后将讨论的智能体）。但现实往往并不理想，许多事件需要多人协作解决。参与者越多，沟通与协调所需的工作就越多，也越难确保所有人基于同一套心智模型行动。如果一次响应需要数十人甚至数百人，可能说明组织应当加强可观测性、培训或响应实践。目标是人员足够，但人数尽可能少。</p>
+
+<p>不过，事件响应中也应形成一种良好的文化规范：如果响应人员陷入困境或需要更多专业知识，就鼓励他们召集更多人。有些组织的响应人员可能不敢通知更多人，甚至不知道该通知谁。要尽量减少这种阻力，可以维护一份所有服务值班轮换的目录，并清楚说明如何联系值班人员。然而，在多数组织中，找到正确的人仍需要一定的隐性知识。IRT 在这里也能发挥作用：至少他们知道应该让谁参与。</p>
+
+<p>值班人员应接受这样的<a data-primary="on-call requirement" data-secondary="incident response" data-tertiary="disengaging" data-type="indexterm" id="id1827"/>训练：收到通知后要专注于事件，并在自己仍能发挥作用时持续参与；一旦不再有帮助，就应退出响应。人类很不擅长连续 30 分钟以上进行被动监控，包括在聊天和通话中等待别人提到自己。如果一名响应人员超过一小时既未被提问、未提供意见，也没有被分配具体任务，就应视为已经脱离响应。</p>
+
+<p>此外，明确通知其他响应人员加入，通常比用电子邮件或聊天随口联系更顺畅。寻呼传达了清晰的信息：现在迫切需要你；人们不应觉得自己在工作时间以外还必须不断查看邮件和聊天。工程师也需要不受打扰的时间完成工程工作；“优先寻呼”的规范让他们可以放心进入专注状态，因为需要时一定会收到通知。</p>
+
+<p>鼓励响应人员等待通知，并在不再需要时退出，可能有违直觉。Google 倾向于让少量人员参与事件响应，并明确各自的角色和职责。参与者可以放心离开，因为若再次需要，他们会收到通知并被要求重新加入。大型组织容易陷入“事件表演”，误把事件电话会议或情况室里人数众多当成管理良好的标志，实际上这会带来高昂的协调成本。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1828">
+<h1>衡量事件应对的有效性</h1>
+<p>各组织往往想衡量其事件反应是否有效。 通常,它们侧重于衡量尺度,如平均分辨率(MTTR)或平均缓解时间(MTTM)。 这些衡量标准的挑战不仅仅是,平均值具有误导性,无法反映数据的可变性;另外,不同的事件有截然不同的预期反应时间表。 涉及单一服务在发布后返回100%流量出错的事件,需要几分钟或最多几个小时才能解决. 然而,解决一个需要某种物理干预的事件——修理硬件、取水、完全恢复电力——可能需要数小时或数天。</p>
+
+<p>Courtney Nash 研究了<a href="https://www.thevoid.community">the VOID</a>收集的公开事件报告。她甚至提出，与 MTTR 等常用指标相比，衡量并<em>尽量减少</em>参与人数或不同团队数量，更能反映事件响应的有效性。这看似违反直觉，因为很多人认为“全员出动”才体现正确的组织文化。然而，事件响应中“人越多越好”的做法忽略了大量工程师参与的机会成本，也会增加协调开销。</p>
+
+<p>事实上,Laura Mcguire博士谈到<a href="https://oreil.ly/40d9s">“协调费用”</a>是说明反应有效性的一种方法。 虽然没有单一的衡量标准能够捕捉到这一成本,但了解一些方面,比如新响应者需要多长时间才能跟上速度,响应者如何经常被打断才能提供状态更新,而参与响应的不同沟通渠道或工具的数量会更深入地了解如何改进响应.</p>
+
+<p>审视所涉人数、协调费用或其他与活动有关的衡量标准,是找到可导致改进进程和工具的模式的好办法。 这些模式可以提供比MTTR或MTTM等高层次度量衡更深入的洞察.</p>
+</div></aside>
+
+<p>有几个<a data-primary="incident response" data-secondary="antipatterns" data-type="indexterm" id="id1829"/>反模式需要注意这里. 在大型组织中,利害关系方可以加入事件应对行动,试图加快缓解或满足其好奇心。 这些善意的个人可能会无意中拖延缓解,打断讨论的进行,分散回应者对关键任务的注意力,或者在最坏的情况下,使他们士气低落。</p>
+
+<p>如果人们加入响应并开始从事以下行为,事件响应者应当轻轻地引导他们:</p>
+<dl>
+<dt>反复要求更新、ETAs或客户特定信息</dt>
+<dd>
+<p><strong> 缓解:</strong> 答复者应指明作为标准事件反应程序的一部分提供定期更新的地方,以便追踪。 这种行为也是一个好兆头,反应需要通信线索(见侧边栏<a data-type="xref" href="#ch10_sidebar_incident_management_at_google">"Google的事故管理"</a>).</p>
+</dd>
+<dt>就答复的长度或速度发表令人沮丧的声明</dt>
+<dd>
+<p><strong> 缓解:</strong> 请他们在别处记录他们的想法,并在事发后的分析中将其作为建设性建议分享.</p>
+</dd>
+<dt>批评系统设计或提出重大改变——例如重新配置或新特征</dt>
+<dd>
+<p><strong> 缓解:</strong> 与前一个案例一样,重新引导他们为事发后的分析提供他们的想法.</p>
+</dd>
+<dt>经常提出有关该系统的基本问题</dt>
+<dd>
+<p><strong> 缓解:</strong> 指向其它资源以达到速度(如搜索,文档,或AI工具),或将其与更有经验的响应者配对.</p>
+</dd>
+<dt>通过提供相互冲突的指示或推翻<span class="keep-together">决定</span>干扰事件指挥</dt>
+<dd>
+<p><strong>应对：</strong>给对方分配一项具体任务，使其集中精力；如果对方确实更适合领导响应，则主动提出移交事件指挥官角色，以减少混乱<a data-primary="incident response" data-secondary="collaboration and communication" data-startref="incdresp_colabacomm" data-type="indexterm" id="id1830"/><a data-primary="collaboration" data-secondary="incident response" data-startref="colab_incidresp" data-type="indexterm" id="id1831"/><a data-primary="communication, incident response" data-startref="comms_incdntres" data-type="indexterm" id="id1832"/>并加快响应。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Training and Development" data-type="sect1"><div class="sect1" id="ch10_training_and_practice">
+<h1>培训和发展</h1>
+
+<p>事件<a data-primary="incident management" data-secondary="training" data-type="indexterm" id="id1833"/><a data-primary="training" data-secondary="incident management" data-type="indexterm" id="id1834"/>管理需要一套通过
+实践积累的技能。幸运的是，这些技能也可以在
+事件<em>之外</em>培养和提升。</p>
+
+<p>本书第一版的<a href="https://sre.google/sre-book/managing-incidents">第 14 章</a>和<a href="https://sre.google/workbook/incident-response">第 9 章</a>（出自<em>《站点可靠性工程工作手册》</em>）都详细介绍了事件管理与响应技术。这里简要回顾如下：</p>
+<dl>
+<dt>灾难韧性测试</dt>
+<dd>
+<p>这些定期开展的<a data-primary="DiRT (Disaster Resilience Testing)" data-type="indexterm" id="id1835"/>全组织韧性演练（以前在 Google 称为“灾难恢复测试”）用于验证系统恢复能力，并练习大规模协调。应把事件管理流程纳入测试，以评估团队在贴近现实的跨职能条件下如何处理模拟紧急情况。更多信息见<a data-type="xref" href="ch14-zh.html#ch14_disaster_recovery_and_resilience">“灾难恢复与韧性”</a>。</p>
+</dd>
+<dt>厄运之轮</dt>
+<dd>
+<p>为了<a data-primary="Wheel of Misfortune" data-secondary="incident response training" data-type="indexterm" id="id1836"/>在低压力环境中形成肌肉记忆并熟悉诊断工具，事件响应团队可以定期参加本地化的角色扮演模拟（见<a data-type="xref" href="ch05-zh.html#ch05">第 5 章</a>）。</p>
+</dd>
+<dt>生产审查</dt>
+<dd>
+<p>这些定期会议<a data-primary="production reviews, incident response training" data-type="indexterm" id="id1837"/>分析最近的服务中断情况,审查传呼事件,并作为一个团队跟踪事后复盘行动项目(见侧栏<a data-type="xref" href="ch06-zh.html#ch06_production_meetings">“生产会议”</a>)。 在协作环境下分析运行历史可以加速系统思维的发展并帮助工程师校正技术判断.</p>
+</dd>
+<dt>入职与持续教育</dt>
+<dd>
+<p>本章介绍的<a data-primary="onboarding" data-see="hiring" data-type="indexterm" id="id1838"/><a data-primary="hiring" data-secondary="incident response training" data-type="indexterm" id="id1839"/><a data-primary="continuous education" data-secondary="incident response training" data-type="indexterm" id="id1840"/><a data-primary="education" data-see="continuous education" data-type="indexterm" id="id1841"/>技能都可以通过教学获得，因此结构化入职培训对团队中新 SRE 的成功至关重要。随着时间推移，系统和工具难免发生变化，资深响应人员也能从定期复训中受益。Google 正是为此开发了 SRE EDU（见<a data-type="xref" href="ch05-zh.html#ch05_formal_training_programs">“正式培训计划”</a>），这是一项由一线 SRE 创建并运行的同伴教育计划。</p>
+</dd>
+</dl>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Ghost in the Machine" data-type="sect2"><div class="sect2" id="ch10_the_ghost_in_the_machine">
+<h2>机器中的幽灵</h2>
+
+<p>管理<a data-primary="incident management" data-secondary="human skills" data-type="indexterm" id="id1842"/>服务中断中的人为因素，与处理技术问题同样重要，甚至更加重要。经验表明，以下几项不那么显眼的技能有助于成功解决事件：</p>
+<dl class="pagebreak-before less_space">
+<dt>快速判断</dt>
+<dd>
+<p>在信息有限的情况下迅速作出高质量的决定</p>
+</dd>
+<dt>在危机中保持冷静</dt>
+<dd>
+<p>在高压情境下保持沉着</p>
+</dd>
+<dt>指挥式领导</dt>
+<dd>
+<p>明确委派工作，并让所有人基于共同的心智模型协作</p>
+</dd>
+<dt>系统思维</dt>
+<dd>
+<p>保持整体观点并理解反馈循环</p>
+</dd>
+</dl>
+
+<p>这些技能不同于教育、培训和大多数工程师在日常工作中获得的经验。 本节审查为了对事件作出反应而有意发展这些系统需要什么。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Developing judgment" data-type="sect3"><div class="sect3" id="ch10_developing_judgment">
+<h3>培养判断力</h3>
+
+<p>在<a data-primary="incident management" data-secondary="judgment" data-type="indexterm" id="id1843"/>事件反应中作出决策,需要审慎思考,评价证据,检查偏向,权衡权衡取舍. 然而,这些步骤必须迅速进行,而且信息有限。 为了提高事件应对决策的速度和质量,应对者需要校正判断.</p>
+
+<p>改进判断的最佳途径之一是了解其他人如何在类似情况下作出决定。 一项战略是有一个经验丰富、知识丰富的回应者,在面对艰难的决定时,有“大声思考”高质量决策的记录。 一位观察者聆听这位“高判断力的个人”如何处理信息、权衡替代办法并迅速作出选择。 这使观察员能够调整自己的决策进程。 阴影是创造这种学习机会的一种方式,但只有经验丰富的事件应对者刻意地解释他们的思想过程,阴影才能奏效.</p>
+
+<p>如<a data-type="xref" href="ch05-zh.html#ch05"> 第5章</a>所讨论,假设和模拟也创造了练习和校正判断的机会,只要参与者在反思自己的思维过程并获得反馈.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Staying calm in crisis" data-type="sect3"><div class="sect3" id="ch10_staying_calm_in_crisis">
+<h3>在危机中保持冷静</h3>
+
+<p>事件应对<a data-primary="incident management" data-secondary="staying calm" data-type="indexterm" id="id1844"/>取决于个人能否在压力下有效合作。 为了避免因挫折或恐惧而导致反应脱轨,无论事件涉及单一服务,多服务连锁故障,还是实际灾难,反应者都需要保持冷静.</p>
+
+<p>有些人天生能在危机中保持冷静；对其他人而言，一种常见建议是练习<em>正念</em>。正念包含多种技巧，但总体上是训练人观察、说出并放下负面想法或感受，从而专注于当下。Google 一些经验最丰富的事件管理人员发现，规律冥想能够锻炼一种心理能力：当挫败感或恐惧干扰事件响应时，暂停片刻、重新调整并恢复专注。</p>
+
+<p>除了注意外,利用事件应对工具和过程<em>外的</em>压力情况有助于在事件期间通过去除另一个压力来源来建立平静:如果反应中的每个人都精通工具和过程,那么没有人在停产期间努力去学习. (这也是对事件反应工具可用性进行投资的理由. )</p>
+
+<p>最后，事件负责人也可以提供帮助：让参与者知道有需要时可以放心暂时离开、稍作休息，甚至主动而友善地建议他们休息。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Adapting leadership skills" data-type="sect3"><div class="sect3" id="ch10_adapting_leadership_skills">
+<h3>调整领导技能</h3>
+
+<p>虽然事件应对<a data-primary="incident management" data-secondary="leadership skills" data-type="indexterm" id="id1845"/>需要通信,授权,透明等标准领导技能和做法,但必须适应事件高压环境. 在典型的领导方式中,如担任技术领导或经理,人们可能会调整他们的领导方式,以适应个人的作风。 然而,对事件的有效反应要求领导层采取一贯的“指挥和控制”办法,既明确又明确,同时又保持心理安全。</p>
+
+<p>将工作委托给回应者是这种差异出现的第一个方式. 在例行的小组会议上,领导人可能会通过问“谁想调查这一问题来寻求感兴趣的志愿人员?” 反之,事件指挥官应直接向有明确期望的特定个人分配任务,以避免责任的分散。 他们可能会说,“请调查最新的服务发布情况并报告其进展情况是否与我们增加延迟的时间和地点相吻合。” 在较大的事件中,事件指挥官应避免自行承担任务,以集中力量协调应对工作. 对于那些喜欢承担不奖励或辛勤工作或屈从于团队的领袖来说,这可能会感到尴尬,因为这样可以展示“仆人领导”这一领导方法,其特点是管理人员分享权力,首先注重团队需求。</p>
+
+<p>此外，事件指挥官必须确保所有参与者共享同一套心智模型和事实。这要求沟通简洁、直接，反复强调关键信息，并在新信息出现时重新评估假设：“为确保大家理解一致，这项证据意味着我们可以排除本次发布是影响因素。”</p>
+
+<p>让所有人对心智模型达成一致并聚焦目标，一种好办法是提出明确而有针对性的问题。例如，“我们能做些什么来加快回滚吗？”可以让响应围绕目标展开，而无需陷入回滚机制的细节。这也能让人更安心地寻求协助，例如可以问：“要不要安排一个人和你一起排障？”</p>
+
+<p>发展这种明确的领导风格需要观察有效的事件指挥官,利用模拟或角色扮演来在真实事件的压力之外练习,并有可能得到经验丰富的应答者的指导. 模拟和反向阴影是获得这种经验和获得建设性反馈的好方法。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Cultivating systems thinking" data-type="sect3"><div class="sect3" id="ch10_cultivating_systems_thinking">
+<h3>培养系统思维</h3>
+
+<p>事件响应人员<a data-primary="incident management" data-secondary="systems thinking" data-type="indexterm" id="id1846"/>在评价假设和纳入新信息时,必须不断放大系统内外. 他们必须能够识别关于硬件、软件、人和进程如何相互作用的反馈循环和理由。 这种技能通常被称为“系统思维”。 通过练习模拟复杂的系统,识别反馈循环,以及对系统行为进行推理,可以提高你“在系统中思考”的能力。</p>
+
+<p>教育这就像教人判断一样,人们在“大声思考”时向有技能和经验的从业者学习。 在<a data-type="xref" href="ch12-zh.html#ch12">第12章</a>所述CAST或STPA等分析中,有响应者随附,是教授系统思维的又一有效方法.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Role of AI in Incident Response" data-type="sect1"><div class="sect1" id="ch10_the_role_of_ai_in_incident_response">
+<h1>AI 在事件响应中的作用</h1>
+
+<p>随着 AI 在系统<a data-primary="incident response" data-secondary="AI" data-type="indexterm" id="id1847"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-type="indexterm" id="id1848"/>开发中的作用不断增强，事件响应也必须引入 AI，才能跟上系统演进的速度和不可避免的复杂度。本节介绍若干适合较早应用 AI、并能从中受益的领域。</p>
+
+<p>随着这些模型越来越擅长执行工程任务，人们对引入这项技术既兴奋又有所担忧，这完全可以理解。与任何新技术一样，它的准确性和安全性正受到严格审视，在 SRE 领域尤其如此。本节专注于事件管理；<a data-type="xref" href="ch21.html#ch21">第 21 章</a>将更广泛地讨论如何把 AI 引入 SRE。</p>
+
+<p>在事件应对领域引入AI——特别是自主代理——可能是一个渐进的过程,可以将风险降到最低。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Detection and Triage" data-type="sect2"><div class="sect2" id="ch10_detection_and_triage">
+<h2>检测与分诊</h2>
+
+<p>检测与分诊<a data-primary="incident response" data-secondary="AI" data-tertiary="detection and triage" data-type="indexterm" id="id1849"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="detection and triage" data-type="indexterm" id="id1850"/>是引入 AI 风险相对较低的环节，因为只要采用正确的原则（在证实并非如此之前先按最坏情况处理），最大的风险不过是事件被过度升级。配合<a data-type="xref" href="ch21.html#ch21">第 21 章</a>介绍的额外防护措施，连这种风险也能降低。</p>
+
+<p>传统的事件探测很大程度上依赖于标准的遥测方法,如度量衡,日志和痕迹等,它们擅长捕捉已知的故障模式,但可能会错过新问题或主要表现为用户疼痛而不会触发静态警报的问题. 如<a data-type="xref" href="ch21.html#ch21_case_study_detectr">“案例研究:探测器”</a>所讨论,AI和大型语言模型(LLMs)可作为传统遥测法的一种强力语义补充. AI工具通过从无结构的客户反馈中浮出洞来,帮助回应者迅速识别出纯统计异常检测可能错过的新颖或新出现的故障模式.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Outage Communication" data-type="sect2"><div class="sect2" id="ch10_outage_communication">
+<h2>服务中断沟通</h2>
+
+<p>即使在这一早期<a data-primary="incident response" data-secondary="AI" data-tertiary="outage communication" data-type="indexterm" id="id1851"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="outage communication" data-type="indexterm" id="id1852"/><a data-primary="outages" data-secondary="AI role in incident response" data-type="indexterm" id="id1853"/>阶段,引入LLMS的另一个有效地点是为正在加速处理事件现状的利益攸关方和回应者制作服务中断摘要。 有关各方可以要求AI提供记录誊本、聊天和工作文件摘要,而不是用问题打断答复。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Investigation" data-type="sect2"><div class="sect2" id="ch10_investigation_2">
+<h2>调查</h2>
+
+<p>AI 可以即时生成<a data-primary="incident response" data-secondary="AI" data-tertiary="investigation" data-type="indexterm" id="id1854"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="investigation" data-type="indexterm" id="id1855"/>针对当前事件定制的动态调查仪表板。智能体通过分析历史相似事件、已触发操作手册的上下文以及告警的逻辑意图，可以动态汇总该次服务中断最相关的图表和日志，形成统一视图。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Hypothesis Generation" data-type="sect2"><div class="sect2" id="id682">
+<h2>假设生成</h2>
+
+<p>为了加速<a data-primary="incident response" data-secondary="AI" data-tertiary="hypothesis generation" data-type="indexterm" id="id1856"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="hypothesis generation" data-type="indexterm" id="id1857"/>调查阶段,AI可以自动生成高自信事件假说. 该代理人通过摄取过去类似事件的实时监测异常情况、应用记录和模式,向待命人员提供单一可信的牵头和具体的核查步骤。 或者,AI代理可以在多种假设方法中提出并测试假设. 他们也可以充当“橡皮鸭调试者”,帮助应答者对照他们关于系统应如何运作的心理模式,检查他们对系统实际运作的假设。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="On-call Handoff" data-type="sect2"><div class="sect2" id="ch10_oncall_handoff">
+<h2>待命移交</h2>
+
+<p>事件期间的沟通<a data-primary="incident response" data-secondary="AI" data-tertiary="on-call handoff" data-type="indexterm" id="id1858"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="on-call handoff" data-type="indexterm" id="id1859"/><a data-primary="on-call requirement" data-secondary="AI role" data-type="indexterm" id="id1860"/>开销会随响应人员数量增加而增长。智能体可以监控聊天室、视频文字稿和事件文档等沟通载体，被动汇总所有活动的状态。它们能够准确总结尝试过什么、什么失败了、使用了哪些工具，并随着事件脉络逐渐清晰，始终突出最相关的数据。这样，新加入的响应人员可以迅速了解情况，而无需打断正在指挥事件的人。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Autonomy in Production" data-type="sect2"><div class="sect2" id="ch10_autonomy_in_production">
+<h2>生产自主性</h2>
+
+<p>在允许<a data-primary="incident response" data-secondary="AI" data-tertiary="change management considerations" data-type="indexterm" id="id1861"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="change management considerations" data-type="indexterm" id="id1862"/>AI 通过修改生产环境参与缓解之前，必须建立充分的防护措施和可观测性，并确保遵循稳健的变更管理实践。任何执行 AI 操作的智能体都应具备可靠的<a href="https://oreil.ly/AzhbD">评估机制</a>和反馈回路，以保证其行为符合预期并产生高质量结果。此外还要考虑智能体的身份与授权。</p>
+
+<p>事故发生期间,自主代理机构对生产所作的任何变更,应当可逆转. 每次变更应被视作原子操作:动作,即时验证,如果验证失败,应作为单一,可审计的交易自动回滚. 为确保透明度和为进一步改进提供投入,代理人应记录其全部推理,包括所用的信号和信心水平。</p>
+
+<p>需要注意的是,已经自动化或可以容易地与经典的非AI系统自动化的流程和操作只要满足业务需要,就不需要被AI版本所取代. 传统的自动化如果开始出现行为不当,则更容易解释和修复.</p>
+
+<p class="fix_tracking">此外,由于代理人是一种自动化形式,<a data-type="xref" href="ch13-zh.html#ch13"> 第13章</a>所包括的所有考虑也适用于代理人。 最显著的是,为了使AI的使用安全而有效,基础生产系统必须为机器交互设计.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A North Star for Agent Safety" data-type="sect2"><div class="sect2" id="ch10_a_north_star_for_agent_safety">
+<h2>智能体安全的北极星目标</h2>
+
+<p>展望未来，智能体事件响应<a data-primary="incident response" data-secondary="AI" data-tertiary="human oversight considerations" data-type="indexterm" id="incres_ai_humovrcons"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-tertiary="human oversight considerations" data-type="indexterm" id="ai_incdresp_humnovrsht"/>的目标，是让智能体在很少或完全没有人工介入的情况下处理常规或低复杂度事件，把人类响应人员留给更复杂、更陌生的情况，由他们消除歧义并保障安全。随着 AI 能力提升，应当有越来越多的事件可由智能体处理。这是 SRE 借助自动化实现规模化这一理念的自然延伸。</p>
+
+<p class="fix_tracking">在事件响应中采用 AI 时，一个主要问题是需要多少人工监督。关于是否必须让人处于闭环中，已有多种方案和观点，尤其争论人应当充当 AI 行动的<em>审批者</em>还是<em>观察者</em>。有些 AI 事件响应方案更倾向观察者模式，认为随着系统日益复杂，逐项人工批准日常任务会成为响应瓶颈。另一些方案则要求人类批准智能体的每一步行动，却忽略了审批流程，尤其是后置审批，可能变成一种“安全杂务”；由于真正理解待批内容需要大量认知投入，人们最终还可能形成“默认批准”的习惯。</p>
+
+<p>组织不应固守任何一个极端，而应采取平衡、渐进的方式。最初可只允许智能体以生产安全的只读方式访问系统，之后再授权它执行安全、常规的变更。更复杂的变更起初应接受人工审查，直至智能体表现出足够高的成功率。这种人在闭环中的“审查并批准”模式不是无谓劳动，而是帮助模型安全提升自主程度的反馈，最终使它能够完全自主地端到端完成某些生产任务。这与 SRE 的生产安全和自动化原则高度一致。</p>
+
+<p>AI 辅助工具让开发者能够以更快速度交付多得多的代码，传统的生产自动化将不足以支撑这些系统可靠扩展。SRE 必然也会采用同样强大的工具，而事件管理和值班正是适合率先应用的领域。机会无比广阔！如今是<a data-primary="incident response" data-secondary="AI" data-startref="incres_ai_humovrcons" data-tertiary="human oversight considerations" data-type="indexterm" id="id1863"/><a data-primary="AI (artificial intelligence)" data-secondary="incident response" data-startref="ai_incdresp_humnovrsht" data-tertiary="human oversight considerations" data-type="indexterm" id="id1864"/>成为 SRE 的激动人心的时代。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Incident Response and Management at Etsy" data-type="sect1"><div class="sect1" id="ch10_case_study_incident_response_and_management_at_etsy">
+<h1>案例研究:Etsy事件应对和管理</h1>
+
+<p class="byline">作者：Nick Bitzer</p>
+
+<p>Etsy 是<a data-primary="incident response" data-secondary="Etsy case study" data-type="indexterm" id="incresetsy"/><a data-primary="Etsy case study, incident response" data-type="indexterm" id="etsycs"/>原创与创意商品的全球市场，将创作者、手工艺人和创意企业家组成的社区，与数百万寻找独特商品的买家连接起来。平台背后是一套复杂的工程组织，每天处理数十亿次事件——从点击、收藏到加入购物车和购买——同时满足现代电子商务业务对可靠性的要求。Etsy 的独特之处不仅在于技术运营规模，更在于一套文化基础，使工程团队能够高效协作地响应事件。</p>
+
+<p>本案例研究审视了我们如何从以低能见度的小组特定渠道悄悄处理事件发展到在整个组织中(尽可能)接受彻底的透明度。 这种转变表明,有效的事件反应主要建立在文化投资——即心理安全和无责的做法——的基础上,然后才能使技术工具或程序改进得以确立。</p>
+
+<p>我们的做法为任何规模的组织提供了宝贵的经验教训,显示了这样一种信念的力量:人人都在工作时尽了最大努力,事件提供了改进而不是惩罚的机会,高压时刻的透明度产生了更好的结果。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Cultural Foundation" data-type="sect2"><div class="sect2" id="ch10_the_cultural_foundation">
+<h2>文化基础</h2>
+
+<p>在Etsy,我们的事件反应程序依赖于贯穿整个工程组织的精神安全原则. 这不仅是一项政策声明;而且是一种活生生的做法(在所有贡献者级别上都是显而易见的),它决定了我们的工程师和领导人在他们工作最紧张的时刻的行为方式。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Blameless culture as bedrock" data-type="sect3"><div class="sect3" id="ch10_blameless_culture_as_bedrock">
+<h3>以无责文化为基石</h3>
+
+<p>我们对<a href="https://oreil.ly/gYC7Y">无责文化</a>的坚持，使透明的事件流程成为工程组织的基石。其理念很简单：即使每个人都已尽最大努力，事件仍会发生，这是可以接受的。这与强调追责的组织截然不同；在后者中，领导层要求团队迅速解决问题，往往以牺牲专家不受报复威胁、从容查明事件成因的时间为代价。</p>
+
+<p>担心对某一事件承担罪责的工程师自然会失去公开透明地解构失败机制的积极性. 但对于一个其行为促成了一起事件的工程师来说,无责文化没有留下羞辱的余地. 相反,鼓励他们详细说明他们采取的行动、观察到的影响、他们在改变时所持的期望和假设,以及他们对时间表的理解,而不必担心受到惩罚。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Etsy’s trust culture and psychological safety" data-type="sect3"><div class="sect3" id="ch10_etsy_s_trust_culture_and_psychological_safety">
+<h3>Etsy的信任文化和心理安全</h3>
+
+<p>我们的工程文化建立在极高的信任之上。我们不奉行“先获得批准”，而是鼓励各级工程师自主构思并推动他们认为有价值的解决方案。这种信任直接延伸到事件响应：无论事件严重程度如何、个人经验多少，我们都希望没有人害怕创建事件。从初级工程师到副总裁，只要出了问题，Etsy 的每个人都受到鼓励去创建事件。</p>
+
+<p>通过明显的行政支持加强心理安全。 在Etsy,常见的情况是,各级工程领导都参与事故渠道,树立正确的行为模型,并展示事件反应为何是每个人的责任,而不是下放给某些团队或级别的专门职能。 当领导人在事件期间出现时,不是指责而是帮助或提供支持和指导,它向整个组织表明透明度是事件解决进程的核心价值。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Our Incident Response Evolution" data-type="sect2"><div class="sect2" id="ch10_our_incident_response_evolution">
+<h2>我们的事件应对演变</h2>
+
+<p>多年前，我们的事件流程与今天大不相同。事件，尤其是优先级较低的事件，通常只在团队自己的频道里低调处理；除非确实十分严重（例如全站中断），否则很少在更广泛的频道中讨论。当时我们使用自研工具管理事件流程，而这些工具存在局限（毕竟我们的核心能力是建设市场平台，而不是事件管理软件）。非关键问题缺乏可见性，事件信息难以获取，相关指标也没有在整个工程组织内广泛报告。</p>
+
+<p>然而,尽管大多数组织对事件衡量标准仍然不透明,但我们始终保持了强有力的事后复盘程序。 各小组对事件断裂和客户影响有共同的理解,但尚未查明更广泛的模式。</p>
+
+<p>在过去几年里,我们加快了我们有目的地尽可能在事件管理过程中实现彻底透明。 目前每月向高级领导报告重大事件衡量标准(例如,事件总数、事件后续行动总数、事后复盘次数等),除任何敏感性外,通过全公司的滑板供Etsy的所有人观看。 所有非敏感事件,无论严重程度如何,均在中央Slack频道(#事件通知)公布,约有1,000名成员,包括几乎整个工程组织和高级领导。 高发事件(SEV1和SEV2)被宣布给拥有1200多名成员的更广大的论坛.</p>
+
+<p>我们的文化信息随着这些进程的变化而演变。 我们现在促进这些关键原则:</p>
+
+<ul>
+<li>
+<p>每个人都看到事件;这是正常的,也是人们所期望的。</p>
+</li>
+<li>
+<p>人人都有权发动事件。</p>
+</li>
+<li>
+<p>如果你注意到哪怕是轻微的事故, 只要打开一个,包括任何你怀疑的人,也许可以帮助。</p>
+</li>
+<li>
+<p>没人会因为开案而惹上麻烦</p>
+</li>
+<li>
+<p>不要让一个事件浪费。 学道从之.</p>
+</li>
+</ul>
+
+<p>这一转变需要高级领导层在初步发布期间提供专门的时间和带宽。 随着时间的推移,文化投资得到了回报:我们无责和有支持的文化基础使技术演变成为可能,而不是相反。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident Response in Action" data-type="sect2"><div class="sect2" id="ch10_incident_response_in_action">
+<h2>事件响应实践</h2>
+
+<p>建立起支持性的文化基础后，事件管理的基本原则就能转化为真实服务中断中的具体步骤。以下各节将从问题首次被发现的时刻讲起，说明这种有组织的响应在实践中如何运作。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Detection and declaration" data-type="sect3"><div class="sect3" id="ch10_detection_and_declaration">
+<h3>检测与宣告</h3>
+
+<p>我们把创建事件的门槛降得非常低。简单的工具集成在所有人日常沟通所用的 Slack 中，使工程师能够迅速声明事件，并自动创建共享协调空间。我们还发布了严重程度指南，为创建事件的工程师提供明确标准，但文化规范始终是：<em>拿不准时，就创建事件</em>。工具采用安全默认值，允许工程师先创建事件，稍后再调整严重程度和受影响服务等信息。每起事件一经声明都会获得专用 Slack 频道，明确告诉大家应到哪里支持解决、了解背景和跟进进展。这样，事件上下文就集中在一处，沟通和后续工作也更高效。</p>
+
+<p>我们的工具既支持人工创建事件，也支持自动检测。自动系统可以根据监控告警创建事件；而在“感觉有问题，但没有任何告警”的时刻，则由人来创建。这种双轨做法承认：复杂系统会以复杂的方式失效，监控不可能总是提前预见。</p>
+
+<p>随着智能体工具近期的发展，我们开始探索 AI 如何帮助理解事件期间积累的大量上下文和数据。这些早期尝试把 AI 定位为事件处理过程中的另一种工具。虽然我们仍在评估这些方法的价值，但我们认为，当工程团队努力查明事件原因并解决问题时，AI 有潜力提供额外一层支持。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The LSE coordinator role" data-type="sect3"><div class="sect3" id="ch10_the_lse_coordinator_role">
+<h3>LSE协调员的作用</h3>
+
+<p>我们设立了大规模事件（LSE）协调员岗位，由一小批同时掌握业务和技术背景的高级工程领导担任，以便在事件中作出艰难决策。该角色有意将业务决策与技术排障分开：处理事件的工程师专注于恢复服务，协调员则负责利益相关者沟通和业务影响评估。</p>
+
+<p>LSE 协调员由成员自愿担任，并通过值班轮换确保始终有人可用。成员分布在全球团队中，每周由一名协调员提供 24×7 覆盖。我们发布了清晰说明该角色及其联系方式的文档，以便需要帮助时能够顺畅介入。对于高严重程度事件，工具会自动通知 LSE 值班人员并将其加入响应，从而免去正在处理事件的工程师决定是否升级的负担。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Cross-organizational collaboration" data-type="sect3"><div class="sect3" id="ch10_cross_organizational_collaboration">
+<h3>跨组织协作</h3>
+
+<p>我们倡导在事件期间主动“搭把手”的文化。只要认为自己能带来价值，就应通过既定事件响应流程参与。多个团队的工程师和领导经常协作支持事件解决。响应过程中，每个人都有强烈的共同责任感，会在力所能及之处提供支持，把问题视为整个 Etsy 的共同责任。</p>
+
+<p>为了在不牺牲清晰度的前提下鼓励大家主动参与，我们会指定一名事件负责人。这个角色对于避免过多相互冲突的意见搅乱局面至关重要。事件负责人负责在事件频道定期更新状态、按需分派任务，并让工程师始终聚焦当前的核心问题。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Our Postmortem Process" data-type="sect2"><div class="sect2" id="ch10_our_postmortem_process">
+<h2>我们的事后复盘流程</h2>
+
+<p>每次事件解决后，我们的工具都会询问是否需要开展事后复盘。按照经验规则，由于影响较大，所有 SEV1 和 SEV2 事件都必须复盘；SEV3 和 SEV4 则可选，由事件参与者决定。这个小小的提醒强化了从事件中学习的重要性，也省去了人们记着主动发起复盘的麻烦。</p>
+
+<p>每次事后复盘都以一段强化无责文化的标准声明开始，重点是学习，而不是惩罚。我们避免使用“根本原因”等术语，也不会点名可能促成事件的具体人员。会议聚焦于不带指责地重现事件经过，问的是“我们怎样才能做得更好？”，而不是“谁把事情搞砸了？”</p>
+
+<p>我们设有事后复盘主持人培训计划，所有复盘都由组织内的工程个人贡献者主持。这有助于确保讨论关注系统与流程，而非职级；关注问题，而非个人。</p>
+
+<p class="fix_tracking">我们定期培养新的主持人，并在全年持续肯定事后复盘主持人的贡献。参与完全出于自愿，不要求任何工程师必须担任主持人。工程师负责整个流程，从排期和组织会议，到主持、收尾以及面向组织的
+
+<span class="keep-together">沟通。</span></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Lessons for Other Organizations" data-type="sect2"><div class="sect2" id="ch10_lessons_for_other_organizations">
+<h2>其他组织的经验教训</h2>
+
+<p>我们认为我们的经验提供了一些可转移的见解:</p>
+<dl>
+<dt>文化至关重要。</dt>
+<dd>
+<p>我们的支持性,开放性的文化是我们成功事件计划的基础,没有它,任何数量的工具化都不会产生同样的结果.</p>
+</dd>
+<dt>透明度需要心理安全。</dt>
+<dd>
+<p>你不能要求人们对自己的错误保持透明 如果能见度会导致惩罚。</p>
+</dd>
+<dt>领导才能的存在和建模极为重要。</dt>
+<dd>
+<p>当高级领导成员参与事件渠道和事后复盘时,他们表示这些活动受到重视,而不仅仅是允许的。</p>
+</dd>
+<dt>工具和流程必须低摩擦。</dt>
+<dd>
+<p>如果创建和管理事件的门槛很高，人们就不太可能使用这套系统。门槛应该低到轻轻一碰就能跨过去。</p>
+</dd>
+</dl>
+
+<p>也许最重要的是:小型组织可以从这里开始,大型组织可以到达这里. 文化变革是可能的,无论规模大小,尽管它需要耐心、一致性和所有参与者的真正承诺。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Takeaways" data-type="sect2"><div class="sect2" id="ch10_takeaways">
+<h2>要点总结</h2>
+
+<p>我们的事件响应历程表明，只要有正确的文化支持，就能建立卓越的事件流程。我们仍在不断改进，因为事件管理是一段持续的旅程，而不是一个终点。对于希望提升自身事件响应能力的组织，我们的经历传达了一个明确的信息：不仅要投资流程，更要投资文化。先建立心理安全，再建设仪表板；创造一个让人们能够放心、坦诚讨论<a data-primary="Etsy case study, incident response" data-startref="etsycs" data-type="indexterm" id="id1865"/><a data-primary="incident response" data-secondary="Etsy case study" data-startref="incresetsy" data-type="indexterm" id="id1866"/>失败的环境，工具和流程自然会随之成熟。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch10_conclusion">
+<h1>结论</h1>
+
+<p>事件管理是一门社会技术学科，它把有组织的准备工作、不断丰富的工具，与人的理解和适应能力结合起来。本章探讨了事件管理和值班的基本实践，两者对维持产品可靠性都至关重要。在自己的组织中设计值班与事件响应时，请牢记以下要点：</p>
+
+<ul>
+<li>
+<p>采用或界定一个定期在现场事件压力环境外进行的结构化事件应对模式,有助于更有效的应对。</p>
+</li>
+<li>
+<p>事件应对需要发展超越技术专长的技能,包括有能力作出快速决定,保持冷静,在高度紧张、快速移动的情况下在不损害心理安全的情况下领导他人。</p>
+</li>
+<li>
+<p>AI 是响应人员的有用工具，应当有策略地融入整个响应生命周期，同时也要识别哪些情况更适合由人类领导响应。</p>
+</li>
+</ul>
+
+<p>事件响应期间，人们承受着迅速行动、尽快修复的巨大压力；但如果没有建立合适的结构，响应反而可能既混乱又缓慢。归根结底，可靠的事件管理不只关乎技术，还要培养一支有能力、沉着且获得充分授权的响应队伍。“慢则稳，稳则快”这句老话在这里十分适用。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1802"><sup><a href="ch10-zh.html#id1802-marker">1 </a></sup> Paul Cichonski等,"计算机安全事故处理指南",NIST特别出版物800-61 第2版,2012.</p></div></div></section></body></html>
