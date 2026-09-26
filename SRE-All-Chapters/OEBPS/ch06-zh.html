@@ -1,0 +1,1023 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 的组织结构</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 6. Organizational Structures for SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch06">
+<h1><span class="label">第 6 章　</span>SRE 的组织结构</h1>
+
+
+<p class="byline">作者：Brian Kudzia、Christof Leng、Derek Remund、<span class="keep-together">Mahesh Chellappa、Roman Seibel</span> 和 Vartika Agarwal<br/>
+
+<span class="keep-together">Carmela Quinito 参与撰写</span></p>
+
+<p>站点可靠性工程（SRE）不仅是一套方法、理念或岗位；从根本上说，它还是一种组织构造。支持这种构造的组织结构十分重要，原因如下：</p>
+
+<ul>
+<li>
+<p>SRE 并非孤立存在。要让他们充分发挥作用，需要有团队作为支撑；而这些团队又必须融入更广泛的组织环境，才能持续发展并走向成熟。</p>
+</li>
+<li>
+<p>SRE 是一个专业化岗位，专门积累构建可靠系统所需的独特能力。不能要求每位软件工程师都像全职 SRE 一样深入掌握这些技能。不过，让每位软件工程师都具备基本的运维知识是合理的；在这一点上，DevOps 理念与 SRE 相辅相成。<sup><a data-type="noteref" href="ch06-zh.html#id1386" id="id1386-marker">1</a></sup></p>
+</li>
+</ul>
+
+<p>SRE 组织的设计必须适应更广泛的组织环境。不过，各组织可以选取一系列组织构件，并结合衡量成熟度与绩效的最佳实践，在此基础上建立适合自己的成功 SRE 职能。</p>
+
+<p>本章将探讨集中式与分散式 SRE 职能各自的取舍、SRE 团队的设计与运作方式，以及如何跟踪 SRE 实践的成熟度。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizational Structures That Support SRE" data-type="sect1"><div class="sect1" id="ch06_organizational_structures_that_support_sre">
+<h1>支持 SRE 的组织结构</h1>
+
+<p>SRE 团队能否在实践中取得成功，很大程度上取决于控制关系与沟通渠道的设置方式。与大多数关于组织结构的讨论一样，我们先从康威定律说起：<sup><a data-type="noteref" href="ch06-zh.html#id1387" id="id1387-marker">2</a></sup></p>
+<blockquote>设计系统的组织，其产出的设计必然是这些组织沟通结构的映射。<span class="keep-together"/></blockquote>
+
+<p>康威定律指出，角色和团队之间的社会协作路径，会反映在他们构建并支持的产品中。这一点在产品最初的设计与实现阶段固然值得关注，但其影响还会贯穿产品的整个生命周期。建立 SRE 实践是一项持续多年的工作，因此组织结构决策至关重要：一种模式一旦确立，就很难转向，也不能指望现实环境迅速重新适配。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Centralization Versus Decentralization" data-type="sect2"><div class="sect2" id="ch06_centralization_versus_decentralization">
+<h2>集中式与分散式</h2>
+
+<p>与几乎所有职能一样，SRE 可以采用集中式或分散式组织方式。<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-type="indexterm" id="orgs_cendecen"/><a data-primary="centralized organization" data-type="indexterm" id="cenorg"/><a data-primary="decentralized organization" data-type="indexterm" id="decenorg"/>很多组织决策都会影响 SRE 提供服务的方式，但集中还是分散，往往是最早作出且影响最大的决定之一。两种方式各有利弊，因此大多数组织的 SRE 实践最终都会落在集中与分散之间的某个位置，以谨慎平衡这些因素。例如，Google SRE 是集中式组织，但也借助多种机制获得类似分散式模式的优势（参见 <a data-type="xref" href="#ch06_hybrid_approaches">“混合模式”</a>）。</p>
+
+<p>在集中式模式下，所有 SRE 都隶属于同一套团队层级，负责整个企业（或企业中正在推行 SRE 的部分）众多服务与系统的可靠性和运行健康状况，并向同一组领导者汇报，例如 SRE 副总裁。在低信任或高控制型组织中——这类组织要求严格遵守既定标准与流程，几乎不给不受控的创新留下空间——集中式模式往往是自然的起点，因为高层可能并不相信各下属组织能够自行对齐并最终交付成果。如果推动和建立 SRE 职能的意愿尚未在组织内广泛形成，最初可能只有集中设立这一职能才切实可行。在这一早期阶段，SRE 通常只覆盖有限的一组服务，作为试点或概念验证。</p>
+
+<p>在分散式模式下，SRE 团队围绕所支持的应用，以高度独立的方式运作。每个团队都归属特定的产品组织，人员和经费也可能完全由该组织提供。这种安排使 SRE 自然地与产品开发伙伴保持一致，并能提升各团队所负责产品的可靠性。不过，低信任或尚处早期阶段的组织往往很难接受这种模式，甚至会对此心存畏惧。在这类环境中，肩负可靠性改进任务的领导者可能不愿授权独立的 SRE 团队制定标准、建设工具；沟通渠道和组织结构也常常偏向严格的集中控制，从而抑制创新。在分散式模式下，负责招聘和培养 SRE 的团队拥有很大的自主权，甚至可以改变或取消这一角色；而在集中式模式下，产品团队又可能始终把 SRE 视为外来者。更重要的是，信任是双向的：低信任组织既缺少让分散团队取得成功所需的自上而下的信任，这些团队也缺少对整个组织的自下而上的信任，因而倾向于独立行事，并尽可能保留本地控制权。</p>
+
+<p>集中式模式最突出的优势，或许是能够汇聚专业能力并保持一致性。不同 SRE 的具体技术技能可以有所不同——而且这种差异往往是好事——但每个人都必须掌握风险分析、设计思维、可靠性度量和无责文化等 SRE 原则（参见 <a data-type="xref" href="ch04-zh.html#ch04_blamelessness_and_blame_awareness">“无责与责备意识”</a>）。这是建立运行良好、可持续发展的 SRE 实践的关键。集中式团队更容易确保所有 SRE 都以此为共同基线；随着行业实践演进，也更便于在整个团队中推广一致的方法。集中式模式还能避免观点割裂：不会让多个团队各自形成一套构建和运行可靠系统的主张，而是可以从（理论上）不偏向任何产品的角度审视所有产品团队的可靠性问题。这种统一视角也便于组织统一的 SRE 接入与赋能、生产健康检查和通用工具建设。</p>
+
+<p>分散式模式追求相同的目标，但能让 SRE 更深入地融入业务背景，并形成更快的反馈循环。在组织上让 SRE 与其支持的开发人员和产品人员共处一个团队，有助于各方形成对服务的共同认识；这种共同认识通常会体现在统一的项目待办事项和更强的主人翁意识上。减少瓶颈可以缩短迭代周期，而 SRE 与应用团队紧密协作，也使他们更有能力为所辖服务的技术和运维需求发声。相比之下，集中式模式的迭代可能存在延迟：SRE 接手服务需要时间，服务的特殊要求也可能需要额外协调和专门处理。<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen" data-type="indexterm" id="id1388"/><a data-primary="centralized organization" data-startref="cenorg" data-type="indexterm" id="id1389"/><a data-primary="decentralized organization" data-startref="decenorg" data-type="indexterm" id="id1390"/></p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Context and expertise" data-type="sect3"><div class="sect3" id="ch06_context_and_expertise">
+<h3>上下文与专业能力</h3>
+
+<p>大规模系统的构建与运行既复杂，又高度依赖具体情境。<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="colocation with supported services" data-type="indexterm" id="id1391"/>随着生产环境日益平台化，SRE 可能会越来越专注于各项服务的独特之处。让 SRE 在组织上更贴近所支持的服务，能够更容易地获得并保持这些背景知识，因为他们每天都置身于系统生命周期的实际运作之中。</p>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>高度集中的SRE应注意避免传统的“IT服务”思维方式，即互动是交易性的，重点只是保持稳定状态，而不是提高产品的质量。</p>
+</div>
+
+<p>与此同时，SRE 还必须把为单项服务创建的解决方案加以通用化，从而扩大影响力；他们应在整个实践社区中协作，让可观测性、生产就绪度和琐事管理等方面的改进惠及所有产品。最终，这些解决方案还可能成为标准生产平台的一部分。</p>
+
+<p>在刚起步的 SRE 组织中，专业能力在人员之间的分布往往会强烈影响是否需要集中化。仅从人数和技能储备来看，组织就可能不得不集中设置部分可靠性职能，而这也会带来收益。SRE 彼此需要；他们在组织上的距离越近，知识传递、个人能力提升，以及解决问题、降低风险和响应事件的方法交流就越顺畅。随着组织扩大，集中式职能还可以按需调整团队配置，并派遣资深 SRE 帮助新团队起步，从而持续优化整体能力。</p>
+
+<p>重视心理安全与无责文化的社会氛围（参见 <a data-type="xref" href="ch04-zh.html#ch04_psychological_safety">“心理安全”</a>），再加上致力于改进系统、提升交付速度的工程文化，可以抵消集中式模式的一些负面压力，例如失去局部控制权所带来的不安，以及对外部指令的抵触。这样的文化也可能更容易在较为集中的组织中建立和维持。文化（参见 <a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）是团队在困难时刻最终依靠的基础；集中式 SRE 团队通常拥有更深厚的支持，因此更不容易偏离这些原则，即使偏离也能更快纠正。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Ownership" data-type="sect3"><div class="sect3" id="ch06_ownership">
+<h3>责任归属</h3>
+
+<p>在理想情况下，<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="sense of ownership" data-type="indexterm" id="orgs_cendecen_ownrshp"/>分散式模式对具体业务背景的高度聚焦，会让 SRE 形成强烈的主人翁意识。SRE 会捍卫产品的可靠性目标，并由此与产品开发团队建立同舟共济的关系。这并不是说集中式团队中的 SRE 不关心所支持的服务，而是当职责范围更窄、与开发人员的合作更紧密时，主人翁意识会更自然地形成。</p>
+
+<p>在获得分散式模式所带来的责任感时，要谨防退回到陈旧的“我们与他们”思维。SRE 虽然专注于各自负责的服务，但这些服务很可能彼此交织，整条服务链和产品组合对企业都很重要。跨团队活动与演练、统一的入职和培训，以及定义清晰的 SRE 角色，都有助于保持团队健康（<a data-type="xref" href="ch05-zh.html#ch05">第 5 章</a> <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen_ownrshp" data-tertiary="sense of ownership" data-type="indexterm" id="id1392"/>对此有更详细的讨论）。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Career path" data-type="sect3"><div class="sect3" id="ch06_career_path">
+<h3>职业发展路径</h3>
+
+<p>作为技术 <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="career path considerations" data-type="indexterm" id="id1393"/><a data-primary="career management" data-secondary="centralized SRE teams" data-type="indexterm" id="id1394"/>专业人员作为个人贡献者在职业生涯中不断上升，往往更加专业化。这一趋势最初可能导致奖励，但最终可能导致发展停滞。SRE和任何其他角色一样容易陷入这种停滞状态，清晰的职业道路可以鼓励他们更专注于做伟大的工程而不是管理自己的成长。集中的团队使建立一致的增长途径更加容易，虽然如果个人确实停滞不前，那么没有离开公司的替代办法就更少了(见关于内部流动性的讨论)。<a data-type="xref" href="#ch06_collaboration">“协作”</a>) . 这两种方法都没有明确的优势，但注意日常工作与工程师发现的满意和促进增长的东西相协调。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Economies of scale" data-type="sect3"><div class="sect3" id="ch06_economies_of_scale">
+<h3>规模经济</h3>
+
+<p>任何转型工作都不可避免地要回答成本问题；事实上，许多转型正是为了控制服务成本而启动的。<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="cost-effectiveness" data-type="indexterm" id="id1395"/>如果只作表面判断，SRE 使用的是高技能人才，似乎是一种成本高昂的服务保障方式。但把规模经济和可靠性提升带来的收益计算在内后，它可能非常划算。在确定采用 SRE 模式之后，具体的实施方式还会进一步影响可靠性的经济成本。</p>
+
+<p>当然，工程工作是提供可靠性的主要成本之一。集中的团队可以更直接地控制工具扩散和流程一致性，从而更方便地避免工作重复，但它们必须注意不扼杀创新或创造组织管理开销。采用新办法的最佳想法往往来自满足自身需要的个别服务机构，其结果可推广到其他团队和服务机构。</p>
+
+<p>集中式团队还可能提高人员使用效率：项目管理等角色可以共享，而 SRE 之间较强的可替代性，也便于随着服务需求变化在服务之间调配力量。不过，纸面上最高效的模式在实践中未必最高效；过度追求效率可能导致运维负担过重（参见 <a data-type="xref" href="ch01-zh.html#ch01_situational_awareness">“态势感知”</a>），并降低各产品的可靠性。琐事<a data-primary="centralized organization" data-startref="cenorg" data-type="indexterm" id="id1396"/><a data-primary="decentralized organization" data-startref="decenorg" data-type="indexterm" id="id1397"/>管理（参见 <a data-type="xref" href="ch13-zh.html#ch13_effective_strategies_for_addressing_toil">“应对琐事的有效策略”</a>）在这种情况下会变得愈发重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Hybrid Approaches" data-type="sect2"><div class="sect2" id="ch06_hybrid_approaches">
+<h2>混合模式</h2>
+
+<p class="fix_tracking">即使组织谨慎地在集中式与分散式之间选定了起点，<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="hybrid approach" data-type="indexterm" id="orgs_cendecen_hybrid"/>实际做法也难免逐渐偏移。一定程度的偏移是有益的，因为优秀的团队会主动调整工作方式，以提高效率和产出。但应避免走向极端，否则可能形成“影子 SRE”：类似于失灵组织中经常自行冒出的临时 IT 职能。<sup><a data-type="noteref" href="ch06-zh.html#id1398" id="id1398-marker">3</a></sup></p>
+
+<p>有若干战略将起点确定为一个恰当的中间位置，以尽量减少漂移。一些例子包括:</p>
+<dl>
+<dt>维持有目的的实践社区</dt>
+<dd>
+<p>执业者中强有力的实践社区（CoP）能够提供强有力的集中化的许多好处，但确实需要宣传和资源来维持。CoP可以提供继续教育、内部活动、最低限度的实践标准以及类似的协调努力，甚至在更分散的环境中也是如此。它通常由一些从业者和领导者领导，其任务是在各级吸收SRE和相关角色参与。应鼓励对CoP作出贡献，将其作为有影响的工作。</p>
+</dd>
+<dt>建立明确的协作模式</dt>
+<dd>
+<p>集中的SRE 团队可以通过确定明确投入、产出、时限和其他期望的协作模式，为其相关产品提供更有效和更高的文本支持(见 <a data-type="xref" href="ch07-zh.html#ch07">第七章</a>) . 这些模型的标准化缩短了采用周期并导致质量更高的交付，因为SRE和产品团队进行的谈判较少，可以更注重上下文和质量。</p>
+</dd>
+<dt>建立强大的 SRE 项目群管理功能</dt>
+<dd>
+<p>技术项目经理（TPM）的重要性足以使谷歌具有SRE特有的TPM角色。SRE的有效性主要取决于SRE、产品工程师、产品和商业利益相关者之间的反馈循环，保持这些互动的背景和一致性是SRE TPM的核心工作。TPM使机器不断转动，并且能够消除你选择的(去)集中程度所产生的效率低下。</p>
+</dd>
+</dl>
+
+<p class="less_space pagebreak-before">混合模式的例子如下:</p>
+
+<ul>
+<li>
+<p>一个强大的高级领导领导了一个集中的SRE集团。</p>
+</li>
+<li>
+<p>集中小组提供各种职能，包括:</p>
+
+<ul>
+<li>
+<p>具有不同深度的有时间限制的可靠性合作 <span class="keep-together">产品</span> 可靠性审查、SLO 制定或事后复盘 <span class="keep-together">便利</span> 跟进</p>
+</li>
+<li>
+<p>生产就绪标准标准化</p>
+</li>
+<li>
+<p>由应用团队创新的建造工具和通用解决方案的工程能力</p>
+</li>
+<li>
+<p>如前所述，领导SRE同业交流圈，包括持续赋能</p>
+</li>
+</ul>
+</li>
+<li>
+<p>具有足够规模、复杂性、独特性和/或重要性的产品，都有与其结构相适应的专有、永久性的SRE 团队。</p>
+</li>
+<li>
+<p>专门小组的SRE通过集中式团队入职，而SRE 文化通过CoP、标准化做法和作用业绩准则以及持续增强能力得到维护 <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen_hybrid" data-tertiary="hybrid approach" data-type="indexterm" id="id1399"/>和工程演习。</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Making SRE Transformation Work" data-type="sect2"><div class="sect2" id="ch06_making_sre_transformation_work">
+<h2>推动 SRE 转型成功</h2>
+
+<p>喜欢 <a data-primary="teams" data-secondary="reorganization risks" data-type="indexterm" id="id1400"/>许多城市的居民似乎认为他们拥有最变幻莫测的天气，或者说最糟糕的司机，不少工程师会抱怨他们的团队经历重组得比任何其他人都要多。由SRE驱动的公司也无法幸免这一趋势。组织重组 与其目标截然相反的结果相反，</p>
+
+<ul>
+<li>
+<p>信任和士气不足，甚至文化损害</p>
+</li>
+<li>
+<p>所支持产品团队的背景损失</p>
+</li>
+<li>
+<p>破坏各小组之间共同做法的网络，特别是在不太正规的情况下</p>
+</li>
+<li>
+<p>抵制变革或设法规避变革的组织记忆</p>
+</li>
+<li>
+<p>额外落入低谷的负担 <a href="https://oreil.ly/ieRlt">J曲线</a></p>
+</li>
+</ul>
+
+<p>鉴于与变革有关的风险，诸如逐步推出(在此情况下是组织变革)等核心SRE战略至关重要。无论你沿着集中式与分散式连续体的方向前进，考虑确定最关键的先行服务或产品，这些服务或产品需要SRE的支持并代表典型的战略和架构。由于这些小组采用新的办法，侧重于紧凑的迭代和频繁的反馈。指标的使用，不论与事件有关，都侧重于软件的交付(例如: <a href="https://dora.dev">DORA</a>)或基于情感分析，可以支持继续推出您的变化。</p>
+
+<p>为了显示Google以外的其他组织如何为其SRE 团队实施成功的组织结构，以下案例研究提供了对Spotify方法SRE的考察。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Spotify’s Distributed Reliability Engagement Model" data-type="sect1"><div class="sect1" id="ch06_spotify_s_distributed_reliability_engagement_model">
+<h1>Spotify 的分布式可靠性协作模式</h1>
+
+<p class="byline">作者：Laura “Morgy” Morgan、Oskar Arvidsson，<span class="keep-together">John Stäck 和 Niklas Gustavsson 参与撰写</span></p>
+
+<p>Spotify <a data-primary="Spotify, distributed reliability engagement model" data-type="indexterm" id="spot_drem"/>面向全球提供对延迟敏感的消费级平台，其服务生态复杂，客户端形态也在持续演进。在这种环境中，可靠性与开发速度、成本效率一样，都是首要的产品问题。Spotify 的协作模式展示了集中式 SRE 组织之外一种稳定的选择：<em>系统的运维责任主要由构建和维护它的产品及基础设施团队承担</em>，同时由组织投资共享能力，使这种责任模式能够规模化地持续运作。</p>
+
+<p>本案例研究的重点是Spotify的可靠性协作模式。报告说明了在责任分散在各小组之间时如何启动、支持和扩展可靠性工作，以及为使这种做法持久需要何种扶持机制。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reliability Ownership Without a Centralized SRE Organization" data-type="sect2"><div class="sect2" id="ch06_reliability_ownership_without_a_centralized_sre_organization">
+<h2>没有集中式 SRE 组织时的可靠性责任</h2>
+
+<p>在许多组织中，“SRE 参与”与中央SRE 团队承担一套确定的服务(通常包括初级待命服务)是同义词。Spotify的模型有意不同，并植根于简单的操作原则: <em>拥有服务的团队也运营它们；</em>.</p>
+
+<p>在实践中，这通常意味着他们管理自己的值班轮值、手册、警报和监测。预期它们会在发生事件时适当减轻事件，并在事件发生后采取跟进。从历史上看，这是 <em>小队运维</em>,<sup><a data-type="noteref" href="ch06-zh.html#id1401" id="id1401-marker">4</a></sup> 在那里，一个小队(一个小型的，跨功能的开发队)经营它所运送的服务。</p>
+
+<p>将问责制集中到建立系统的地方:</p>
+
+<ul>
+<li>
+<p>产品和基础设施小组拥有它们所建立和经营的服务的可靠性。</p>
+</li>
+<li>
+<p>可靠性工作不会自动被“推入”一个中心组；相反，平台工程组通过共享标准和工具向团队提供能力，从而使可靠性成为开发周期内在的一部分。</p>
+</li>
+<li>
+<p>在协调而不是实际解决问题或缓解问题成为限制因素的情况下，一个小型的集中式职能支持跨小组事件。在Spotify中，这一功能称为IMOC；我们将在下一节更详细地阐述。</p>
+</li>
+</ul>
+
+<p>这一结构并不意味着每个工程师都是可靠性专家，也不意味着团队单独运作。相反，它假定可靠性做法成为正常工程工作的一部分，同时得到全组织机制的支持，减少差异，使“做正确的事情”成为默认。</p>
+
+<p>将发展和业务与所有权结合起来，会收紧工程选择与业务结果之间的反馈循环。当各小组正在待命时，其业务成本是直接和明显的:响亮的警报、缓慢的缓解或不明的故障模式直接转化为最接近代码的人花费的时间。这种反馈循环的形状既包括优先顺序，也包括设计。</p>
+
+<p>在实践中，这个模型强化了几种行为:</p>
+<dl>
+<dt>缩短反馈周期</dt>
+<dd>
+<p>可靠性问题迅速浮出水面，可以通过正常的发展工作加以解决，而不是冒被无限期推迟的风险。</p>
+</dd>
+<dt>对应奖励</dt>
+<dd>
+<p>各团队有奖励措施，可以及早地投资可观测性，安全部署机制，更明确的业务接口。</p>
+</dd>
+<dt>背景权衡</dt>
+<dd>
+<p>有关可用性、延迟、降级方式和成本的决策，会由掌握产品具体背景的团队直接作出，而不是交给领域知识较少的集中式 SRE 团队。<span class="keep-together"/></p>
+</dd>
+</dl>
+
+<p>这种办法对日常业务和单一拥有的小组(或一组小组)负有明确责任的事件都具有良好的规模。然而，在更大的规模上，分布式模型对于跨越边界或缺乏明显所有权的事件需要额外的结构。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident Management as a Shared Capability" data-type="sect2"><div class="sect2" id="ch06_incident_management_as_a_shared_capability">
+<h2>将事件管理建设为共享能力</h2>
+
+<p>Spotify 的事件响应模式高效地解决了大多数事件，因为拥有的团队通常具备诊断和缓解问题所需的背景、机会和奖励。通常情况下，增加一名协调员会拖慢响应，而不是提供帮助。</p>
+
+<p>然而，在Spotify的规模上，规模较小但极为重要的一类事件暴露出分配所有权的局限性:所有权不明确、多个小组必须在时间压力下进行协调或决定跨越组织界限的事件。在这种情况下，主要瓶颈往往是: <em>协调、明确和决策</em> 而不是技术执行。</p>
+
+<p>为了弥补这一差距，Spotify维持了 <em>值班事件经理</em> (IMOC)轮换。这是一个全公司值班轮值计划，以跟随太阳并配备具有强烈事件响应经验的高级工程师。IMOC的作用有意缩小范围:</p>
+
+<ul>
+<li>
+<p>IMOC <em>不</em>负责具体服务。</p>
+</li>
+<li>
+<p>IMOC <em>不</em>作为响应人员常规参与事件响应。</p>
+</li>
+<li>
+<p>IMOC 介入后<em>不会</em>接管诊断、缓解和修复工作。</p>
+</li>
+</ul>
+
+<p>当协调成为限制因素时，IMOC参与其中，而拥有小组的人则保留诊断、缓解和补救的责任。任何团队都可以将事件升级为IMOC,一般当适用下列一个或多个条件时: 1.</p>
+
+<ul>
+<li>
+<p>事件跨越多个团队，所有权不明，或者事件跨越国界演变。</p>
+</li>
+<li>
+<p>影响或持续时间要求持续下放权力、扩大可见性或超越直接响应人员而升级。</p>
+</li>
+<li>
+<p>需要交叉决定或升级(例如，风险取舍、改道交通或与外部当事方协作)。</p>
+</li>
+</ul>
+
+<p>从协作模式的角度来看，IMOC的职能是: <em>可扩展能力</em>:在没有深入的服务特定知识的情况下，它可以被广泛应用，而且它根据事件特征而不是固定的服务所有权而动态地参与。其目的是通过协调沟通、澄清所有权和及时作出决定来减少应对者的认知负担——这样具有领域专门知识的团队就可以继续专注于缓解。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling the Model" data-type="sect2"><div class="sect2" id="ch06_scaling_the_model">
+<h2>扩展这一模式</h2>
+
+<p>为了在快速增长中维持分散负责这一核心模式，Spotify 优先减少运维差异。生态系统越多样，分布式运维的扩展就越呈现非线性：协调开销和可靠性工作量的增长会快于工程师人数，尤其是在每个团队都维护独有技术栈和实践时。一个根本性的经验是：基础设施、服务设计模式（框架和库）以及工具实现标准化后，分布式运维就容易扩展得多。有了强有力的标准，运维要求和专业知识便能在整个服务群中顺畅传递。扩展能力不仅要增加人员，同样要减少差异。</p>
+
+<p>Spotify在共享平台和标准化方面做了大量投资，使可靠性的提高可以重复和系统化。它能够通过投资中心机构来做到这一点，这些中心机构推动围绕可靠性和运行做出具体的努力。</p>
+
+<p>例如，平台工程组织的重点是:</p>
+<dl>
+<dt>标准化堆栈</dt>
+<dd>
+<p>提供有明确约束的服务框架、系统设计和生产服务标准</p>
+</dd>
+<dt>中央化平台</dt>
+<dd>
+<p>实施全公司的部署、可观测性和事件响应平台和做法</p>
+</dd>
+<dt>自动化</dt>
+<dd>
+<p>利用平台小组实施基线做法并实现大规模自动化</p>
+</dd>
+</dl>
+
+<p>可观测性和指标是这种标准化的一部分。该平台提供了一个共同的可观测性工具链和度量衡基础，各团队在采用服务框架时默认获得:基线仪表板，标准告警，以及一致的服务级信号通过标准监测和告警配置来捆绑。团队可以将此与领域和功能特有的指标相扩展，而平台则提供从服务向团队的汇总视图，这样，故障、影响范围和实际影响在整个公司都能被一致地理解。</p>
+
+<p>这些举措减轻了单个团队的认知负荷，确保了默认的更统一可靠性水平。他们也培养 <a href="https://oreil.ly/aBg8R"><em>服务群优先</em></a>
+<em>运维思维</em>,将服务作为不断持续演进的服务群而不是分散的系统进行管理。这种办法支持频繁、自动化的改变，使系统更健康，并减少与较不频繁的重大迁移有关的风险。</p>
+
+<p>虽然标准化是一项持续的工作，但最近已加快。Spotify利用各种机制，确保生产软件遵循Spotify标准，并使客户机和后端机队都能够统一运维，为中央平台管理打开了重要机会。关键是，这让公司能够更好地利用自动化和AI卸除目前有损核心产品和平台开发的烦琐而费力的职责。</p>
+
+<p>为了长期维持这些倡议，Spotify提供了治理、指导和政策，围绕这些标准，使用一些机构和职能，虽然这些机构和职能是核心，但代表着更广泛的工程界。可靠性咨询委员会由来自Spotify的资深工程代表组成，与平台工程公司密切合作，以确保可靠性标准和期望得到良好支持并始终如一地得到实现。作为补充，后端咨询委员会在更早的生命周期中提供类似的指导，指导服务设计模式和后端标准，作为可靠规模运作的基础。</p>
+
+<p>与此同时，运维责任已转向 <em>区域运维</em>,一个区域通常是一组紧密相联的小队(在Spotify,我们称之为这些产品区)。一个地区将事件响应和协调结合起来，这更适合在可靠性问题涉及多种服务和依赖关系的大型系统。随着堆叠更加一致，运维工作更容易分享，这加强了各小组进一步就共同做法和平台达成共识的动力。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Trade-offs and Lessons" data-type="sect2"><div class="sect2" id="ch06_trade_offs_and_lessons">
+<h2>取舍与经验</h2>
+
+<p>集中式的SRE 组织是一个证明有效的协作模式。它们可以集中专门知识，推动深度的可靠性改进，并实行强有力的生产标准。许多组织受益于这种做法，特别是在严格控制和一致性至关重要的情况下。</p>
+
+<p>Spotify的模型代表了一种稍有不同的平衡:问责制和运维责任都依然存在。<em>在产品组内</em>,而本组织则通过标准化、共享平台和有针对性的事件协调，进行集中投资，以便实现规模问责。</p>
+
+<p>无论走哪条道路，总会有取舍，对我们来说，这些途径有时是非常真实的:</p>
+
+<ul>
+<li>
+<p>分散的可靠性所有权要求持续投资于生产标准、有明确约束的服务模式和服务群管理的升级。没有标准化，自主就可能演变为不一致和可运维的<span class="keep-together">超载。</span></p>
+</li>
+<li>
+<p>事件便利化必须保持谨慎的范围，以避免升级变成隐含的责任交接——例如，IMOC不应成为例行事故的默认升级路径。通过围绕事件保持健康、无责的文化，我们能够更好地参与这一范围界定。</p>
+</li>
+<li>
+<p>必须通过平台、做法和学习机制来培养和分享可靠性专门知识，而不是假定生活在一个单一的专门群体中。</p>
+</li>
+<li>
+<p>规模上的问责取决于平台提供的可观测性默认和更高层次的洞察力，因此团队可以快速将服务故障与用户影响联系起来，组织可以始终如一地跟踪可靠性结果并在整个公司推动清晰的跟踪。</p>
+</li>
+</ul>
+
+<p>专门的产品专门知识使我们能够解决复杂的挑战。为了填补在深度可靠性工程专业知识方面的空白，我们通过提供课程、详细文献和从第一天开始的结构化培训，培养一种持续的学习文化。这种对学习、技术和基础设施的投资，推动了我们业务的卓越发展。然后，我们利用可靠性咨询委员会，将全组织的最佳做法制度化并加以管理，制定标准并监测遵守情况。这保证了在所有业务中采用统一、高标准的可靠性方法。</p>
+
+<p>更广泛的结论并不是某一种协作模式普遍优于其他模式。更经得起时间考验的经验是：当<em>责任边界、协作接口和共享能力</em>与组织规模及产品需求相匹配时，协作模式才会成功。可靠性与其说来自组织结构图，不如说来自工作的发起方式、决策方式，以及系统是否在默认情况下就具备可运维性。<a data-primary="Spotify, distributed reliability engagement model" data-startref="spot_drem" data-type="indexterm" id="id1402"/></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Team Design" data-type="sect1"><div class="sect1" id="ch06_team_design">
+<h1>团队设计</h1>
+
+<p>SRE 团队是 <a data-primary="teams" data-secondary="charter documents" data-type="indexterm" id="id1403"/><a data-primary="charter documents" data-type="indexterm" id="id1404"/><a data-primary="documentation" data-secondary="team charters" data-type="indexterm" id="id1405"/>SRE 组织的核心。只配置一名 SRE 的做法不可持续：这个人本身就是单点故障，既没有同伴可以学习和交流，也无法承担多人项目或组建值班轮值等更大的责任。如果人员不足以组建一个小团队，通常更好的选择是在产品开发团队中建立 DevOps 理念，让生产环境相关的专业能力成为共同责任。</p>
+
+<p>目标明确、设计合理且运作健康的团队，是 SRE 工作的基础。为此，每个 SRE 团队都需要明确的范围与使命，并获得完成使命所需的资源（参见 <a data-type="xref" href="ch07-zh.html#ch07_scoping_sre_engagements">“界定 SRE 协作范围”</a>）。在 Google，每个 SRE 团队都必须制定一份经领导层批准的章程，以确保这些事项足够清晰。</p>
+
+<p>章程(见 <a data-type="xref" href="app02.html#appb">附录B</a>)确定了团队的任务说明，以及团队在技术环境、与团队合作的产品开发伙伴、提供品以及团队正在提供的服务等方面的范围。范围不应是随机项目的集合，而应形成一个相互关联的整体。由于SRE不属于任何单个产品开发团队的责任范围，它们可以非常有效地建立对相邻服务和共享技术的端到端视角，以及确定和应对否则可能被忽略的风险和机会。</p>
+
+<p>章程还定义了团队的成功面貌。这些成功标准应被界定为对用户和企业具有重大积极影响的可衡量成果。如前所述 <a data-type="xref" href="ch07-zh.html#ch07_an_outcome_focused_approach">“注重成果的办法”</a>结果应该有一个时间表。预计各小组将定期审查和更新其章程。见 <a data-type="xref" href="app03.html#appd">附录C</a> 一个假设的宪章例子。</p>
+
+<p>建立成功团队的通则也适用于SRE 团队。关于团队成功率和团队基本素质的研究结果 <a href="https://oreil.ly/JTbR5">谷歌在亚里士多德计划上发表</a> 对建立健康的SRE 组织非常有帮助。这项研究强调了心理安全的重要性，这与SRE特别相关。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Team Roles" data-type="sect2"><div class="sect2" id="ch06_team_roles">
+<h2>团队角色</h2>
+
+<p>有一个很宽的阵列 <a data-primary="teams" data-secondary="roles" data-type="indexterm" id="id1406"/>从系统工程到软件工程，再到组织和管理。这套不同的技能和背景使SRE 团队能够适应各种技术上和组织上复杂而具有挑战性的环境。</p>
+
+<p>在形式上，Google 的一个SRE 团队包括管理者，技术负责人(TL)和技术项目群管理者等角色。剩下的队员通常被称为个人贡献者(ICs). 并非每个团队都为这三个角色配备工作人员；有些角色更成功，只有三个角色中的两个。当角色有明确的责任时，一些人发挥最佳作用，其主要好处是他们能够迅速和安全地作出范围内的决定。其他国家在更多变的环境中运作最好，责任的转移取决于动态谈判。让团队中的个人兴起并适应更广泛的组织文化，视团队和组织情况而定，这可以从高层决定或由团队自行组织。</p>
+
+<p>让我们更详细地考虑每个角色:</p>
+
+<ul>
+<li>
+<p><em>经理</em>既是<a data-primary="managers" data-type="indexterm" id="id1407"/>技术领导者，也是组织领导者。他们制定团队战略，涵盖人员发展、文化、执行、绩效管理、利益相关者管理，以及与组织业务目标的对齐。经理还负责人员配置，并组织团队成员的工作分配。</p>
+</li>
+<li>
+<p>这个 <em>技术负责人</em> 感觉很深 <a data-primary="tech leads" data-type="indexterm" id="id1408"/>了解域并定义了技术视野。他们负责小组的技术指导和服务范围的健康。他们指导并鼓励团队内部以及与产品开发伙伴的良好技术做法，并与这些伙伴和更广泛的SRE社区密切合作。</p>
+</li>
+<li>
+<p>这个 <em>技术项目经理</em> 作为<a data-primary="technical program managers (TPMs)" data-type="indexterm" id="id1409"/><a data-primary="TPMs (technical program managers)" data-type="indexterm" id="id1410"/> 增强团队效能，提高团队工作的质量和速度。它们处理方案/项目管理、规划、程序设计、利益相关者管理和沟通。TPM经常在跨功能界限下工作，能够快速决策并有前进的势头。它们负责高效地实施能够跨越多个组织和地点的方案。为了确保规划建立在工程现实中，他们应当拥有工程师的技术判断。</p>
+</li>
+</ul>
+
+<p>所有这三个角色都共同努力，根据团队目标和关键成果以及运维工作确定工作的优先次序并界定季度计划。团队中的其他工程师也受到鼓励，并根据其资历，期望为规划和团队指导提供投入。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="On-Call Considerations" data-type="sect2"><div class="sect2" id="ch06_on_call_considerations">
+<h2>值班安排的考量</h2>
+
+<p>SRE队必须平衡 <a data-primary="teams" data-secondary="on-call duties" data-type="indexterm" id="id1411"/><a data-primary="on-call requirement" data-type="indexterm" id="id1412"/>工程项目和运维责任。在Google, 指导原则是 SRE 团队必须投入至少50%的工程工作，如编码、分析和设计，以及最多50%的作业工作，如值班、工单和维护。SRE的时间不得超过25%, 这些数字是阈值，而不是目标。总的来说，我们的目标是要大大降低运维工作的一小部分。一个小组的实际运维工作量取决于许多因素，包括服务的成熟程度、范围广和用户增长率。</p>
+
+<p>根据我们的经验，在SRE 团队拥有一定的最小规模时，可以最好地维持行动工作门槛。Google 的许多SRE 团队被分出两个站点，以6到9小时的时区差相隔。这种设置使“追随太阳”待命模式成为可能，在这种模式下，每个地点的SRE在白天和晚上都有待命，但晚上没有。较大的时区差异使得团队协作更加困难。在这个两个站点的设置中，一个团队每个站点至少应有6名工程师。这种安排每个工程师每个季度大约2至3待命周(占其时间的15-25%),为项目工作留下足够的不间断时间，同时不让他们冒着退出事件响应实践的风险。在单一站点布置中，工程师在夜间也值班，队伍至少应配备8名值班员。团队可以(而且往往应该)成长到超过这些最小的大小，但当一个团队达到最小的两倍时，通常会将其分成两个团队，以尽量减少工程师的认知负荷。成长和分裂的队伍比从零开始创建新的队伍更不具有破坏性。</p>
+
+<p>理想的情况是，运维工作可以由目前的值班人员全面处理，根据这些最低限度的团队规模(远远低于50%的门槛),约占团队能力的15%(如1/8或2/12)。</p>
+
+<p>可以让SRE 团队配备不到8名工程师，但在这种情况下，需要对运维工作量监测采取更自觉和有纪律的方法，以确保团队保持在50%的运维工作上限以下，确保SRE有足够的时间通过工程工作改进。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Collaboration" data-type="sect1"><div class="sect1" id="ch06_collaboration">
+<h1>协作</h1>
+
+<p>SRE是内在的 <a data-primary="collaboration" data-type="indexterm" id="id1413"/>合作作用。它跨越技术领域和团队界限，跨越SRE 团队和产品开发组织。为了取得成功，SRE必须掌握在缺乏权威的情况下发挥领导作用和在松散的组合中建立共识的技能，这些组合往往是针对可能看似激进和破坏性的想法和建议。</p>
+
+<p>除了组织界限外，许多SRE 组织及其产品开发伙伴在地理上分散。跨时区有效协作需要强有力的书面沟通技能和出行机会。面对面的互动是可以推迟的，但最终是高质量的关系所必须的，以便偿还长期积累的“关系债务”(与技术债务类似)。现代的在线合作和视频会议工具可以帮助维持两者之间的关系，但我们建议每年至少亲自与你最重要的伙伴和同事会面一次。否则，即使你是一个优秀的作家，你也会冒成为一个邮箱地址的风险。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Product Development" data-type="sect2"><div class="sect2" id="ch06_product_development">
+<h2>产品开发</h2>
+
+<p>在谷歌，一个SRE 团队 <a data-primary="collaboration" data-secondary="product development" data-type="indexterm" id="colab_proddev"/><a data-primary="product development, collaboration" data-type="indexterm" id="proddev_colab"/><a data-primary="development" data-secondary="products, collaboration" data-type="indexterm" id="dev_prod_cloab"/>总是至少有一个产品开发伙伴。如果一项服务没有被积极开发，团队的影响力机会有限，它不可能是SRE 资源的最佳投资。<sup><a data-type="noteref" href="ch06-zh.html#id1414" id="id1414-marker">5</a></sup> 一个SRE 团队是一个软件工程团队，负责尽量减少对行动的需要，而不是接管行动团队的角色。实际上，Google 的大多数SRE 团队与多个——有时超过10个——产品开发团队结成伙伴。关于与产品开发的相互作用的更多信息，见 <a data-type="xref" href="ch07-zh.html#ch07">第七章</a>虽然这种设置在组织上具有挑战性，但它使Google SRE能够建立技术生态系统的广泛观点，跨团队传递想法，并在全球一级优化系统健康。</p>
+
+<p>在操作方面，Google SRE鼓励共享产品开发和SRE即时轮换。例如，产品开发团队可以在其营业时间以SRE为升级路径进行待命，而SRE可以在下班时间以产品开发团队为升级路径为主。这种设置有助于产品开发团队直接协作生产，使他们能够设计和建立健全和可管理的系统，同时在重大事件期间仍能从SRE的业务专门知识和支助中受益。在初级待命轮调完全配备特别资源的情况下，一般期望产品开发团队通过二级轮调维持24x7的待命升级路径。虽然SRE可以自行处理大多数事件，但有时对最新代码变化有详细了解的工程师对于迅速识别非明显的服务中断触发器及其缓解作用至关重要。</p>
+
+<p>在项目方面，Google 的SRE和产品开发团队应参与共同规划和确定优先次序。理想的情况是，这项工作得到产品开发伙伴组织的高级领导层的大力支持，并与业务成果密切相关。当SRE 团队的商业价值没有得到很好的理解时，它就有可能对企业及其发展伙伴都变得无关紧要。SRE和产品开发团队应保持共同的积压和路线图，双方对此作出贡献并执行。一般来说，最有能力高效和高质量地完成某项工作的团队应当拥有它。</p>
+
+<p>密切协作 <a data-primary="collaboration" data-secondary="product development" data-startref="colab_proddev" data-type="indexterm" id="id1415"/><a data-primary="product development, collaboration" data-startref="proddev_colab" data-type="indexterm" id="id1416"/><a data-primary="development" data-secondary="products, collaboration" data-startref="dev_prod_cloab" data-type="indexterm" id="id1417"/>来自产品开发团队和SRE的工程师之间有助于建立可见性、相互理解和信任。各小组应定期举行会议，以保持双向信息流动。其中最基本的会议是生产会议。侧重于长期观点的其他共享活动有季度业务审查、共享OKR规划和路线图规划。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch06_production_meetings">
+<h1>生产会议</h1>
+<p>谷歌的SRE 团队 <a data-primary="teams" data-secondary="weekly meetings" data-type="indexterm" id="tms_wkmtgs"/><a data-primary="meetings, types" data-type="indexterm" id="mtgs_typ"/>每周与整个团队举行一次会议，通常称为行动审查会或生产会议，讨论:</p>
+
+<ul>
+<li>
+<p>重大事件</p>
+</li>
+<li>
+<p>即将发生的变化</p>
+</li>
+<li>
+<p>相关项目工作</p>
+</li>
+<li>
+<p>SLI 性能</p>
+</li>
+<li>
+<p>缺陷分类状态</p>
+</li>
+<li>
+<p>缺陷 SLO 合规</p>
+</li>
+</ul>
+
+<p>这次会议确保了小组每个成员在所有服务中与生产相关的所有事项的可见性。生产会议是SRE 团队整体工作的基石。它们并不涉及个人提供项目最新情况；它们以服务为导向，聚焦生产健康。</p>
+
+<p>当SRE 团队仅与一或少数产品开发伙伴合作时，邀请他们(或至少代表，如他们的TLs)参加生产会议是一种好的做法。然而，当一个团队拥有许多产品开发伙伴时，这种安排很快就会难以管理。在这种情况下，除了自己的生产会议之外，还应与每个产品开发伙伴分别进行生产同步。这些同步可以每周或每两周进行，不需要整个团队；来自SRE和产品开发团队的代表可以将通信转发给其他团队成员。</p>
+
+<p>生产会议往往具有高度结构化的仪式，并有准备好的模板和议程。这有助于保持纪律，并避免浪费时间或忽视相关问题。典型的议程包括以下专题:</p>
+<dl>
+<dt>服务中断与告警通知</dt>
+<dd>
+<p>凡是触发值班呼叫的事件都应讨论：监控是否按预期工作？是否找到了根因，并以足以降低复发概率的方式修复了问题？影响显著的服务中断应当进行事后复盘。</p>
+</dd>
+<dt>事后复盘</dt>
+<dd>
+<p>所有有关的服务中断都事后复盘了吗？是否审查并实施了行动项？许多SRE 组织与其产品开发伙伴分别进行额外的事后复盘评审，以提高其跨团队范围的可见性。</p>
+</dd>
+<dt>SLI 与服务健康状况</dt>
+<dd>
+<p>服务健康指标是否达到应有水平？是否出现了需要团队采取行动的危险趋势？</p>
+</dd>
+<dt>非寻呼告警与工单</dt>
+<dd>
+<p>告警和工单是否都得到了及时处理？是否需要作出调整？这类运维任务会打断工作，而且经常占用 SRE 大量时间。应持续跟踪工作量，避免形成积压。生产会议很适合识别两类告警：一类因不可操作或无关而应删除；另一类过于关键，不应留在工单队列中，而应升级为呼叫值班人员的事件。如果某个重要问题是人工发现的，也应考虑更新监控，使其今后能够自动检测。</p>
+</dd>
+<dt>即将进行和正在进行的生产变更</dt>
+<dd>
+<p>产品开发团队是否计划发布任何可能影响生产环境的功能或服务变更？负载是否预计会大幅增减？SRE 是否正在实施值班人员需要了解的基础设施变更？目的不是阻止变更，而是提高各方认知并确保安全实施。充分的信息可见性有助于降低变更相互冲突的风险；一旦变更造成意外影响，也能更快修复。</p>
+</dd>
+</dl>
+
+<p>上述结构<a data-primary="teams" data-secondary="weekly meetings" data-startref="tms_wkmtgs" data-type="indexterm" id="id1418"/><a data-primary="meetings, types" data-startref="mtgs_typ" data-type="indexterm" id="id1419"/>有助于生产会议中的协作，但工作不能止于会议，还必须落实后续行动。最佳实践是记录行动项，并在之后的生产会议中检查完成情况。生产会议纪要示例见<a data-type="xref" href="app04.html#appc">附录 D</a>。</p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE-Internal Collaboration" data-type="sect2"><div class="sect2" id="ch06_sre_internal_collaboration">
+<h2>SRE 内部协作</h2>
+
+<p class="fix_tracking">谷歌的SRE有一个 <a data-primary="collaboration" data-secondary="SRE-internal" data-type="indexterm" id="colab_sreint"/><a data-primary="teams" data-secondary="SRE-internal collaboration" data-type="indexterm" id="tms_sreintcolab"/>使小团队有能力迅速解决问题，而不会因为重大进程或行政管理开销而陷入困境。我们想保持这样。然而，缺点是，这种设置有时导致重叠和多余的解决办法激增，导致浪费时间和精力。如果不建立一个高质量的总体生态系统，也会产生机会成本。培训和升级可能很困难，缺乏标准限制了SRE 内部知识的可转让性。为了解决这些问题，鼓励SRE在建立自定义解决方案之前“看左右”。</p>
+
+<p>一个SRE 团队在很多服务领域工作，在他们共同的生产需要中具有很好的可见性。虽然许多问题都高度针对服务，但许多服务所共有的一类问题往往适用同样的解决办法。越看越好 因此，在SRE 团队决定建立自定义自动化之前，它需要调查这个问题是否真正针对服务。如果不是，下一步是研究其他工具已经建立的现有工具，看看是否能够应用到这个问题上。这一步骤可能涉及促进现有解决方案，使其在更多情况下可重复使用。在尚未找到解决办法的情况下，SRE 团队应铭记可重复性。有时这些最初本地解决方案会成长为一种全公司广泛使用的基础设施产品。</p>
+
+<p>当一个团队提出新的解决方案时，它应该通过适当的渠道传达这一解决方案。技术会谈是这样做的有效途径。由于一个工程站点一般会主办来自多个产品领域的SRE 团队，所以本地的技术分享系列可以产生远远超出当前组织的可见性。这些会谈可以涵盖软件工具、新方法、经验报告、进程和合作模式。在一系列广泛的场景中反复显示价值的解决方案可以被整理成培训模块来教育新的SRE或有生产兴趣的开发者。</p>
+
+<p>不仅仅是思想跨越团队界限迁移。个人 <a data-primary="mobility of SREs, support for" data-type="indexterm" id="id1420"/>流动性是SRE 文化的另一个重要方面。工程师从一个 SRE 团队自由移动到另一个团队，或者从 SRE 到产品开发，或者反之亦然，可以传播重要的机构知识并给广泛的可靠性文化授粉。</p>
+
+<p>Google SRE支持与一些程序进行这种流动性和文化交流，例如:</p>
+<dl>
+<dt>任务控制</dt>
+<dd>
+<p>开发者可以从其他团队加入SRE,为期六个月的轮岗。</p>
+</dd>
+<dt>SRE 交换</dt>
+<dd>
+<p>SRE可以加入另一个SRE 团队一周，学习他们如何工作，并将学到的知识汇报给家乡团队。</p>
+</dd>
+<dt>
+<span class="plain">无</span>+1 导师</dt>
+<dd>
+<p>跨越团队界限指导新的SRE有助于他们更广泛地了解SRE,并开始在公司内部建立网络。</p>
+</dd>
+</dl>
+
+<p>管理人员不能阻止他们的工程师转移到另一支队伍——这种设置是故意的。工程师可以 <a data-primary="collaboration" data-secondary="SRE-internal" data-startref="colab_sreint" data-type="indexterm" id="id1421"/><a data-primary="teams" data-secondary="SRE-internal collaboration" data-startref="tms_sreintcolab" data-type="indexterm" id="id1422"/>调离不适合他们的队伍。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Maturity Matrices" data-type="sect1"><div class="sect1" id="ch06_maturity_matrices">
+<h1>成熟度矩阵</h1>
+
+<p>数额<a data-primary="maturity matrices" data-type="indexterm" id="matmat"/><a data-primary="organizations" data-secondary="maturity matrices" data-type="indexterm" id="org_matmat"/> SRE 参与的性质在很大程度上取决于组织在几个方面的成熟程度，其中包括:</p>
+<dl>
+<dt>运维流程</dt>
+<dd>
+<p>用于维持生产健康的活动和指标</p>
+</dd>
+<dt>风险管理</dt>
+<dd>
+<p>评估、确定和减轻生产风险</p>
+</dd>
+<dt>生产力</dt>
+<dd>
+<p>在功能发布影响之间取得平衡</p>
+</dd>
+<dt>速度</dt>
+<dd>
+<p>交付生产新特点和新能力的速度</p>
+</dd>
+<dt>系统复杂性</dt>
+<dd>
+<p>系统架构，与产品或服务的依赖图相配</p>
+</dd>
+<dt>产品生命周期</dt>
+<dd>
+<p>从孵化到下降的生命周期阶段</p>
+</dd>
+<dt>团队</dt>
+<dd>
+<p>运作模式、价值和团队精神</p>
+</dd>
+<dt>领导</dt>
+<dd>
+<p>领导层承诺超越孤立的自主权<sup><a data-type="noteref" href="ch06-zh.html#id1423" id="id1423-marker">6</a></sup></p>
+</dd>
+</dl>
+
+<p>成熟度矩阵的用意不是提供一个分数或作为核对表，而是确定一个组织的成熟度位于一个连续体上，以便可以相应地相应调整 SRE 的参与程度。不同的服务在任何特定时间都可能处于不同的成熟水平。</p>
+
+<p class="pagebreak-before less_space">SRE具有独特的视角，因为它们暴露在比产品开发组织更广泛的视野中。这一独特的优势点往往使SRE 团队能够更早和更明确地预见可靠性问题和风险。由于SRE往往稀缺，需求也很高，因此选择正确的SRE 协作模式。<a data-primary="engagement models" data-secondary="organizational maturity" data-type="indexterm" id="id1424"/>根据成熟度矩阵得出最大回报。参与范围从SRE提供的基础服务(无论是否有共享维护)到SRE拥有的全部生产支持。</p>
+
+<p>一个适当的协作模式可确保一个健康的SRE 组织，并减少其支持的服务和系统的可靠性风险。SRE 组织的健康可分为三个方面:</p>
+<dl>
+<dt>组织健康</dt>
+<dd>
+<p>目的、人员配置和运作模式</p>
+</dd>
+<dt>运维健康</dt>
+<dd>
+<p>工程和运维工作的平衡以及自动化的机会</p>
+</dd>
+<dt>系统健康</dt>
+<dd>
+<p>系统中未解决的风险和可靠性差距</p>
+</dd>
+</dl>
+
+<p>这些方面反映了生产环境所面临的风险水平。要降低风险，关键是准确评估组织成熟度并采用合适的协作模式；同时还应制定演进策略，逐步达到能让 SRE 参与获得最大投资回报的成熟度。<a data-primary="organizational reliability, phases" data-type="indexterm" id="orgrel_phss"/>组织可靠性的不同级别（或阶段）可以排列成如下连续谱：</p>
+
+<ul>
+<li>
+<p>缺失</p>
+</li>
+<li>
+<p>被动响应</p>
+</li>
+<li>
+<p>主动</p>
+</li>
+<li>
+<p>战略</p>
+</li>
+<li>
+<p>愿景</p>
+</li>
+</ul>
+
+<p>这些阶段说明了本组织的总体心态。每个都与一定的一组属性相关。一个组织在不同属性的成熟程度不同，视其重点和长处而定。</p>
+
+<p>为了更好地了解连续体，让我们仔细看看每个阶段。</p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Absent" data-type="sect2"><div class="sect2" id="ch06_absent">
+<h2>缺失阶段</h2>
+
+<p>在这一阶段，产品功能<a data-primary="absent phase, organizational reliability" data-type="indexterm" id="id1425"/>是组织的主要驱动力，可靠性居于次要位置。“缺失阶段”具有以下特征：</p>
+
+<ul>
+<li>
+<p>高速发布功能是组织最看重的指标，也是激励机制的重点。</p>
+</li>
+<li>
+<p>大多数问题都由用户或测试者找到。本组织不了解长期可靠性和可用性风险。</p>
+</li>
+<li>
+<p>本组织通过奖金、公开表扬和晋升等方式表彰那些从事功能或产品发布工作的人，但并不奖励减少技术债务或提高生产质量的努力。</p>
+</li>
+</ul>
+
+<p>SRE在生命周期早期参与，甚至在架构阶段(见 <a data-type="xref" href="ch07-zh.html#ch07">第七章</a>),可以避免可靠性和可伸缩性被作为事后补救事项对待，并避免今后进行昂贵的架构改造或重新设计。即使在此阶段对SRE进行小额投资，也能帮助确保系统具有满足用户期望所需的可靠性、可扩展性和运维能力。随着产品的采用范围扩大，必须考虑增加SRE的参与，以维持生产系统，同时尽量减少运维负荷和风险。</p>
+
+<p>SRE一般将优先参与业务关键或用户影响力高的服务。当某项服务进入其生命周期的下降阶段时，用户的采用率和新功能开发率通常会下降。这提供了一个机会，可以减少SRE的参与，将能力重新分配给商业上至关重要的其他优先事项，这是预期的和有效率的过渡。</p>
+
+<p>换句话说，这一阶段可能是本组织在下列情况下的有意选择:</p>
+
+<ul>
+<li>
+<p>该服务仍处于孵化阶段，尚未提供给公众或客户。</p>
+</li>
+<li>
+<p>服务处于衰退阶段，维修工作完全自动化，至少具有功能迭代速度和变更频率。</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reactive" data-type="sect2"><div class="sect2" id="ch06_reactive">
+<h2>被动响应阶段</h2>
+
+<p>在<a data-primary="reactive phase, organizational reliability" data-type="indexterm" id="reactph_orgrel"/>被动响应阶段，SRE 组织主要忙于修复近期服务中断，后续行动零散，也很少为解决系统性问题进行长期投入。产品开发团队与 SRE 团队各自独立工作。这一阶段具有以下特征：</p>
+
+<ul>
+<li>
+<p>SRE为服务中断写出事后复盘，并创建用于战术修复的行动项。</p>
+</li>
+<li>
+<p>有些指标已经存在，但没有经过全面或长期监测。</p>
+</li>
+<li>
+<p>少数个人或团队的英雄努力保持了合理的可用性。</p>
+</li>
+<li>
+<p>开发者生产力受到限制，因为停用导致优先级暂时转移。</p>
+</li>
+<li>
+<p>特性开发可能会被短期冻结。</p>
+</li>
+</ul>
+
+<p>这一阶段适用于尚未发布，或已进入稳定长期维护期的产品和项目。被动维护模式会增加 SRE 与产品开发团队的运维负担，妨碍他们交付工程成果。两支团队彼此孤立，也会损害各自的组织健康和责任意识；未管理的风险和未知缺陷则会损害系统健康。识别出当前处于这一阶段，并推动组织迈向下一成熟阶段，对于<a data-primary="reactive phase, organizational reliability" data-startref="reactph_orgrel" data-type="indexterm" id="id1426"/>恢复生产系统健康至关重要。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Proactive" data-type="sect2"><div class="sect2" id="ch06_proactive">
+<h2>主动改进阶段</h2>
+
+<p>在这一阶段，SRE 与产品开发组织之间有明确定义的<a data-primary="proactive phase, organizational reliability" data-type="indexterm" id="id1427"/>协作关系。双方无缝合作，共同负责生产环境健康状况，并通过常态化的组织流程识别和处理潜在风险。主动改进阶段具有以下特征：</p>
+
+<ul>
+<li>
+<p>产品开发团队和SRE 团队定期审查并优先处理风险，两个团队作为一个单位一起工作。</p>
+</li>
+<li>
+<p>各小组主动改进地管理依赖性并审查其可靠性指标，例如SLO。</p>
+</li>
+<li>
+<p>产品开发与SRE 团队共同拥有服务可靠性，并可能进行相同的轮换以获得生产支持。</p>
+</li>
+<li>
+<p>各小组早期评估已知风险和故障模式的新设计。优雅降级是一项基本要求(除非无法适用退化，例如在政策强制系统中，你不能让一些政策在负荷上失败)。</p>
+</li>
+<li>
+<p>SRE和产品开发组织都优先考虑人员配置和投入。</p>
+</li>
+<li>
+<p>各小组主动改进地审视运维负荷中的人工琐事，并共同努力实现自动化并减少琐事。</p>
+</li>
+</ul>
+
+<p>理想的情况是，大多数产品至少应该达到这一水平，特别是如果其影响范围很大或对企业至关重要。一旦一个组织的成熟程度达到这一阶段，它就应该投资进入战略阶段。采取这一步骤将改善组织健康和士气，从而能够从战术工作转向更注重工程和创新的工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Strategic" data-type="sect2"><div class="sect2" id="ch06_strategic">
+<h2>战略阶段</h2>
+
+<p>处于<a data-primary="strategic phase, organizational reliability" data-type="indexterm" id="id1428"/>这一阶段的组织，通过系统性地改进架构、产品和流程来管理各类风险。SRE 的参与方式与主动改进阶段相似，但会在产品开发早期介入，从架构和设计阶段就注入可靠性原则。这一阶段具有以下特征：</p>
+
+<ul>
+<li>
+<p>成熟过程是组织如何设计、操作和开发软件的内化并融入日常工作。</p>
+</li>
+<li>
+<p>通过产品架构从整体上解决复杂性问题。依赖不断减少或改善。</p>
+</li>
+<li>
+<p>新的架构和设计重写得到优先考虑，以提高现有系统的可靠性和/或可扩展性。</p>
+</li>
+<li>
+<p>SRE和产品开发团队可以同时保持可靠性和开发者的速度。</p>
+</li>
+<li>
+<p>两个团队共同庆祝质量和稳定性里程碑。</p>
+</li>
+</ul>
+
+<p>战略阶段适用于为满足业务关键需要而需要高可用性的服务和产品。SRE 协作在这一阶段是战略性的，而不是战术性的，因为它处于主动改进的阶段。如前所述，这种设置提高了组织健康，并通过满足于交付有意义的工程工作，提高了SRE 团队内部的士气。生产系统的风险极少或控制得当。当琐事被大大减少时，SRE的参与可以被缩小，并转向提供更好的投资回报的投资。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Visionary" data-type="sect2"><div class="sect2" id="ch06_visionary">
+<h2>愿景阶段</h2>
+
+<p>处于<a data-primary="visionary phase, organizational reliability" data-type="indexterm" id="visnph_orgrel"/>这一阶段的组织已经达到最高可靠性水平，能够根据自身经验以及公司内外更广泛的可靠性工作推动最佳实践，例如发表论文和分享知识。此时，SRE 可以把重点转向更需要关注的其他领域。愿景阶段具有以下特征：</p>
+
+<ul>
+<li>
+<p>整个组织广泛存在生产健康。所有工程师和团队广泛拥有生产知识。</p>
+</li>
+<li>
+<p>系统是自愈的，可以自动从故障中恢复，在没有人类干预的情况下维持运行。</p>
+</li>
+<li>
+<p>架构改进对生产力和发布速度产生了积极影响，因为维修工作/琐事减少。</p>
+</li>
+</ul>
+
+<p>很少有服务或产品处于这一级别，而主导这一行业的服务或产品也很少。</p>
+
+<p>在贵组织内使用成熟度指标需要花费大笔费用。达到战略水平可能需要四年或更长时间，需要在整个企业进行大量投资。没有持续的重点和持续投资，一个组织很容易倒退。</p>
+
+<p>需要注意，组织的最佳成熟度会随时间和具体原因而变化。多数组织会随着自身成熟沿连续谱前进，但若不能保持严谨，也可能倒退，例如从主动改进退回被动响应。此外，这一模型并非严格线性：当产品用量和影响范围有限时，例如产品接近生命周期终点，在不同级别之间调整成熟度可能完全合理。成熟度指标既不是规定性的任务清单，也不是强制原则。关键在于，组织应根据自身背景和发展历程，有意识地作出这些取舍。<a data-primary="maturity matrices" data-startref="matmat" data-type="indexterm" id="id1429"/><a data-primary="organizations" data-secondary="maturity matrices" data-startref="org_matmat" data-type="indexterm" id="id1430"/><a data-primary="organizational reliability, phases" data-startref="orgrel_phss" data-type="indexterm" id="id1431"/><a data-primary="visionary phase, organizational reliability" data-startref="visnph_orgrel" data-type="indexterm" id="id1432"/></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Scorecards" data-type="sect1"><div class="sect1" id="ch06_scorecards">
+<h1>记分卡</h1>
+
+<p>计分卡是一种常见机制，<a data-primary="scorecards" data-secondary="KPIs" data-type="indexterm" id="id1433"/><a data-primary="KPIs (key performance indicators), scorecards" data-type="indexterm" id="kpi_scrcrd"/>用仪表板跟踪组织的关键绩效指标（KPI）及其在成熟度矩阵中的进展。谨慎使用时，它能发挥作用；不加思考地套用则可能适得其反。其目的是把战略层面的生产环境健康状况归纳为可量化、可采取行动的指标。计分卡并非天然有用或无用，但组织常常会强制要求使用它。</p>
+
+<p>W. Edwards Deming写道： “ 假设你无法测量，<sup><a data-type="noteref" href="ch06-zh.html#id1434" id="id1434-marker">7</a></sup> 然而，测量可以使一些事情更容易管理。也存在一个风险，如果你不测量什么，它就会变得更糟。</p>
+
+<p>因此，虽然衡量并不是管理的先决条件，但一套KPI可以帮助简化一个复杂的问题。它们在小组内就什么是重要的以及如何衡量成功建立了协调。商定的客观指标可以减少主观观念所驱动的人际冲突。如果您的SLO是绿色的，SRE和产品开发不应该争论服务是否健康。</p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Why Do They Fall Short?" data-type="sect2"><div class="sect2" id="ch06_why_do_they_fall_short">
+<h2>记分卡为何达不到预期？</h2>
+
+<p>不过，计分卡 <a data-primary="scorecards" data-secondary="KPIs" data-tertiary="risks of" data-type="indexterm" id="id1435"/>并不是没有风险。良好的KPI可能很难定义——特别是因为现代生产软件系统本身就很复杂，而且往往从收入或客户保留等直接商业结果中被移除。</p>
+
+<p>几乎所有的KPI都是代理指标。他们并不直接衡量难以捉摸的商业表现，换句话说，KPI与业务成果相关，但并不相同；两者之间不存在100%的一致。</p>
+
+<p>这种错位会从两个方向产生负面后果。首先，领导层可能把指标“武器化”，借此向工程团队施压；数字不够好看的团队可能因此受到惩罚。领导者也许并不关心团队面临的实际处境，或为何当时不具备取得预期进展的条件。缺少同理心和深入理解的“数字管理”会破坏心理安全，传播恐惧，而不是推动改变。正如杰夫·贝佐斯所说：“数据与个案叙述相矛盾时，通常是个案叙述更接近事实。”<sup><a data-type="noteref" href="ch06-zh.html#id1436" id="id1436-marker">8</a></sup></p>
+
+<p>第二，不认同计分卡初衷的团队可能设法钻指标的空子。例如，广泛采用的 <a href="https://oreil.ly/uLeaN">DORA 指标</a>建议用部署频率衡量 CI/CD 表现；团队可以选择每小时反复部署同一个二进制文件，而不是真正提高新版本的发布频率。这样做并没有改善 CI/CD，却会让计分卡上的数字非常漂亮。</p>
+
+<p><a href="https://oreil.ly/pwFdA">古德哈特定律</a>同样适用于计分卡：“当一个度量成为目标时，它就不再是一个好的度量。”如果组织只看计分卡的表面数字，不考虑其固有限制，并盲目追逐目标值，计分卡就可能弊大于利。</p>
+
+<p>最后，记分卡总是选择KPI. 你无法衡量一切 计分卡缩小了视野，没有被测量的东西可能会被忽略，甚至随着时间的推移被完全遗忘。这种“隧道视野”可能相当有风险，因为长期生产健康可能恶化而无人注意。当问题最终浮出水面时，情况往往如此糟糕，需要巨大的努力和时间才能回到轨道上来。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Why Are Scorecards Hard to Get Rid Of?" data-type="sect2"><div class="sect2" id="ch06_why_are_scorecards_hard_to_get_rid_of">
+<h2>为什么很难弃用记分卡？</h2>
+
+<p><a data-primary="scorecards" data-secondary="advantages and limitations" data-type="indexterm" id="id1437"/>计分卡虽然无法完美反映生产环境健康状况，却能提供客观事实。讨论一个数字远比讨论一种主观感受容易。计分卡可以帮助减少冲突，并推动此前难以开展的生产环境健康改进工作。</p>
+
+<p>并不是所有的团队都不喜欢他们。计分卡上在记分卡上表现优异的团队，无论出于何种原因，都可能会非常自豪。他们常常为到达那里而辛勤工作。取消记分卡而不进行合理替换可能会使这些团队失去方向。他们可能感到他们的工作得不到承认，该组织缺乏方向。这种情况会破坏士气并破坏今后改善生产健康的努力。</p>
+
+<p>最后，长期生产健康是复杂的。多数团队没有时间或能力去进行非常深入的工作——他们侧重于其他优先事项，例如处理最新的服务中断或为功能请求编写代码。计分卡使一个高度抽象的问题变得有形。有限度的工具可能比没有工具更好。</p>
+
+<p>通常，承认记分卡的局限性和发挥它们擅长的杠杆作用比盲目地追逐数字更有意义。在谨慎使用时可以有用。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: ProdEx—Google’s Production Excellence Program" data-type="sect2"><div class="sect2" id="ch06_case_study_prodex_google_s_production_excellence_program">
+<h2>案例研究：ProdEx——Google 的卓越生产计划</h2>
+
+<p>Google SRE 的程序 <a data-primary="Google" data-secondary="ProdEx program" data-type="indexterm" id="id1438"/><a data-primary="ProdEx program" data-type="indexterm" id="id1439"/><a data-primary="scorecards" data-secondary="ProdEx program" data-type="indexterm" id="id1440"/>ProdEx显示，使用记分卡可以尽量减少其风险。ProdEx方案创建于2015年，此后共进行了1,900多起审查。Google SRE为ProdEx公司开发的工具在中央计分卡中汇总了生产健康领域的各种计量。这些指标包括值班工作量、告警质量、停机、事后复盘、SLO、数据完整性、资源效率、缺陷管理以及OKR纪律。各小组通过参考其有关小组程序和章程文件来补充这些数据。目的是对SRE 团队的健康和它负责的生产服务状况进行全面的，高层次概览。</p>
+
+<p>通过视像会议进行的现场审查每几个季度举行一次，每个SRE 团队使用ProdEx计分卡。心理安全是这些审查的一个关键要素。审查人员是两名非常资深的SRE(主任或主要工程师),他们来自组织其他部门，不属于负责团队的管理链。这种组织距离减轻了团队“显示好数字”的压力。重点是问责制，没有羞耻感，指导而不是判断。</p>
+
+<p class="pagebreak-before less_space">虽然ProdEx是高度由数据驱动的，但审查人员接受了培训，以考虑到小组的背景并利用审查对话来丰富数据所描绘的画面。作为ProdEx审查结果的分数和行动项由审查者手工界定，以确保公平评估。</p>
+
+<p class="fix_tracking">数据与同情的结合有助于建立ProdEx方案，作为Google SRE 组织战略态势意识的基石，本·特雷诺·斯洛斯称其为“SRE领导层关于SRE 团队健康的最重要的遥测数据之一 ” 。同时，ProdEx仍然受到大多数被审查小组的欢迎，这对基本上是审计方案来说并不坏。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Effective Scorecard Use" data-type="sect2"><div class="sect2" id="ch06_effective_scorecard_use">
+<h2>有效使用记分卡</h2>
+
+<p>任何组织，<a data-primary="scorecards" data-secondary="use" data-type="indexterm" id="scrcrds_use"/>不论规模大小，都需要一些治理和改革管理来实现转型。这些过程在形式、一致性和有效性方面各不相同，但往往包括某种类型的健康检查、记分卡或成熟度模型。</p>
+
+<p>我们在这里讨论一些与Google Cloud Consult公司合作的公司，以建立和发展SRE的做法。它们提供了实施案例，你可能会发现这些实例对自己的计分卡使用有用。每家公司都希望有某种记分卡来衡量SRE的进展，记分卡模式的变化有助于每家公司以符合其文化和起点的方式实现其目标。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case study: Large financial services firm" data-type="sect3"><div class="sect3" id="case-study:-large-financial-services-firm">
+<h3>案例研究：大型金融服务公司</h3>
+
+<p>该公司广泛、高效地采用SRE的一个主要障碍是，自其雇员的办公桌上装有计算机之前就已经安装了几个纵向设备。任何跨越这些组织壁垒的行为都会立即引起警醒，而如果要对SRE转型进行治理，每一个纵向都希望自己拥有。</p>
+
+<p>在这种情况下，侧重于 <em>能力</em> 模型，比较 <a data-primary="capabilities models" data-type="indexterm" id="id1441"/><a data-primary="adopting SRE" data-secondary="capabilities models" data-type="indexterm" id="id1442"/>比一个 <em>到期</em> 模型，证明是答案。能力可以是技术性的(自动推出、普遍追查)、组织性的(dev和SRE之间共用的、可重新分配的)、可运维性的(清晰而一致的死后过程)或文化性的(一贯的无责文化)。这些能力也存在于发展道路上，有些能力严格依赖发展其他能力。所需能力的确切组合因组织而异，甚至因产品而异，主要基于可靠性目标，但也基于市场具体情况、组织历史和各种其他因素。</p>
+
+<p>通过制定一份所有业务条线采用的必要能力的基线清单，然后对这些业务条线内的每个主要产品领域绘制定制的能力图，我们得以激励业务条线采取共同的SRE方法，同时仍然感到它们有足够的控制和个性化能力来维护其主权。然后，可以根据个人纵向和产品相对于其具体所需能力的进展，而不是任意的、线性的、五级的成熟度尺度进行评分。这种方法鼓励了各自的服务迅速进行迁移，而不是将其时间花在不同业务条线之间的比较和指向上。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case study: National retail chain" data-type="sect3"><div class="sect3" id="case-study:-national-retail-chain">
+<h3>案例研究：全国性零售连锁企业</h3>
+
+<p>在这种情况下，全国零售商<a data-primary="adopting SRE" data-secondary="model services" data-type="indexterm" id="id1443"/> 重点是提高内部后勤应用的可靠性。在将近十年的时间里，SRE做法的精心和有控制地发展，给消费者带来了强劲的成果，但内部应用仍然由遗留下来的以基础设施为重点的团队掌握。目前正在进行的大部分开发工作是由一些长期离职的承包商几年前撰写的几乎无人维护的应用处理的。</p>
+
+<p>在这种情况下，公司并不仅仅是想对旧的应用应用新的SRE方法；它们也需要现代化，有时需要重新开发它们希望支持可靠性做法的应用。我们提出了一个将应用提升到SRE 实践发展的协同模式，在新生的发展团队与SRE 组织之间创造了共同的命运并紧密结合。</p>
+
+<p>在我们实施的模式中，根据服务的重要性和使用水平，将每项服务比作“服务模型”。这决定了相对于一套基线能力的现状。例如，" 第一级 " 服务可能需要自动回滚，并作为一套集装箱部署在本组织目前的生产标准Kubernetes环境中，而 " 第三级 " 服务目前可能仍留在遗留的虚拟机器上。</p>
+
+<p>然后为开发者和 SRE 共同解决共同的积压问题。初始评分是根据积压项目相对于整个项目的完成情况进行的，使过程符合具体服务的需要。与其说SRE被视为是外部力量来修复申请，不如说它们被视为伙伴，特别是因为它们到达时有处理积压和驱动的工程时间。<a data-primary="scorecards" data-secondary="use" data-startref="scrcrds_use" data-type="indexterm" id="id1444"/><a data-primary="KPIs (key performance indicators), scorecards" data-startref="kpi_scrcrd" data-type="indexterm" id="id1445"/>应用到所需的成熟度。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch06_conclusion">
+<h1>总结</h1>
+
+<p>在任何组织建立成熟的SRE 职能都是多年的努力。健康的SRE 文化和工作组织结构在本质上是相互交织的。理想的是，他们互相支持。</p>
+
+<p>虽然任何成功的SRE 团队都对可靠性工程具有献身精神和专门知识——除了SRE 文化的关键方面，例如无责文化——但深厚的商业理解与合作也很重要。无论你到哪里去集中，这些原则对于最大限度地发挥 SRE 功能的影响和作用至关重要。</p>
+
+<p>实施这些组织结构时，尤其要持续关注 SRE 职能本身、其所支持的服务以及各项 SRE 协作的成熟度与成效。度量既可能产生积极影响，也可能带来负面后果：度量对象选错了，或对象虽对但方法不当，都可能妨碍组织发展，并让参与其中的工程师产生疏离感。因此，务必审慎、批判地看待所度量的内容。</p>
+
+<p>这段历程十分漫长，因此跟踪进展至关重要。成熟度模型既能帮助你判断当前所处的位置，也能指明下一步。SRE 习惯用数据支持决策，清晰的成功指标因而有助于引导转型。但始终要记住，计分卡只是代理指标。它既能发挥很大作用，也可能在被过度解读为“A 团队优于 B 团队”、进而划分“赢家”和“输家”时，使 SRE 工作偏离正轨。在整个过程中，始终把心理安全视为健康 SRE 组织最重要的要素，终将获得回报。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1386"><sup><a href="ch06-zh.html#id1386-marker">1</a></sup> 参见 Gene Kim 等著<em>《DevOps 实践指南：如何在技术组织中打造世界一流的敏捷性、可靠性与安全性》</em>（IT Revolution，2016）。</p><p data-type="footnote" id="id1387"><sup><a href="ch06-zh.html#id1387-marker">2</a></sup> Melvin Conway，<a href="https://oreil.ly/Kz5gP">《委员会如何发明？》</a>，<em>Datamation</em>，第 14 卷第 4 期（1968）：28–31。</p><p data-type="footnote" id="id1398"><sup><a href="ch06-zh.html#id1398-marker">3</a></sup> “影子 SRE”类比于<a href="https://oreil.ly/DZtk9">“影子 IT”</a>这一常用术语：在运作失灵的组织中，各分支为各自解决需求，以缺少协调的方式自行建立临时 IT 职能。</p><p data-type="footnote" id="id1401"><sup><a href="ch06-zh.html#id1401-marker">4</a></sup> 参见 David N. Blank-Edelman 策划并编辑的 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/seeking-sre/9781491978856/ch07.html"><em>Seeking SRE</em> 第 7 章</a>（O'Reilly，2018）。</p><p data-type="footnote" id="id1414"><sup><a href="ch06-zh.html#id1414-marker">5</a></sup> 如果团队支持第三方或开源软件，具体安排会有所不同。开发工作仍在持续，只是发生在组织之外。产品开发团队与 SRE 团队之间建立沟通渠道和信任仍然同样重要，但具体方式需要适应该开发模式。</p><p data-type="footnote" id="id1423"><sup><a href="ch06-zh.html#id1423-marker">6</a></sup> 这里的“领导层”是指能够影响组织并引导其实现共同目标的个人或群体。</p><p data-type="footnote" id="id1434"><sup><a href="ch06-zh.html#id1434-marker">7</a></sup> W. Edwards Deming，<em>The New Economics</em>（MIT Press，1993），第 35 页。</p><p data-type="footnote" id="id1436"><sup><a href="ch06-zh.html#id1436-marker">8</a></sup> Roger Dooley，<a href="https://oreil.ly/vvAEt">《杰夫·贝佐斯的两分钟大师课——五条有力洞见》</a>，<em>Forbes</em>，2024 年 12 月 9 日。</p></div></div></section></body></html>
