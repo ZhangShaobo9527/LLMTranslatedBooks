@@ -1,0 +1,1334 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 协作模式</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 7. SRE Engagement Models" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch07">
+<h1><span class="label">第 7 章　</span>SRE 协作模式</h1>
+
+
+<p class="byline">作者：Brian Kudzia、Christof Leng、Derek Remund、<span class="keep-together">Michelle Brush、Nevin Lazarus、</span>Roman Seibel<br/><span class="keep-together">Carmela Quinito 参与撰写</span></p>
+
+<p>在考虑或踏上 SRE 道路时，讨论 SRE 与产品开发团队的互动至关重要。与产品开发团队建立清晰的协作模式不仅可以提高服务可靠性，还有助于培养健康的协作关系。</p>
+
+<p>本章解释：</p>
+
+<ul>
+<li>
+<p>SRE 协作模式是什么、如何确保其成功，以及能够取得哪些成果</p>
+</li>
+<li>
+<p>界定协作范围的各种方法、它们之间的差异以及它们可能的用途</p>
+</li>
+<li>
+<p>面向消费产品与企业产品的 SRE 之间的差异</p>
+</li>
+<li>
+<p>Google SRE 协作方式的演进，以及我们如何从原有协作模式演进到新的、成果导向的方法</p>
+</li>
+<li>
+<p>SRE 与<span class="keep-together">合作伙伴</span>沟通协作的重要性</p>
+</li>
+</ul>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Is an SRE Engagement Model?" data-type="sect1"><div class="sect1" id="ch07_what_is_an_sre_engagement_model">
+<h1>什么是 SRE 协作模式？</h1>
+
+<p class="fix_tracking">SRE 协作模式<a data-primary="SRE engagement models" data-type="indexterm" id="sregagmod"/><a data-primary="engagement models" data-type="indexterm" id="engagmods"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-type="indexterm" id="sitms_engwdevtms"/><a data-primary="teams" data-secondary="SRE engagement models" data-type="indexterm" id="id1446"/>指两件事：SRE 团队与产品开发合作伙伴开展协作的方式，以及 SRE 团队为分析并提升产品团队所构建服务的可靠性而提供的支持。具体而言，SRE 协作模式会：</p>
+
+<ul>
+<li>
+<p>定义 SRE/产品开发合作伙伴的职责、流程和原则。为使 SRE 取得成功并完成其使命，管理双方的期望并提供最有利于工作开展的协作接口至关重要。</p>
+</li>
+<li>
+<p>定义 SRE 团队如何决定要做什么。能有效支持工作选择的协作模式对于 SRE 职能的成功至关重要。</p>
+</li>
+<li>
+<p>将这些原则整理成书面参考，以尽量减少误解并帮助解决冲突。</p>
+</li>
+</ul>
+
+<p>多年来，Google 的 SRE 协作模式经历了多次迭代，并不断发展，以跟上不断变化的业务需求和实践中积累的经验。这种适应性对于最大限度提升 SRE 对业务的影响并尽可能确保 SRE 工作的切合业务需求至关重要。</p>
+
+<p>无论采用哪种协作<a data-primary="SRE engagement models" data-startref="sregagmod" data-type="indexterm" id="id1447"/><a data-primary="engagement models" data-startref="engagmods" data-type="indexterm" id="id1448"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-startref="sitms_engwdevtms" data-type="indexterm" id="id1449"/>模式，有几个原则支撑着成功的 SRE 实践。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shared Understanding of Objectives" data-type="sect2"><div class="sect2" id="ch07_shared_understanding_of_objectives">
+<h2>对目标的共同理解</h2>
+
+<p>成功的 SRE 和开发<a data-primary="SRE engagement models" data-secondary="shared understanding of goals" data-type="indexterm" id="id1450"/><a data-primary="engagement models" data-secondary="shared understanding of goals" data-type="indexterm" id="id1451"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-tertiary="shared understanding of goals" data-type="indexterm" id="id1452"/>团队合作伙伴关系始于对优先事项、风险和权衡的共同理解。SRE 和开发团队都关心可靠性、性能和功能交付速度，但两者在实现共同目标的过程中扮演着不同的角色。共同的理解是调整激励措施、兼顾短期目标与长期目标以及确保团队从一开始就保持步调一致的基础。</p>
+
+<p>SRE 和产品开发团队密切合作，以确保深入了解产品的业务目标。这种伙伴关系有助于 SRE 有效介入，并说明自己能如何帮助实现这些业务成果。SRE 能够很好地识别业务风险。SRE 可以帮助量化这些风险的可能性和潜在影响，然后与开发合作伙伴合作管理和减轻风险。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Effective Communication and Collaboration" data-type="sect2"><div class="sect2" id="ch07_improved_communication_and_collaboration">
+<h2>有效的沟通与协作</h2>
+
+<p>这种<a data-primary="SRE engagement models" data-secondary="communication and collaboration" data-type="indexterm" id="sregagmod_cac"/><a data-primary="engagement models" data-secondary="communication and collaboration" data-type="indexterm" id="engagmods_cac"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-tertiary="communication and collaboration" data-type="indexterm" id="sitms_engwdevtms_cac"/><a data-primary="collaboration" data-secondary="SRE engagement with development teams" data-type="indexterm" id="id1453"/>紧密的合作伙伴关系需要有效的沟通和协作。SRE、开发团队和领导层之间定期、开放的渠道至关重要。其中一个渠道侧重于正式的信息交换，SRE 可以谈论生产环境的状态，开发人员可以谈论其应用程序的状态，领导层可以谈论业务的状态。此类会议对于增进各方对服务状态的了解和改进运维至关重要，有助于推动组织前进并实现其可靠性目标。信息交换在不同的时间尺度上进行，从每周运维同步会到长期规划。这种合作伙伴关系模型使合作变得动态并适应不断变化的业务需求。</p>
+
+<p>值得注意的是，合作伙伴关系不会无限期持续，而会自然演变，当服务已优化到低维护状态、其业务优先级降低或退役时，就会结束。协作模式有助于为 SRE 支持如何通过服务生命周期<a data-primary="SRE engagement models" data-secondary="communication and collaboration" data-startref="sregagmod_cac" data-type="indexterm" id="id1454"/><a data-primary="engagement models" data-secondary="communication and collaboration" data-startref="engagmods_cac" data-type="indexterm" id="id1455"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-startref="sitms_engwdevtms_cac" data-tertiary="communication and collaboration" data-type="indexterm" id="id1456"/>（设计、实现、发布、运营、弃用）的演变提供清晰的指导。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Improved Understanding of Roles" data-type="sect2"><div class="sect2" id="ch07_improved_understanding_of_roles">
+<h2>明确角色分工</h2>
+
+<p>SRE 协作<a data-primary="SRE engagement models" data-secondary="roles" data-type="indexterm" id="id1457"/><a data-primary="engagement models" data-secondary="roles" data-type="indexterm" id="id1458"/><a data-primary="SRE teams" data-secondary="engagement with development teams" data-tertiary="roles" data-type="indexterm" id="id1459"/>模式对于 SRE 明确自己的职责、开发人员了解如何与 SRE 合作，以及领导层了解 SRE 的使命与价值非常重要。明确定义的协作模式有助于 SRE 有效发挥作用并坚守其使命，同时减少组织摩擦、职责模糊和冲突。书面模型提供的清晰度可以帮助处于 SRE 落地初期的组织以及成熟的 SRE 组织。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Maturity of SRE Engagements" data-type="sect1"><div class="sect1" id="ch07_the_maturity_of_sre_engagements">
+<h1>SRE 协作的成熟度</h1>
+
+<p>推动 SRE 协作方式演进对于 SRE 组织的走向成熟至关重要。这一过程有很多方面，也有很多方法来评估协作关系的健康状况。有助于评估 SRE 协作成熟度的三个维度是意图、影响和价值。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The “How”: Intent" data-type="sect2"><div class="sect2" id="ch07_the_how_intent">
+<h2>“如何”：意图</h2>
+
+<p>在实践中，SRE <a data-primary="SRE engagement models" data-secondary="mode" data-type="indexterm" id="sregagmod_mod"/><a data-primary="engagement models" data-secondary="mode" data-type="indexterm" id="engagmods_mod"/>的工作方式可以从不断应对突发危机，到在整个开发周期中主动建立长期可靠性实践。最适合的协作模式取决于组织的眼前需求和战略目标：</p>
+<dl>
+<dt>被动响应型</dt>
+<dd>
+<p>主要目的是生存和即时稳定。重点是保持关键系统的运行。对于建立可用性基线是最重要、最直接的目标的组织来说，这种“救火”模式通常是一种务实且必要的选择。</p>
+</dd>
+<dt>专业化</dt>
+<dd>
+<p>其意图转向扩大杠杆效应，并让成功经验可以复制。随着组织的发展，它有意识地创建专门角色和更加结构化的流程。这需要有意识地做出决定，以有效地扩展可靠性工作。</p>
+</dd>
+<dt>一体化</dt>
+<dd>
+<p>其意图是打造一个默认就能产出可靠产品的生态系统，并将此作为一项根本性的业务优势。该组织有意将 SRE 原则整合到整个开发生命周期中。目标不再只是解决问题或扩展流程，而是协力<a data-primary="SRE engagement models" data-secondary="mode" data-startref="sregagmod_mod" data-type="indexterm" id="id1460"/><a data-primary="engagement models" data-secondary="mode" data-startref="engagmods_mod" data-type="indexterm" id="id1461"/>设计从本质上说可靠的产品。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The “What”: Impact" data-type="sect2"><div class="sect2" id="ch07_the_what_impact">
+<h2>“什么”：影响</h2>
+
+<p>大多数组织<a data-primary="SRE engagement models" data-secondary="impact" data-type="indexterm" id="id1462"/><a data-primary="engagement models" data-secondary="impact" data-type="indexterm" id="id1463"/>都拥有极其复杂的软件体系，这使得全面了解整个系统具有挑战性。SRE 可以通过解决局部问题来提供巨大的价值，但建立全公司的软件全景视图则能带来新的机会。SRE 应该始终努力“横向审视”，加深跨系统的理解。对于产品开发人员来说，这通常更困难，因为他们对单个系统具有高度专业的知识。</p>
+
+<p>SRE 有两种互补的方式来在影响维度上开展工作：</p>
+<dl>
+<dt>深度优先</dt>
+<dd>
+<p>SRE 团队高度关注单一对象的可靠性——关键服务、特定工作流程或基础设施的核心部分。他们的专业知识深厚但范围狭窄。</p>
+</dd>
+<dt>广度优先</dt>
+<dd>
+<p>SRE 的视角扩大到涵盖整个生态系统。这种广度优先的理解使团队能够识别系统性风险和跨越多个组件的关键工作流程，并优先解决整个产品中的主要风险。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The “Why”: Value" data-type="sect2"><div class="sect2" id="ch07_the_why_value">
+<h2>“为什么”：价值</h2>
+
+<p>SRE 提供的商业价值<a data-primary="SRE engagement models" data-secondary="value" data-type="indexterm" id="sregagmod_val"/><a data-primary="engagement models" data-secondary="value" data-type="indexterm" id="engagmods_val"/>既可以体现为许多彼此独立的小成果，也可以是一条对产品或业务产生整体影响的宏观价值主线。我们在这里考虑三个层次：</p>
+<dl>
+<dt>战术层面</dt>
+<dd>
+<p>最初，业务影响是直接可见的，但具有战术意义：“保持服务运行。” 采用 SRE 的理由不言而喻，尤其是在较小的组织中。</p>
+</dd>
+<dt>优化</dt>
+<dd>
+<p>问题转向“SRE 工作可以在哪些方面产生最大的业务影响？”实现这种影响可以推动专业分工并专注于最关键的领域。</p>
+</dd>
+<dt>战略</dt>
+<dd>
+<p>在最高成熟度水平上，SRE 与业务成果直接保持一致。关注点不再局限于技术可靠性指标，而是转向“如何确保产品成功发布？”或“如何衡量并提升整个客户旅程的可靠性？”等问题。</p>
+</dd>
+</dl>
+
+<p>SRE 需要成为<a data-primary="SRE engagement models" data-secondary="value" data-startref="sregagmod_val" data-type="indexterm" id="id1464"/><a data-primary="engagement models" data-secondary="value" data-startref="engagmods_val" data-type="indexterm" id="id1465"/>与业务战略一致的合作伙伴，以实现最广泛的影响。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Scoping SRE Engagements" data-type="sect1"><div class="sect1" id="ch07_scoping_sre_engagements">
+<h1>界定 SRE 协作范围</h1>
+
+<p>在定义 SRE <a data-primary="SRE engagement models" data-secondary="scope" data-type="indexterm" id="sregagmod_scp"/><a data-primary="engagement models" data-secondary="scope" data-type="indexterm" id="engagmods_scp"/>协作模式时，首先要回答的问题是以下小组如何沟通和协作：</p>
+
+<ul>
+<li>
+<p>SRE</p>
+</li>
+<li>
+<p>传统运维人员<sup><a data-type="noteref" href="ch07-zh.html#id1466" id="id1466-marker">1</a></sup></p>
+</li>
+<li>
+<p>开发人员</p>
+</li>
+<li>
+<p>产品经理/产品负责人</p>
+</li>
+</ul>
+
+<p>这将帮助您确定 SRE 团队的范围以及它将与产品开发和/或运营组织的哪些部分合作。</p>
+
+<p>Google 的 SRE 组织规模庞大且多元化，并与许多不同的合作伙伴合作。人们可以在 Google 找到几乎所有类型和范围的 SRE 协作。其他组织则以符合自身独特需求的方式界定 SRE 的范围。有许多<a href="https://oreil.ly/WERCB">常见方法</a>可以为 SRE 实践提供基础。大多数规模更大、更成熟的 SRE 组织都会融合此处介绍的几种方法的各个方面。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>本章和<a data-type="xref" href="ch06-zh.html#ch06">第 6 章</a>涵盖的一些主题（集中式与去集中式、SRE/开发协作、成熟度级别）难免有所重叠。可以用下面的思路来区分这两个框架：</p>
+
+<ul>
+<li>
+<p>组织结构<a data-primary="organizational structures, focus" data-type="indexterm" id="id1467"/>重点关注汇报关系和资金来源。（谁支付 SRE 费用？谁担任经理？）</p>
+</li>
+<li>
+<p>协作模式<a data-primary="engagement models" data-secondary="focus" data-type="indexterm" id="id1468"/>关注工作契约。（SRE 是否提供咨询？SRE 是否负责值班？）</p>
+</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Kitchen Sink" data-type="sect2"><div class="sect2" id="ch07_kitchen_sink">
+<h2>大包大揽型</h2>
+
+<p>这种模式<a data-primary="kitchen sink engagement scope" data-type="indexterm" id="id1469"/><a data-primary="everything SRE engagement scope" data-type="indexterm" id="id1470"/>也称为“全能型 SRE”，通常由组织中第一个或唯一的 SRE 团队采用，职责范围不设边界，横跨众多服务或工作流。该团队可以把彼此分散的产品开发团队联系起来，也能有力推动组织补齐标准方面的短板。不过，范围过宽会让团队不堪重负，只能浅尝辄止地参与各项工作。当 SRE 需求增长速度超过人员扩充速度时，大包大揽型模式会产生大量 toil，使团队实际上退回传统运维模式。</p>
+
+<p>大包大揽型 SRE 团队通常以被动响应为主，并且可能缺乏战略影响力。他们的范围可以是广度优先或深度优先。广度优先方法侧重于整个生态系统的全局性贡献，例如在整个公司建立事后分析流程，而深度优先方法则侧重于当前可靠性问题最多的服务。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Embedded" data-type="sect2"><div class="sect2" id="ch07_embedded">
+<h2>嵌入式</h2>
+
+<p>SRE 可以直接嵌入产品开发团队<a data-primary="embedded SRE engagement scope" data-type="indexterm" id="id1471"/>，从而深入参与代码和配置工作。他们甚至可能没有 SRE 的头衔，但可能是将部分或全部精力投入产品开发与运行可靠性的开发人员。这种方法既能集中运用 SRE 专业知识，也便于在并肩工作中示范 SRE 实践。注意避免不同团队之间缺乏标准化，并确保为 SRE 提供指导同事的机会。</p>
+
+<p>该模型适合用于建立 SRE 职能，或推动特定开发团队采用 SRE。嵌入式 SRE 是一种可以推动战略影响的集成方法，但其范围天然以深度优先，这会带来被孤立并且不了解整个公司常见可靠性改进的风险。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Product/Application" data-type="sect2"><div class="sect2" id="ch07_product_application">
+<h2>产品/应用</h2>
+
+<p>产品 SRE <a data-primary="product SRE teams, engagement scope" data-type="indexterm" id="id1472"/>团队是 Google 较常见的模型之一，致力于提升特定关键产品领域的可靠性。这种方法提供了与业务优先级直接相关的清晰焦点。然而，如果没有统一的底层平台或集中的 SRE 实践，随着复杂性的增加，这种结构可能会导致基础设施的重复和产品团队之间实践的差异，从而限制知识共享和人员流动。在 SRE 基础能力建成之后，这种模式通常会组建专门团队来实现，用于具有高可靠性需求的面向用户的关键应用。在许多情况下，来自早期应用程序的嵌入式 SRE 后来会成为专职 SRE 团队的创始成员。</p>
+
+<p>围绕产品确定 SRE 的范围更容易体现直接的业务价值。产品 SRE 团队通常在其产品领域内具有跨系统的可见性，但从公司范围的角度来看，可能是深度优先的孤岛。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure" data-type="sect2"><div class="sect2" id="ch07_infrastructure">
+<h2>基础设施</h2>
+
+<p>专注于<a data-primary="infrastructure" data-secondary="SRE engagement scope" data-type="indexterm" id="id1473"/>底层基础设施的 SRE 团队旨在让其他团队的工作更快、更轻松。在遗留环境中，基础设施 SRE 可能与应用程序的托管环境紧密耦合，例如通过在特定管理程序平台上运行的应用程序 VM。基础设施仅提供对底层硬件的薄层抽象。因此，团队仍然自行管理许多基础设施组件，例如在虚拟机上运行的完全配置的操作系统。该模式的更现代版本维护共享基础设施服务（例如 Kubernetes 集群）以及通用组件（例如 CI/CD 和监控），作为通用生产平台的一部分。</p>
+
+<p>以产品思维实现适当平台的基础设施 SRE 团队实际上是一个现代平台工程团队，可能由开发人员和 SRE 组成。这种方法适合拥有多个需要通用基础设施标准的开发团队的公司。基础设施 SRE 团队应该减少其他地方对 SRE 人员的需求，并提供规范明确的解决方案，为工程团队带来最佳实践。基础设施团队帮助 SRE 职能专业化，同时推动广度优先的影响。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Tools" data-type="sect2"><div class="sect2" id="ch07_tools">
+<h2>工具</h2>
+
+<p>以工具为中心的 SRE 团队<a data-primary="tools-focused SRE team, engagement scope" data-type="indexterm" id="id1474"/>专门构建软件来帮助产品开发同行衡量、维护和提高系统可靠性，包括各类支持与规划系统。如果其构建的工具与一线可靠性问题没有紧密结合，团队可能会花费精力解决错误的问题，从而可能增加所有人的 toil 和总工作量。具有此范围的专业化团队最适合需要高度专业化的可靠性工具、且无法直接采用开源或第三方软件的组织。在许多情况下，工具开发是作为共享可靠性待办事项的一部分完成的，不需要专业化的团队。在较大的组织中，以工具为中心的 SRE 团队可能负责识别各个产品 SRE 团队创建的创新，然后为整个业务推广、构建和支持这些成果。工具团队有助于摆脱被动响应模式，并在整个开发生命周期中建立集成的可靠性工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Consulting" data-type="sect2"><div class="sect2" id="ch07_consulting">
+<h2>咨询</h2>
+
+<p>SRE<a data-primary="consulting, SRE engagement scope" data-type="indexterm" id="id1475"/> 协作的咨询模式侧重于提供临时建议和指导，而不是直接更改应用程序代码或配置。它可以通过为产品 SRE 团队临时提供额外的人力来帮助扩大现有 SRE 组织的积极影响——可能用于 SLO 开发、生产就绪评审或解决长期存在的可靠性短板。它还可以提供仅在短期内需要的特定领域知识或技能。这项工作可以基于项目或通过答疑时间形式交付。咨询模式适用于大型、复杂的公司或初期只能投入兼职人员的组织。这是在广泛的服务范围内产生优化层面影响的有效方式，可以是主动的，也可以是被动的。这种方法的主要问题是，顾问可能缺乏足够的背景来提供有用的建议，导致人们认为他们只动口不动手，即使他们有能力产生重大的间接技术影响。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Blended" data-type="sect2"><div class="sect2" id="ch07_blended">
+<h2>混合</h2>
+
+<p>事实上，许多<a data-primary="blended SRE engagement scope" data-type="indexterm" id="id1476"/>组织受益于采用混合方法，其中 SRE 协作的类型因应用程序或团队而异。在此模型中，每个团队的范围都是根据特定产品领域的业务需求量身定制的。这种方法最大限度地提高了 SRE 与各个合作伙伴之间的协作，并结合了不同范围界定模型的优势。考虑一个假设的混合示例：</p>
+
+<ul>
+<li>
+<p>包括工具团队在内的中央 SRE 职能提供统一的生产标准，同时根据需要通过咨询模式提供人力支持。</p>
+</li>
+<li>
+<p>处于起步阶段的应用在开发期和生产初期采用嵌入式 SRE<span class="keep-together">。</span></p>
+</li>
+<li>
+<p>更成熟或关键的应用程序依赖于专业化的产品 SRE 团队。</p>
+</li>
+<li>
+<p>基础设施/平台 SRE 团队拥有核心基础设施，并提供产品可以依赖的基础设施 SLO。</p>
+</li>
+<li>
+<p>这些产品使用通用基础设施，以便产品 SRE 可以专注于产品特定的可靠性问题，而不是重复基础设施。</p>
+</li>
+<li>
+<p>所有 SRE 都通过统一的入职流程加入公司。</p>
+</li>
+<li>
+<p>首席可靠性官（CRO）在最高层倡导可靠性并推动标准落地<a data-primary="SRE engagement models" data-secondary="scope" data-startref="sregagmod_scp" data-type="indexterm" id="id1477"/><a data-primary="engagement models" data-secondary="scope" data-startref="engagmods_scp" data-type="indexterm" id="id1478"/>。</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scoping Considerations" data-type="sect2"><div class="sect2" id="ch07_scoping_considerations">
+<h2>范围界定考虑因素</h2>
+
+<p>到目前为止，实践中最常见的<a data-primary="SRE engagement models" data-secondary="scope" data-tertiary="implementation considerations" data-type="indexterm" id="sregagmod_scp_impcons"/><a data-primary="engagement models" data-secondary="scope" data-tertiary="implementation considerations" data-type="indexterm" id="engagmods_scp_impcons"/>方法<sup><a data-type="noteref" href="ch07-zh.html#id1479" id="id1479-marker">2</a></sup>是大包大揽型方法，因为它最初可以通过简单地将传统运维团队重命名为“SRE”来实施。遗憾的是，团队更名往往是创新的终点。对于希望利用现有且经验丰富的人员同时测试提高可靠性和控制 toil 的策略的组织来说，适当的大包大揽型/一切 SRE 模型实际上是一个逻辑起点。然而，SRE 最终可能要为所有服务值班，从而失去开展真正工程工作的能力。</p>
+
+<p>第二个最常见的是嵌入式方法。通常，组织可能尚无足够资金和规模，无法为各类产品组建专职的应用 SRE 团队，并且需要做一些工作来补上 toil 治理和可靠性度量方面的欠账。将部分开发人员转变为嵌入式 SRE，可能还需要从外部引入一些额外的人员，例如经验丰富的 SRE 或愿意接受新理念、刚进入这一领域的工程师，这是逐步建立专职 SRE 的有效起点，同时允许人员逐渐增长。这些嵌入式 SRE 可能不会成为事件响应的唯一值班负责人，或者至少，为了保持健康的值班轮换，他们不应该是唯一的。随着服务转向更专用的模型，值班轮换的人员构成通常会发生变化，通常由 SRE 承担大部分主要事件响应，而产品开发团队为复杂的业务逻辑问题提供值班升级通道。</p>
+
+<p>基础设施模型也存在基于重命名角色的类似的落地策略，这使其成为实施 SRE 的另一种常见的早期方法。其有效的关键是树立产品思维，并通过 SRE 视角关注基础设施，提供可靠的服务，而不仅仅是计算。</p>
+
+<p>现有服务架构的性质可能会影响范围界定方法的选择。拥有少量定制单体服务的组织可能更倾向于垂直集成的产品方法，而高度统一的微服务环境则可能更适合充分发挥基础设施团队的作用。</p>
+
+<p>一个组织一开始可能只实施一两个模式，但模式应该随着时间的推移而发展。SRE 是为了服务业务，而不是相反，所采用的模型应该体现业务优先级，以及健康值班、toil 控制、无责文化等价值观（有关这些主题的更多信息，请参阅<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。随着 SRE 职能的发展和成熟，构建由基础设施或工具团队支持的产品团队组合是有意义的。以产品为导向的 SRE 团队最能与业务目标保持一致，而其他团队则降低工具和知识孤岛的风险。</p>
+
+<p>动态协作范围比静态方法更可取，否则，随着时间的推移，存在与产品需求不一致的风险。定期重新评估 SRE 协作关系允许甚至鼓励范围随着应用程序的成熟度、可靠性需求和<a data-primary="SRE engagement models" data-secondary="scope" data-startref="sregagmod_scp_impcons" data-tertiary="implementation considerations" data-type="indexterm" id="id1480"/><a data-primary="engagement models" data-secondary="scope" data-startref="engagmods_scp_impcons" data-tertiary="implementation considerations" data-type="indexterm" id="id1481"/>成功程度而变化。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE for Consumers Versus Enterprises" data-type="sect1"><div class="sect1" id="ch07_sre_for_consumers_versus_enterprises">
+<h1>消费产品与企业产品的 SRE</h1>
+
+<p>核心 SRE 原则<a data-primary="SRE engagement models" data-secondary="consumer versus enterprise" data-type="indexterm" id="id1482"/><a data-primary="engagement models" data-seealso="SRE engagement models" data-type="indexterm" id="id1483"/>和实践适用于任何产品，但 SRE 的协作方式略有不同，具体取决于它是消费类产品还是企业级产品。Google 在消费产品和企业领域都很活跃，并在这两个领域使用其通用的 SRE 协作模式。然而，由于这些用户群的不同需求，需要考虑一些细微差别。为了说明如何以及为什么，先来界定这里所说的消费类产品和企业级产品：</p>
+<dl>
+<dt>消费类产品</dt>
+<dd>
+<p>直接向个人销售的产品<a data-primary="consumer products, engagement model" data-type="indexterm" id="con_engmod"/>。购买者就是用户<sup><a data-type="noteref" href="ch07-zh.html#id1484" id="id1484-marker">3</a></sup></p>
+</dd>
+<dt>企业</dt>
+<dd>
+<p>向公司或组织销售的产品<a data-primary="enterprise products, engagement model" data-type="indexterm" id="entprd_engmod"/>。购买决策者通常是高层决策者，例如首席技术官（CTO）或某个委员会，而不是直接用户。<sup><a data-type="noteref" href="ch07-zh.html#id1485" id="id1485-marker">4</a></sup></p>
+</dd>
+</dl>
+
+<p>对于消费产品，用户往往有很多选择，并且可以自由地转向竞争对手。客户数量可能以百万甚至数十亿为单位。这种规模水平意味着企业必须优化利润和业务规模。随着用户采用率的增加，可扩展性是一个持续的挑战。</p>
+
+<p>对于企业产品，购买过程很漫长，涉及合同谈判。该公司围绕大客户交易优化其业务，收入集中于少数客户。因此，增长往往更可控，业务依赖于保留关键的大客户。关系和信任至关重要。</p>
+
+<p>当 SRE 专注于大规模问题时（就像消费产品的情况一样），他们倾向于依赖指标和标准实践来管理系统可靠性，因为这些方法提供了最大的投资回报。当 SRE 专注于关系和信任时（企业产品的常见情况），他们必须采用更加量身定制、针对特定客户的方法。这种差异改变了 SRE 协作方式的某些方面。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engagement Commonalities" data-type="sect2"><div class="sect2" id="ch07_engagement_commonalities">
+<h2>协作的共性</h2>
+
+<p>企业和消费产品的 SRE 都与各自的开发团队建立<a data-primary="SRE engagement models" data-secondary="consumer versus enterprise" data-tertiary="commonalities" data-type="indexterm" id="id1486"/>合作伙伴关系。他们推动可靠性成果并提供 SLO 和事件管理等基础服务。两个小组都有与构建<a href="https://oreil.ly/F334I">通用故障缓解机制</a>、改进变更管理实践和限制影响半径相关的目标。然而，由于业务运作方式的差异，具体成果和落地方式可能会有所不同。</p>
+
+<p>这并不意味着以消费者为中心的 SRE 永远不会采用面向企业产品的 SRE 的实践，反之亦然。他们确实这么做了。然而，即使是共享的做法在实施过程中也常常略有不同。</p>
+
+<p>有些产品同时向消费产品和企业客户销售。视频会议、电子邮件、文件共享和消息传递产品就是很好的例子。在这些情况下，SRE 可以结合使用这两种方法来为所有客户提供可靠的体验。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engagement Differences" data-type="sect2"><div class="sect2" id="ch07_engagement_differences">
+<h2>协作方式的差异</h2>
+
+<p class="fix_tracking">在消费产品中，SRE 协作<a data-primary="SRE engagement models" data-secondary="consumer versus enterprise" data-tertiary="differences" data-type="indexterm" id="sit_consvent_diffs"/>遵循业务模型，优先考虑有利于利润率和业务规模的成果。SRE 团队专注于数据表明最需要改善的产品领域。然而，在企业产品中，对长期关系的投资程度意味着单个客户的信任与任何 SLO 一样重要。提供企业产品的公司中的 SRE 必须对可靠性有细致入微的理解。例如，当客户的工作负载故障时，即使系统在其 SLO 内运行良好，他们也可能必须介入响应。他们可能还必须设计部署策略，以防止在对客户业务至关重要的时段进行变更：例如，零售客户的“黑色星期五”和社交媒体客户的新年前夜。他们甚至可能支持遵循传统朝九晚五作息的企业在周末发布服务。这会影响他们设计 SRE 基础服务与成果的方式。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SLOs and error budgets" data-type="sect3"><div class="sect3" id="ch07_slos_and_error_budgets">
+<h3>SLO 和错误预算</h3>
+
+<p>SLO 和错误预算<a data-primary="SLOs (service level objectives)" data-secondary="SRE engagement considerations" data-type="indexterm" id="slo_consengcons"/><a data-primary="error budgets" data-secondary="SRE engagement considerations" data-type="indexterm" id="erbud_consengcons"/><a data-primary="budgets" data-secondary="SRE engagement considerations" data-type="indexterm" id="bud_consengcons"/>在消费产品环境中更有效，因为业务依赖于大量客户与产品交互。SRE 有时会通过外部情绪分析来补充基于 SLO 的方法，例如使用 Google 搜索趋势或社交媒体帖子作为检测客户不满意的信号。</p>
+
+<p class="pagebreak-before less_space">在企业产品环境中，SRE 必须以与大规模故障相同的方式响应某些单个客户<span class="keep-together">报告</span>，因为失去一个大客户的信任可能会对业务产生巨大影响。<a href="https://www.hyrumslaw.com">Hyrum 定律</a>使企业产品的可靠性定义进一步复杂化：</p>
+<blockquote>当 API 的用户足够多时，你在契约中承诺什么并不重要：系统中所有可观察到的行为，都会有人依赖。</blockquote>
+
+<p>企业服务的客户通常依赖于系统性能和产品行为的未写入文档或隐含的保证。企业客户关心系统的可预测性和可靠性。不幸的是，影响客户的行为变化很难通过传统的 SLO 检测到，因为这需要监控业务逻辑，而不仅仅是系统指标。此外，由于代码中可能存在的流程数量较多，因此对业务逻辑进行详尽的监控是不切实际的。因此，SRE 往往必须关注系统中关键用户旅程的子集。</p>
+
+<p>对于最关键的产品行为，生成合成请求并模仿客户行为的探测器可以改进问题检测，但这类探测器也有局限。覆盖所有潜在行为需要覆盖系统中的所有可能执行路径，并且由于企业产品的客户群较小，过多的合成请求可能会掩盖真实客户受影响的信号。因此，企业 SRE 经常将客户支持工单作为事件<a data-primary="SLOs (service level objectives)" data-secondary="SRE engagement considerations" data-startref="slo_consengcons" data-type="indexterm" id="id1487"/><a data-primary="error budgets" data-secondary="SRE engagement considerations" data-startref="erbud_consengcons" data-type="indexterm" id="id1488"/><a data-primary="budgets" data-secondary="SRE engagement considerations" data-startref="bud_consengcons" data-type="indexterm" id="id1489"/>检测信号。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident management" data-type="sect3"><div class="sect3" id="ch07_incident_management">
+<h3>事件管理</h3>
+
+<p>第 10 章讨<a data-primary="incident management" data-secondary="SRE engagement considerations" data-type="indexterm" id="id1490"/>论的事件管理实<a data-type="xref" href="ch10-zh.html#ch10">践适用</a>于企业和消费产品服务。然而，在企业产品环境中，对长期合作伙伴关系的信任是最重要的，而在消费产品环境中，缓解速度是最关键的问题，因为用户满意度和保留率与服务可用性相关。支持消费产品服务的 SRE 根据数字来决定响应的紧急程度以及解决故障问题需要承担的风险：受影响客户的百分比、流量下降或影响收入的衡量指标（例如销售或注册）的变化。事件响应变成了“先缓解，后提问”的过程。</p>
+
+<p>对于企业产品，故障的定义更加主观，要求值班人员有更丰富的业务背景并了解特定的客户需求。SRE 必须判断系统行为变化是否应被视为故障；即使系统仍在 SLO 范围内，也常需作出这种判断。由于企业协作还涉及客户关系管理，他们通常采取“先与客户沟通，再缓解问题”的方法。在非常大的公司中，这可能意味着在整个故障期间直接通知客户经理、支持工程师甚至客户来提供支持。拥有专业化的响应人员来确保对客沟通顺畅至关重要。当然，缓解速度仍然很重要，但企业客户希望在此过程中充分了解情况。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Generic mitigations" data-type="sect3"><div class="sect3" id="ch07_generic_mitigations">
+<h3>通用缓解措施</h3>
+
+<p>面向企业产品的 S<a data-primary="mitigations" data-secondary="SRE engagement considerations" data-type="indexterm" id="id1491"/>RE 可能会发现缓解措施更加困难，因为必须考虑客户独特且特定的风险承受能力。此外，如前所述，企业客户可能希望将导致行为不兼容的变更视为全面故障，从而使许多常见的通用缓解措施无效：您无法重启任务、添加更多容量或迁移工作负载来解决问题。</p>
+
+<p>如果更改是最近发生的，则回滚它仍然是最佳选择，即使更改按设计运行。然而，当与少量非常重要的客户打交道时，在客户触发破坏兼容性的行为变化之前，可能会在数周或数月内不被注意到。此时，回滚它可能不安全，因为其他客户现在依赖于新行为。在这些情况下，SRE 必须设法快速缓解受影响客户遇到的问题，而不会给其他客户带来问题。这需要深入了解客户的需求，以便实施有针对性的解决方案。一种主动的解决方案是构建架构，在架构层面隔离大型客户，从而允许安全且量身定制的缓解措施。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="System design" data-type="sect3"><div class="sect3" id="ch07_system_design">
+<h3>系统设计</h3>
+
+<p>消费产品和<a data-primary="system design" data-secondary="SRE engagement considerations" data-type="indexterm" id="id1492"/>企业产品 SRE 都推动成果改进整体系统设计，与开发团队合作，确保架构包含有助于限制影响范围和故障严重程度的故障域。关键区别在于，消费产品的 SRE 在设计时往往侧重于用户组的分区或适度降级功能。这些架构决策通常对客户隐藏。</p>
+
+<p>然而，在企业系统中，即使对于单个客户来说，系统发生故障通常也是不可接受的。每个客户的业务都依赖于可用的系统，因此风险比典型的消费产品服务更高。此外，如果企业客户的业务依赖某项系统行为，他们也可能无法接受该行为被降级。因此，企业产品经常暴露客户可感知的故障域，使客户能够更好地控制他们处理故障的方式。例如，客户可以构建自己的容灾系统。因此，一些架构决策需要根据客户自身的韧性<a data-primary="SRE engagement models" data-secondary="consumer versus enterprise" data-startref="sit_consvent_diffs" data-tertiary="differences" data-type="indexterm" id="id1493"/>能力来制定。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizing Teams" data-type="sect2"><div class="sect2" id="ch07_organizing_teams">
+<h2>组织团队</h2>
+
+<p>在消费产品中，SRE <a data-primary="SRE engagement models" data-secondary="team organization considerations" data-type="indexterm" id="id1494"/><a data-primary="teams" data-secondary="organization considerations" data-type="indexterm" id="id1495"/><a data-primary="SRE teams" data-secondary="organization considerations" data-type="indexterm" id="id1496"/>团队在组织方式上具有一定的灵活性，例如，根据客户体验或服务边界。工程工作和事件响应通常与系统架构保持一致。团队还可以参与多个类似的服务，假设他们共享一个通用的生产平台并且工程挑战相似。</p>
+
+<p>最终，在企业产品环境中，SRE 会投入更多时间处理客户特有的问题。因此，团队需要配备足够的人员，以便能够了解并解决关键客户的挑战。由于客户不关心组织边界，因此企业 SRE 团队按客户体验而非服务边界来组织，通常效果最好。例如，可以捆绑与身份验证和访问相关的所有服务，而不是按前端和后端服务对这些服务分组。这种设置使团队能够通过工程工作和事件响应更快地解决影响客户的问题，并且<a data-primary="consumer products, engagement model" data-startref="con_engmod" data-type="indexterm" id="id1497"/><a data-primary="enterprise products, engagement model" data-startref="entprd_engmod" data-type="indexterm" id="id1498"/>与其合作伙伴的组织方式保持一致。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Evolution of Google SRE’s Engagement Model" data-type="sect1"><div class="sect1" id="ch07_the_evolution_of_google_sre_s_engagement_model">
+<h1>Google SRE 协作模式的演变</h1>
+
+<p>了解哪种<a data-primary="SRE engagement models" data-secondary="history" data-type="indexterm" id="id1499"/> SRE 方法最适合特定组织，有助于确定 SRE 团队的协作范围，但它还不是协作模式的具体实现。在本节中，我们将了解 Google SRE 的协作方式如何发展以满足大型组织的需求；该组织使用一套通用的协作模式框架，覆盖各种不同的职责范围。</p>
+
+<p>SRE 于 2003 年诞生于 Google 生产团队，当时由7名工程师组成。它从本质上说是一个大包大揽模式。SRE 中的“S”反映了团队简单的使命：“保持网站 (<em>google.com</em>) 正常运行。”如前所述，这种方法可以被认为是相对被动和战术性的。随着公司迅速发展、SRE 学科日趋成熟，SRE 扩展到数十个甚至数百个团队。它的角色多样化，协作范围也多样化，扩展到产品、基础设施和工具团队。一些团队开始提供咨询服务或暂时将 SRE 嵌入产品开发中，作为其协作模式的一部分。与此同时，集中式的 SRE 组织变得越来越专业化、广度优先，并且其影响力也不断优化。在 Google SRE 诞生后的二十多年中，协作模式不断发展和成熟，努力实现更加集成的方法和战略业务影响。</p>
+
+<p>Google 最初采用以生产就绪评审（PRR）为门槛的严格 SRE 接入流程。该模型后来演变为具有多个协作层的更细致的方法。Google SRE 协作模式的第三次也是当前的迭代将重点从服务转向业务成果。每种方法都有其价值和局限性。虽然 Google SRE 已经摆脱了严格的 PRR 模型和分层协作，但对于需求不同、各自处于独特 SRE 发展历程中的组织，这些模式仍可能非常合适。我们将在这里讨论这三种模式，以及 Google SRE 为何不断调整做法。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Early Engagement Model (PRRs)" data-type="sect2"><div class="sect2" id="ch07_the_early_engagement_model_prrs">
+<h2>早期协作模式（PRR）</h2>
+
+<p>最初，<a data-primary="SRE engagement models" data-secondary="production readiness reviews" data-type="indexterm" id="sit_prr"/><a data-primary="PRRs (production readiness reviews)" data-type="indexterm" id="prrs"/><a data-primary="production readiness reviews (PRRs)" data-type="indexterm" id="prodrevws"/>Google 的 SRE 采用二元协作模式：服务要么“由 SRE 支持”，要么不支持。过渡是通过生产就绪评审来控制的。<sup><a data-type="noteref" href="ch07-zh.html#id1500" id="id1500-marker">5</a></sup>这是一种深度优先的方法，几乎没有中间地带。没有 SRE 支持的服务是由其开发团队设计、实现和运营的——“谁构建，谁运维”模型。只有对业务最关键的服务才交由 SRE 支持，而 SRE 协作涵盖多项职责：承担一线值班、撰写事后分析、设计支持、工程项目工作以提升应用程序及其基础设施的可靠性、监控、自动化、发布工程和容量规划等。</p>
+
+<p>所有 SRE 工作都基于 Google SRE 的<a data-primary="mission statement" data-type="indexterm" id="id1501"/><a data-primary="Google" data-secondary="SRE mission statement" data-type="indexterm" id="id1502"/>使命宣言：</p>
+<ol>
+<li>
+<p>确保 Google 的产品和基础设施满足其可用性目标。</p>
+</li>
+<li>
+<p>在满足（1）的前提下，最大限度提升长期功能交付速度。</p>
+</li>
+<li>
+<p>使用软件而不是人工来实现（1）和（2）。</p>
+</li>
+<li>
+<p>仅当由 SRE 实现（1）至（3）比由产品开发团队实现更高效时，SRE 才介入。</p>
+</li>
+
+</ol>
+
+<p>SRE 团队的人员经费<a data-primary="funding model" data-type="indexterm" id="id1503"/>直接与其支持的服务挂钩。每个新支持的服务通常需要将一定数量的人员从开发组织转移到 SRE 团队。服务管理越复杂，人员需求就越高。这种人员经费模式为开发团队提供了一种激励机制，以设计更简单、更强大的服务，以降低 SRE 支持的成本——他们因而会有动力，在系统设计质量与运维成本之间寻求整体最优，从而降低公司的总拥有成本（TCO）。</p>
+
+<p>考虑 SRE 支持的任何服务都会经历 PRR 流程，该流程通常需要多个季度才能完成。经验丰富的 SRE 会分析服务的所有运维方面，并在服务交由 SRE 支持之前（即在 SRE 承担主要运维职责之前）列出需要改进的事项清单。PRR 中的典型行动项目包括：</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>定义 SLO</p>
+</li>
+<li>
+<p>减少告警和工单工作量</p>
+</li>
+<li>
+<p>提供更好或更完整的运维文档</p>
+</li>
+<li>
+<p>实施渐进式发布</p>
+</li>
+<li>
+<p>创建备份和恢复计划</p>
+</li>
+<li>
+<p>设置容量规划计划</p>
+</li>
+<li>
+<p>定义并保障故障域</p>
+</li>
+</ul>
+
+<p>其中许多更改都很微小，但对服务的可运维性和可靠性产生重大影响。然而，PRR 中出现的一些行动项目需要对服务的架构或基础设施进行重大更改。此外，SRE 团队需要接受服务培训。通常，改变服务的基础设施以符合 SRE 团队的现有标准比对 SRE 进行一组额外的标准培训更容易、更可持续。</p>
+
+<p>这种谨慎做法背后的原因是双重的。首先，这是与开发团队密切合作提高服务成熟度的独特机会。一旦服务交由 SRE 支持，两个团队可能会将注意力转向不同的项目，即使运维负担仍然存在，但基本的服务改进可能更难以证明其合理性。</p>
+
+<p>其次，引入新服务对于 SRE 团队来说是一个巨大的风险。大多数时候，这个团队比与之合作的开发组织小得多。因此，开发组织通常能够更好地承担运维工作，而单个表现不佳的服务就可能拖垮 SRE 团队。糟糕的服务不仅会影响团队的福祉，还会对 SRE 团队支持的其他服务产生负面影响。当然，表现不佳的服务造成的运维过载总是会波及到开发合作伙伴（请参阅<a data-type="xref" href="ch10-zh.html#ch10">第 10 章</a>），但这仍说明 SRE 已在 toil 上限附近运转。</p>
+
+<p>在 Google，这种模式无意中导致了 SRE 协作关系的“黏性”。 服务一旦完成接管，SRE 若想转向其他更关键的服务，往往就要围绕人员资金和职责交接展开漫长讨论。随着服务成熟，SRE 通过工程改进所能创造的价值可能逐渐下降；这种黏性的协作关系却会让 SRE 承担越来越多的运维职责。相关知识也会无限期地留在 SRE 团队，使开发组织无法积累自身的生产环境知识、提高自给能力。管理所有这些服务的认知负荷也限制了 SRE 团队承担新工作的能力。</p>
+
+<p>这些重量级流程仅适用于少数复杂且对业务至关重要的服务。大多数服务的生命周期并不是从这个类别开始的，而是随着时间的推移逐渐发展到这个类别。因此，我们发现 SRE 通常会在服务生命周期的较晚阶段介入，此时以经济有效的方式对架构或基础设施进行重大更改变得越来越困难。日益增长的早期协作需求已经超出这种模式的承载能力。</p>
+
+<p>Google SRE 仍然对能带来有价值洞见的项目实行 PRR，但它们不再是 SRE 协作模式的核心。相反，它们是更大工具箱的一部分，该工具箱既支持持续演进的服务的轻量级早期协作，也支持复杂、成熟服务的深度参与。事实证明，这种方法比<a data-primary="SRE engagement models" data-secondary="production readiness reviews" data-startref="sit_prr" data-type="indexterm" id="id1504"/><a data-primary="PRRs (production readiness reviews)" data-startref="prrs" data-type="indexterm" id="id1505"/><a data-primary="production readiness reviews (PRRs)" data-startref="prodrevws" data-type="indexterm" id="id1506"/>原先以 PRR 为中心的模型更具可扩展性和协作性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A Tiered Engagement Model" data-type="sect2"><div class="sect2" id="ch07_a_tiered_engagement_model">
+<h2>分层协作模式</h2>
+
+<p>为了满足<a data-primary="SRE engagement models" data-secondary="tiered" data-type="indexterm" id="sit_tred"/><a data-primary="tiered SRE engagement model" data-type="indexterm" id="tired"/>更早引入 SRE 的需求，Google 设计了分层协作模式，将 SRE 支持分为三个层级：</p>
+<dl>
+<dt>基线</dt>
+<dd>
+<p>基于咨询、培训和临时支援的轻量级方法，不需要专项经费</p>
+</dd>
+<dt>协助</dt>
+<dd>
+<p>中间层包含 SRE 项目工作，无需完整接入 SRE；特别适合新服务的早期开发阶段</p>
+</dd>
+<dt>完整支持</dt>
+<dd>
+<p>全套 SRE 能力，包括项目工作和运维支持；对服务稳定性和成熟度要求最高</p>
+</dd>
+</dl>
+
+<p>这一模式旨在通过定制的、广度优先的支持覆盖更多的服务领域，同时以较低的总体成本开展协作。它使 SRE 团队能够扩大支持范围并深化对服务全貌的跨系统、端到端认识。此外，它允许 SRE 在服务生命周期的早期协作，因为此时 SRE 对服务的长期健康度影响最大<span class="keep-together">。</span></p>
+
+<p>基线层<a data-primary="baseline tier (SRE engagement)" data-type="indexterm" id="id1507"/>可以通过多种不同的方式实现。典型的元素包括 SRE 主持的事后分析评审、SRE 通过答疑时间就<span class="keep-together">可靠性</span>主题提供即时建议、由 SRE 指导一组开发人员完成生产相关项目的咨询式项目，以及在特别棘手的事故期间为开发团队的值班人员提供升级支持。这些做法的共同点是，都能在有限的时间预算内提供灵活、相对临时的 SRE 协作。它们还能避免高昂的启动成本以及在 SRE 团队中维护特定于服务的知识的需要。这就是Google 对咨询模式的实施。</p>
+
+<p>辅助层<a data-primary="assisted tier (SRE engagement)" data-type="indexterm" id="id1508"/>的协作深度要高得多。虽然合作服务通常不会经过完整的 PRR，并且并非 SRE 团队中的每个人都需要接受这些服务相关培训，但时间投入要高得多。这项工作通常以与可靠性相关的工程项目为中心。通常，在项目期间，一个或多个 SRE 会直接“嵌入”到开发团队中。虽然这一层不包括完整的值班支持，但一些 SRE 团队为满足一组标准的服务提供共享值班模式。最值得注意的是，服务需要遵循生产标准，以便 SRE 能够轻松理解和管理这些服务。</p>
+
+<p>最后，<em>完整支持</em><a data-primary="full tier (SRE engagement)" data-type="indexterm" id="id1509"/>层提供了一整套 SRE 能力，包括值班支持和长期的 SRE/产品开发关系，与早期的 SRE 协作模式没有太大区别。</p>
+
+<p>分层协作模式的目标是使服务能够比旧模型更流畅地在各层级之间流转。服务可以在其生命周期的早期就获得基线支持。服务可以转入辅助层，而无需承担高昂的接入成本或长期承诺。真正需要完整支持的服务可以更容易地从辅助层过渡。同样，当某项服务不再符合较高级别的资格时，就能更顺畅地将其转移到较低级别，而无需彻底结束协作。</p>
+
+<p>然而，该模型在实践中并未像预期那样经常取得这些成效。事实证明，在不同层之间移动服务几乎与旧模型中的接入和退出一样繁琐。开发人员对于“放弃”他们“争取到”的等级很不情愿。反过来，SRE 对每一层接纳哪些服务非常谨慎，因为担心日后实际上无法撤销这一决定。此外，事实证明，与大量且不断变化的服务保持深厚的 SRE/产品开发关系比预期要困难得多。这会影响工程协作的有效性，并使建立信任和专业知识变得更加困难。</p>
+
+<p>分层模型最大的问题是它仍然以值班<a data-primary="on-call requirement" data-secondary="tiered engagement model" data-type="indexterm" id="id1510"/>责任为中心：基线层不承担值班，辅助层可能承担一部分，完整支持层则全部承担。各层中隐含的层次结构（完整支持 &gt; 协助 &gt; 基线）使得辅助层和基线层很难获得并保持吸引力。整个协作讨论仍然围绕“谁负责值班”，完整的 SRE 支持被认为是“最好的”。讽刺的是，这个旨在强调 SRE 工程工作的模型<a data-primary="SRE engagement models" data-secondary="tiered" data-startref="sit_tred" data-type="indexterm" id="id1511"/><a data-primary="tiered SRE engagement model" data-startref="tired" data-type="indexterm" id="id1512"/>反而强化了“SRE 的主要职能就是值班支持”这一印象。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="An Outcome-Focused Approach" data-type="sect2"><div class="sect2" id="ch07_an_outcome_focused_approach">
+<h2>成果导向的方法</h2>
+
+<p>最近一次是在 2025 年，Google SRE 再次修改了其协作模式并取消了协作层级。新模式试图通过持久的工程工作来最大限度提升 SRE 对业务的战略影响<a data-primary="SRE engagement models" data-secondary="outcome-focused" data-type="indexterm" id="sit_outfoc"/><a data-primary="outcome-focused SRE engagement model" data-type="indexterm" id="outfoc"/>。Google SRE 持续演进协作模式，充分体现了 SRE 文化对学习和持续改进的重视（请参阅<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。</p>
+
+<p>第一项变化是在更广泛的<em>合作伙伴关系</em>框架下看待 SRE 工作。每项合作伙伴关系<a data-primary="partnerships, SRE engagement" data-type="indexterm" id="id1513"/>通常涵盖一个 Google 产品领域（例如 Google 搜索、YouTube 或云数据库）以及一组支持它的 SRE 团队。仅在此级别讨论资金，以避免困扰先前模型的黏性交易式行为。此外，这一产品组合的范围和整体可靠性策略是在合作伙伴关系层面制定的。</p>
+
+<p>同一合作伙伴关系内的所有服务都有资格获得<a data-primary="foundational offerings, SRE engagement" data-type="indexterm" id="id1514"/><em>基础服务</em>；无论 SRE 正在推动哪些成果，团队都会始终提供这些服务。与基线层的服务类似，这些是一组高度可扩展的功能，合作伙伴范围内的所有服务都可以从中受益，并且独立于 SRE 正在推动的其他可靠性工作。这些服务通常不需要长期合作或深厚的特定服务专业知识。例如，事后审查、SRE 答疑时间以及针对高影响故障的值班升级团队（称为事件响应团队（IRT））。提供哪些具体的 SRE 服务是在每项合作伙伴关系的具体情境下商定的。基础服务使 SRE 团队能够在需要时灵活介入，而无需承担黏性承诺的风险。</p>
+
+<p>绝大多数 SRE 工作都是围绕成果组织的。<em>成果</em>是可以通过工程工作实现的可靠性目标。每项<em>配套工作</em>都是一个完整的软件工程项目，SRE 团队同一时间最多应专注于少数几个项目。示例可能包括“将运维工作量减少 x%”、“定义和维护以用户为中心的 SLO”、“设计和实施具有多个故障域的架构”或“设计和实施数据完整性和恢复计划”。如果您发现多个合作伙伴关系中的许多服务都需要实现相同的成果，例如用于安全部署的通用工具，这很可能强烈说明 SRE 领导者应当考虑组建一个基础设施 SRE 团队，专注于提供标准化解决方案。这样，这些能力将成为生产平台的一部分，并且不需要 Google 产品 SRE 团队进行额外的工程工作。</p>
+
+<p>只有在成果与配套工作达成一致之后，SRE 和开发团队之间才会分配所需工作。大多数项目都需要双方的贡献。SRE 的大部分工作将是软件工程，例如构建或更改应用程序和基础设施代码，但其中一些工作将是运维类，例如值班。通常（但并非总是），值班或其他运维任务是为 SRE 工程工作提供支撑。如果不直接接触系统的问题和故障，就很难提高系统的可靠性——这种观察对开发人员和 SRE 都同样适用！但必须明确：SRE 承担值班，应当是因为这有助于为成果导向的工程工作收集信息。</p>
+
+<p>与任何其他工程项目一样，这些工作通常都有一个大致的时间期限，以避免黏性协作。当一项工作完成并取得预期成果时，SRE 可以转向其他工作或在适当的情况下定义后续工作。产品领域的 SRE 和开发领导者保留了一份按其业务优先级排列的备选成果清单。只有支持最高优先级成果的工作才会配备人员，直到 SRE 团队的产能全部用完。如果当前的 SRE 人员配置与潜在高优先级工作不匹配，领导者可以重新平衡 SRE 和产品开发团队之间的人员配置。资金不再是按单项协作交易式分配，而是改为从长期战略视角统一安排。人员更有意识地调配到新的高优先级工作，而不是被已经失去价值的黏性协作关系长期占用。</p>
+
+<p>领导层定期审查和更新预期成果清单。有时，业务优先级发生变化或项目不再相关。此流程可确保 SRE 团队在任一时点都专注于其开发合作伙伴和业务最重视的成果。</p>
+
+<p>虽然 Google SRE 协作模式的许多方面在<span class="keep-together">这些年来不断变化，而且</span>很可能会不断发展，但最重要的原则保持不变。正如<a data-type="xref" href="#ch07_what_is_an_sre_engagement_model">“什么是 SRE 协作模式？”</a>中所述，<a data-primary="SRE engagement models" data-secondary="purpose" data-type="indexterm" id="id1515"/>协作模式的目的是：</p>
+
+<ul>
+<li>
+<p>让 SRE 专注于其使命。</p>
+</li>
+<li>
+<p>最大限度地提高 SRE 所做的工作为业务提供的价值。</p>
+</li>
+<li>
+<p>提供避免 SRE 团队超载的机制。</p>
+</li>
+<li>
+<p>实现 SRE 和产品开发之间的顺利协作。</p>
+</li>
+</ul>
+
+<p>我们认为，展示 Google 内外的不同组织如何将可靠性融入其企业文化非常重要。为此，我们接下来提供三个案例研究，详细介绍 Google 持久磁盘 SRE 团队、Microsoft Azure SRE 组织和 Disney Global SRE<a data-primary="SRE engagement models" data-secondary="outcome-focused" data-startref="sit_outfoc" data-type="indexterm" id="id1516"/><a data-primary="outcome-focused SRE engagement model" data-startref="outfoc" data-type="indexterm" id="id1517"/> 组织中的协作模式如何演变。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Outcomes-Focused Engagements in Persistent Disk" data-type="sect1"><div class="sect1" id="ch07_case_study_outcomes_focused_engagements_in_persistent_disk">
+<h1>案例研究：持久磁盘的成果导向型协作</h1>
+
+<p>2024 年，持久磁盘 SRE 团队<a data-primary="Persistent Disk SRE team, outcome-focused engagement model example" data-type="indexterm" id="pdsre_outfocex"/><a data-primary="SRE engagement models" data-secondary="outcome-focused" data-tertiary="Persistent Disk SRE team example" data-type="indexterm" id="sit_outfoc_pdsre"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Persistent Disk SRE team example" data-type="indexterm" id="outfoc_pdsreex"/>是 Google 最早应用新发展的协作模式的团队之一。<sup><a data-type="noteref" href="ch07-zh.html#id1518" id="id1518-marker">6</a></sup> 这次转变源于现实需要：团队长期面临工作过载和士气低落的问题。采用新模式改善了团队的健康状况和生产力，也改善了与开发合作伙伴的关系。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Old Model" data-type="sect2"><div class="sect2" id="ch07_old_model">
+<h2>原有模式</h2>
+
+<p>2023 年，持久磁盘 SRE 团队遵循半嵌入式 SRE 协作模式。它仍然向中央 SRE 组织汇报，并有 SRE 经理。该团队的结构按值班轮换的人员需求设置，因为 SRE 承担了产品的大部分运维与值班工作。然而，每位团队成员则分别对接一个产品特性团队。</p>
+
+<p>团队成员直接从合作伙伴经理那里获得工程工作任务，通常在功能开发或架构迁移项目中开展工作，添加告警和可观察性等功能。由于 SRE 团队比开发组织小得多，因此 SRE 只嵌入到最关键的工程工作中。对于其他工作，SRE 只需咨询，或者在某些情况下执行 PRR。</p>
+
+<p>随着时间的推移，这种模式带来了许多挑战。其一，它让 SRE 技术主管（TL） 负担过重，因为他们是在咨询和 PRR 工作方面最有经验的团队成员。他们还必须在 SRE 团队参与的各种功能工作中提供技术领导。由于团队中的资深成员分身乏术，经验不足的团队成员无法获得他们所需的指导和反馈。</p>
+
+<p>另一个挑战是开发合作伙伴很难准确理解哪些工作由 SRE 负责，很大程度上是因为答案因 SRE 当时分配的任务而异。当被问及时，他们可能会说 SRE 负责“监控”等能力，但开发团队会将其解释为“所有监控”，而 SRE 团队无法扩展以执行整个产品的所有监控工作。这导致了混乱。</p>
+
+<p>该团队还报告士气低落。他们感觉自己像是开发团队的延伸，而不是一个独立的团队，并且他们很难看到自身的目标和使命。经理们无法发挥他们的工程智慧来帮助 SRE 完成工作，因为他们的团队正在处理太多事情。每个人都认识到有些事情需要改变。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Evolution" data-type="sect2"><div class="sect2" id="ch07_evolution">
+<h2>演进</h2>
+
+<p>SRE 经理对他们的团队进行了调查，以确定核心问题。利用这些数据，他们向 SRE 和产品开发领导层寻求支持，以改变团队的协作方式。</p>
+
+<p>首先，SRE 和产品开发领导层定义了<em>基础服务</em>，这些活动是 SRE 团队始终执行的活动，无论 SRE 正在推进哪些成果。双方同意 SRE 将提供经验丰富的事件响应团队来管理故障，并对产品 SLO 告警做出响应。SRE 还负责将持久磁盘产品部署到新的云区域和可用区所需的地理扩展、自动化和运维流程。</p>
+
+<p>然后领导层确定了 SRE 应该推动的关键<em>成果</em>：</p>
+
+<ul>
+<li>
+<p>通过减少检测、分类、沟通和缓解事件所需的时间，改善故障期间的客户体验。</p>
+</li>
+<li>
+<p>针对主要产品风险制定一套可重复执行的灾难恢复策略，并定期演练。</p>
+</li>
+<li>
+<p>通过消除运维负担的主要来源来降低运行产品的成本。</p>
+</li>
+<li>
+<p>通过重构软件和配置部署，提高功能发布和回滚的速度。</p>
+</li>
+</ul>
+
+<p>SRE 经理将 SRE 分为四个团队来交付成果。TL 编写了技术策略和路线图，以工程工作为框架，说明他们计划如何在每个领域取得进展。使用策略和路线图，产品开发经理和 SRE 经理重新协商了运维与值班负载，以便 SRE 只负责交付成果和提供基础服务所必需的工作。由于团队不再根据值班和运维职责进行协调，因此管理人员创建了与团队结构脱钩的值班轮换。</p>
+
+<p>最后，在 OKR 规划期间，团队根据他们计划在特定成果上计划取得的进展来编写 OKR。<sup><a data-type="noteref" href="ch07-zh.html#id1519" id="id1519-marker">7</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Results" data-type="sect2"><div class="sect2" id="ch07_results">
+<h2>结果</h2>
+
+<p>最初，人们对新模式存在一些抵制。一些 SRE 已经根据他们在嵌入时帮助构建的功能形成了团队归属感，而管理层要求他们退后一步，专注于产品更广泛的可靠性挑战。一些产品开发团队也为这种变化而苦苦挣扎，因为他们已经习惯了嵌入式 SRE 直接替他们处理某些问题。最值得注意的问题是配置告警。为了缓解这一问题，作为过渡的一部分，SRE 进行了工程工作，使开发团队更容易创建和部署自己的特性告警。</p>
+
+<p>一段时间后，人们认识到新模型有很多好处。SRE 团队报告称过载情况有所缓解。TL 能够集中精力，从而能够为经验不足的 SRE 提供更多指导和反馈。管理人员可以更深入地了解各个 SRE 的工作，并提供更多以项目为中心的指导和发展机会。此外，随着团队清楚了解<a data-primary="Persistent Disk SRE team, outcome-focused engagement model example" data-startref="pdsre_outfocex" data-type="indexterm" id="id1520"/><a data-primary="SRE engagement models" data-secondary="outcome-focused" data-startref="sit_outfoc_pdsre" data-tertiary="Persistent Disk SRE team example" data-type="indexterm" id="id1521"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Persistent Disk SRE team example" data-startref="outfoc_pdsreex" data-type="indexterm" id="id1522"/>可以从 SRE 获得什么支持，合作伙伴关系也得到了改善。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: The Microsoft Azure Model" data-type="sect1"><div class="sect1" id="ch07_case_study_the_microsoft_azure_model">
+<h1>案例研究：Microsoft Azure 模型</h1>
+
+<p class="byline">作者：安德里亚·斯帕达西尼和理查德·克劳森</p>
+
+<p>多年来，Microsoft 的多个部门<a data-primary="Microsoft Azure, outcome-focused engagement model example" data-type="indexterm" id="msaz_outfocex"/><a data-primary="SRE engagement models" data-secondary="outcome-focused" data-tertiary="Microsoft Azure example" data-type="indexterm" id="sit_outfoc_msaz"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Microsoft Azure" data-type="indexterm" id="outfoc_msaz"/>都采用了 SRE 原则和实践，为我们的客户提供高质量、高可靠性的服务。Microsoft 是一家大型且多元化的公司，SRE 已在不同程度上和不同的组织拓扑中以不同形式融入多个业务领域。</p>
+
+<p>在本节中，我们将介绍在 Microsoft 的公共云产品 Azure 中实现的集中式 SRE 模型的历史和结构，以及它如何随着时间的推移而发展，以帮助 Azure 满足客户所需的极高的可靠性标准，同时提高组织效率。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Brief History" data-type="sect2"><div class="sect2" id="ch07_brief_history">
+<h2>简史</h2>
+
+<p>我们可以将 Azure SRE 组织的成立追溯到 2015 年。当时，这是一个陌生的概念，并且与 Azure 部门的运营模式并不真正一致，后者主要关注端到端的产品所有权。运维与开发通常是同一业务部门内的独立团队。</p>
+
+<p>早年，启动了多项产品/应用 SRE 协作，重点关注特定的 Azure 产品，例如 Azure Resource Manager 和 Azure SQL。这些都是小型的、大多是独立的团队，与产品团队合作实施 SRE 实践。这次初步落地让我们从成败经验中认识到，SRE 模式如何在 Azure 中发挥作用，以及成功落地应当是什么样子。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Azure SRE’s Evolution" data-type="sect2"><div class="sect2" id="ch07_azure_sre_evolution">
+<h2>Azure SRE 的演变</h2>
+
+<p>随着时间的推移，这些不断扩大的协作逐渐发展成为一个组织，在这个组织中，我们能够增强一组团队的力量和集体知识，这些团队致力于解决类似的问题，但在 Azure 生产堆栈的不同领域和层中。</p>
+
+<p>Azure SRE 成立之初，我们大约有 40 人。虽然不是一个庞大的团队，但足够大，可以看到协作行为和信息共享开始出现。这时我们意识到整体价值大于各部分之和。它标志着一个转折点，我们开始构建更加结构化的方法，以便在越来越多的 SRE 团队中共享知识、工具和解决方案。</p>
+
+<p>现有的协作方法往往依赖共同的汇报链路，并且不太容易跨越团队间的障碍。我们需要找到一种在 SRE 自然适合的跨团队的横向模式中效果更好的东西。</p>
+
+<p class="fix_tracking">真正的转变发生在 2022 年底，当时 SRE 成为新成立的 Azure 可靠性团队的核心支柱。该团队的目标是使 Azure 成为最可靠的云提供商，以 SRE 组织为根基，并通过整个部门的质量计划提供更广泛的影响，例如推动 Azure 范围内的内部事故复盘体系、确定公司范围的质量目标并推动其实现，以及通过软件系统和与内部平台团队的协作来确定横向提升 Azure 质量的机会。</p>
+
+<p>随着这个新团队开始组建，我们决定正式确定我们的 SRE 模式——评估 Azure SRE 组织、其成功以及其成长过程中吸取的经验教训——并把来之不易的知识提炼成<em>《Azure SRE 行动手册与运营模式》</em>，形成一套在 Azure 中运行 SRE 活动的结构化且规范明确的方式。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Azure SRE Playbook" data-type="sect2"><div class="sect2" id="ch07_the_azure_sre_playbook">
+<h2>Azure SRE 行动手册</h2>
+
+<p class="fix_tracking">SRE 手册由一组运营原则、一套为 Azure 服务实施 SRE 的结构化分阶段方法、一组用于推动执行并衡量成效的关键绩效指标（KPI），以及一组不断演进的可复用模式与实践组成。其原则可概括如下：</p>
+<ol>
+<li>
+<p>我们首先投资于在 SRE 组织和产品团队之间建立健康的、基于信任的关系，为成功实施 SRE 所必需的协作活动奠定坚实的基础。</p>
+</li>
+<li>
+<p>我们采用数据推动、立场明确、结构化的方法在 Azure 中实施 SRE。</p>
+</li>
+<li>
+<p>我们依据经 SRE 和产品主管共同认可的指标来衡量我们的成功，这些指标与 Azure 最高层的质量与可靠性目标保持一致。</p>
+</li>
+
+</ol>
+
+<p>我们遵循的运行模式是规定性的，由六个阶段组成，如图 7-1<a data-type="xref" href="#ch07_fig01"> 所示</a>：</p>
+<dl>
+<dt>1. 服务基础能力</dt>
+<dd>
+<p>这是协作的初始阶段。SRE 团队接入服务，并通过审视服务基础能力来寻找提升产品可靠性、质量和安全态势的机会；这些基础能力由公司的<a href="https://oreil.ly/YIxcP">安全未来计划（SFI）</a>和<a href="https://oreil.ly/yFno8">质量卓越计划定义</a>。</p>
+</dd>
+<dt>2. 服务健康度与安全部署实践（SDP）</dt>
+<dd>
+<p>每项协作都应经历这个阶段。此时 SRE 团队专注于识别或细化关键用户旅程和相应的 SLO，甚至在必要时补齐缺失的指标，并根据历史故障和已识别的风险，设计并实施改进方案，优化变更（代码、配置、数据）的分阶段发布。</p>
+</dd>
+<dt>3. 运营效率</dt>
+<dd>
+<p>在第 3 阶段，SRE 团队查看运维指标（例如故障缓解时间、事件数量、告警噪声以及路由到正确的值班队列的告警百分比），并根据需要通过重用在类似环境中有效的方法或设计和实施定制解决方案来改进这些指标。团队强烈支持共享和重用解决方案和方法，并且仅在没有其他选择时才从头实现新系统。X 耗时（TTx） 指标在第 75 百分位进行分析，以确保我们不仅捕获“典型”体验（中值甚至平均 TTx），而且还包括一些不太理想的行为（在 TTx 分布上向右移动，即第三四分位区间），同时仍然排除异常值以保持分析的实用性。</p>
+</dd>
+<dt>4. 发布和变更管理</dt>
+<dd>
+<p>此阶段致力于优化开发内循环和外循环。通常，我们会查看四个 DORA 指标中的三个（变更交付时间、变更失败率、部署频率），并根据该领域的改进对客户体验的可衡量影响来改进这些指标。</p>
+</dd>
+<dt>5. 降低可靠性风险</dt>
+<dd>
+<p>Azure 服务定期开展可靠性风险建模，在此过程中我们识别和分类可能导致故障的风险。分析涵盖服务架构、基础设施、依赖关系、影响半径和运维流程。在第 5 阶段，SRE 专注于主动减轻已识别的风险，例如单点故障、未能控制影响半径、冗余机制的潜在误用或错误配置等。</p>
+</dd>
+<dt>6. 可扩展性和容量</dt>
+<dd>
+<p>在该领域工作的 SRE 团队完善系统的可扩展性模型：制定预测性、自适应容量规划；并主动主动识别并消除潜在瓶颈。</p>
+</dd>
+
+</dl>
+
+<figure><div class="figure" id="ch07_fig01">
+<img alt="Diagram outlining phases of the Azure SRE Playbook, including Service Fundamentals, Service Health &amp; SOP, Operational Efficiency, Release &amp; Change Management, Reliability Risk Reduction, and Scalability &amp; Capacity, each linked with specific KPIs." src="assets/sre2_0701.png"/>
+<h6><span class="label">图 7-1。</span>Azure SRE Playbook 运行模式阶段</h6>
+</div></figure>
+
+<p>通常，SRE 团队在任一时点都主要在这些领域之一开展工作。每个阶段都配有一组 KPI。这使我们能够确定最需要 SRE 贡献的领域，并确定我们的工作何时在给定领域“足够好”，我们可以进入下一个领域。</p>
+
+<p>我们希望团队按顺序遵循这些阶段，除非 KPI（以及与产品组团队的对话）强烈建议采用不同的顺序。刚启动的协作通常会在第 1 至第 3 阶段花费更多时间，而更成熟的协作通常会停留在第 5 和第 6 阶段，通常在这些阶段进行最深入的项目，同时仍然关注早期阶段的 KPI。</p>
+
+<p>当我们在每个阶段执行项目时，我们会识别许多 SRE 团队反复出现的共性问题，并将相应解决方案固化为 <em>SRE 模式</em>，这是可重用的项目蓝图，已由多个团队执行，并已被证明可以对一个或多个 SRE Playbook KPI 产生积极影响。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling SRE in Azure" data-type="sect2"><div class="sect2" id="ch07_scaling_sre_in_azure">
+<h2>在 Azure 中扩展 SRE</h2>
+
+<p>逐项服务开展工作的影响力有限，Microsoft 云的规模要求在提供质量的同时保持 SRE 投入随规模次线性增长。Azure SRE 团队已经确定了三种模式，使我们能够将影响扩展到更大范围：</p>
+<dl>
+<dt>通过通用基础设施扩展 SRE</dt>
+<dd>
+<p>Azure 服务主要遵循一些标准化的架构模式，并且通常依赖于有限数量的底层计算平台（例如 Azure Kubernetes Service 和 Service Fabric）。我们目前正在与平台团队合作，提升这些平台的内生可靠性，让所有团队都能从中受益。</p>
+</dd>
+<dt>通过横向功能扩展 SRE</dt>
+<dd>
+<p>我们将 SRE 经验编码到内部 Azure 工程系统中，并创建简化采用的模式。一些例子包括服务健康 SRE 团队，该团队致力于通过软件在 Azure 全域改进 SLO，以及变更 SRE 团队，该团队旨在从根本上使 Microsoft 云的每项更改都更加安全。</p>
+</dd>
+<dt>通过标准扩展 SRE</dt>
+<dd>
+<p>我们将可靠性和质量功能左移，使其更贴近开发人员，在编写代码时检测代码中的故障触发模式，并在开发人员的内环（集成开发环境、持续集成）中为开发人员提供指导。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Return on Investment" data-type="sect2"><div class="sect2" id="ch07_sre_return_on_investment_roi">
+<h2>SRE 投资回报</h2>
+
+<p>最终，Azure 服务需要实现所需的质量目标。是否借助 SRE 来实现这些目标是一个业务问题，而不是一个技术问题。</p>
+
+<p>在过去几年中，我们的组织已发展到约 200 名 SRE，这从业务上强烈表明值得投资 Azure SRE 模式来实现质量目标。</p>
+
+<p>为了协助业务决策，我们最初开发了一个结构化的投资回报率框架，把工作成果直接与财务回报的估计联系起来。然而，我们发现把 SRE 的价值简化为一个金额并不能完全体现其影响。更有说服力的证据来自 Azure 的<span class="keep-together">部门级</span>质量 KPI。通过分析这些 KPI 的表现，我们发现 SRE 支持的服务在 SRE 团队关注的领域持续改进得更快。</p>
+
+<p>让整个组织专注于质量与可靠性成果有明显的好处。尽管建立合作伙伴关系的前期成本很高，但我们的观察是，与要求产品团队独立解决相同领域问题相比，这种模式可以带来更快、更持续的改进。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Takeaways" data-type="sect2"><div class="sect2" id="ch07_takeaways">
+<h2>要点</h2>
+
+<p>本案例研究描述了 Azure SRE 组织迄今为止的演变，从 2015 年大约 40 名分散在少数独立项目中的人员发展到拥有 200 多名工程师的紧密协作的组织，深深嵌入到 Azure 的可靠性战略中。</p>
+
+<p>回顾过去，有几件事很引人注目。首先，把学习历程沉淀为书面、可重复、由数据驱动的行动手册，使大家对目标和模式形成了共同理解，加速了扩展并为 SRE 协作奠定了基础。</p>
+
+<p>随着我们的成长，我们意识到逐项服务扩展无法覆盖整个 Azure。因此，我们找到了让投入以次线性方式增长的方法，包括投资致力于通用基础设施的平台 SRE 团队、构建横向能力以及推动标准左移。</p>
+
+<p>最后，我们了解到，SRE 投资最有力的论据不是节省成本，而是 SRE 支持的服务和非 SRE 支持的服务之间在质量与可靠性方面的明显差异。</p>
+
+<p>这里描述的<a data-primary="Microsoft Azure, outcome-focused engagement model example" data-startref="msaz_outfocex" data-type="indexterm" id="id1523"/><a data-primary="SRE engagement models" data-secondary="outcome-focused" data-startref="sit_outfoc_msaz" data-tertiary="Microsoft Azure example" data-type="indexterm" id="id1524"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Microsoft Azure" data-startref="outfoc_msaz" data-type="indexterm" id="id1525"/>模式并非最终形态。我们不断发展我们的行动手册和协作模式，适应基础设施、工程系统、产品组合和客户需求的变化。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Disney Global SRE: Embedding Reliability &#10;Across the Magic" data-type="sect1"><div class="sect1" id="id121">
+<h1>Disney Global SRE：将可靠性<span class="keep-together">融入神奇体验</span></h1>
+
+<p class="byline">作者：Jason Cox</p>
+
+<p>迪士尼的全球系统与站点可靠性工程组织是一个由可靠性专家组成的集中团队，分布于华特迪士尼公司的各个业务部门。Global<a data-primary="The Walt Disney Company, outcome-focused engagement model example" data-primary-sortas="Walt Disney" data-type="indexterm" id="wdc_outfocex"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Walt Disney Company" data-type="indexterm" id="outfoc_wdc"/> SRE 并非按传统共享服务或工单驱动型运维团队的方式运作，而是充当长期可靠性合作伙伴，将工程工作直接与不断发展的业务成果相结合。</p>
+
+<p>虽然有些合作是有时限的，但许多 SRE 合作伙伴关系会持续多年。随着业务部门从一个产品转向另一个产品，或者从一次重大迭代进入下一次，SRE 的协作方式通常会发生转变，而不是结束。这种连续性使 SRE 能够深入了解业务、系统和运营节奏，从而随着时间的推移显著提高其有效性。</p>
+
+<p>其结果是一个结合了集中化带来的规模效应、本地背景和长期信任的模型。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Embedded SRE: From Transactional to Relational" data-type="sect2"><div class="sect2" id="id866">
+<h2>嵌入式 SRE：从事务型到关系型</h2>
+
+<p>从历史上看，集中式运维团队通常以事务性方式工作。请求通过工单队列流转，成功通过吞吐量来衡量，与业务团队的交互主要发生在故障期间。虽然这种方法提供了结构和可衡量的输出，但它往往无法提供真正的改进或创新，还会造成隔阂和挫败感。业务团队对 SRE 的角色或价值知之甚少，并且经常因与业务需求不一致而感到沮丧。相反，SRE 往往与核心业务推动因素脱节，并因流程自动化或创建更人性化的运维模式进展缓慢而受到阻碍。</p>
+
+<p>迪士尼转向嵌入式 SRE 从根本上改变了这种动态。</p>
+
+<p>当迪士尼开始将 SRE 团队嵌入其业务和产品团队时，发生了一些引人注目的事情。SRE 开始真正了解业务。工单另一端的声音变成了同事和午餐伙伴。SRE 看清了整个系统：人员、文化、技术、业务挑战和成功经验。<sup><a data-type="noteref" href="ch07-zh.html#id1526" id="id1526-marker">8</a></sup> 同时，技术和产品团队获得了具有同理心的合作伙伴，他们了解业务并能够更好、更快、更安全地交付解决方案，并让合作更加愉快。</p>
+
+<p>凭借系统思维方面的专长，SRE 现在可以以与业务需求深度一致的方式优化端到端可靠性。通过与产品和工程团队合作，SRE 获得了对系统如何构建、如何演变以及故障如何影响真实的人和真实体验的第一手了解。系统不再是组件的抽象集合；而是由文化、人员、约束和目标共同塑造的社会技术生态系统。</p>
+
+<p>亲近会产生同理心。同理心建立信任。信任加速开发速度。<sup><a data-type="noteref" href="ch07-zh.html#id1527" id="id1527-marker">9</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Aligning SRE with Business Goals" data-type="sect2"><div class="sect2" id="id867">
+<h2>使 SRE 与业务目标保持一致</h2>
+
+<p>目标对齐始于技术工作开始之前，并贯穿合作关系的整个生命周期。Global SRE 不会把工作当作一连串运维请求来接收。相反，协作是围绕业务目标、可靠性风险和预期成果来制定的。</p>
+
+<p>嵌入式 SRE 直接与产品、工程和业务领导者一起参与规划对话。他们共同将守护游客体验、实现创意交付时间表或确保收入连续性等目标转化为具体的可靠性目标。<sup><a data-type="noteref" href="ch07-zh.html#id1528" id="id1528-marker">10</a></sup></p>
+
+<p>这种一致性通常是通过轻量级协作协议来实现的，该协议回答几个数量不多但十分关键的问题：</p>
+
+<ul>
+<li>
+<p>我们现在正在保护或实现哪些业务成果<em/>？</p>
+</li>
+<li>
+<p>哪些可靠性风险威胁到这些成果？</p>
+</li>
+<li>
+<p>对于这个系统或事件来说，“足够可靠”意味着什么？</p>
+</li>
+<li>
+<p>如何衡量成功（例如，SLO、错误预算、就绪里程碑）？</p>
+</li>
+</ul>
+
+<p>重要的是，随着业务的发展，这些协议会被重新审视和更新。随着产品的成熟、退役或转型，SRE 的重点也会相应转移，而又能保留长期合作所积累的上下文连续性与信任。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Centralized SRE: Scaling Reliability Without Losing Context" data-type="sect2"><div class="sect2" id="id868">
+<h2>集中式 SRE：在不丢失上下文的情况下扩展可靠性</h2>
+
+<p>嵌入可以在本地建立信任，而集中化可以实现规模化。Global SRE 领导层保持着跨企业的视角，涵盖迪士尼多元化的技术领域，从媒体和流媒体平台到主题公园系统和创意制作管道。</p>
+
+<p>这一优势使 SRE 能够：</p>
+
+<ul>
+<li>
+<p>识别跨团队的模式。</p>
+</li>
+<li>
+<p>编纂最佳实践。</p>
+</li>
+<li>
+<p>投资共享工具和平台。</p>
+</li>
+<li>
+<p>提供一致的培训和职业发展。</p>
+</li>
+</ul>
+
+<p class="pagebreak-before less_space">一个关键的例子是迪士尼向声明式基础设施和基础设施即代码的转变。集中式 SRE 团队开发参考架构、工具和培训，而嵌入式 SRE 则根据本地业务需求调整这些模式。这使他们能够调整和完善管理基础设施、构建 CI/CD 管道、为应用添加可观测性埋点以及将工作负载大规模部署到公共云的方法。</p>
+
+<p>SRE 领导层的一项重要目标是发展嵌入式 SRE 的专业能力以及他们对所支持的业务的深入了解。面对旺盛的业务需求和稀缺的 SRE 人才，这两项目标很难兼顾。然而，正如迪士尼发现的那样，这是可能的。解决方案包括用于分享最佳实践的跨团队论坛、集中培训计划以及团队之间 SRE 的主动轮换。举例来说，在业务部门之间流动的 SRE 通常学到的东西和他们做出的贡献一样多，从而促进跨团队交流并提升整个迪士尼的全球 SRE 实践。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engagements That Pivot, Not End" data-type="sect2"><div class="sect2" id="id869">
+<h2>协作会转向，而非结束</h2>
+
+<p>实际上，迪士尼的大多数 SRE 活动都没有硬性的“结束日期”。</p>
+
+<p>当一种产品稳定下来时，另一种产品就会出现。随着平台的成熟，新的集成、功能或业务优先级就会出现。在这些情况下，SRE 伙伴关系会转向而不是脱离，在保持连续性的同时转移焦点。</p>
+
+<p>这种转向模式有几个优点：</p>
+
+<ul>
+<li>
+<p>对业务的深入了解可以缩短上手时间。</p>
+</li>
+<li>
+<p>历史背景有助于做出更好的可靠性决策。</p>
+</li>
+<li>
+<p>信任加速了新实践的采用。</p>
+</li>
+<li>
+<p>SRE 工作始终聚焦当下重要的事情，而不是停留在去年的重点上。</p>
+</li>
+</ul>
+
+<p>也就是说，转向是有意为之的，而不是自动的。SRE 领导层和业务合作伙伴定期重新评估：</p>
+
+<ul>
+<li>
+<p>SRE 工作是否仍然与有意义的成果保持一致？</p>
+</li>
+<li>
+<p>合作伙伴关系是否仍然相互支持？</p>
+</li>
+<li>
+<p>这是目前稀缺 SRE 人力的最佳利用方式吗？</p>
+</li>
+</ul>
+
+<p>当答案是肯定的时，协作关系就继续演进。如果答案是否定的，SRE 就会转向其他工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="How Disney Organizes On-Call" data-type="sect2"><div class="sect2" id="id870">
+<h2>迪士尼如何组织值班</h2>
+
+<p>在迪士尼，值班被视为系统健康状况的信号，而不是需要承受的负担。</p>
+
+<p>构建系统的团队应当负责系统的运维。SRE 与这些团队合作，通过提高告警质量、明确升级路径并积极减少 toil，设计人性化、可持续的值班模式。<sup><a data-type="noteref" href="ch07-zh.html#id1529" id="id1529-marker">11</a></sup></p>
+
+<p>由于迪士尼运营着多种不同类型的系统，因此值班的模式会根据具体情况进行调整。对于在线产品，团队可以联合进行 SRE 和开发人员轮换，先向 SRE 发出告警，再按需升级给开发人员，或者使用混合轮换。在一些大型机或商用现成系统环境中，SRE 直接承担服务值班，同时大力投资自动化，以便系统在很大程度上自行运行。在主题公园景点中，SRE 可能会在当地公园工程团队承担运维责任之前在系统部署阶段提供支持，只有在问题变得长期存在时才会再次介入。在媒体内容制作中，SRE 可能会负责内容流水线的平台可靠性，提供他们的专业知识，同时制作团队直接支持节目。</p>
+
+<p>理想情况下，SRE 不应长期充当值班兜底。不过，在备受关注的活动期间或风险升高的时期，他们可能会暂时参与值班轮换或提供专项保障。这些协作经过审慎规划，明确目标是通过改进系统设计来减少未来的运维负担。</p>
+
+<p>如果值班负担持续存在，则视为反馈，而不是失败。<sup><a data-type="noteref" href="ch07-zh.html#id1530" id="id1530-marker">12</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What We Got Wrong: Leadership Alignment Must Be Ongoing" data-type="sect2"><div class="sect2" id="id871">
+<h2>我们错了：领导层必须持续保持目标一致</h2>
+
+<p>迪士尼全球 SRE 组织学到的最重要的教训之一来自失败。</p>
+
+<p>在一次合作中，SRE 嵌入了一个最初支持现代可靠性实践的团队。随着时间的推移，业务部门内的领导层发生了变化。新领导层更喜欢更传统的 IT 运维模式、集中控制、繁重流程和事务性交付。</p>
+
+<p>SRE 团队并没有认识到这一转变并尽早转向或退出，而是加倍努力，投入更多精力试图说服新领导采用更新的工作方式。这造成了紧张关系，侵蚀了信任，并让参与其中的 SRE 逐渐倦怠。协作最终结束了，但士气和合作关系都受到了不必要的损害。</p>
+
+<p>教训很明确：SRE 伙伴关系需要持续的领导支持。目标一致并非一劳永逸。它必须不断更新。</p>
+
+<p>SRE 资源稀缺。总有其他产品、平台和团队需要 SRE 的专业知识，而 SRE 也能在那里产生切实影响。</p>
+
+<p>不要去不受欢迎的地方。</p>
+
+<p>并且也不要在对方已悄然收回邀请后仍然留下。</p>
+
+<p>优雅的转变（或退出）可以保护团队、保持信任，并确保 SRE 工作始终专注于重要的结果。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Results" data-type="sect2"><div class="sect2" id="id122">
+<h2>结果</h2>
+
+<p>集中协调、深度嵌入和长期连续性的结合为整个迪士尼带来了有意义的成果。Global SRE 已将自动化、可观察性和韧性实践引入到从云原生平台到支持景点和创意制作管道的信息物理系统等领域。</p>
+
+<p>可靠性不再是事后才考虑的补救项。它既是共同责任，也是迪士尼在全球范围内创造神奇体验的核心能力。</p>
+
+<p>业务领导者一致<a data-primary="The Walt Disney Company, outcome-focused engagement model example" data-primary-sortas="Walt Disney" data-startref="wdc_outfocex" data-type="indexterm" id="id1531"/><a data-primary="outcome-focused SRE engagement model" data-secondary="Walt Disney Company" data-startref="outfoc_wdc" data-type="indexterm" id="id1532"/>将 Global SRE 视为并非服务提供商，而是值得信赖的合作伙伴——一个深入了解业务、与业务共同发展的合作伙伴。<sup><a data-type="noteref" href="ch07-zh.html#id1533" id="id1533-marker">13</a></sup></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="How SRE Collaborates with Its Partners" data-type="sect1"><div class="sect1" id="ch07_how_sre_collaborates_with_its_partners">
+<h1>SRE 如何与合作伙伴合作</h1>
+
+<p>有效的协作<a data-primary="collaboration" data-secondary="SRE engagement" data-type="indexterm" id="id1534"/><a data-primary="SRE engagement models" data-secondary="collaboration" data-type="indexterm" id="id1535"/>是任何 SRE 协作的基础。它有助于 SRE 与产品开发团队建立以信任、透明度和持续改进为基础的牢固合作伙伴关系。SRE 和开发团队共同努力提高产品可靠性、管理风险并最大限度提升开发速度。</p>
+
+<p>理想情况下，SRE 应参与整个服务生命周期，从需求和设计阶段开始，贯穿实现阶段。发布阶段是一个需要考虑的重要阶段，因为传统上它被视为瓶颈，但事实并非如此。</p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="SRE and Product Management" data-type="sect2"><div class="sect2" id="ch07_sre_and_product_management">
+<h2>SRE 和产品管理</h2>
+
+<p>大多数组织<a data-primary="product management, SRE engagement" data-type="indexterm" id="id1536"/><a data-primary="collaboration" data-secondary="product management" data-type="indexterm" id="id1537"/>应用某种形式的产品管理来引导其软件产品组合的战略方向，并确保产品开发专注于正确的优先事项。参与产品管理是 SRE 不应错过的机会。</p>
+
+<p>传统上，产品经理通常关注功能需求：产品有哪些功能以及可以做什么。他们确定用户最想要的功能，并尝试利用这些功能构建令人信服的整体产品。</p>
+
+<p>非功能性需求通常扮演次要角色或完全被忽视。SRE 可以倡导与可靠性相关的非功能性需求，例如可用性、响应时间、吞吐量、成本效率、数据完整性等。提高对其重要性的认识可以帮助组织合理确定可靠性工作的优先级，并平衡满足功能性和非功能性需求之间的投资。</p>
+
+<p>其中最重要的方面是共同理解非功能性需求与业务的关联。使用适当的指标（例如客户流失或资金损失）来量化故障或服务过慢对业务的影响，可以帮助建立这种理解。下一步是明确定义要求。SLO（请参阅<a data-type="xref" href="ch08-zh.html#ch08">第 8 章</a>）是量化许多非功能性需求的好方法；理想情况下，产品经理可以利用其在用户需求方面的深厚专业知识来推动 SLO 定义。</p>
+
+<p>随着时间的推移，保持这种对可靠性问题的认识非常重要。我们建议定期与产品管理同步，其中 SRE 详细说明最近故障和其他可靠性问题（例如整体响应缓慢）对用户的影响。事后分析可以成为这些对话的重要材料来源，并且以产品管理为目标受众来编写事后分析可以帮助 SRE 关注故障对业务的影响。</p>
+
+<p>最后，与产品管理团队合作，有助于 SRE 更细致地把握各项工作的优先级。对可靠性或基础设施健康状况的投资必须始终与功能投资相平衡。产品管理、产品开发和 SRE 对业务优先级、用户需求和技术约束形成更深入的共识，使 SRE 能够提供更大的战略价值。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Service Lifecycle Engagement" data-type="sect2"><div class="sect2" id="ch07_service_lifecycle_engagement">
+<h2>贯穿服务生命周期的协作</h2>
+
+<p>SRE 团队可以通过联合工程项目在整个服务生命周期中与产品开发团队协作<a data-primary="service lifecycle, SRE engagement" data-type="indexterm" id="srvlfc_sre"/><a data-primary="collaboration" data-secondary="service lifecycle engagement" data-type="indexterm" id="cloab_srvlfeng"/>，从最早阶段一直到服务发布乃至之后，持续融入可靠性专业知识。使 SRE 的工作和协作方式与业务优先级及 SRE 使命保持一致至关重要。重要的是，SRE 应该只承担其专业知识能够显著提高价值的项目。</p>
+
+<p>SRE 越早介入软件开发生命周期，协作成效通常越好；最好从设计阶段就开始参与<a data-primary="SDLC (software development lifecycle)" data-secondary="SRE engagement" data-type="indexterm" id="id1538"/>。在提交任何代码之前尽早参与，使 SRE 能够提出那些若事后补做会更困难或成本更高的设计建议。SRE 在不同系统、基础设施和工具方面拥有丰富的经验，再加上他们对生产事故的了解，使他们在提供架构和生产见解方面具有独特的优势。开发阶段的参与，例如共同编写或审查架构设计，使他们能够从早期阶段影响实施。参与实现有助于 SRE 在发布前建立熟悉度和运维经验，这对于持续协作特别有利。</p>
+
+<p class="fix_tracking">尽早定义 SLO<a data-primary="SLOs (service level objectives)" data-secondary="SRE engagement" data-type="indexterm" id="id1539"/> 尤其重要：要求 99.99% 的请求延迟低于 10 毫秒的服务，与只要求 99% 的请求延迟低于 250 毫秒的服务，在设计上有根本差异。产品经理、开发人员和 SRE 应该在每个新功能设计的早期就对 SLO 进行迭代，以便可以根据交付 SLO 给用户带来的价值来判断交付 SLO 的实施和运行成本。</p>
+
+<p>在整个协作过程中，在个人贡献者和领导层两个层面，保持 SRE 与产品开发团队之间定期和开放的沟通渠道对于加强协作至关重要。这通常包括每周同步会议，SRE 和开发人员在会上讨论最近的事件、运维工作和即将到来的生产变更（请参阅侧边栏<a data-type="xref" href="ch06-zh.html#ch06_production_meetings">“生产会议”</a>）。这些会议旨在改善运营并提高团队间的透明度和目标一致性。除了团队级别的会议之外，SRE 和开发人员领导还应该定期召开会议来管理整体协作策略。这种密切的合作确保了 SRE 工作主要是主动的。</p>
+
+<p>Google 的 SRE 团队经常与多个产品开发团队或服务合作。当协作仅发生在团队层面而不分配个人责任时，可能会导致责任分散，缺乏明确的所有权；如果每个人都有责任，那么就没有人负责。然而，将单个 SRE 分配给产品开发团队可能很快就会导致他们因请求量而超载。</p>
+
+<p>协作通常涉及两种类型的工作：</p>
+<dl>
+<dt>被动响应型</dt>
+<dd>
+<p>处理中断、工单、设计评审和问题</p>
+</dd>
+<dt>主动型</dt>
+<dd>
+<p>从事工程项目并规划合作的未来</p>
+</dd>
+</dl>
+
+<p>对于被动响应型工作，平衡 SRE 和产品开发团队的负载非常重要。对于主动工作，指定一名负责该服务的 TL 来提供技术领导对于 SRE 很有用。服务 TL 的目标是与产品开发团队建立更紧密的关系，在技术路线图上进行协作，并协调长期协作方向。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>仅以 SRE 值班为中心的协作是一种反模式。值班<a data-primary="on-call requirement" data-type="indexterm" id="id1540"/>只是实现目标的一种手段，为开发人员和 SRE 提供了更多了解其服务的机会，并从中发现能够提升可靠性、减少运维工作的工程项目。</p>
+</div>
+
+<p>重要的是，SRE 和产品开发团队之间分担运维与值班职责，以避免不平衡。这可以采取多种形式，包括：</p>
+
+<ul>
+<li>
+<p>SRE 和产品开发团队共同参与同一套值班轮换。</p>
+</li>
+<li>
+<p>SRE 承担一线值班，但可以将问题升级给产品开发团队以获得额外支持，反之亦然。</p>
+</li>
+<li>
+<p>SRE 负责基础设施故障的值班响应，开发人员则负责应用故障。</p>
+</li>
+</ul>
+
+<p class="fix_tracking">应重新评估不再符合业务需求的 SRE 协作，以确保 SRE 专注于最高优先级。当产品开发团队从一个项目中转移出去时，就会出现一个常见的反模式：SRE 在承担服务值班后，不得不长期承担生产环境维护的责任，这通常被称为“拿着寻呼机”。这种情况是有问题的，因为 SRE 团队并未配备足够人力来长期承担维护和运维工作。相反，最好将低优先级的服务交还给产品开发团队，并将 SRE 的重点转向影响更大的协作。SRE 协作关系的调整，包括可能将运维职责移交给产品开发团队，需要双方协同规划，并制定明确的时间表。这可能需要 SRE 提供额外的培训，以使产品开发团队熟悉生产运维。当然，即使在<a data-primary="service lifecycle, SRE engagement" data-startref="srvlfc_sre" data-type="indexterm" id="id1541"/><a data-primary="collaboration" data-secondary="service lifecycle engagement" data-startref="cloab_srvlfeng" data-type="indexterm" id="id1542"/>移交之后，SRE 仍将继续维持其基础服务。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Beyond Production Readiness Reviews" data-type="sect2"><div class="sect2" id="ch07_beyond_production_readiness_reviews">
+<h2>超越生产就绪评审</h2>
+
+<p class="fix_tracking">正如<a data-type="xref" href="#ch07_the_evolution_of_google_sre_s_engagement_model">“Google SRE 协作模式的演变”</a>中所讨论的，PRR 和发布评审曾经是 SRE 协作的主要内容<a data-primary="SRE engagement models" data-secondary="production readiness reviews" data-tertiary="limitations and alternatives" data-type="indexterm" id="sit_prr_limalt"/><a data-primary="PRRs (production readiness reviews)" data-secondary="limitations and alternatives" data-type="indexterm" id="prrs_limalt"/><a data-primary="production readiness reviews (PRRs)" data-secondary="limitations and alternatives" data-type="indexterm" id="prodrevws_limalt"/>。这些评审会使 SRE 团队成为重大生产变更的“看门人”，从而拖慢开发速度。评审还要求 SRE 投入大量时间，工作量会随功能数量线性增长，这与 SRE 随服务扩展而实现次线性扩展的目标相冲突。此外，由于 PRR 通常在发布前不久进行，因此在评审过程中发现的任何重大变更的实施成本都可能极高，并且可能会延迟发布。</p>
+
+<p class="fix_tracking">对于许多 SRE 团队来说，如果他们对每次发布都进行评审，他们就会把全部时间花在评审上！近年来，SRE 团队已经从 PRR 和正式发布评审转向更具协作性和可扩展性的方法。这是通过对默认提供最佳实践的规范明确的生产平台进行更多投资（参见<a data-type="xref" href="ch18-zh.html#ch18_platform_engineering">“平台工程”</a>）以及赋予产品开发团队更多责任来实现的。例如，SRE 举措显著提高了部署安全性。这些举措包括自动化和标准化部署、实施横向监控以检测回归，以及引入全面的变更监控机制，在检测到回归时自动回滚变更。这种发布流程和工具的标准化减少了 SRE 对于大多数发布所需的例行流程和工作量。现在，SRE 团队可以专注于最复杂或最有风险的发布，其他发布则可以进行轻量级评审，或者在理想情况下，授权产品开发团队承担更大的责任并执行自己的生产发布评审。在这种结构化方法中，SRE 支持的平台和框架可以固化最佳实践，确保服务在设计上即可投入生产。</p>
+
+<p>虽然大多数产品开发团队可以从一定程度的 SRE 协作中获得价值，但由于精力有限，SRE 通常无法为所有产品开发团队提供紧密协作。因此，SRE 将其影响力扩展到正式协作之外，以使更广泛的团队和服务受益。实现这一目标的方法包括：</p>
+<dl>
+<dt>由 SRE 提供生产专业知识指导</dt>
+<dd>
+<p>SRE 可以通过向所有产品开发团队提供咨询或答疑时间来提供设计和实施方面的临时指导。临近发布，轻量级的发布评审流程是一种在不过多消耗 SRE 精力的情况下验证发布是否安全的方法。这些方法虽然比正式的 SRE 协作影响力要小，但所需的 SRE 投入显著减少，同时仍然为开发人员提供有价值的帮助。</p>
+</dd>
+<dt>共享生产专业知识</dt>
+<dd>
+<p>SRE 团队可以培训产品开发团队来理解并更好地掌握其服务的生产环境知识，而不是让 SRE 成为生产环境的人肉抽象层。随着生产环境不断演进、最佳实践的成熟以及新员工加入开发组织，这种知识共享必须持续进行。SRE 可以举办教育课程或通过案例研究提升产品开发团队的技能。因此，开发人员对生产有了更深入的了解，并且需要较少的 SRE 直接支持。</p>
+</dd>
+<dt>减少对生产专业知识的需求</dt>
+<dd>
+<p>SRE 的最终目标是最大限度地减少产品开发团队为生产问题或发布审查等低影响活动寻求 SRE 支持的需要。虽然在生产环境指南中记录 SRE 知识是一个很好的起点，但仅靠文档往往是不够的，因为它缺乏广泛采用所需的可执行机制和实践指导。简化生产环境、采用统一的标准框架和工具、通过自动化执行政策以及推广最佳实践，这些都是高度可扩展的方法，可以改善服务的基础生产健康水平，从而减少对 SRE 协作的需求。</p>
+</dd>
+</dl>
+
+<p>投资平台和可靠性基础设施以主动识别和补救风险，可以把传统 SRE 职责自动化掉，并使系统默认更安全（请参阅<a data-type="xref" href="ch18-zh.html#ch18">第 18 章</a>）。使用标准框架和工具的产品开发团队更加自给自足，需要 SRE 直接介入的场景更少。这些是迈向一体化方式的重要步骤，其中 SRE 原则成为整体组织文化和最佳实践的一部分。因此，SRE 可以将更多资源投入到有影响力、成果导向的活动中，这些活动与<a data-primary="SRE engagement models" data-secondary="production readiness reviews" data-startref="sit_prr_limalt" data-tertiary="limitations and alternatives" data-type="indexterm" id="id1543"/><a data-primary="PRRs (production readiness reviews)" data-secondary="limitations and alternatives" data-startref="prrs_limalt" data-type="indexterm" id="id1544"/><a data-primary="production readiness reviews (PRRs)" data-secondary="limitations and alternatives" data-startref="prodrevws_limalt" data-type="indexterm" id="id1545"/>业务优先级更好地保持一致。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch07_conclusion">
+<h1>结论</h1>
+
+<p>SRE 协作是 SRE 工作的基石。SRE 协作模式定义了 SRE 承担的工作类型以及它如何与最密切的合作伙伴协作。成功的协作模式有助于：</p>
+
+<ul>
+<li>
+<p>对优先事项、风险和权衡建立共识。</p>
+</li>
+<li>
+<p>改善沟通与协作。</p>
+</li>
+<li>
+<p>帮助 SRE 了解自己在业务中的角色。</p>
+</li>
+<li>
+<p>帮助合作伙伴了解如何与 SRE 合作。</p>
+</li>
+</ul>
+
+<p>实施协作模式的第一步是确定 SRE 团队的职责范围。可选范围从包罗万象的大包大揽型团队到负责特定应用或基础设施的高度专业化团队。更成熟的 SRE 组织通常会综合采用多种范围界定方式。</p>
+
+<p>随着 SRE 职能的成熟，协作方式通常会从被动转变为主动，其广度和深度都会增加，并且所创造的业务价值也会从战术变为战略。</p>
+
+<p class="pagebreak-before less_space">在 Google，当我们了解如何最大限度提升 SRE 的业务影响时，我们从严格的基于 PRR 的协作模式转变为支持更灵活且业务成果导向的协作模式。SRE 开始更早介入服务生命周期，在设计阶段提前化解生产风险。每个组织的 SRE 之旅都不同，但此处介绍的关键原则应能帮助您构建成功的 SRE 职能。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1466"><sup><a href="ch07-zh.html#id1466-marker">1</a></sup> IT 运维人员是负责运营服务的工程师，但通常不设计、实施或更改这些服务。大多数公司里仍然存在这类岗位。</p><p data-type="footnote" id="id1479"><sup><a href="ch07-zh.html#id1479-marker">2</a></sup> 依据针对 Google Cloud 客户开展的调查和客户协作所获得的数百个数据点。</p><p data-type="footnote" id="id1484"><sup><a href="ch07-zh.html#id1484-marker">3</a></sup>这里的“买家”指决定使用哪种产品的人。产品本身可能是免费的。</p><p data-type="footnote" id="id1485"><sup><a href="ch07-zh.html#id1485-marker">4</a></sup>提供内部基础设施的 SRE 团队通常会根据各种组织因素平衡面向消费产品和企业产品时的协作特点。</p><p data-type="footnote" id="id1500"><sup><a href="ch07-zh.html#id1500-marker">5</a></sup> PRR 的详细讨论见<a href="https://sre.google/sre-book/evolving-sre-engagement-model">《<em>站点可靠性工作手册</em>》第 32 章。</a></p><p data-type="footnote" id="id1518"><sup><a href="ch07-zh.html#id1518-marker">6</a></sup>虽然新的 SRE 协作模式于 2025 年正式推出，但持久磁盘 SRE 在此之前于 2024 年进行了试点。</p><p data-type="footnote" id="id1519"><sup><a href="ch07-zh.html#id1519-marker">7</a></sup>有关目标和关键结果的更多信息，请参阅 John Doerr、<em>《这就是 OKR：让谷歌、亚马逊实现爆炸性增长的工作法》</em>（Portfolio，2018）。</p><p data-type="footnote" id="id1526"><sup><a href="ch07-zh.html#id1526-marker">8</a></sup> Ash Patel，<a href="https://oreil.ly/OZbuq">“迪士尼站点可靠性工程实践内幕”</a>，<em>SREpath</em>，2023 年 4 月 5 日。</p><p data-type="footnote" id="id1527"><sup><a href="ch07-zh.html#id1527-marker">9</a></sup> Shaaron A. Alvares，<a href="https://oreil.ly/gt109">“Disney SRE 的‘贴近业务的工程’文化：Jason Cox 在 DOES 2022 的演讲”</a>，<em>InfoQ</em>，2022 年 10 月 24 日。</p><p data-type="footnote" id="id1528"><sup><a href="ch07-zh.html#id1528-marker">10</a></sup> 请参阅迪士尼的 Jason Cox，<a href="https://oreil.ly/UwNIN">“迪士尼 DevOps：创造数字魔法”</a>，YouTube，2021。</p><p data-type="footnote" id="id1529"><sup><a href="ch07-zh.html#id1529-marker">11</a></sup> Jason Cox、Brian Scott 和 Alexi Varanko，<a href="https://oreil.ly/ppf3M">“迪士尼全球 SRE — 创造数字魔法”</a>，2022 年 3 月 15 日。</p><p data-type="footnote" id="id1530"><sup><a href="ch07-zh.html#id1530-marker">12</a></sup> 请参见 Jason Cox，<a href="https://oreil.ly/1L1BN">“迪士尼全球 SRE — 创造数字魔法”</a>，YouTube，2024；Jason Cox、Alexi Varanko 和 Brian Scott，<a href="https://oreil.ly/XHEi5">“Disney Global SRE：创造数字魔法”</a>，<em>欧洲 DevOps 企业峰会</em>，YouTube，2022 年。</p><p data-type="footnote" id="id1533"><sup><a href="ch07-zh.html#id1533-marker">13</a></sup> Jason Cox 和 Amy McCain，<a href="https://oreil.ly/ewiqf">“迪士尼全球 SRE — 用共享服务创造魔法”</a>，拉斯维加斯 2023。</p></div></div></section></body></html>
