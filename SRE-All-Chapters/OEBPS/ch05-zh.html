@@ -1,0 +1,1090 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 招聘、培训与职业发展</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 5. SRE Hiring, Training, and &#10;Career Management" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch05">
+<h1><span class="label">第 5 章　</span>SRE 招聘、培训与<span class="keep-together">职业发展</span></h1>
+
+
+<p class="byline">作者：Igor Oks、Jennifer Petoff、Nevin Lazarus、Steffen Mueller<br/>
+<span class="keep-together">Garrett Holthaus 参与撰写</span></p>
+
+<p>SRE 的成效与团队的专业知识和能力密切相关。正如招到合适的人是组建成功团队的基础一样，确保 SRE 在入职时具备所需技能，并在此后持续成长，也同样重要。本章将介绍我们对组织如何建立并发展成功 SRE 能力的看法，内容包括：</p>
+
+<ul>
+<li>
+<p>识别和招聘优秀 SRE 的实用经验</p>
+</li>
+<li>
+<p>通过针对性培训提升 SRE 的技能</p>
+</li>
+<li>
+<p>建立清晰的职业发展路径，打造稳健高效的 SRE<span class="keep-together"> 组织</span></p>
+</li>
+</ul>
+
+<p>我们将讨论组织如何实施这些策略，以及新入行<span class="keep-together">和资深 SRE</span>、SRE 管理者如何在建设优秀团队的同时推进自己的职业发展。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Hiring SREs" data-type="sect1"><div class="sect1" id="ch05_hiring_sres">
+<h1>招聘 SRE</h1>
+
+<p>软件工程领<a data-primary="hiring" data-secondary="SREs" data-type="indexterm" id="hir_sres"/>域的任何岗位都不好招人，而招聘 SRE 尤其困难。能否吸引并选出优秀候选人，对建立和维持成功的 SRE 实践具有战略意义。创建新 SRE 职能所需的资深工程师供不应求，招聘成本也很高。此外，AI 的迅速发展已给远程面试带来作弊诱因等新问题。软件行业正在被重塑，SRE 的职责也随之变化；招聘流程必须在近期到中期内持续演进，才能与之保持一致。</p>
+
+<p>要找到具备大规模分布式系统运维所需综合能力的人才，同样不容易。编码、系统设计和故障排查等扎实技术基础必不可少，但仅有这些还不够；文化特质和思维方式至少同样重要。理想的候选人应当有热情、有好奇心，并能迅速理解陌生系统的工作原理。一个关键文化特质是不能容忍 toil——即无法产生持久价值的手工重复劳动。这会促使 SRE 追求自动化、挑战运维现状，而不是反复修补同一问题。采用 SRE 原则需要从根本上转变思维，其中文化比工具更重要。</p>
+
+<p>随着 Google 的 SRE 实践日趋成熟，我们发现，无论整体上还是各项产品合作中，所需技能都在变化。面对一个新系统，早期 SRE 工作可能更侧重运维自动化和被动解决问题；成熟的实践则要转向通过系统设计和工程手段，主动识别并缓解可靠性风险。这包括分析系统架构、与产品开发团队制定战略路线图、设计韧性系统，以及推动整个组织的技术决策。认识到这种演进，对有针对性地设计招聘流程至关重要。下文将进一步说明优秀 SRE 的特质，以及这些特质对打造有效、稳健<a data-primary="hiring" data-secondary="SREs" data-startref="hir_sres" data-type="indexterm" id="id1321"/>招聘流程的意义。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Attributes of a Successful SRE" data-type="sect2"><div class="sect2" id="ch05_attributes_of_a_successful_sre">
+<h2>优秀 SRE 的特质</h2>
+
+<p>优秀 SRE<a data-primary="hiring" data-secondary="SREs" data-tertiary="candidate attributes" data-type="indexterm" id="hir_sres_canatt"/> 需要什么？技术判断力、解决问题的能力，以及特定的文化特质。SRE 往往拥有十分多样的背景和经历；在 Google，我们把这种视角多样性视为 SRE 的重要优势，因为它能推动团队在复杂环境中创造性地解决问题。成功 SRE 的背景既包括传统计算机科学和自学成才的系统管理，也包括生物化学、数学、电气工程、物理，甚至新闻和音乐理论。与未来同事面试时的表现，通常比教育背景更能预测一个人能否胜任。</p>
+
+<p class="less_space pagebreak-before">SRE 必须能用软件解决问题，也就是能够编写和维护软件，但并不需要时时都在写代码。一个典型 SRE 项目可能把大量时间花在设计、研究和说服利益相关方上，最后只落实为很小的代码或配置变更。在 Google，我们要求每位 SRE 候选人都熟练编程，许多人还具备扎实的数据结构和算法基础。他们必须善于技术系统设计，能从基本原理理解系统；还要能创造性、系统化地排查故障，通过提出并验证假设来拆解复杂故障、识别潜在原因并判断处理优先级。SRE 不只解决眼前问题，还会在不同类型的事故中寻找关联和规律。他们对技术基础设施抱有兴趣和好奇心，愿意深入理解系统、流程和问题。</p>
+
+<p>优秀 SRE<a href="https://oreil.ly/nGvpi"> 需要具备 T 型</a>技术能力。Google 长期观察到，相比单一技术领域的深度，广泛的技术知识和经验更能预测一个人能否在 SRE 岗位取得成功。因此，我们鼓励招聘经理和决策者关注候选人的长处，不要执着于个别领域的不足。招聘经理需要综合考量候选人在全部面试中的表现：某一轮发挥不佳并不必然说明候选人不合适，也可能反映面试官本身的表现。广泛的背景知识使 SRE 能迅速分析陌生的系统设计及其依赖关系。成功的 SRE 还要从风险角度思考，主动发现潜在问题和改进空间；在可靠性风险引发事故前加以处理，当然优于事后补救。Google 招聘的大多数 SRE 并没有专门的 SRE 背景或经验，我们看重的是这些核心特质和技能。</p>
+
+<p>谈到优秀 SRE 的行为特质，我们尤其看重乐于助人。SRE EDU 入职项目会与每一位新加入 Google 的 SRE 分享下面这段话：</p>
+<blockquote><p>当有人弄坏了东西，或发现某个问题极难调试时，你应该向对方道谢：谢谢你发现这个边界情况；谢谢你指出系统中这个过度复杂的部分；谢谢你发现文档的缺口。然后去修正它，让任何人以后都不会再以同样的方式把它弄坏。</p>
+<p data-type="attribution">Tanya Reilly，2005—2018 年任 Google SRE，<a class="orm:hideurl" href="https://www.oreilly.com/library/view/the-staff-engineers/9781098118723/"><em>《The Staff Engineer’s Path》</em></a>（O’Reilly，2022）作者</p>
+</blockquote>
+
+<p class="less_space pagebreak-before">例如，Google 全公司的事故响应团队负责接收最根本、影响范围最广的事故升级。他们形成了一种文化：无论这次升级是否确有必要，都以帮助请求者为先；如有需要，等事故结束后再反馈和指导。相比之下，不太成功的关键响应团队往往不够友善，会让新人或初级员工望而生畏，从而可能无意中阻碍严重事故的升级（参见<a data-type="xref" href="ch04-zh.html#ch04_psychological_safety">“心理安全”）</a>。</p>
+
+<p>在 Google，无论面对事故还是技术争论，SRE 都应敢于挑战现状，因此心理安全以及尊重而坦诚的交流文化不可或缺。我们用一句口号提醒大家：“拒绝混蛋！”由于职责覆盖面广，我们经常与产品开发组织中资历高得多的同事合作。因此，相比纯产品开发团队，SRE 往往能让工程师更早培养出重要的领导力和影响力。</p>
+
+<p>我们要求各级 SRE 管理者，包括高管，都具备扎实的技术能力和判断力。Google SRE 新聘的经理和总监通常会先以个人贡献者（IC）身份工作六个月，其中一项重要经历是取得某项主要服务或产品的值班资格。他们一开始手生一点完全没关系，良好的判断力很快就会恢复。我们发现，是否愿意投入这段技术入职期，很能说明一个<a data-primary="hiring" data-secondary="SREs" data-startref="hir_sres_canatt" data-tertiary="candidate attributes" data-type="indexterm" id="id1322"/>人是否契合 Google 的文化。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Hiring Process" data-type="sect2"><div class="sect2" id="ch05_the_hiring_process">
+<h2>招聘流程</h2>
+
+<p>许多大公司<a data-primary="hiring" data-secondary="SREs" data-tertiary="process" data-type="indexterm" id="hir_sres_procs"/>都有岗位画像或职业阶梯，用来说明某类岗位在不同职级上的要求，Google 也不例外。为了吸引不同视角和背景的人才，SRE 设置了两<em>种</em>岗位画像，并采用不同的面试组合，以发挥各类候选人的优势。SRE 软件工程（SRE-SWE）画像更贴近纯软件开发背景，侧重数据结构和算法；SRE 系统工程（SRE-SE）画<a data-primary="SRE System Engineering (SRE-SE) profile" data-type="indexterm" id="id1323"/><a data-primary="SRE Software Engineering (SRE-SWE) profile" data-type="indexterm" id="id1324"/>像则认可整体系统知识的重要性，对纯软件开发技能的侧重较少。两条路径招入的人承担相同职责，却能为团队带来前述不同思路。我们用“Treynor 曲线”把岗位画像与招聘标准联系起来，<a data-primary="Treynor Curve" data-type="indexterm" id="treycrv_skls"/>表示两类背景可以接受的技能组合范围（图 5-<a data-type="xref" href="#ch05_fig01">1）</a>。</p>
+
+<figure><div class="figure" id="ch05_fig01">
+<img alt="SRE 招聘的 Treynor 曲线，展示系统工程与软件工程能力之间可接受的组合范围" src="assets/sre2_0501.png"/>
+<h6><span class="label">图 5-1　</span>SRE 招聘中的 Treynor 曲线<sup><a data-type="noteref" href="ch05-zh.html#id1325" id="id1325-marker">1</a></sup></h6>
+</div></figure>
+
+<p>面试流程会覆<a data-primary="interview process, hiring SREs" data-type="indexterm" id="id1326"/>盖该岗位所需的多项核心技能，并为每位面试官分配特定主题。这样也能容纳所谓“混合型”候选人：他们可能牺牲了某一领域的部分深度，却兼具开发和系统两个领域的广度。</p>
+
+<p>下面进一步说明候选人可选择的两条主要路径。SRE-<a data-primary="SRE System Engineering (SRE-SE) profile" data-secondary="hiring process" data-type="indexterm" id="id1327"/><a data-primary="SRE Software Engineering (SRE-SWE) profile" data-secondary="hiring process" data-type="indexterm" id="id1328"/>SWE 路径采用 Google 产品开发团队的招聘流程，通常以数据结构和算法、高层软件设计及 API 设计为重点。SRE-SE 路径更看重系统设计，尤其是非抽象大规模系统设计（NALSD），并设置专门面试。它与 SWE 系统设计面试的区别在于，我们还会评估候选人能否给出现实的数值估算，分析可靠性、成本和难度之间的取舍，并逐层推演设计，必要时一直深入到硬件层。我们寻找的是即使从未见过某个系统，也能迅速理解其工作原理的人。</p>
+
+<p>SRE 具有跨职能性质，因此我们把领导和影响他人的能力视为核心技能。通常，高级 SRE 应能担任整个 SRE 团队的技术负责人，Staff SRE 则应能为合作的产品开发组织提供技术领导。因此，所有高级 SRE 候选人都要参加一轮侧重领导力的面试。</p>
+
+<p>管理岗位候选人自然要接受管理技能和经验方面的面试；但由于其技术水平也必须达到 Staff 工程师标准，他们还要完成与个人贡献者相同的一整套技术面试。</p>
+
+<p>考虑到大学通常教授的内容，职业早期候选人往往采用以 SWE 为中心的招聘流程。如何把大学应届毕业生招入 SRE，有其特殊考量和策<a data-primary="hiring" data-secondary="SREs" data-startref="hir_sres_procs" data-tertiary="process" data-type="indexterm" id="id1329"/>略，下一节将详细讨论。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Hiring New Graduates into SRE: A Case Study in Ireland" data-type="sect2"><div class="sect2" id="ch05_hiring_new_graduates_into_sre_a_case_study_in_ireland">
+<h2>招聘应届毕业生担任 SRE：爱尔兰案例研究</h2>
+
+<p>学校通常<a data-primary="hiring" data-secondary="new graduates" data-type="indexterm" id="id1330"/>不教授 SRE 原则、实践和大规模系统设计。许多现有从业者也认为，要在这一领域取得成功，必须已经具备较高资历。然而，我们发现，完全可以直接从高校招聘学生，再把应届毕业生培养成 SRE。从在单台 VM 上运行课堂作业中的个人项目，跨越到服务数百万乃至数十亿用户，固然是巨大飞跃；但通过实践和有针对性的推广项目，可以教会毕业生成为优秀 SRE 所需的技能。本节介绍我们在爱尔兰开展的一项志愿者项目，以及把应届毕业生培养成 SRE 的经验。虽然下文源自这一场景，我们如今已在欧洲及其他地区多个国家成功复制了这种方法。</p>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>我们相信，应届毕业生无论在大型还是小型组织中都能胜任 SRE；但组织规模决定了你能为此类项目投入多少。我们是大型 SRE 组织，可以汇集数十名志愿者的少量贡献，平均每人每季度投入一到八小时，因此这种做法适合我们。对初创公司或小公司而言，这样的投入可能难以承受。你仍可采用下面的策略，但应缩小规模，例如只在附近的一所学校宣传 SRE 这一职业。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Identifying the challenges" data-type="sect3"><div class="sect3" id="ch05_identifying_the_challenges">
+<h3>明确挑战</h3>
+
+<p>在爱尔兰启<a data-primary="hiring" data-secondary="new graduates" data-tertiary="challenges" data-type="indexterm" id="hrng_nwgrad_chlngs"/>动应届毕业生 SRE 招聘项目时，我们分析了现有校招渠道，发现了几个关键问题。首先，爱尔兰学生甚至不知道 Google 会在都柏林招聘工程师；许多人也不了解 SRE 岗位，因此很难吸引他们申请。不少学生缺少课堂之外的编程实践，也没有受过如何写出有说服力简历的训练，招聘人员很难仅凭材料判断。面试同样是障碍：学生可能因紧张或不习惯当场讲述思路而表现不佳，也不了解必须给面试官足够信息，才能评估其是否适合 SRE。入职后，冒充者综合征对进入<a href="https://oreil.ly/qCPQf"> SRE </a>这类高要求技术岗位的新人是非常现实的挑战，应届毕<a data-primary="hiring" data-secondary="new graduates" data-startref="hrng_nwgrad_chlngs" data-tertiary="challenges" data-type="indexterm" id="id1331"/>业生也不例外。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Raising awareness and skill building" data-type="sect3"><div class="sect3" id="ch05_raising_awareness_and_skill_building">
+<h3>提高认知并培养技能</h3>
+
+<p>解决这些问题需要主动从两方面着手：提高认知和培养技能。SRE 关注生产服务的运行，这通常不是学术教育的内容。因此，我们首先要让学生知道 SRE 是一种职业，激发他们进一步了解和尝试这一岗位的好奇心。为此，我们在办公室举办大型开放日，也到校园开展技术讲座；与学生组织合作、参加相关活动（例如学生计算机协会主办的活动），帮助我们建立了高质量人才渠道。与教师和就业服务部门建立联系，也是在应届生中传播招聘信息的关键。</p>
+
+<p class="fix_tracking">技能培养对<a data-primary="hiring" data-secondary="new graduates" data-tertiary="building skills" data-type="indexterm" id="id1332"/>于帮助学生通过招聘流程同样重要。简历工作坊帮助学生写出更出色的申请材料。为了强调实际解决问题经验的重要性，我们举办算法工作坊和编程静修活动，并赞助、宣传编程竞赛，从而改善学生的简历和面试准备。公开的 SRE Classroom 材料深入讲解 NALSD<a href="https://sre.google/classroom"> 原则，</a>也有助于学生了解 SRE。最后，我们还在爱尔兰之外建立合作，以扩大应届生推广范围，尤其是与 Major League Hacking 合作开展全球奖学金项目，其中包含 SRE 基础课程。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Strategies for forging new SREs from new graduates" data-type="sect3"><div class="sect3" id="ch05_strategies_for_forging_new_sres_from_new_graduates">
+<h3>将应届毕业生培养为 SRE 的策略</h3>
+
+<p>我们通过几个步<a data-primary="hiring" data-secondary="new graduates" data-tertiary="placement strategies" data-type="indexterm" id="sre_hng_plcmntstrat"/><a data-primary="hiring" data-secondary="new graduates" data-tertiary="introducing to SRE" data-type="indexterm" id="hir_nwgrads_plcmntstrat"/>骤把应届毕业生引入 Google SRE。首先如上节所述，通过各种定向活动宣传工程岗位，尤其突出 SRE。我们还创建专用话题标签，方便学生在社交媒体上了解最新活动和机会。由一位活跃于社交媒体的人作为爱尔兰学生推广的统一对外联系人也很有效；一度有多所大学的就业服务部门建议学生在 LinkedIn 上联系这位“代言人”。</p>
+
+<p class="less_space pagebreak-before">随后，我们重点争取让学生早在大学一、二年级就来实习。实习的准入门槛通常较低，限期岗位又能让学生获得使用大型分布式系统的宝贵实践经验。通过爱尔兰推广项目招来的许多学生，在毕业前多次回来实习。实习使他们可以先体验 SRE，再决定是否把它作为全职职业。</p>
+
+<p>我们还动员现有 SRE 社区担任志愿者和榜样。工程师介绍自己的工作，激发兴趣并消除岗位的神秘感。亲身参加过该项目的近届毕业生最容易让在校学生产生共鸣；学生能从这些 SRE 分享者身上看到自己，从而缓解招聘应届生时的冒充者综合征：“他们能做到，我也能！”一名早期参加活动和工作坊的学生后来在都柏林 Google SRE 实习，如今已成为 Staff SRE 和技术负责人，并亲自带过实习生。另一名学生参加旗舰开放日后实习、成为全职 SRE，之后又志愿组织活动、指导新生。这就是我们亲切称为“生命循环”的现象：项目招来的学生如今反过来运营项目，核心志愿团队横跨四代 SRE 新人。</p>
+
+<p>无论以实习生还是全职员工身份加入，新人都能从结构化支持中获益。实习负责人或新员工导师充当主要联系人，定期沟通，并根据毕业生的能力和水平提供指导，从而降低他们提问的心理门槛。一个有用、边界清晰、能够完成且时间不敏感的入门项目，<a data-type="xref" href="#ch05_training_sres">是很好的</a>学习主线；新人可在实践中接触团队的重要概念、基础设施和代码库（详见“培训 SRE”）。</p>
+
+<p>建设应届生 SRE 招聘项目要着眼长期，因为招聘人数显著增长可能需要几年。我们的数据表明，七年间人数稳步增加，招聘量扩大了十倍以上（图 5-<a data-type="xref" href="#ch05_fig02">2）</a>。</p>
+
+<figure><div class="figure" id="ch05_fig02">
+<img alt="Google 七年间应届毕业生招聘趋势，实习和全职录用人数稳步增长" src="assets/sre2_0502.png"/>
+<h6><span class="label">图 5-2　</span>Google 七年间应届毕业生招聘趋势</h6>
+</div></figure>
+
+<p>与此同时，展示短期成果也能维持利益相关方对项目的兴趣和支持，例如申请人数增加、进入面试的申请者比例上升，以及招到更多实习生。如果你所在的是小公司或初创企业，觉得等七年难以接受，也不必灰心：图中显示，大部分招聘收益（例如学生录用人数增加）不到两年便已实现。</p>
+
+<p>前实习生转为全职员工，是该项目的一项关键成功指标；从更宽的角度定义成功也很有价值。只要学生在世界任何地方获得实习或全职岗位，我们都视为成功。虽然项目主要招募 SRE，但若能把学生安排到软件工程、产品管理等其他工程岗位，同样算“胜利”。有人在 SRE 实习后成为软件开发者，把 SRE 知识和经验传播到 Google 各处，这本身也<a data-primary="hiring" data-secondary="new graduates" data-startref="sre_hng_plcmntstrat" data-tertiary="placement strategies" data-type="indexterm" id="id1333"/><a data-primary="hiring" data-secondary="new graduates" data-startref="hir_nwgrads_plcmntstrat" data-tertiary="introducing to SRE" data-type="indexterm" id="id1334"/>是可靠性工作的胜利。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Collaborating effectively with staffing teams" data-type="sect3"><div class="sect3" id="ch05_collaborating_effectively_with_staffing_teams">
+<h3>与招聘团队有效协作</h3>
+
+<p>成功实施<a data-primary="hiring" data-secondary="new graduates" data-tertiary="implementing hiring program" data-type="indexterm" id="hir_nwgrads_impprog"/>应届生招聘项目需要跨职能协作。以招聘团队为例，他们提供的专业知识、流程和支持不可或缺，尽管起初他们对都柏林 Google SRE 团队主导的校园推广颇为怀疑。如果你也遇到质疑者，应花时间理解其顾虑。随着申请人数稳步增长、候选人在面试流程中的成功率提高，他们最终成为了我们的盟友。邀请一名招聘人员加入核心推广团队，也给项目带来很大帮助。</p>
+
+<p>需要强调的是，这类 SRE 学生推广无须正式组建专职团队，也可由基层发起。爱尔兰的经验表明，只要持续投入并把工作分散开来，由一群热心 SRE <sup><a data-type="noteref" href="ch05-zh.html#id1335" id="id1335-marker">2</a></sup>志愿者牵头的“20% 项目”，就能发展成稳健、可持续的应届生招聘渠道。没错，应<a data-primary="hiring" data-secondary="new graduates" data-startref="hir_nwgrads_impprog" data-tertiary="implementing hiring program" data-type="indexterm" id="id1336"/>届毕业生确实可以<em>被</em>培养成新的 SRE。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Hiring Antipatterns" data-type="sect2"><div class="sect2" id="ch05_sre_hiring_anti_patterns">
+<h2>SRE 招聘反模式</h2>
+
+<p>正如生<a data-primary="hiring" data-secondary="challenges" data-type="indexterm" id="hir_progchlngs"/>产服务不可能完美，流程也不可能完美。Google 的 SRE 招聘流程当然还有缺陷，但我们一直在改进。下面会介绍一些来之不易的经验，同时也必须承认，SRE 招聘体验永远还有可学习、可改善之处。</p>
+
+<p>招聘 SRE 时必须认识到，招聘流程远不只是一项日常业务职能。对许多不了解该岗位的候选人来说，这很可能是他们第一次接触 SRE，也会形成影响深远的第一印象。招聘速度很重要：各阶段之间久等会给候选人带来很大压力，对不熟悉岗位要求的人尤其如此。内部研究发现，从首次申请到收到录用通知的时间与退出率直接相关，流程超过约 40 个自然日后尤其明显。因此，我们不只关注流程吞吐量，还持续审查并优化单个候选人的等待时延，以提高招聘成功率。无论候选人资历如何，都绝不能低估其体验的重要性。</p>
+
+<p>招聘决策者也不能只找淘汰候选人的理由，而应关注他们能带来的长处和增量价值。SRE 尤其需要这一点，因为多样的视角和广泛的经验对该岗位格外有益。我们在招聘中提供适合不同背景的面试组合，让这种优势导向落到实处。面试不考脑筋急转弯或冷知识，而围绕 SRE 的核心能力设计。构建具体的大规模系统和编程，是所有候选人都必须具备的关键技能。</p>
+
+<p class="pagebreak-before less_space">鉴于 SRE 所负责系统的重要性，为保证标准一致，应把面试与最终录用决定分开，由工程师委员会决定是否录用。委员会逐案权衡每名候选人的优缺点，也能避免个别经理为了立即填补空缺而降低标准。这样做确实会增加流程开销，但有助于实现我们的总体目标：招到聪明、有热情、能迅速理解新系统的人，并承认对 SRE 而言，正确的心态和成长潜力比某种<a data-primary="hiring" data-secondary="challenges" data-startref="hir_progchlngs" data-type="indexterm" id="id1337"/>传统背景更重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Training SREs" data-type="sect1"><div class="sect1" id="ch05_training_sres">
+<h1>培训 SRE</h1>
+
+<p>本节<a data-primary="training" data-secondary="SREs" data-type="indexterm" id="id1338"/>讨论 SRE 如何在整个职业生涯中获得并保持所需技能。我们从两个角度展开：一是组织如何建设和管理有效的 SRE 培训项目，二是 SRE 个人如何规划自己的学习历程。内容既包括结构化课程、入职流程等正式项目，也包括个人可用来深化技术专长和系统背景知识的非正式学习方式。我们希望这些经验能帮助刚起步的准 SRE、希望成长的在职 SRE，以及负责支持团队成员发展和职业成长的管理者。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Setting SREs Up for Success as an Organization" data-type="sect2"><div class="sect2" id="ch05_setting_sres_up_for_success_as_an_organization">
+<h2>组织如何帮助 SRE 取得成功</h2>
+
+<p>先看组织在培养 SRE 能力方面的关键作用。我们将借鉴 Google 已建立的方法和项目，说明组织如何有效设计、实施和管理培训，包括识别学习需求、组织正式课程，以及纳入有价值、可扩展的非正式学习机会。</p>
+
+<p>我们的目标是让新成员具备成功的条件，也让资深成员有机会培养和运用新技能，同时巩固强健的可靠性文化。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The case for investment in training" data-type="sect3"><div class="sect3" id="ch05_the_case_for_investment_in_training">
+<h3>为何值得投资培训</h3>
+
+<p>不过，为<a data-primary="training" data-secondary="SREs" data-tertiary="importance of investing in training" data-type="indexterm" id="trn_sres"/>什么要投资培训？先看看完全不培训的“沉下去或游起来”做法：不给任何指导和支持，让 SRE 自己摸索。这种策略会造成压力、挫败感、士气低落、冒充者综合征，甚至人员流失。</p>
+
+<p class="less_space pagebreak-before">主动培训 SRE 除了能避免上述问题，还有几项重要收益。投资培训可以：</p>
+
+<ul>
+<li>
+<p>体现领导者对员工发展的承诺</p>
+</li>
+<li>
+<p>确保所有人遵循同一套原则和实践</p>
+</li>
+<li>
+<p>强化期望的行为</p>
+</li>
+<li>
+<p>传播并延续理想的组织文化</p>
+</li>
+</ul>
+
+<p>培训项目的投资回报（<a data-primary="new hire training ROI" data-type="indexterm" id="id1339"/>ROI）也可以更具体地计算。下面以新员工为例（表 5-<a data-type="xref" href="#ch05_table_01">1）</a>。</p>
+<table id="ch05_table_01">
+<caption><span class="label">表 5-1　</span>影响新员工培训投资回报的因素</caption>
+<thead>
+<tr>
+<th>因素</th>
+<th>“自行摸索”</th>
+<th>接受培训</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>找到新员工并完成入职所需时间</p></td>
+<td><p>X 周</p></td>
+<td><p>相同</p></td>
+</tr>
+<tr>
+<td><p>寻找新员工并完成入职所需投入</p></td>
+<td><p>招聘人员和面试官投入 Y 周；广告、差旅、搬迁等支出 Z 元</p></td>
+<td><p>相同</p></td>
+</tr>
+<tr>
+<td><p>从入职到完全胜任并高效工作的时间</p></td>
+<td><p>A 周</p></td>
+<td><p>A−B<br/> 周；B = 培训加快上手的幅度</p></td>
+</tr>
+<tr>
+<td><p>完成入职培训的时间</p></td>
+<td><p>0 周</p></td>
+<td><p>C 周</p></td>
+</tr>
+<tr>
+<td><p>培训投入</p></td>
+<td><p>0 周</p></td>
+<td><p>每名新员工占用导师或讲师 D 小时</p></td>
+</tr>
+<tr>
+<td><p>第一年内的人员流失率</p></td>
+<td><p>E%</p></td>
+<td><p>E<br/>−F%；F = 有效入职培训带来的流失率降幅</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>附录 A 提供了<a data-type="xref" href="app01.html#appa">完整算</a>例，可帮助你进一步论证自己组织的 SRE 培训项目。培训投入可通过更快达到胜任状态（例如具备值班能力）、降低人员流失率，或两者共同收回。有时，优秀入职项目的口碑还会降低招聘难度，从而间接减<a data-primary="training" data-secondary="SREs" data-startref="trn_sres" data-tertiary="importance of investing in training" data-type="indexterm" id="id1340"/>少招聘成本。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Training options by org size" data-type="sect3"><div class="sect3" id="ch05_training_options_by_org_size">
+<h3>不同组织规模的培训方案</h3>
+
+<p>建设<a data-primary="training" data-secondary="SREs" data-tertiary="organization size considerations" data-type="indexterm" id="trn_sres_orgszcons"/>和运营培训项目并非没有成本。组织规模不同，适合考虑的培训方式及交付方法自然也不同。</p>
+
+<p>SRE 培训没有放之四海而皆准的方案；各种方法分布在从低投入到高投入的连续区<sup><a data-type="noteref" href="ch05-zh.html#id1341" id="id1341-marker">3</a></sup>间。常见方法按投入由低到高包括：</p>
+<dl>
+<dt>自学</dt>
+<dd>
+<p>向<a data-primary="training" data-secondary="methods" data-type="indexterm" id="id1342"/>员工提供相关资源，由他们自行学习。</p>
+</dd>
+<dt>伙伴制</dt>
+<dd>
+<p>安排搭档，让经验较少者向经验较多者学习；也可以指定导师答疑，并让新人跟岗或由资深人员反向跟岗关键操作。</p>
+</dd>
+<dt>临时课程</dt>
+<dd>
+<p>通过正式讲座或非正式白板交流，培训<a data-primary="whiteboard talks" data-type="indexterm" id="id1343"/>不同主题。</p>
+</dd>
+<dt>系统化培训</dt>
+<dd>
+<p>建立正式项目，制定周密的学习目标和相应内容，并按固定计划持续开课。</p>
+</dd>
+</dl>
+
+<p>可以把培训项目的建设与运营类比为软件开发生命周期。软件开发既要定义“做什么”产品功能，也要考虑“怎么做”才能可靠部署并满足用户需求；培训项目同样有“内容”和“方式”两个维度。“内容”是课程体系、主题和学习材料；“方式”同样重要，指如何持续、可靠地交付培训并有效满足学习者需求。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>不同培训方案的开发成本和运营成本各不相同。自定进度课程的开发投入并不少，甚至可能更多，但项目的日常运营成本低得多。</p>
+</div>
+
+<p>无论组织大小，“怎么交付”都很重要。小组织没有资源建立复杂、耗时的项目；大组织能否有效管理培训交付，包括后勤、报告和持续更新材料，直接决定项目能否成功扩展。大组织可能有更多人可参与，也有更多组织机制可利用，但学习者吞吐量通常也更高。如果不采取措施保证可持续扩展，培训运营成本便会随之上升（详见“培训<a data-type="xref" href="#ch05_training_program_operations">项目运营”）。</a></p>
+
+<p>组织规模和增长速度是两项关键因素，它们决定应采用何种培训方式，以及投入多少才合理。<sup><a data-type="noteref" href="ch05-zh.html#id1344" id="id1344-marker">4</a></sup></p>
+
+<p>如果你的组织：</p>
+
+<ul>
+<li>
+<p>规模小且增长慢，应以辅导、跟岗和项目制学习为主，开展一对一知识传递</p>
+</li>
+<li>
+<p>规模小但增长快，应投资建设入职培训项目</p>
+</li>
+<li>
+<p>规模大且增长慢，应投资持续教育，把它作为人才留任和职业发展的工具</p>
+</li>
+<li>
+<p>规模大且增长快，应投资覆盖入职、上手和持续教育的全生命周期培训项目</p>
+</li>
+</ul>
+<div data-type="tip"><h6>提示</h6>
+<p>组织快速增长时最应加大培训投入。规模小但增长快的组织尤其能从入职培训中受益。也不要忽<a data-primary="training" data-secondary="SREs" data-startref="trn_sres_orgszcons" data-tertiary="organization size considerations" data-type="indexterm" id="id1345"/>视现有员工，应通过持续教育支持其职业发展。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Identifying your target audiences and their training needs" data-type="sect3"><div class="sect3" id="ch05_identifying_your_target_audiences_and_their_training_needs">
+<h3>识别目标受众及其培训需求</h3>
+
+<p>无论组织<a data-primary="training" data-secondary="SREs" data-tertiary="target audience" data-type="indexterm" id="trn_sres_trgtaud"/>规模如何，要建立有效、以可靠性为中心的培训方案，第一步都是明确目标受众及其具体需求。</p>
+
+<p>常见的学习<a data-primary="learner profiles, reliability-focused training" data-type="indexterm" id="id1346"/>者类型包括：</p>
+<dl>
+<dt>准 SRE（“新人”）</dt>
+<dd>
+<p>希望转入 SRE 岗位、尚不了解核心 SRE 概念的学生、初级工程师或 IT 从业者</p>
+</dd>
+<dt>内部转岗人员</dt>
+<dd>
+<p>已在公司工作一段时间，但刚接触 SRE 实践的内部转岗人员</p>
+</dd>
+<dt>资深团队成员</dt>
+<dd>
+<p>希望继续提升能力、推进职业发展的资深 SRE 团队成员</p>
+</dd>
+<dt>业界资深人士</dt>
+<dd>
+<p>在其他地方拥有丰富 SRE 经验，但不熟悉本公司及其基础设施的人</p>
+</dd>
+<dt>SRE 管理者</dt>
+<dd>
+<p>既要支持团队成员发展，也需要磨炼自身专业能力的管理者</p>
+</dd>
+<dt>产品开发者</dt>
+<dd>
+<p>在构建产品和服务时需要兼顾可靠性的软件工程师</p>
+</dd>
+</dl>
+
+<p>明确受众构成后，下一步是确定要培养哪些技能。如“招聘 SRE<a data-type="xref" href="#ch05_hiring_sres">”所述</a>，SRE 通常要比产品开发者更广泛地了解不同系统和技术，同时也要在所支持服务的相关领域具备足够深度，也就是前文所说的 T 型能力。</p>
+
+<p>Google 开展了一项严谨的内部研究，全面分析从入门到高级的 SRE 个人贡献者需要哪些技能和胜任力，并识别各职业阶段取得成功的关键能力。研究方法把定量问卷反馈与定性访谈结合起来，以相互验证并发掘更多见解；其中还专门使用 <a href="https://oreil.ly/xTjYb">MaxDiff 调查</a>来衡量不同技能的偏好占比。</p>
+
+<p>研究揭示了不同经验级别 SRE 的差异，并列出各级 SRE 自己认为最重<a data-primary="core competencies, SRE" data-type="indexterm" id="id1347"/>要的五项技能。核心能力领域包括技术专长、问题解决、事故响应、沟通协作，以及适应与持续学习。</p>
+
+<p>研究结果清楚展示了 SRE 晋升过程中技能组<a data-type="xref" href="#ch05_fig03">合的</a>变化（图 5-3）。初级阶段高度侧重故障排查、理解系统基础等基本技术能力，例如“根据逻辑调试链诊断并缓解故障，并酌情使用多种工具”。随着发展，技术深度仍然重要，但重点扩展到主动预防问题、参与系统设计，以及在团队或领域内发挥技术领导作用。到了更高资历，重心明显转向战略思考、领导力和更广泛的组织影响力，例如“把业务需求转化为覆盖生产环境的解决方案”。这体现了 SRE 从个人技术贡献者向决定方向、创造业务影响的领导者和影响者转变。</p>
+
+<figure><div class="figure" id="ch05_fig03">
+<img alt="SRE 技能随经验增长从响应式能力逐步发展为方向性和战略性能力" src="assets/sre2_0503.png"/>
+<h6><span class="label">图 5-3　</span>SRE 技能如何随经验增长而演变</h6>
+</div></figure>
+
+<p><a data-type="xref" href="#table-0502">表 5</a>-2 通过<a data-primary="training" data-secondary="SREs" data-startref="trn_sres_trgtaud" data-tertiary="target audience" data-type="indexterm" id="id1348"/>示例活动说明图<a data-type="xref" href="#ch05_fig03"> 5-</a>3 中的经验级别。</p>
+<table id="table-0502">
+<caption><span class="label">表 5-2　</span>经验级别说明</caption>
+<thead>
+<tr>
+<th>级别</th>
+<th>示例活动</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>响应式</p></td>
+<td><p>排查系统故障<br/>调查系统<br/>管理生产变更<br/>参加值班轮换<br/>简化复杂概念<br/>理解软件开发生命周期<br/>开发和修改代码</p></td>
+</tr>
+<tr>
+<td><p>主动式</p></td>
+<td><p>分析并改进系统架构<br/>识别并处理问题模式<br/>提出高效技术方案<br/>开发并改进技术系统<br/>处理升级问题<br/>参与制定生产标准<br/>开展根因分析</p></td>
+</tr>
+<tr>
+<td><p>综合式</p></td>
+<td><p>优先处理高影响工作<br/>提供生产专业知识<br/>说明项目计划及理由<br/>最大化工作影响<br/>设计整体系统方案<br/>形成全面解决方案</p></td>
+</tr>
+<tr>
+<td><p>长期式</p></td>
+<td><p>识别系统问题<br/>制定长期技术战略<br/>战略性分配资源<br/>制定问题解决策略<br/>平衡短期与长期需求<br/>协商技术债边界</p></td>
+</tr>
+<tr>
+<td><p>方向式</p></td>
+<td><p>制定生产解决方案<br/>推动技术方案共识<br/>推广 SRE 最佳实践<br/>为可靠性决策提供建议<br/>领导可靠性计划</p></td>
+</tr>
+</tbody>
+</table>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>需要说明的是，这项实证技能研究完成于生成式 AI 快速兴起<em>之前</em>。未来几<a data-primary="AI (artificial intelligence)" data-secondary="impact on SRE skills" data-type="indexterm" id="id1349"/>年 SRE 所需技能组合正在迅速变化。Google 与斯坦福大学的一项合作研究表明，为了让包括 SRE 在内的所有员工充分发挥这项范式转移技术的潜力，产品管理能力将普遍变得更加重要。<sup><a data-type="noteref" href="ch05-zh.html#id1350" id="id1350-marker">5</a></sup></p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Types of SRE training" data-type="sect3"><div class="sect3" id="ch05_types_of_sre_training">
+<h3>SRE 培训的类型</h3>
+
+<p class="fix_tracking">在明确目<a data-primary="training" data-secondary="SREs" data-tertiary="approaches" data-type="indexterm" id="trn_sres_aprch"/>标受众及其不同学习需求后，本节介绍多种行之有效的 SRE 培训方法。<a href="https://sre.google/resources/practices-and-processes/training-site-reliability-engineers">我们先讨</a>论辅导、文档和实践学习等非正式方式，这些方法对大小组织都适用；再说明团队专属培训和项目制学习如何为新 SRE 和成长中的 SRE 提供必要的实践经验与背景；最后深入介绍更适合大型企业的规模化正式项目，例如 Google 的专门 SRE 教育项目和内部课程。目标是全面呈现各种规模的组织可用于培养自信、高效 SRE 和具备可靠性意识的开发者的工具与策略。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>这里虽然重点讨论 SRE 的可靠性培训需求，但可靠性并不只是 SRE 的责任，而应得到整个组织重视。SRE 原则和实践在专职团队之外同样有价值。为非 SRE 开发者提供相关培训，可以帮助他们构建更可靠的软件，避免常见的服务中断模式。</p>
+</div>
+
+<p>Google 建立了一支小型全职团队，并借助 SRE 组织中数十名志愿者扩大规模，提供从入职、值班准备到持续技能发展的全生命周期培训。但小团队不可能覆盖一切，尤其无法掌握支持各类生产服务所需的深广技术知识。因此，我们用组织内的各种基层计划补充正式学习项目。下面看看可以考虑的方案范围。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Informal learning methods" data-type="sect4"><div class="sect4" id="ch05_informal_learning_methods">
+<h4>非正式学习方式</h4>
+
+<p>对小组织来<a data-primary="informal learning methods" data-type="indexterm" id="infrmllrnmthds"/>说，可先从临时、自定进度或一对一学习入手。对大组织而言，SRE 所需知识既广又杂，也必须借助个人或团队自发建立的基层项目来扩展规模。非正式学习通过日常工作、同伴互动和课堂之外的具体活动补充结构化培训，使 SRE 获得知识和技能，也能比中央项目钻研得更深。动态生产环境中，团队式非正式学习对持续发展和保持知识更新至关重要。Google 采用的方法包括：</p>
+
+<ul>
+<li>
+<p><em>导师制</em>提供宝贵的一对一支持，帮助新 SRE 融入组织。导师给予指导并回答问题，让新人更有学习信心。还可采用 <a data-primary="mentoring" data-type="indexterm" id="id1351"></a><span class="keep-together"><em>N</em> + 1</span> 辅导，即导师来自另一团队，以扩大支持网络。同伴知识交流和职业同期小组也能减轻孤立感与冒充者综合征。</p>
+</li>
+<li>
+<p><em>跟岗资深 SRE</em>，尤其是在值班期间，能让新人接触真实事故和排障，这是模拟练习难以完全复制的。另一种方式是新人即将独立值班时，由资深 SRE 进行反向跟岗。虽然 SRE 很少真正独自在生产环境中工作，新人仍可能感到孤立；跟岗和反向跟岗提供心理安全网，既增强信心，也让他们感受到团队支持。<a data-primary="shadowing" data-type="indexterm" id="id1352"></a></p>
+</li>
+<li>
+<p><em>模拟学习</em>能有效提升值班能力。真实事故固然提供不可替代的实践经验，但“厄运之轮”等受控故障演练能在更安全的环境中培养排障能力，让新老 SRE 都能发现新方法和新工具。生成式 AI 工具尤其展现出巨大潜力，可以加快技术和社会技术模拟的交付。<a data-primary="simulations" data-type="indexterm" id="id1353"></a><sup><a data-type="noteref" href="ch05-zh.html#id1354" id="id1354-marker">6</a></sup>全的环境中培养排障能力，让新老 SRE 都能发现新方法和新工具。生成式 AI 工具尤其展现出巨大潜力，可以加快技术和社会技术模拟的交付。</p>
+</li>
+<li>
+<p><em>逆向分析</em>是使用调试和监控工具，从基本原理理解系统如何工作。拆解现有系统能培养 SRE 在复杂生产环境中不可或缺的批判性思考、排障和随机应变能力，增强其从第一性原理调试的本领，使其即使缺少特定系统知识，也能排查并缓解问题。<a data-primary="reverse engineering" data-type="indexterm" id="id1355"></a></p>
+</li>
+<li>
+<p><em>审阅事后复盘</em>，无论个人阅读还是集体讨论，对 SRE 从历史事故中学习、理解系统弱点并确定可靠性工作优先级都至关重要。熟悉过去的缓解与解决策略，也有助于更快处理今后的服务中断。详见<a data-primary="postmortems" data-secondary="reviewing as training" data-type="indexterm" id="id1356"></a><a data-type="xref" href="ch11.html#ch11">第 11 章</a>。</p>
+</li>
+</ul>
+
+<p>除了培训 SRE，还应提升产品开发者的能力，在全组织推广可靠性文化。Google 的 Mission Control 轮岗项目让软件开发者深入 SRE 工作，亲手运行生产系统，更深刻地理解可靠性和可扩展性原则。参与者回到原团队后会自然分<a data-primary="informal learning methods" data-startref="infrmllrnmthds" data-type="indexterm" id="id1357"/>享所学，从而强化团队的可靠性文化。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Team and service-specific training" data-type="sect4"><div class="sect4" id="ch05_team_and_service_specific_training">
+<h4>团队和服务专属培训</h4>
+
+<p>团队专属或“最后一<a data-primary="teams" data-secondary="specific training" data-type="indexterm" id="tms_spcftrn"/><a data-primary="training" data-secondary="team-specific" data-type="indexterm" id="trnng_tmspc"/><a data-primary="last-mile training" data-type="indexterm" id="lstmletrn"/>公里”培训，提供支持本团队服务所需的深入系统知识。SRE 不必知道每个系统的每个细节，但要有足够知识，才能有效调查并找到所需信息。在 Google，这类培训由各 SRE 团队自行开发和交付，内容涵盖职责相关的基础设施与服务细节；软件开发者编写的培训也可能有所帮助。</p>
+
+<p>调试生产系<a data-primary="debugging" data-secondary="as training" data-secondary-sortas="training" data-type="indexterm" id="id1358"/>统往往像遍历一张巨大而未知的图。你无法把整个结构装进脑中，但记住的知识越多、越清楚应查阅哪些文档，就越能迅速沿路径理解系统行为。</p>
+
+<p>值班学习清单是<a data-primary="on-call learning checklist" data-type="indexterm" id="id1359"/>组织团队专属培训的重要工具，列出新 SRE 加入值班轮换前必须掌握的技术、系统和概念。它既能引导学习、帮助建立团队所支持服务的心智模型，也方便导师和经理跟踪进度。</p>
+
+<p>文档对 <a data-primary="documentation" data-secondary="value of" data-type="indexterm" id="id1360"/>SRE 很有价值，因为大量知识很难全靠记忆保存。积极使用和贡献文档能巩固学习、积累声誉，并培养必要的写作与沟通能力。入职文档对新人尤其重要，也必须保持准确。新人视角新鲜，最容易发现并更新过时内容；可安排资深 SRE 核验，以保证准确性。对小组织来说，文档是培训 SRE 开销最低的方式之一。</p>
+
+<p>白板讲解<a data-primary="whiteboard talks" data-type="indexterm" id="id1361"/>是一种低 toil 的“以教促学”方式，可巩固新 SRE 对团队系统的理解。新人为全队画出系统架构，解释结构、各组件用途和关键流程。它不应被当作考试，而应作为促使新人学习系统的机制；同时也能帮助其他成员了解生产环境的最新变化。</p>
+
+<p>定期举办知<a data-primary="knowledge-sharing sessions" data-type="indexterm" id="id1362"/>识分享，例如双周技术讲座，也很容易实施，并对持续学习十分有用。SRE 经常跨不同项目和系统工作，这些活动能防止知识孤岛，促进团队形成共同理解。成员可以介绍技术主题、特定系统或近期收获，在巩固自身理解的同时让团队集体知识保持更新。设计评审同样能让人了解即将发生的架构变化、练习系统设计，并推动更好的决策；初级 SRE 可借助资深同事和团<a data-primary="teams" data-secondary="specific training" data-startref="tms_spcftrn" data-type="indexterm" id="id1363"/><a data-primary="training" data-secondary="team-specific" data-startref="trnng_tmspc" data-type="indexterm" id="id1364"/><a data-primary="last-mile training" data-startref="lstmletrn" data-type="indexterm" id="id1365"/>队集体经验形成更稳健的方案。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Project-based learning initiatives" data-type="sect4"><div class="sect4" id="ch05_project_based_learning_initiatives">
+<h4>项目制学习计划</h4>
+
+<p>项目制学习，尤其<a data-primary="project-based learning initiatives" data-type="indexterm" id="prjtbsd"/><a data-primary="training" data-secondary="project-based initiatives" data-type="indexterm" id="trnng_projbsd"/>是给新成员安排入门<a data-primary="starter projects, new team members" data-type="indexterm" id="strtrproj_nwtmmem"/>项目，是 SRE 学习历程的重要环节，核心目的是通过实践巩固知识。</p>
+
+<p>关键在于为新人识别并分配合适、具有学习价值的项目。既不要采用“沉下去或游起来”的方式，把过于复杂的项目丢给新人，也不要只让他们做 toil；应划出有意义且能完成的工作。这既符合 SRE 通过主动工作提升可靠性的使命，也符合成年人在实践中学习的规律。</p>
+
+<p>项目工作能增强新成员的目标感和成就感，维持动力并加快上手。新人可在清单等结构化学习和实践应用之间分配时间；对一些人来说，这比单纯阅读材料更合适。项目还会培养他们对系统某一部分的主人翁意识，显著促进学习并建立同事信任。</p>
+
+<p>有效的入门项目应当：</p>
+
+<ul>
+<li>
+<p>对团队和/或业务有用</p>
+</li>
+<li>
+<p>边界清晰、相对独立</p>
+</li>
+<li>
+<p>能在合理期限内完成</p>
+</li>
+<li>
+<p>没有很强的时效压力</p>
+</li>
+<li>
+<p>对团队重要</p>
+</li>
+<li>
+<p>不处于服务或项目的关键路径上</p>
+</li>
+</ul>
+
+<p>分配入门项目时，应考虑新成员的背景和团队环境。与团队工作相关的项目可以带他们走遍重要系统，促进融入；与既有经验相符的项目则能提升动力、信心和早期产出，尤其当其他入职内容较枯燥时。如果能找到两者交集，就是理想选择。</p>
+
+<p>入门项目的目<a data-primary="starter projects, new team members" data-startref="strtrproj_nwtmmem" data-type="indexterm" id="id1366"/>标是让新人学习，因此要预留额外缓冲，适应学习曲线差异。项目还应相对独立，避免因依赖关系受阻；新人通常更难跨越技术和组织障碍，这一点尤其重要。</p>
+
+<p>经验较少的 SRE 做项目时需要更多指导，指定导师会很有帮助。资深 SRE 可把自己项目中较小或时效要求较低的任务委派给新人。双方都能受益：新人获得宝贵学习机会，在较小时间压力下负责一个小领域；导师则锻炼领导力。项目完成后，还应让新人向全队分享知识，让所有人都有所收获。</p>
+
+<p>项目制学习也是持续学习的一条实用、低开销路径。即使资深成员也常遇到需要研究新工具或深入理解现有系统的项目，由此形成的领域专长还可继续分享，扩大全队知<a data-primary="project-based learning initiatives" data-startref="prjtbsd" data-type="indexterm" id="id1367"/><a data-primary="training" data-secondary="project-based initiatives" data-startref="trnng_projbsd" data-type="indexterm" id="id1368"/>识。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal training programs" data-type="sect4"><div class="sect4" id="ch05_formal_training_programs">
+<h4>正式培训项目</h4>
+
+<p>正式培<a data-primary="formal training programs, SRE EDU Orientation" data-type="indexterm" id="frmltrnprog_sreedu"/><a data-primary="SRE EDU Orientation program" data-secondary="components" data-type="indexterm" id="sreedu_csstd"/>训项目以结构化方式向 SRE 传授必要技能和知识，范围和成熟度可以不同，应根据组织规模和成熟度调整。下面详细介绍 Google SRE EDU，展示培训投入较高时可以做到什么。小组织可以把这些做法作为长期方向，大组织则更可能实施类似项目或其中部分内容。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Orientation" data-type="sect4"><div class="sect4" id="ch05_orientation">
+<h4>入职培训</h4>
+
+<p>Google 创建 SRE EDU 团队时，首先推出了面向 SRE 的 Noogler（新员工）入职培训。入职流程是帮助新 SRE 在组织中起步、延续健康组织文化的关键。SRE EDU 入职培训由讲师授课，帮助新人建立对 SRE 文化、理念和工作方式的基本认识；重点是培养信心，而不是向他们灌输海量生产技术信息。</p>
+
+<p>热心的志愿讲师常想深入讲授自己擅长的领域：“Noogler 必须学一门 $foo 课！”但不要把一切都塞进入职培训，尤其不要都采用难以记忆的讲座形式。我们用两个问题判断是否应增加内容：</p>
+<ol>
+<li>
+<p>这是入职两周的新人必须知道的吗？</p>
+</li>
+<li>
+<p>如果是，它是否比当前至少一项内容更重要？换言之，一周培训时间有限，要为它腾出什么内容？</p>
+</li>
+
+</ol>
+
+<p>专业人士在实践中学<a href="https://oreil.ly/UyhHd">得最好，因此 <em>识。</em></a>Google SRE EDU 入职培训以一系列动手故障场景为核心，只通过讲授提供完成练习所需的基础知</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="no_period" data-pdf-bookmark="Breakage scenarios" data-type="sect4"><div class="sect4" id="ch05_what_are_breakage_scenarios">
+<h4>故障场景</h4>
+
+<p>这些故障场景使用由 SRE 志愿者搭建的专用培训环境。故障服务从零构建为真实、可扩展的 Google 生产服务，与新人在团队中可能遇到的系统相似。它包含典型生产系统的许多要素：分布在多个集群<span class="keep-together">的前</span>后端、模拟活动的负载生成器、跨多个数据中心和区域且具备配额与冗余功能的存储组件、用户前端、监控、代码、网络组件，以及带值班轮换的寻呼队列。</p>
+
+<p>该服务运行在真实 Google 生产系统上，但部署了多个完整实例（即技术栈）。每组学员完全掌控自己的技术栈，可以停止任务或操作服务，而不影响其他学员和生产任务。服务被刻意设计出若干弱点，用于模拟可信的服务中断并提供排障机会。SRE EDU 核心团队或志愿讲师可随时触发故障，学员三人一组，对“中断”进行分诊、缓解和解决。</p>
+
+<p>故障场景的首要目的，是让新 SRE 在值班前获得真<em>实</em>生产系统的动手经验。阅读文档和事后复盘、参加灾难角色扮演固然有帮助，但在逼真条件下试验更能建立信心。这些场景能训练学员使用公司工具和监控应对持续发展的故障，形成条件反射。主动在受控环境中学习系统和排障，远胜于在真实事故压力下临时摸索。</p>
+
+<p>SRE EDU 课程先用短课讲解特定主题，随后安排相关故障练习。学员通常分成小组；讲师翻转一个开关“弄坏”系统后，他们会收到寻呼，然后练习使用事故期间的工具，并按组织流程执行分诊、缓解和解决。</p>
+
+<p>随着学员信心增长，动手环节的教学方式也会变化。最初讲师可“驾驶”整个练习，并不断征求学员意见，以演示流程；随后转为教练，只帮助起步并提供指导；最后成为“场边向导”，减少直接干预，主要在学员分析故障时回答问题。</p>
+
+<p>故障场景帮助新 SRE 培养排障、调试等基础技术能力，并加深对系统的理解。他们会学习如何检查日志、指标和其他证据，进而排查、缓解并解决问题，也会积累使用公司工具和监控系统的经验。</p>
+
+<p class="pagebreak-before less_space">除了技术能力，这些练习还让 SRE 为值班压力做好准备，学会保持冷静、管理压力。整套培训传达的主线是：系统总会故障，而且方式往往新奇；目标是学会应对这些故障的策略。解决刻意制造的问题，也让学员更理解课程设置背后的理由。</p>
+
+<p>故障场景也是把 SRE 原则用于培训项目本身的例子。从失败中学习是 SRE 的首要原则之一，这些练习提供受控环境来实践事故响应和根因分析；学员通常分组完成，也能促进协作。</p>
+
+<p>这类动手练习与 SRE 团队使用的其他灾难角色扮演相似，例如“厄运之轮”和“走跳板”，都用于磨炼紧急缓解和系统调试能力。成功的演练和故障场景一样，既让所有人学到东西，也能激励队友。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="On-call curriculum" data-type="sect4"><div class="sect4" id="ch05_on_call_curriculum">
+<h4>值班课程</h4>
+
+<p>Google 的结构化 SRE 学习项目还包括 SRE EDU Going On-Call 课程。它承接基础入职培训，帮助工程师准备面对最令人紧张的职责之一。课程主要面向即将携带寻呼器的人，让他们具备有效承担服务值班所需的知识与信心。内容刻意与具体服务无关，因此适用于不同 SRE 团队管理的各种服务；各服务特有的技术细节、流程和手册不属于 SRE EDU 范围。Google 规模庞大，中央培训团队不可能维护前文所述的服务专属培训。核心 EDU 团队只提供一般建议和支持，具体内容由各 SRE 团队自行开发和执行。</p>
+
+<p>SRE EDU 入职培训由讲师授课，而 Going On-Call 则刻意设计成自定进度课程，既为学习者提供灵活性，也控制核心 EDU 团队的运营开销。后文将深入讨论影响此类决策的培训运营因素。</p>
+
+<p>完成值班课程并非绝对的技术门槛，但强烈建议所有即将值班的 SRE 和开发者参加。为确保 SRE Noogler 做好必要准备，他们通常会在入职一到两个月后自动加入这套三门课程。</p>
+
+<p>课程包括：</p>
+
+<ul>
+<li>
+<p>值班基础：处理小型服务中断的各个阶段</p>
+</li>
+<li>
+<p>Google 事故管理（IMAG）与事故声明</p>
+</li>
+<li>
+<p>值班升级：因各种原因需要升级时处理服务中断的步骤</p>
+</li>
+</ul>
+
+<p>课程目标是让新 SRE 对服务中断各阶段形成清晰的心智地图，并增强他们承担服务值班<a data-primary="formal training programs, SRE EDU Orientation" data-startref="frmltrnprog_sreedu" data-type="indexterm" id="id1369"/><a data-primary="SRE EDU Orientation program" data-secondary="components" data-startref="sreedu_csstd" data-type="indexterm" id="id1370"/>的信心。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Continuous education" data-type="sect4"><div class="sect4" id="ch05_continuous_education">
+<h4>持续教育</h4>
+
+<p>持续教育对 <a data-primary="training" data-secondary="continuous education" data-type="indexterm" id="id1371"/><a data-primary="continuous education" data-type="indexterm" id="id1372"/>SRE 也很重要。SRE EDU 入职培训等初始项目侧重建立信心，持续学习则更关注让工程师及时掌握具体技术、工具和系统变化。即使大组织，培训资源也有限。因此，SRE EDU 团队着重提供可扩展的持续教育平台 Annual Week of Education（AWE）。AWE 是聚焦可靠性主题的线上学习活动，内容由各主题的 Google 专家制作并讲授。SRE EDU 团队征集演讲、筛选议程、向 SRE 和更广泛的开发者社区宣传，并负责活动运营。</p>
+
+<p>参与者和讲师遍布全球，因此 AWE 一周内几乎全天候开课。课程可在本地或远程实时参加，也会录制下来，供时区不重叠或错过课程的人回看；录像随后制成自定进度培训，全年均可访问。</p>
+
+<p>内容由领域专家维护，SRE EDU 团队负责监控材料是否新鲜、持续有效。AWE 这类正式持续教育周会迫使专家按时完成培训；没有即将举行的活动所制造的紧迫感，人们很容易拖延，课程最终可能永远做不出来。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Manager training" data-type="sect4"><div class="sect4" id="ch05_manager_training">
+<h4>管理者培训</h4>
+
+<p>正式培训还应考虑<a data-primary="training" data-secondary="managers" data-type="indexterm" id="id1373"/><a data-primary="manager training" data-type="indexterm" id="id1374"/>如何让 SRE 管理者具备有效领导团队的能力。Google 的 Site Reliability Manager Education（SRM EDU）等项目专为新任 SRE 经理设计，讲授公司通用管理课程通常不涉及的内容，重点包括 SRE 经理特有的流程、工具，以及管理跨地点团队等挑战。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Designing Effective Training Content" data-type="sect2"><div class="sect2" id="ch05_designing_effective_training_content">
+<h2>设计有效的培训内容</h2>
+
+<p>明确目标受众并<a data-primary="training" data-secondary="designing training content" data-type="indexterm" id="trn_cont"/>了解正式、非正式学习发展项目的不同实施方式后，本节将用教学设计原则说明如何设计和构建有效<span class="keep-together">内容。</span></p>
+
+<p>教学设计<a data-primary="instructional design" data-type="indexterm" id="id1375"/>常用 ADDIE 模型，即分析、设计、开发、实施和评估。评估受众及其学习需求后，分析阶段已经完成。设计阶段主要根据发现定义学习目标，同时制定评估策略和练习，确定所需内容、教学指南和媒体，并规划期望的学习体验。技术课程还要列出主题专家；动手课程则应像软件设计一样建立设计文档，作为培训内容和进度的唯一事实来源。内容应围绕明确目标设计，而不是穷尽整个主题，不能再把信息消防水带的压力开得更大。</p>
+
+<p>为制定清晰目标，Google SRE EDU 使用“学员应当能够……”框架，以动作动词描述学员完成培训后应展示的可观察行为。这样也更容易评估效果，因为可以设计练习、测验和调查来验证培训是否达标。“学员应当能够理解我们的监控工具”不是好目标；“学员应当能够使用我们的监控工具识别内存用量”则更好。使用动作动词，避免“理解”“知道”等模糊词语，会让目标更清楚，也更贴近 SRE 的实际工作。学习目标指导内容和材料开发，确保其直接服务于预期成果，并让学员和利益相关方清楚会获得哪些技能、如何衡量效果。它还能防止塞入过多信息：任何幻灯片、文档、概念或练习，只要无助于约定目标，就应删除。</p>
+
+<p>设计阶段之后是开发阶段：依据目标汇编培训材料、设计活动并制作评估工具。关键是围绕学习目标进行模块化设计，而不是收进与主题相关的一切内容。讲师授课时，还必须让讲师充分理解这些目标的背景，才能有效交付。</p>
+
+<p>完成讲师培训、课程排期与推<sup><a data-type="noteref" href="ch05-zh.html#id1376" id="id1376-marker">7</a></sup>广并正式开课后，应在评估阶段维持紧密、迭代的反馈循环，持续改进。内容或交付方式都可能需要调整。下一节<a data-primary="training" data-secondary="designing training content" data-startref="trn_cont" data-type="indexterm" id="id1377"/>就深入讨论培训项目运营。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Training Program Operations" data-type="sect2"><div class="sect2" id="ch05_training_program_operations">
+<h2>培训项目运营</h2>
+
+<p>Google SRE <a data-primary="training" data-secondary="applying SRE principles" data-type="indexterm" id="train_sreprinc"/>EDU 团队的一大顿悟，是发现 SRE 原则非常适合培训项目运营。把培训项目当作生产服务，组织就能利用监控、事故响应、测试和容量规划等理念来保持项目健康有效。这种系统化运营还能让团队规模相对于培训量和服务受众呈次线性增长。通过自动化材料管理、排期和其他行政 toil，团队最终可提供更可靠、更有影响力的学习体验。</p>
+
+<p>有时，把 SRE 原则用于自己的项目是实现目标的唯一办法。例如，SRE EDU 入职培训理论上每年最多容纳约 1,000 人。几年前，我们接到任务，要向 Google 更广泛的软件开发者传授基础 SRE 生产原则和最佳实践，而受众规模比最大容量高出一个数量级以上。</p>
+
+<p>利益相关方起初想让开发者参加强制的讲师授课培训。我们同时分析“教什么”和“怎么教”，发现以团队规模和要求的交付期限来看，运营上根本不可行。于是改用自动交付的自定进度培训，并自动逐级提醒未完成者及其管理链。我们先向 1% 受众进行金丝雀发布，再逐步扩大；这让我们能根据早期反馈迭代，使这个本质上属于合规模块的课程净推荐值提高了 30<a href="https://oreil.ly/eNLmp"> 个百</a>分点。强制培训因受众被迫参加，评价通常较低；但应用 SRE 原则后，它的净推荐值只比最受欢迎的讲师课程低几个百分点。最终，我们以可扩展方式向 Google 数万名工程师提供了生产安全培训，超过 95% 的目标受众完成课程，并能正确回答现实生产安全场景中的细致问题。</p>
+
+<p>另一个把培训项目“SRE 化”的例子是 On-Call Ready。越来越多团队询问 SRE EDU 入职培训的故障场景；理论上，任何将为服务值班的工程师都应至少做一次，而不只是 SRE。原版练习运营成本很高，核心团队于是挑战自己：能否让场景完全自助，取消每年 1,000 人的上限？团队建立预约服务，让自行组成的三人小组“借用”一套技术栈，并把启动、清理和重置全部自动化，再辅以额外文档。每组三人中由一人志愿担任“助教”，按照更详细的分步说明带领团队完成故障。参与人数现已达到理论上限的五倍；随着推广扩大，我们预<a data-primary="training" data-secondary="applying SRE principles" data-startref="train_sreprinc" data-type="indexterm" id="id1378"/>计还会高得多。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Learning as a Vehicle for Individual Growth" data-type="sect2"><div class="sect2" id="ch05_learning_as_a_vehicle_for_individual_growth">
+<h2>以学习推动个人成长</h2>
+
+<p>下面从准 <a data-primary="training" data-secondary="individual growth" data-type="indexterm" id="trn_indgrwth"/>SRE 或新 SRE 的角度，讨论如何规划自己的道路。你要准备好踏上一段持续学习和适应的旅程，其中常伴随冒充者综合征。要知道这种感受很普遍；专注于具体学习目标，有助于逐步建立信心。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Navigating early challenges" data-type="sect3"><div class="sect3" id="ch05_navigating_early_challenges">
+<h3>应对早期挑战</h3>
+
+<p>新 SRE 要经历陡峭的学习曲线，这一点已获普遍认可。大学广泛教授软件工程，却很少让学生接触 SRE。因此，新聘 SRE 往往缺少相关经验，需要大量在岗培训才能胜任。要取得成功，应保持成长型思维，积极适应变化，并持续投资学习。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Essential learning" data-type="sect3"><div class="sect3" id="ch05_essential_learning">
+<h3>必备学习内容</h3>
+
+<p>要在 SRE 领域有效前行并贯穿职业生涯不断成长，你需要同时培养技术能力和职业能力，并学会以 SRE 的方式思考。</p>
+
+<p class="pagebreak-before less_space">SRE 工作所需的广泛技术基础包括：</p>
+
+<ul>
+<li>
+<p>扎实的故障排查和调试能力，以及理解系统工作原理的能力</p>
+</li>
+<li>
+<p>深入了解团队负责的特定基础设施组件和服务</p>
+</li>
+<li>
+<p>至少能够使用一种编程语言编写代码</p>
+</li>
+<li>
+<p>能够逆向分析生产服务，培养随机应变和从第一性原理解决问题的能力</p>
+</li>
+<li>
+<p>理解如何针对简洁性、可运维性、可靠性和可扩展性设计系统（NALSD）</p>
+</li>
+</ul>
+
+<p>sre.google<a href="https://sre.google/classroom"><em>系统。</em></a> 上的材料是很好的起点。你还可以利用 LeetCode 等编程平台和系统设计教程进行实践，并通过技术博客和事故复盘了解故障排查与分布式</p>
+
+<p>资深 SRE 能把不同基础设施领域的知识融会贯通，用于调试复杂系统、识别风险，并构建能作出正确取舍的系统。</p>
+
+<p>除了技术能力，职业技能也不可或缺。SRE 在事故管理和项目执行中经常与不同团队及利益相关方互动，因此清晰沟通和有效协作至关重要。</p>
+
+<p>从某种意义上说，SRE 像同时做两份争夺时间的工作：一份是提高可靠性或减少 toil 的计划性项目工作；另一份是运维工作，包括值班、响应寻呼、处理生产工单、撰写事后复盘和应对其他打断。工作种类繁多，会导致频繁切换上下文，损害效率，因此必须善于管理时间、确定任务优先级，平衡两类工作。在 Google，我们规定运维工作最多占 50%，避免团队被 toil 吞没。</p>
+
+<p>形成 SRE 思维，需要真正理解 SRE 是什么、与其他工程岗位有何不同；理解无责文化为何有助于从事故中学习，SRE 如何在开发速度与可接受风险之间平衡，以及各项实践背后的根本理由和收益。接纳 SRE 文化与工作方式是一段逐步转变思维的过程。详见第 4<a data-type="xref" href="ch04-zh.html#ch04"> 章。</a></p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Managing your individual learning journey" data-type="sect3"><div class="sect3" id="ch05_managing_your_individual_learning_journey">
+<h3>管理个人学习历程</h3>
+
+<p>在 SRE 道路上继续前进时，找到合适的学习机会很重要。初期你可能主要听取资深 SRE 的指导，但随着时间推移，需要更多地为自己的专业成长负责。</p>
+
+<p>主动寻找合适项目会显著影响学习轨迹。完成入门项目后，应思考哪类项目最符合自己的能力、兴趣和职业目标。SRE 工作涉及自动化与消除 toil、改进监控、增强可靠性等许多领域。评估项目能带来什么成果，例如获得新系统经验、形成领域专长，或真正落实一项有影响力的可靠性改进。</p>
+
+<p>还应寻找相关学习机会，包括内部培训和技术讲座，以及 USENIX YouTube 频<a href="https://oreil.ly/e46XV">道上的 SREcon</a> 演讲等外部资源。正式学习之外，与更广泛社区中的 SRE 建立联系，例如参加行业会议，也很有助于借鉴他人经验。Google 每周有一个非正式的“生产会议”，邀请同一地点的工程师交流上一周的失败和成功。SRE 可由此学习组织内其他团队的技术经验；更重要的是，真实案例还会强化无责文化和其他 SRE 最佳实践。</p>
+
+<p>通过参加多样的学习活动，培养必要技能和思维，准 SRE 或新 SRE 就能更好地跨越陡峭的学习曲线，建立信心，为团队作出切实贡献并推进职<a data-primary="training" data-secondary="individual growth" data-startref="trn_indgrwth" data-type="indexterm" id="id1379"/>业发展。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Career Management" data-type="sect1"><div class="sect1" id="ch05_career_management">
+<h1>职业发展管理</h1>
+
+<p>SRE 职业是一段不断积累影响、持续成长的旅程。如本章所述，SRE 要求团队拥有广泛的知识和经验，因此需要愿意长期投入、成长为领导者和专家并以 SRE 为职业的人。我们寻找有潜力成为“力量倍增器”的优秀<em>工程师：他</em>们既靠自己的工作，也通过带领他人，创造比一般工程师高出一个数量级的影响。本节讨论 SRE 如何发展职业，以及个人和组织结构分别发挥什么作用，重点说明管理者如何培养并留住人才，以及准 SRE 和在职 SRE 如何管理自己的职业。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Keys to a Successful SRE Career" data-type="sect2"><div class="sect2" id="ch05_the_keys_to_a_successful_sre_career">
+<h2>SRE 职业成功的关键</h2>
+
+<p>要达到这种影<a data-primary="career management" data-secondary="core skills" data-type="indexterm" id="cman_cskil"/>响力并在 SRE 领域长期发展，需要培养特定核心能力。本节关注三个要素：知识和参与面的广度、主动性，以及团队协作。每位 SRE 的道路当然不同；这里归纳的是我们在 Google 和业界观察到的有效与无效做法。归根结底，成功的 SRE 会有意识、持续地发展上述各个维度，同时主动参与团队内部和跨团队协作。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Breadth" data-type="sect3"><div class="sect3" id="ch05_breadth">
+<h3>广度</h3>
+
+<p>如前所述，SRE 需要 T 型专长，在深度之外兼具广度。每位 SRE 都要全面理解自己负责的整个生态系统架构，才能有效实施系统变更和处理事故。系统不断演进，因此必须持续投入大量培训。随着职业发展，SRE 还应成为生产环境的领域专家，为所辖生产基础设施和软件提供专业知识与工程领导。</p>
+
+<p>SRE 必须掌握最新实践，尤其要结合本团队环境。他们应能在存储、网络、控制平面、监控、负载均衡、数据完整性及团队服务的其他层面实施变更并调试事故；还要了解上下游依赖，懂得与软件开发、运维和其他 SRE 团队的利益相关方合作。随着行业转向人类与 AI 协作（见第 21 章），SRE 更要接纳 <a data-type="xref" href="ch21.html#ch21">AI</a> 工具和智能体以保持运维速度。在快速创新时代，昨天的方法很快会被取代，因此持续掌握高效可靠的新方法至关重要。</p>
+
+<p>SRE 的资历越高，影响范围也越广。高级 SRE 应成为项目、计划和方向的来源，其影响和责任会从团队扩展到产品、业务乃至整个组织。同时也要提醒高级 SRE，不要与自己负责的系统脱节：如果不持续亲手接触生产环境，领导和公正裁决技术决策的能力会逐渐减弱。因此，应优先安排时间贴近生产、响应事故、参与值班并编写代码。</p>
+
+<p>以不同资历的两个 SRE 为例。初级 SRE 可以改进团队某项服务的告警质量，这要求理解所有前后端组件“可能出现什么问题”。更高级的 SRE 则可能设计并领导实施一套适用于整个产品领域所有服务的告警原则、模板和库，这要求理解多项服务的运维需求、架构和共性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Initiative" data-type="sect3"><div class="sect3" id="ch05_initiative">
+<h3>主动性</h3>
+
+<p>之所以先讨论广度，是因为广泛理解系统能让 SRE 更有效地主动行动、推动改进。作为组织，我们不仅满足服务级别目标，还要超越<em>显而易见的范围寻找改进，提</em>出新思路，让产品更可靠、更高效、更安全——这正是 SRE 组织的总体目标。</p>
+
+<p>职业早期，这种要求体现在团队层面。初级 SRE 应提出并推动改进项目的想法，为其他 SRE、软件工程师和客户带来积极影响。</p>
+
+<p>高级 SRE 的影响范围更大。随着成长，他们应凭借深厚的系统理解挑战现状、影响利益相关方，让系统更可靠、高效、简洁。高级 SRE 能发现组织层面的改进空间，并付诸行动，把事情做得更好、更快、更干净。</p>
+
+<p>继续用告警质量项目举例：初级 SRE 可能需要调整部分指标及阈值，并说服团队或负责人同意；高级 SRE 的跨基础设施项目，则可能要求其影响多个团队和领导者，使他们采用新标准。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Teamwork" data-type="sect3"><div class="sect3" id="ch05_teamwork">
+<h3>团队协作</h3>
+
+<p>SRE 覆盖范围广，通常涉及大量活动部件和利益相关方。因此，SRE，尤其是高级 SRE，必须磨炼领导力、沟通和同理心等关键职业素养。团队协作既是成员通过培训和相互学习共同成长的基础，也是处理生产事故的关键。</p>
+
+<p>对初级 SRE，团队协作包括分享信息、定期培训队友，以及共同设计生产变更。更高级别的 SRE 则要在影响范围内主动倡导第 4 章所述的<a data-type="xref" href="ch04-zh.html#ch04">核心</a>文化要素：推动无责、协作和心理安全，同时消除知识孤岛、不可持续的英雄主义和圈占工作的反模式。</p>
+
+<p>资深 SRE 个人贡献者会与许多 SRE 团队和开发团队协作。软件开发侧的利益相关方往往资历更高，因此要实现 SRE 目标，必须具备很强的协作和影响能力。</p>
+
+<p>Google 在整个组织中培养团队协作能力：招聘时进行评估（见“招<a data-type="xref" href="#ch05_hiring_sres">聘 SRE</a>”），把它纳入绩效考<a data-primary="career management" data-secondary="core skills" data-startref="cman_cskil" data-type="indexterm" id="id1380"/>核，并要求晋升者提供符合目标职级的协作证据。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Individual Contributor’s Career Path in SRE" data-type="sect2"><div class="sect2" id="ch05_the_individual_contributor_s_career_path_in_sre">
+<h2>SRE 个人贡献者的职业路径</h2>
+
+<p>SRE <a data-primary="career management" data-secondary="individual contributors" data-type="indexterm" id="cman_ic"/>通过培养和运用技能推进职业发展，无论职责范围只是初级 SRE 的小领域，还是高级 SRE 的组织级范围。成为管理者是一条路径，但也必须为个人贡献者提供非管理职业通道。Google SRE 通过明确技术领导要求来实现这一点。</p>
+
+<p>理论上可把技术领导视为经理的职责，但 Google 希望经理把大部分时间用于管理和培养团队，因此并不现实。Google SRE 团队通常较大，每个地点约 7—10 人，一般分布在两个地点；团队负责多个开发团队构建的不同组件，并与软件开发团队、后端与依赖方、SRE 组织其他部门等众多利益相关方合作。经理应能在团队中完成扎实的工程工作，也必须参加值班轮换，但不必是最优秀的工程师或技术负责人。于是，中高级个人贡献者得到技术领导机会，而且这正是其正式岗位要求。</p>
+
+<p>SRE 通常管理多项服务并与大量利益相关方互动，因此从中级个人贡献者开始，就高度要求技术领导能力，并通过影响与协作实现目标，包括：</p>
+
+<ul>
+<li>
+<p>领导跨多个季度、由多名贡献者参与的大型项目</p>
+</li>
+<li>
+<p>影响其他团队，使资源和工作方向保持一致</p>
+</li>
+<li>
+<p>辅导和培训其他团队成员</p>
+</li>
+<li>
+<p>推广可用于跨团队改善运维的经验、最佳实践和标准</p>
+</li>
+<li>
+<p>参与制定团队工作的技术愿景和路线图</p>
+</li>
+</ul>
+
+<p>Google 软件开发组织中类似的中级岗位，对这些要求的体现有所不同。软件工程个人贡献者主要开发特定项目；Google SRE 的组织更扁平、更注重广度，因此非常依赖个人贡献者在各项服务和生态系统中发挥技术领导作用。</p>
+
+<p>随着 SRE 个人贡献者晋升到领域技术负责人、生产技术负责人等高级岗位，对领导力的要求也随之提高。他们需要：</p>
+
+<ul>
+<li>
+<p>确保所在团队的方向与其他业务保持一致</p>
+</li>
+<li>
+<p>把业务需求转化为技术现实，并把利益相关方的关注与要求转化为可供决策的行动依据</p>
+</li>
+<li>
+<p>作为可信、中立的裁决者，在多个团队间建立共识并推动决策</p>
+</li>
+<li>
+<p>创造、鼓励并支持技术领导机会，培养组织内的领导力量</p>
+</li>
+<li>
+<p>解决技术升级问题，或将其转交给恰当负责人</p>
+</li>
+</ul>
+
+<p>归根结底，SRE 个人贡献者的职业道路就是不断扩大职责范围和领导影响。技术领导通道既能培养可靠性组织所需的专业能力与协作影响力，也有<a data-primary="career management" data-secondary="individual contributors" data-startref="cman_ic" data-type="indexterm" id="id1381"/>助于留住顶尖人才。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Attrition and Retention" data-type="sect2"><div class="sect2" id="ch05_attrition_and_retention">
+<h2>人员流失与留任</h2>
+
+<p>如本章前<a data-primary="career management" data-secondary="attrition and retention" data-type="indexterm" id="carman_attret"/><a data-primary="attrition, managing" data-type="indexterm" id="attman"/><a data-primary="retention, managing" data-type="indexterm" id="retman"/>文所述，SRE 的入职上手时间远长于软件开发岗位。根据所支持产品的范围和复杂度，初级 SRE 最长可能需要一年才能为生产服务值班；高级软件工程师转入类似 SRE 岗位，也可能需要一年以上。这项投入使人员流失代价极高，因此必须重视留任。我们的策略包括：</p>
+
+<ul>
+<li>
+<p>主动准备缓解人员流失影响的措施</p>
+</li>
+<li>
+<p>灵活适应每位 SRE 的需求和限制</p>
+</li>
+<li>
+<p>为 SRE 提供转换方向和持续成长的机会</p>
+</li>
+</ul>
+
+<p>团队应具备容错能力，能承受意外人员流失。否则后果可能很严重，例如值班轮换人数不足、专业知识丢失，以及不得不把资源重新投入招聘和培训。</p>
+
+<p>为避免这些问题，SRE 管理者本着“希望不是一种策略”的精神，把经典 SRE 方法用于团队管理。最佳实践包括为值班人员和专家保留 <span class="keep-together"><em>N</em> + 1</span> 冗余，避免知识孤岛和单点故障，依据数据估算平均招聘需求，并主动维护新人渠道。目标是培养并留住优秀工程师，让他们在团队内获得职业满足。</p>
+
+<p>在 Google，职业管理是员工和经理的共同责任。员工负责作出决定并承担最终结果；经理则确保员工拥有高效工作、持续成长和在团队中保持幸福感所需的条件。SRE 流失成本很高，因此经理在留任方面尤其主动。除职业沟通、辅导和指定导师等常规做法外，还必须解决运维过载等岗位特有问题。经理的一项关键职责，是尽量减少 toil、自动化运维工作，并持续准备工程项目组合，使直属员工能把时间投入高潜力工程工作。</p>
+
+<p>值班要<a data-primary="on-call requirement" data-secondary="career management considerations" data-type="indexterm" id="id1382"/>求是 SRE 离职最常提到的原因之一。为了留住无法采用传统值班安排的人，管理者应实施更灵活的方案，包括缩短班次、由两人拆分班次、建立明确的紧急换班流程，以及根据个案提供完全豁免。</p>
+
+<p>人才流动也是留任的一部分。许多人在同一岗位工作几年后想尝试新事物，我们鼓励他们在 SRE 组织内部换团队，而不是离开。服务、基础设施和工具日益标准化，使内部转组比 SRE 早期容易得多。这既能保留核心 SRE 专长，也是团队间分享知识和最佳实践的好方法。较小规模上，我们还通过全 SRE 技术讲座、Mission Control 等轮岗，以及让员工到自选团队工作一周的短期“SRE 交换”项目实现类似目标。</p>
+
+<p>在 Google，经理的职责是支持直属员工的职业发展，无论这条道路通往哪里。即使某位 SRE 转到其他岗位，这种做法仍能提高公司整体留才能力。即便转去软件工程等其他团队，对 SRE 也仍是好事，因为此人很可能会把对可靠性的重视和 SRE 文化原则一<a data-primary="career management" data-secondary="attrition and retention" data-startref="carman_attret" data-type="indexterm" id="id1383"/><a data-primary="attrition, managing" data-startref="attman" data-type="indexterm" id="id1384"/><a data-primary="retention, managing" data-startref="retman" data-type="indexterm" id="id1385"/>同带过去。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch05_conclusion">
+<h1>结语</h1>
+
+<p>本章强调，人才是成功开展 SRE 实践的基石。招聘 SRE 面临独特挑战，因此我们介绍了若干策略，用于寻找兼具技术能力与文化契合度的人才。无论正式还是非正式，全面培训对于帮助新人入职、促进资深 SRE 持续成长都不可或缺。找到并培养合适人才只是第一步；同样重要的是有效管理职业发展，推动 SRE 在知识广度、主动性和团队协作等核心方面不断成长。归根结底，只有有策略地投资于优秀 SRE 的招聘、培养和留任，组织才能建立强大团队，并巩固 SRE 实践带来的系统可靠性收益。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1325"><sup><a href="ch05-zh.html#id1325-marker">1</a></sup>参见 Chris Jones、Todd Underwood 和 Shylaja Nukala，《Hiring<a href="https://oreil.ly/tawU8"> Site Reliability Engineers》，《</a>;<em>login:》</em>40 卷第 3 期（2015）：35—39。</p><p data-type="footnote" id="id1335"><sup><a href="ch05-zh.html#id1335-marker">2</a></sup>“20% 项目”是 Google 员工在主要分配工作之外，每周最多用一天从事自己感兴趣且对 Google 有益的工作。这类项目赋予员工自主空间，鼓励实验、改进和创新。</p><p data-type="footnote" id="id1341"><sup><a href="ch05-zh.html#id1341-marker">3</a></sup>上一节已经讨论了对培训“零投入”的风险。</p><p data-type="footnote" id="id1344"><sup><a href="ch05-zh.html#id1344-marker">4</a></sup>关于这些主题的更详细讨论，参见《Training Site<a href="https://sre.google/resources/practices-and-processes/training-site-reliability-engineers"><em> Reliability Engineers》。</em></a></p><p data-type="footnote" id="id1350"><sup><a href="ch05-zh.html#id1350-marker">5</a></sup>Amanda Pratt、Melissa Valentine，《To<a href="https://oreil.ly/BneL7"> Drive AI Adoption, Build Your Team’s Product Management Skills》</a>，<em>《Harvard Business Review</em>》，2026 年 2 月 3 日。</p><p data-type="footnote" id="id1354"><sup><a href="ch05-zh.html#id1354-marker">6</a></sup>参见第一版《SRE Book》第 28 章的“<a href="https://sre.google/sre-book/accelerating-sre-on-call">Disaster Role Playing”一节</a>。</p><p data-type="footnote" id="id1376"><sup><a href="ch05-zh.html#id1376-marker">7</a></sup>讲师培训的深度取决于项目和课程的复杂度。新讲师的准备可能包括现场授课、自定进度培训、跟随资深讲师学习，或仅提供完备文档。目标是确保所有课程始终以一致、可靠的方式讲授。</p></div></div></section></body></html>
