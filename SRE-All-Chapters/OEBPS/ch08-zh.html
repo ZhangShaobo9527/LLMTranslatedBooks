@@ -1,0 +1,687 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>服务水平目标</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 8. Service Level Objectives" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch08">
+<h1><span class="label">第 8 章　</span>服务水平目标</h1>
+
+
+<p class="byline">作者：Alex Bramley、Brett Beekley、Chris Jones、
+<span class="keep-together">David Huska、</span> 
+<span class="keep-together">Derek Remund、</span> Ethan Truong、Faraz Khan、
+<span class="keep-together">Jose Andrade、</span> 
+<span class="keep-together">Micah Lerner、</span> Niall Richard Murphy、
+<span class="keep-together">Parker Roth 和 Yuri Grinshteyn</span><br/>
+
+<span class="keep-together">Carmela Quinito 协作</span></p>
+
+<p>第一版《<em>站点可靠性工程</em>》大力推广了 SLO 框架，并推动它在整个计算机行业落地。其他人很快接过接力棒，以几乎所有能够想到的形式，制作了大量从入门到进阶的材料。这说明，无论经验多寡，人们始终需要有效的模型来理解自己负责的系统如何运行、应向用户提供怎样的服务水平、为此投入多少精力才算合理，以及期望未能实现时该怎么办。在我们撰写这一版时，SLO 仍是第一版在线版中查询最多的主题。</p>
+
+<p>本章的难点在于，市面上已经不缺入门材料，但读者若不了解 SLO 的基本概念，又很难读懂许多进阶内容。因此，我们先作简要概述，再讨论以下这些第一版未曾涉及或只是一带而过的主题：</p>
+
+<ul>
+<li>
+<p>采用 SLO 的陷阱</p>
+</li>
+<li>
+<p>关键用户历程</p>
+</li>
+<li>
+<p>从属 SLO</p>
+</li>
+<li>
+<p>B2B 企业的 SLO（以及客户级 SLO）</p>
+</li>
+<li>
+<p>隐式 SLO</p>
+</li>
+<li>
+<p>客户端 SLO</p>
+</li>
+<li>
+<p>SLO 工具</p>
+</li>
+<li>
+<p>在大量 SLO 中检测违规并确定优先级</p>
+</li>
+<li>
+<p>SLO 模型的弱点以及如何应对的一些建议</p>
+</li>
+</ul>
+
+<p>熟悉 SLO 的读者或许想跳过下一节。不过，本章扩展了讨论范围，因此我们相信，几乎每位读者都能从中找到<em>一些</em>对自己 SLO 实践有所帮助的内容。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Basics of SLOs" data-type="sect1"><div class="sect1" id="ch08_the_basics_of_slos">
+<h1>SLO 的基础知识</h1>
+
+<p class="fix_tracking">SLO 是“服务水平目标”（service level objective）的缩写<a data-primary="SLOs (service level objectives)" data-type="indexterm" id="slos"/>，但这个词也常用来指一套更广泛的框架，用于理解系统行为并决定如何应对。<sup><a data-type="noteref" href="ch08-zh.html#id1546" id="id1546-marker">1</a></sup>这套框架既有技术层面，也有组织层面。SLO 广受欢迎，部分原因在于其底层技术模型很简单，不过正如后文所示，其中仍有大量细节和变体。在许多情况下，组织层面的工作同样重要，甚至更为重要。</p>
+
+<p>让我们从几个定义开始：</p>
+<dl>
+<dt>指标</dt>
+<dd>
+<p>对系统行为某个方面的度量，通常以数值表示。</p>
+
+<p>常见的<a data-primary="metrics" data-type="indexterm" id="id1547"/>例子是 <code translate="no">http_responses_total_count</code>：系统每响应一次 Web 请求，这个指标就加一。如今，在云环境中运行的常见服务器软件大多默认提供一些底层指标；如果缺少所需指标，也完全可以自行合成。</p>
+</dd>
+<dt>服务水平指标（SLI）</dt>
+<dd>
+<p>对服务表现的量化度量。</p>
+
+<p class="fix_tracking">SLI 会把<a data-primary="service level indicators" data-see="SLIs" data-type="indexterm" id="id1548"/><a data-primary="SLIs (service level indicators)" data-type="indexterm" id="id1549"/>指标组合成更高层的度量，用来说明服务表现如何。设计优良 SLI 的关键，是选择合适的指标，并以能准确反映用户服务体验的方式加以转换。通常，我们建议把 SLI 表示为两个数字之比：良好事件数除以事件总数。沿用前例，计算 <code translate="no">http_responses_200_count</code> /
+<code translate="no">http_responses_total_count</code> 就得到一个 SLI。它可以命名为 <code translate="no">http_success_ratio</code> 或 <code translate="no">http_availability</code>，不过具体命名往往取决于业务领域。</p>
+</dd>
+<dt>服务水平目标（SLO）</dt>
+<dd>
+<p>为 SLI 设定的目标。</p>
+
+<p>SLO <a data-primary="service level objectives" data-see="SLOs" data-type="indexterm" id="id1550"/>把一个或多个 SLI 与目标值结合起来。如果按前文建议把 SLI 表示为比率，SLO 目标通常会略低于 100%，例如 99.9%，也就是“三个九”。这类目标值常以 9 或 5 结尾。SLO 总会绑定一个时间或测量窗口，例如每小时、每天、30 天或 90 天达到 99.9%。终身 SLO 并不实用，不过我们确实见过以一年为窗口的 SLO。</p>
+</dd>
+<dt>服务水平协议（SLA）</dt>
+<dd>
+<p>约定未达到目标时如何处理。</p>
+
+<p>目标<a data-primary="SLAs (service level agreements)" data-type="indexterm" id="id1551"/><a data-primary="service level agreements (SLAs)" data-type="indexterm" id="id1552"/>不可能永远达成。SLA 是服务提供方与服务使用方之间的协议，规定违反 SLO 时如何处理。通常，处理方式是服务提供方向服务使用方作出经济赔偿。</p>
+</dd>
+<dt>错误预算</dt>
+<dd>
+<p>服务允许出现的不可靠程度上限。</p>
+
+<p>错误<a data-primary="error budgets" data-type="indexterm" id="id1553"/><a data-primary="budgets" data-secondary="error budgets" data-type="indexterm" id="id1554"/>预算是完美可靠性（100%）与服务 SLO 目标之间的差值。它表示服务在一个测量窗口内最多可以累积多少不可靠行为或错误；超过这一限度后，工程工作的重心就应转向修复内部目标违规。例如，可用性 SLO 若是在 30 天内达到 99.9%，错误预算便允许这一期间最多有 0.1% 的请求失败，或累计停机 43.2 分钟。</p>
+</dd>
+<dt>消耗率</dt>
+<dd>
+<p>服务消耗其错误预算的速度。</p>
+
+<p>消耗率为 1 <a data-primary="burn rate" data-type="indexterm" id="id1555"/>表示预算恰好能维持完整的测量窗口——无论是一周、一个月还是其他时长。消耗率越高，预算就会越早耗尽。用消耗率设置 SLO 告警，可以摆脱噪声大且随意的阈值，转而根据事故的真实严重程度发出告警。<sup><a data-type="noteref" href="ch08-zh.html#id1556" id="id1556-marker">2</a></sup></p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>关键用户历程 (CUJ)</dt>
+<dd>
+<p>一系列 <a data-primary="CUJ (critical user journey)" data-type="indexterm" id="id1557"/>用户为完成某些对他们来说很重要的任务而使用服务所采取的步骤。</p>
+
+<p>与单一服务 SLI 或 SLO 不同，CUJ 通常涉及对不同服务和/或计算的多个底层调用，即使它对用户来说看起来只是一件事（例如登录）。测量 CUJ 上的服务性能通常是了解用户实际体验该服务的更好方法。</p>
+</dd>
+</dl>
+
+<p>上述内容或许会让人以为 SLO 是一项纯技术、甚至技术官僚式的工作。其实，SLO 最大的价值之一恰恰在组织层面：它让业务团队与技术团队能够共同讨论所提供的服务、服务如何运作，以及最关键的——客户应当获得怎样的体验。同样重要的是，各方还要就如何确保这种体验真正实现达成一致（详见<a data-type="xref" href="ch07-zh.html#ch07">第 7 章</a>）。</p>
+
+<p>此外，所有人都必须明白为什么目标不是 100%，以及收紧或放宽目标需要作出哪些权衡，本章稍后会继续讨论。实现共识的方式很多，但关键在于：这个决定不应由<em>工程团队</em>单独作出。业务、产品、工程和运营等职能的代表应共同讨论，并由整个小组乃至公司作出决定。SLO 与客户体验紧密相连，而且往往以 CUJ 为依据，因此会直接影响业务。公司必须理解这些影响，并准备采取相应行动。</p>
+
+<p>不出所料，这一过程的具体做法差异很大。SLO 决策可以有多种表达方式。例如，一次会议可能 
+<span class="keep-together">最终达成</span>“除购物车结账外，所有功能都是三个九；购物车结账是四个九”的约定，也可能确定“登录和仓库检出为 99.95%，repo apply 为 99.5%，按客户、按字节计算的数据全年可检索性为十一个九”。（请注意，
+<span class="keep-together">这里的十一个九</span>衡量的是持久性，而不是可用性。）作出
+<span class="keep-together">这些决定</span>时，SLO 所需的指标或 SLI 不必都已完整实现，甚至可以尚不存在。初期通常还有大量工作要做，尤其是从零开始实施时。总体而言，采用 SLO 是一个需要
+<span class="keep-together">持续推进的过程，</span>既要不断调整底层实现——包括指标和 SLI 的选择等——也要定期吸收反馈。根据我们的经验，对大多数服务而言，通常不到五个高层 SLO 就足以表达用户对可靠性的期望。这个数量既方便业务使用，也能给工程团队提供有意义的信号，用于约束设计选择和指导运维。<sup><a data-type="noteref" href="ch08-zh.html#id1558" id="id1558-marker">3</a></sup></p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="External Versus Internal" data-type="sect2"><div class="sect2" id="ch08_external_versus_internal">
+<h2>外部与内部</h2>
+
+<p>我们刚才<a data-primary="SLOs (service level objectives)" data-secondary="external versus internal" data-type="indexterm" id="id1559"/>讨论的大多是面向用户、也就是对外提供的 SLO。内部 SLO 对保障服务质量同样重要，但有两点不同。第一，它通常针对客户历程中更小的组件来定义。例如，登录或安全服务可能会与内部存储服务约定访问密码数据的 SLO。第二，内部一般不会设置经济赔偿，因为在同一家公司的部门之间调拨资金意义不大。当然，这不代表违规无需承担后果。常见做法是让受影响的一方有办法推动责任方投入工程资源修复问题，而代价往往是推迟常规开发工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Selecting SLIs and Thresholds" data-type="sect2"><div class="sect2" id="ch08_selecting_slis_and_thresholds">
+<h2>选择 SLI 和阈值</h2>
+
+<p>定义 SLO 的关键环节之一，<a data-primary="SLOs (service level objectives)" data-secondary="SLI selection" data-type="indexterm" id="id1560"/><a data-primary="SLIs (service level indicators)" data-secondary="selecting" data-type="indexterm" id="id1561"/>是选择 SLI 并设定阈值。篇幅所限，我们无法充分展开这个主题，但可以给出一些实用的起点。</p>
+
+<p>我们给出两组建议。第一组是选择 SLI 的基础原则，帮助读者建立整体认识；第二组是更具体的实现方式，初学者若不了解相关背景，应用起来可能较为困难。两组建议同时列出，读者可按自己的经验选择阅读。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Recommendations for Beginners" data-type="sect2"><div class="sect2" id="id126">
+<h2>给初学者的建议</h2>
+
+<p>首先，可以用一句话<a data-primary="SLOs (service level objectives)" data-secondary="SLI selection" data-tertiary="recommendations" data-type="indexterm" id="slo_sli_recom"/><a data-primary="SLIs (service level indicators)" data-secondary="selecting" data-tertiary="recommendations" data-type="indexterm" id="sli_sel_rec"/>概括选择 SLI 的入门方法：“找出用户最常做或最重要的事情所涉及的服务，再根据这些服务正常完成任务的路径选择 SLI。”假设 SLO 是“用户应能在 99.9% 的时间里成功登录”。最简单的做法，是在负载均衡器或前端找到登录服务的入口，并检查总体返回码。这样无法精确判断故障原因，却仍远胜于完全没有 SLI。更复杂的做法则是为成功登录所涉及的每次远程过程调用或函数调用分别定义 SLI，例如身份验证、用户状态和缓存服务，再以这些 SLI 定义登录 SLO；具体方法超出了本节范围。</p>
+
+<p>除选择一组<a data-primary="thresholds, SLIs" data-type="indexterm" id="id1562"/>指标外，还要确定相应的
+<em>阈值</em>。这里讨论两类：可用性阈值规定某项行为需要多稳定地交付；<a data-primary="availability thresholds, SLIs" data-type="indexterm" id="id1563"/><a data-primary="goodness thresholds, SLIs" data-type="indexterm" id="id1564"/>合格性阈值则规定怎样的表现才可接受，例如服务延迟应低于多少。</p>
+
+<p>可用性阈值通常用若干个“九”表示，例如 99.9%。实际选择往往取决于目标落在 99.9% 的哪一侧：99% 较为宽松，99.99% 则要求很高。多数目标设在 99.9% 左右，少数设为 99.95%。如果非要未经分析先选一个起点，99.9% 尚算合理，但我们并不提倡不加思考地设定目标。</p>
+
+<p>选择阈值时的一项重点，是确定<em>合格性</em>阈值，尤其是<em>延迟</em>阈值。<a data-primary="thresholds, SLIs" data-secondary="latency" data-type="indexterm" id="id1565"/><a data-primary="latency thresholds, SLIs" data-type="indexterm" id="id1566"/>服务有多慢，会同时影响用户使用它的频率和使用感受。<a href="http://WPOstats.com">WPOstats.com</a> 汇集了大量关于 Web 性能与用户行为的研究，是很好的参考。前端工程师对此非常熟悉，可惜实际制定 SLO 的往往不是他们。</p>
+
+<p>我们建议先为服务定义延迟 SLI，当然也要配套相应的延迟 SLO；监控并处理延迟问题总不会亏待用户。刚起步时可参考两个经验值：100 毫秒对多数人近乎即时，超过 1,000 毫秒通常就会显得迟缓笨重。还可以根据用户放弃率制定更精确的标准，但在毫无基准时，这两个数值不失为合理起点。需要注意，延迟 SLO 由达到延迟阈值的请求比例定义，例如“99% 的请求在 100 毫秒内完成”，而不是只规定延迟阈值本身。也就是说，仍按标准 SLO 模式把请求分为“良好事件”和“全部事件”，再计算良好事件的比例。</p>
+
+<p>另一种通用方法，是观察现有系统的表现，再把它固化为 SLO。不过这种做法缺点明显，只适合试验阶段。它的好处是，你已经证明现有实践足以达到这个水平；但受益的是组织，而不是用户。最大的问题在于，人们很容易因为某个服务水平恰好等于当前表现，就为它辩护并认定它足够好。这样也绕开了“服务水平<em>究竟应该</em>是多少”的讨论，而促成这场讨论恰恰是采用 SLO 最大的组织收益。</p>
+
+<p>如果你已经熟悉选择 SLI 的基础知识，<a data-type="xref" href="#ch08_table_01">表 8-1</a>列出了几类<a data-primary="SLIs (service level indicators)" data-secondary="types" data-type="indexterm" id="id1567"/>系统通常适用的 SLI 类型和测量方式。</p>
+<table id="ch08_table_01">
+<caption><span class="label">表 8-1。 </span>用于不同用户交互的通用 SLI</caption>
+<thead>
+<tr>
+<th>用户交互风格</th>
+<th>建议的 SLI 类型</th>
+<th>建议的测量方法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>请求/响应</p></td>
+<td><p>可用性<br/>
+延迟<br/>
+质量</p></td>
+<td><p>成功处理的有效请求的百分比。<br/>
+服务速度快于阈值的有效请求百分比。<br/>
+在不降低质量的情况下提供的有效请求的百分比。</p></td>
+</tr>
+<tr>
+<td><p>批处理/数据处理</p></td>
+<td><p>覆盖率<br/>
+正确性<br/>
+新鲜度<br/>
+吞吐量</p></td>
+<td><p>成功处理的有效输入的百分比。<br/>
+产生正确输出的有效输入的百分比。<br/>
+在规定时限内新生成的有效输出所占百分比。<br/>
+处理输入的速率高于阈值的时间百分比。</p></td>
+</tr>
+<tr>
+<td><p>存储</p></td>
+<td><p>吞吐量<br/>
+延迟<br/>
+耐用性</p></td>
+<td><p>读取或写入速率高于阈值的时间百分比。<br/>
+完成速度快于阈值的有效读取或写入的百分比。<br/>
+返回正确（先前存储的）数据的有效读取的百分比。</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>从这份简单的“菜单”中选择，有助于确定应衡量用户交互的哪些方面。这里没有覆盖所有交互模式，但通常可以从表中几种方法的组合入手。例如，源代码管理系统兼具三类特征：某些交互要求低延迟，仓库数据必须保持新鲜，而几乎所有功能都依赖存储。此外，它还要求存储可靠持久、提交不能丢失；电子商务结账系统则未必有这些要求。<a data-primary="SLOs (service level objectives)" data-secondary="SLI selection" data-startref="slo_sli_recom" data-tertiary="recommendations" data-type="indexterm" id="id1568"/><a data-primary="SLIs (service level indicators)" data-secondary="selecting" data-startref="sli_sel_rec" data-tertiary="recommendations" data-type="indexterm" id="id1569"/></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Why Not 100%?" data-type="sect2"><div class="sect2" id="ch08_why_not_100">
+<h2>为什么不是 100%？</h2>
+
+<p>为什么不把<a data-primary="SLOs (service level objectives)" data-secondary="selecting target percentage" data-type="indexterm" id="slo_trgtprcnt"/> SLO 目标直接定为 100%？相关讨论已经很多，简短的答案是成本曲线：可靠性越高，付出的金钱和时间成本也越高。达到 100% 极其昂贵，而且实践中根本做不到，因为有些边际损失在正常运行时几乎无法察觉，原则上却不可能彻底消除，例如<a href="https://oreil.ly/_B-_1">宇宙射线</a>造成的影响。既然无论怎样都无法保证 100% 可用，就必须在各种权衡之间作出选择。</p>
+
+<p>既然不是 100%，那该选多少？推动服务可靠性持续改进的反馈循环，其核心是
+<em>错误预算</em>。当可靠性超过目标只能略微提升用户满意度时，充足的剩余预算就允许服务承担更多风险，例如加快部署，或在少量真实流量上进行 A/B 测试。反过来，远低于目标说明承担的风险<em>过多</em>，此时可能需要进入一段稳定期，以恢复用户对服务的信任。</p>
+
+<p>在理想模型中，SLO 是两种状态的分界线：还有错误预算时照常开发新功能；预算耗尽后则转向提升服务可靠性。现实中的工程组织通常不会在两种状态间骤然切换，而会根据业务优先级，在两端之间逐步调整投入可靠性工作的工程资源。具体情形可能如<a data-type="xref" href="#ch08_fig01">图 8-1</a> 所示：</p>
+
+<ul>
+<li>
+<p>平时投入约 10%～15% 的基础工作量保障可靠性，例如安排值班轮换、每周分类缺陷等。</p>
+</li>
+<li>
+<p>当剩余错误预算下降到 25% 以下时，用于维护服务可靠性的工程工作量会迅速增加，当错误预算耗尽时达到 50% 左右。</p>
+</li>
+<li>
+<p>当服务的错误预算严重透支时，投入比例在约 90% 处趋于稳定。</p>
+</li>
+</ul>
+
+<p>请注意，此场景只是一个说明性示例，而不是建议！</p>
+
+<figure><div class="figure" id="ch08_fig01">
+<img alt="该图显示了花在可靠性上的工程时间与剩余错误预算之间的平衡，显示了“功能冻结”、“增加权衡”和“一切照旧”的阶段。" src="assets/sre2_0801.png"/>
+<h6><span class="label">图 8-1。 </span>根据错误预算调整工程投入的示例</h6>
+</div></figure>
+
+<p>把剩余错误预算的评估直接纳入开发周期，是体现功能开发与可靠性工作之间权衡的一种简洁机制；我们观察到，这对许多云客户都很有效。以敏捷开发的两周迭代为例，团队在回顾会上快速查看服务的 SLO 表现，就能判断下一轮迭代应安排多少可靠性工作。这种做法的价值在于，让组织各方围绕同一目标协同：提供<em>足够可靠</em>、能够达到商定目标的服务。<a data-primary="SLOs (service level objectives)" data-secondary="selecting target percentage" data-startref="slo_trgtprcnt" data-type="indexterm" id="id1570"/></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Pitfalls and Remedies in SLO Adoption" data-type="sect1"><div class="sect1" id="ch08_pitfalls_and_remedies_in_slo_adoption">
+<h1>采用 SLO 的陷阱和补救措施</h1>
+
+<p>我们曾在<a href="https://sre.google/resources/practices-and-processes/art-of-slos">其他文章</a>中讨论过实施 SLO 时组织支持的重要性。任何需要<a data-primary="SLOs (service level objectives)" data-secondary="adoption challenges" data-type="indexterm" id="slo_adptchlng"/>汇集企业各个关键职能、并对资源分配作出重大决定的项目，都不能掉以轻心。一旦内部支持动摇，项目就可能延期，甚至被无限期搁置；规划和实施阶段都是如此。</p>
+
+<p>规划阶段首先要回答“为什么”。复杂项目若没有清晰可陈述的目的，往往难以为继，因此 SLO 实施最好与业务目标挂钩。在金融、医疗和零售等行业，可靠性提升的收益十分直观，即使不能按秒感知，通常也会每天体现。高度监管行业的企业也往往乐于采用包含目标和度量的正式计划，并把它与全员熟知的组织优先事项联系起来。有时，近期的一次重大故障或一连串故障正好能推动项目启动——所谓“不要浪费一场好危机”。但也要警惕：问题平息后，组织推动力也可能随之消退。另一种障碍是，组织虽把采用 SLO 定为所有团队的明确优先事项，甚至规划了未来数年的里程碑，推广工作却卡在某个关键团队或系统，并被视为失败。如果关键团队因推广过急或过程混乱而失败，SLO 很快就会背上“行不通”的名声；这种联想即使并不公平，也常会长期存在。</p>
+
+<p>当然，除此之外还有常见的组织陷阱，例如过度畏惧失败，以致裹足不前。我们对这些情况的建议一致：采用迭代方式，记录并广泛宣传成果，而且毫不吝惜地把功劳归给参与者。这在现有文化中或许不容易，但我们认为它是成功的根基。由领导者倡导、实践者推动的新兴创新文化，可以逐步化解对失败的恐惧和改变固有观念的阻力。有时，领导者最简单有效的做法，就是明确告诉团队：你们可以尝试新方法。</p>
+
+<p class="fix_tracking">即使团队接受采用 SLO，早期在选择 SLI、设定目标，乃至区分“良好”与“不良”事件时遇到的困难，也可能拖慢进度。这些困难会延长生产率最初的下滑期（称为
+<a href="https://oreil.ly/ieRlt">J曲线</a>），如果不迅速解决，就会阻碍进展。幸运的是，根据我们的经验，我们可以提供一些建议，以避免大型组织中采用 SLO 时的常见陷阱。</p>
+
+<p>第一项建议是，<a data-primary="SLOs (service level objectives)" data-secondary="adoption challenges" data-tertiary="overcoming" data-type="indexterm" id="id1571"/>项目经理应明确以降低团队启动门槛为目标，让团队更容易迈出实施 SLO 的关键几步：判断这个系统中什么对业务最重要，检查现有指标，选择 SLI，并度量可靠性。和许多项目一样，软件往往是最容易的部分；许多组织已经具备或很容易获得 SLO 监控、告警和报告所需的软件，无论是自研、定制还是商业产品。只要已经开展任何监控，相关基础通常大半已经就绪。更难的往往是非软件因素。提供可复用模板、文字清晰且易于获取的指南，并安排有经验的实践者协助团队，始终有助于减少实施中的困惑（见<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。</p>
+
+<p>其中一个关键条件，是尽可能由 SRE 提供工程支持。SRE 直接帮助遇到困难的团队或业务关键服务，能降低在生产环境采用 SLO 的门槛。只下达要求却不给足实施资源，通常只会被视为负担；同时提供工程协助的 SLO 要求更容易得到接受，成功率也更高。</p>
+
+<p>另一个陷阱，是服务间依赖和多层级结构过于复杂，使最初的 SLI/SLO 看似无从下手。可以采用“两头向中间推进”的策略：一头先定义面向最终用户的 SLO，<em>另一头</em>先定义最常用核心系统组件的 SLO。团队通常更习惯先在自己的领域内采用 SLO，因此可以从范围较窄的两端开始，逐步向中间推进，并在过程中协商边界和目标。</p>
+
+<p>有时还会出现“先有鸡还是先有蛋”的困境：团队缺少开展 SLO 工作所需的遥测数据，而要生成这些数据，又必须先弄清应观测哪些服务。<em>RED</em> 框架通过请求速率、错误率和耗时评估面向用户的服务；<em>USE</em> 框架则通过利用率、饱和度和错误监控底层硬件资源。二者都可以作为起点。不过，一旦产品团队基于对用户可靠性需求的深入理解找到了更合适的指标，就应果断弃用这些通用框架。</p>
+
+<p>最后谈实施。与许多工作一样，完成几轮实践后，SLI/SLO 设计的迭代周期通常会显著缩短。一旦组织练就快速建设可观测性的能力，这项能力便会被持续运用，并让几乎所有团队受益。<a data-primary="SLOs (service level objectives)" data-secondary="adoption challenges" data-startref="slo_adptchlng" data-type="indexterm" id="id1572"/></p>
+
+<p>在接下来的部分中，我们将探讨一些更高级的 SLO 主题。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Critical User Journeys" data-type="sect1"><div class="sect1" id="ch08_critical_user_journeys">
+<h1>关键用户历程</h1>
+
+<p>CUJ 把 SLO 的概念延伸到用户体验领域，用来界定最终用户最看重的工作流程。其基本思想是：用户与产品交互时，会沿着一段段“历程”完成自己想用软件完成的事情。在电子商务中，登录、结账和搜索都是这样的历程。有些历程比另一些更重要，因而称为“关键”历程；最重要的是，它们必须从用户视角定义。<a data-primary="SLOs (service level objectives)" data-secondary="critical user journey-focused" data-type="indexterm" id="id1573"/><a data-primary="CUJ (critical user journey)" data-secondary="importance of" data-type="indexterm" id="id1574"/></p>
+
+<p>如果 SLO 流程完全或几乎完全由主要负责后端系统的 SRE 推动，就很容易走偏，而这种情况并不少见。选出的 SLO 会主要反映后端关注点，例如子系统 X 的存储延迟、推荐流水线的端到端摄取时间等。这些指标本身没有问题，但这种做法是割裂的，而非整体的，也忽略了真正以用户为中心的关键：用户体验必然横跨多个系统。要让 SLO 有意义、可靠并助力业务成功，必须把前端、后端和所有中间层放在一起考虑。缺少前端 SLO，正是完全由 SRE 主导的 SLO 流程的典型缺陷。</p>
+
+<p>CUJ 的 SLO 按整段历程的总体成功率和性能来定义。例如，可以把“加入购物车”的可用性 SLO 定为 99.9%，通过前端追踪成功请求来度量。这种以用户为中心的方法能更准确地反映<a data-primary="CUJ (critical user journey)" data-secondary="measuring experienced reliability" data-type="indexterm" id="id1575"/>用户实际感受到的可靠性，并把工程投入聚焦到最重要的环节。另一项关键实践，是在常规后端流量度量之外补充客户端 SLI 和相应插桩（见<a data-type="xref" href="#ch08_client_side_slos">“客户端 SLO”</a>），再用合成监控，也就是“模拟”请求，跑完整个 CUJ。后一点尤其重要：如果模拟请求只相当于执行一次 <code translate="no">GET /</code>，测试到的只是 CUJ 中一小部分重要环节；必须覆盖整条代码路径。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch08_case_study_catching_breakages_with_user_centric_slos">
+<h1>案例研究：利用以用户为中心的 SLO 捕获故障</h1>
+<p>谷歌使用一个
+<a href="https://oreil.ly/c1qsQ">访问代理</a>代理全球员工的每一项内部请求，以执行零信任安全策略。过去，它只有一个以服务为中心、目标为 99.99% 可用性的 SLO，其 SLI 来自向静态后端发起 HTTP 请求的合成探测。SLO 告警与内部监控结合后能发现大多数故障，但也有几次用户已经遇到问题，监控和 SLO 却错误地保持正常。访问代理支持多种请求协议和目标类型；事后复盘发现，某些用例的流量占比太小，即使完全不可用，也不足以触发 SLO 或内部监控告警。</p>
+
+<p>为解决这一问题，我们改用以用户为中心的性能度量模型：把协议与目标类型的每一种组合定义为一个 CUJ，再为每个 CUJ 建立合成监控，作为新的用户中心型 SLI。截至本书写作时，此后每一次重大的访问代理故障都被基于 SLO 的告警捕获。</p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Per-Customer SLOs" data-type="sect1"><div class="sect1" id="ch08_per_customer_slos">
+<h1>客户级 SLO</h1>
+
+<p>传统的 SLO 最佳实践不建议按客户进行高度细粒度的监控，尤其是在拥有数百万乃至数十亿用户的企业对消费者（B2C）场景中。原因有二：其一，SLO 最初的目的之一，就是舍弃被认定为不重要的信息，以保护组织的注意力并改善用户体验；其二，用户规模过大时，逐一监控每位客户的体验通常并不现实。因此，基于 CUJ 的产品级 SLO，再配合服务级指标和告警，通常已被认为足够。<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-type="indexterm" id="slo_percust"/><a data-primary="per-customer SLOs" data-type="indexterm" id="percustslo"/></p>
+
+<p>虽然 SLO 已被证明在多个领域都很有用，但其不断扩展的应用凸显了一个新的挑战：需要定义细致入微的指标，以不同的方式对待测量群体的子集。当客户的重要性坚持以下原则时，这一点最为相关：
+<a href="https://oreil.ly/fefn7">帕累托分布</a>时，这一点最为明显。在这种分布下，少数客户可能贡献大部分收入，或带来重大的声誉风险。例如在企业市场，单个客户就可能占公司收入的两位数百分比。存在这类关键关系时，继续一视同仁地对待所有客户已成为无法承受的奢侈：这些客户发生故障，可能不足以触发产品级 SLO 告警，却仍会给客户造成痛苦并损害其业务。</p>
+
+<p>因此，组织必须作出选择：要么承担更高的成本、开销和复杂性，为最有价值的客户提供更有针对性的保障；要么沿用现有机制，并接受其局限。我们认为，B2B 提供商值得考虑这种监控策略的演进，Google Cloud 也已经走上这条路。经验表明，即使只为少数最关键客户实施客户级 SLO，也可能物有所值；但这需要持续维护，并定期重新评估高昂的运营成本是否换来了足够收益。<sup><a data-type="noteref" href="ch08-zh.html#id1576" id="id1576-marker">4</a></sup></p>
+
+<p>从定义上说，客户级 SLO 与普通 SLO 并无不同，只是要按客户分别维护，并可能设置不同目标。有时可以在同一底层指标上用客户名称作标签；有时则需要单独命名指标，甚至为某位客户建立专属指标组。当然，随着客户数量增加，后者会带来扩展难题。<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-startref="slo_percust" data-type="indexterm" id="id1577"/><a data-primary="per-customer SLOs" data-startref="percustslo" data-type="indexterm" id="id1578"/></p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Motivation for Per-Customer Reliability" data-type="sect2"><div class="sect2" id="ch08_the_motivation_for_per_customer_reliability">
+<h2>客户级可靠性的动机</h2>
+
+<p>客户级 SLO 及其监控有多项好处，其中尤其重要的是主动发现事故。在采用客户级 SLO 之前，如果客户自己没有察觉问题，业务级或服务级 SLO 几乎也不会发现，因为 SLO 本来就会舍弃未达到一定阈值的故障信息。采用客户级 SLO 后，服务提供方有时能在客户察觉之前主动告知问题。在 Google Cloud，以客户为中心的告警多次帮助我们提前发现并缓解事故，往往早于客户正式报告。务必记住：尽早、持续与客户沟通价值巨大。聚合信号无法区分平均消耗率为 10 究竟来自哪种情况：一个客户为 10；一个客户为 100、另九个为 0；或二十个客户全为 10。因此，即使某个重要客户事实上遭遇严重中断，也可能不会反映在服务级汇总指标中。<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-tertiary="benefits" data-type="indexterm" id="slo_percustben"/><a data-primary="per-customer SLOs" data-secondary="benefits" data-type="indexterm" id="percustsloben"/><a data-primary="customer-centric alerting" data-type="indexterm" id="id1579"/><a data-primary="mitigations" data-secondary="per-customer alerting" data-type="indexterm" id="id1580"/><a data-primary="alerts" data-secondary="per-customer" data-type="indexterm" id="id1581"/></p>
+
+<p>此外，及时的客户级告警能加快沟通和缓解。相比只知道整体性能出了问题、还要在很大的范围内排查，客户级 SLO 违规提供了明确得多的起点。在 Google Cloud，客户通知我们之前，告警通常已指出受影响的工作负载，帮助我们迅速缩小致因范围。相关团队会立即收到通知，从而更快调动支持、SRE 或产品开发值班人员，并与受影响客户开展更及时、更有针对性的沟通。各方对问题范围形成共同认识，也会加快排障和解决。</p>
+
+<p>最后，客户级 SLO 能让团队对客户认定的关键工作负载给予额外关注。它不再只依赖可能掩盖单一客户中断的服务级汇总指标，而是聚焦重要客户最看重的具体工作负载和 SLO。凭借这种粒度，即使整体服务对广大用户而言仍符合 SLO，团队也能发现并处理对高价值客户影响格外严重的实际中断。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="How to Implement Per-Customer SLOs" data-type="sect2"><div class="sect2" id="ch08_how_to_implement_per_customer_slos">
+<h2>如何实施客户级 SLO</h2>
+
+<p>实施细粒度的<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-tertiary="implementing" data-type="indexterm" id="slo_percustimp"/><a data-primary="per-customer SLOs" data-secondary="implementing" data-type="indexterm" id="percustsloimp"/>客户级 SLO，通常要慎重选择覆盖范围、阈值和告警机制，既要提高效率，也要让运营负担保持可控。<sup><a data-type="noteref" href="ch08-zh.html#id1582" id="id1582-marker">5</a></sup>下面给出几项最佳实践。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scope: Selecting workloads and SLIs" data-type="sect3"><div class="sect3" id="ch08_scope_selecting_workloads_and_slis">
+<h3>范围：选择工作负载和 SLI</h3>
+
+<p>不要为每位客户度量所有 SLI，而应采取以下做法：</p>
+<dl>
+<dt>关注重要性</dt>
+<dd>
+<p>应优先覆盖客户的关键工作负载，进行监控和告警。理想情况下，由客户直接说明什么最重要。为此通常需要维护一个集中的客户元数据仓库，记录关键工作负载及相关项目（见<a data-type="xref" href="#ch08_operationalizing_per_customer_slos">“客户级 SLO 的运营化”</a>）。</p>
+</dd>
+<dt>使用视为/代理 SLI</dt>
+<dd>
+<p>如果客户无法说明什么最重要，或者客户内部本就没有唯一答案，就只能作出合理推断。选择能够代表该工作负载用户体验的现有 SLI，至少也要选取不失真的代理指标。同行往往已经遇到过类似问题，其中一些思路可以借鉴。</p>
+</dd>
+<dt>例外情况</dt>
+<dd>
+<p>理想情况是围绕精心筛选的关键数据开展监控；如果无法从客户获得所需数据，可能只能根据客户的实际工作负载推断。可参考的信号包括：客户在哪些项目上投入最多时间、哪些项目收到的支持工单最多，以及哪些项目流量最大。详见<a data-type="xref" href="#ch08_operationalizing_per_customer_slos">“客户级 SLO 的运营化”</a>。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SLO thresholds and burn rate" data-type="sect3"><div class="sect3" id="ch08_slo_thresholds_and_burn_rate">
+<h3>SLO 阈值和消耗率</h3>
+
+<p>要把告警噪声控制在可管理范围内，告警必须反映客户工作负载确实不可用，而不是仅有轻微退化。可以通过以下几种方式判断：</p>
+<dl>
+<dt>自定义阈值</dt>
+<dd>
+<p>客户级 SLO 可能需要人工调校阈值，这当然会增加维护负担。可以先采用通用阈值，但对于高价值客户，通常仍需定制调整。</p>
+</dd>
+<dt>利用消耗率</dt>
+<dd>
+<p>消耗率通常用于告警，客户级 SLO 也可以这样做。不过有一个限制：客户规模必须足够大，或者能产生足够多的信号，否则统计上常见的小幅波动就会制造过多的消耗率告警噪声。<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-startref="slo_percustimp" data-tertiary="implementing" data-type="indexterm" id="id1583"/><a data-primary="per-customer SLOs" data-secondary="implementing" data-startref="percustsloimp" data-type="indexterm" id="id1584"/></p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Operationalizing Per-Customer SLOs" data-type="sect2"><div class="sect2" id="ch08_operationalizing_per_customer_slos">
+<h2>实施客户级 SLO</h2>
+
+<p>要把客户级 SLO 落实到日常运营，需要在多个方面谨慎管理。第一，必须有稳健的工作负载信息管理系统，通常包括集中保存客户元数据、关键工作负载和优先级依据；只有知道客户运行着什么，才能为其制定高质量 SLO。如果没有人工整理的数据，通用的模型化方法或许也够用。第二，必须妥善处理敏感数据，因为客户级监控可能暴露个人身份信息（PII）和专有数据；监控系统应采用匿名标识符等保护措施，确保合规。第三，必须保持告警的准确性。客户工作负载不断变化，告警很快就可能过时或充满噪声；只有高质量、可操作的告警才能避免无谓劳作。第四，客户级 SLO 的后果机制不同于内部错误预算政策。发生违规时，服务提供方不应干预客户内部的业务决策，而应通过协商和客户关系管理来处理。<a data-primary="SLOs (service level objectives)" data-secondary="per-customer" data-tertiary="operationalizing" data-type="indexterm" id="id1585"/><a data-primary="per-customer SLOs" data-secondary="operationalizing" data-type="indexterm" id="id1586"/></p>
+
+<p>其他挑战还包括数据粒度、指标产出的延迟、如何争取客户参与，以及如何在高管支持下实现组织协同。要长期维持这套机制，必须持续投资工具和自动化。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Implicit SLOs" data-type="sect1"><div class="sect1" id="ch08_implicit_slos">
+<h1>隐式 SLO</h1>
+
+<p>如前所述，SLO 同时具有组织和技术两重属性。前文花了很多篇幅讨论技术层面，但在统计失败、关注错误预算和消耗速度的同时，SLO 也在向不同受众<a data-primary="SLOs (service level objectives)" data-secondary="implicit" data-type="indexterm" id="slo_impimp"/>服务所传达的承诺。<a data-primary="implicit SLOs" data-type="indexterm" id="ompslo_imp"/><em>传递</em></p>
+
+<p>和大多数人际沟通一样，这些信号可能被混淆或误解。例如，团队可能认为严格的 SLO 代表服务很重要；既然自己的服务当然很重要，就理应拥有严格的 SLO。</p>
+
+<p class="pagebreak-before less_space">不过，有一种信号面向一种受众时几乎不会被误解：信号是<em>你一直以来实际提供的服务水平</em>，受众则是<em>服务的现有用户</em>。</p>
+
+<p>回想自己使用计算机的经验：当你使用 API、Web 服务或应用时，会逐渐形成对其实用性和可靠性的判断，并据此调整行为。如果它从不失败，你大概每次需要相应功能时都会使用它；如果它足够强大或用途足够广泛，你甚至可能优先选择它，而不是可靠性较差的其他服务。</p>
+
+<p>服务过去的实际表现，就是我们所说的<em>隐式 SLO</em>。人们会逐渐形成预期，认为过去的表现今后仍会延续。风险出现在服务改变表现、打破这种预期时。</p>
+
+<p>先看最简单的情况。若为过去从未正式度量的服务实施 SLO，而隐式 SLO 与明示 SLO 恰好处于同一水平，就不会有人不满，因为用户感受不到差别。他们得到的服务水平与过去相同；实际表现或许从此会出现在全组织报告中，但除此之外几乎一切照旧。</p>
+
+<p>只要情况发生变化，无论<em>变好还是变坏</em>，事情就可能变得棘手。</p>
+
+<p>再看另一个例子：服务过去只有两个九，却突然决定提高到五个九。这种跨越本身很难实现，但姑且假设成功了。部分用户当然会更满意，可你也很可能惹恼另一些用户。为什么？假设某些服务使用方为适应两个九的可靠性，在外围建设了整套基础设施，包括缓存、复杂的错误处理、大量重试以及与客户服务团队的紧密协作等。可靠性提高后，这些机制的使用频率降到原来的约千分之一，运行和维护成本却大致不变；拆除它们也需要投入，而当初建设它们如今看来更像浪费。如果事先没有沟通可靠性变化，用户的不满会更强烈。</p>
+
+<p>归根结底，只要成本结构<em>朝任何方向</em>急剧变化，用户就有正当理由觉得受到了不公平对待；即使变化缓慢，他们也可能觉得自己被排除在决策之外。这还与经济学中的<a href="https://oreil.ly/H81tN">杰文斯悖论</a>有关：某种资源使用效率提高后，人们往往会使用得更多，最终吃掉原以为能因效率提升而省下的资源余量。在 SLO 和在线服务领域，如果服务可靠性显著提高，下游用户很可能因此大幅增加用量，反而可能造成系统不稳定。</p>
+
+<p>真正容易激怒用户的是相反的情况：实际服务水平大幅下降。过去是五个九，因为削减成本或调整优先级，现在降到三个九。即使过渡过程十分平稳——这本就不太可能——故障频率增加一百倍也必然会被察觉。用户可能不得不增建基础设施，才能容忍新的 SLO；这等于把你方节省成本的后果转嫁给他们。这样的感受完全合理。</p>
+
+<p>“预期被打破”这一点，是理解本书第一版刊出<a href="https://sre.google/sre-book/service-level-objectives">Chubby 案例</a>后为何引发震惊、甚至愤怒的关键。Chubby 是一项非常重要、SLO 很高且通常超额达标的服务，但 SRE 有意安排定期、受控的停机，让可靠性维持在“SLO 水平”，而不是持续高于目标。正如前文所述，如果实际表现让用户形成了 X 水平的隐式 SLO，那么口头声称目标不是 X 并没有用；用户记住的是服务一直像 X 那样运行。需要指出的是，“保持在 SLO”项目非常成功地避免了藤壶般不断积累且隐藏的依赖，否则这些依赖会给整个生产服务体系增加可靠性阻力。</p>
+
+<p class="fix_tracking">理解隐式 SLO 的另一条思路，来自前 Google 员工 <a href="https://www.hyrumwright.org">Hyrum Wright</a>及以他命名的<a href="https://www.hyrumslaw.com">海勒姆定律</a>：</p>
+<blockquote><strong>海勒姆定律：</strong>只要一个 API 拥有足够多的用户，无论契约承诺了什么，系统的每一种可观察行为最终都会有人依赖。<a data-primary="Hyrum's law" data-type="indexterm" id="id1587"/><a data-primary="Wright, Hyrum" data-type="indexterm" id="id1588"/></blockquote>
+
+<p>著名 SLO 专家 Alex Hidalgo 还提出了一个推论：<a data-primary="Hidalgo, Alex" data-type="indexterm" id="id1589"/></p>
+<blockquote><strong>Hidalgo 对海勒姆定律的推论：</strong>可靠性水平同样是系统的一种可观察行为。<a data-primary="Hidalgo’s corollary to Hyrum’s law" data-type="indexterm" id="id1590"/></blockquote>
+
+<p>因此，人们会逐渐依赖服务的隐式 SLO；你越不明确说明它，将来不得不改变时造成的问题就越严重。务必谨慎。消除隐含性的办法就是把话说清楚：尤其在过渡期间，应充分沟通，并定期了解用户如何看待实际表现与明示 SLO。做到这些，通常就能顺利度过变化。<em/>但如果组织厌恶沟通，隐式 SLO 很可能成为同时威胁你和客户的严重陷阱。<sup>6<a data-type="noteref" href="ch08-zh.html#id1591" id="id1591-marker">6</a></sup><a data-primary="SLOs (service level objectives)" data-secondary="implicit" data-startref="slo_impimp" data-type="indexterm" id="id1592"/><a data-primary="implicit SLOs" data-startref="ompslo_imp" data-type="indexterm" id="id1593"/></p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Client-Side SLOs" data-type="sect1"><div class="sect1" id="ch08_client_side_slos">
+<h1>客户端 SLO</h1>
+
+<p>客户端 SLO 是对经典 SLO 模型的另一项扩展。它以客户端产生的 SLI 为基础；这里的客户端既可以是最终用户设备，也可以是设备上的应用，例如用户手机中的 Google 地图。这些 SLI 能捕捉后端遥测看不到的重要健康信号，包括应用崩溃、网络连接中断、渲染问题和用户流程断裂。有关如何构建这类 SLI，参见<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-type="indexterm" id="id1594"/><a data-primary="client-side SLOs" data-type="indexterm" id="id1595"/><a data-type="xref" href="ch09-zh.html#ch09_client_side_telemetry">“客户端遥测”</a>和<a data-type="xref" href="ch09-zh.html#ch09_customer_centric_monitoring">“以客户为中心的监控”</a>。</p>
+
+<p>假设已经具备基本的客户端遥测能力，要把这些遥测数据转化为准确且可操作的 SLI，还需要解决以下<span class="keep-together">问题。</span></p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Complex Instrumentation" data-type="sect2"><div class="sect2" id="ch08_complex_instrumentation">
+<h2>复杂的插桩</h2>
+
+<p>客户端编程中常见很长的异步事件链或级联，因此尤其难以推断系统究竟发生了什么。标准的后端或服务器端方法无法直接套用到这里，需要另辟途径。<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-tertiary="instrumentation" data-type="indexterm" id="id1596"/><a data-primary="client-side SLOs" data-secondary="instrumentation" data-type="indexterm" id="id1597"/></p>
+
+<p>一种可行的方案，是采用要求显式插桩交互起点和终点的模型，从而统计有多少交互到达了明确的终态——成功或失败。如果应用代码遗漏了某条错误路径，导致插桩记录中的活跃交互迟迟不结束，这一遗漏就会表现为交互“完整率”下降。明确制定插桩质量规范，可以让利益相关者确信，报告的性能数据可靠，并能准确反映整体用户体验。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="High Noise Floor" data-type="sect2"><div class="sect2" id="ch08_high_noise_floor">
+<h2>高本底噪声</h2>
+
+<p>定义客户端 SLO 时的一项重大<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-tertiary="high noise floor considerations" data-type="indexterm" id="slo_clsd_nfc"/><a data-primary="client-side SLOs" data-secondary="high noise floor considerations" data-type="indexterm" id="csslo_nfc"/>挑战，是系统存在较高的本底噪声，也就是不可避免的<a data-primary="errors, client-side SLOs" data-type="indexterm" id="err_csslo"/>错误或中断基线。客户端指标尤其容易受此影响：网络故障以及老旧或低端设备本身的不可靠性，会显著抬高观测到的错误率。服务器端操作往往能够接近零错误，客户端实际上却做不到。两端预期的根本差异会直接改变错误预算的含义。传统服务器端 SLO 的本底噪声很低，错误预算大多消耗在真正的故障期间；客户端 SLO 却必须把相当一部分预算留给持续存在的预期背景错误。因此，客户端 SLO 往往只能设得很宽松，以较少的“九”表示可靠性，也使许多常见用法——例如据此设置告警阈值——不再成立。目标过于宽松时，甚至可能永远无法触发快速消耗率的呼叫告警。</p>
+
+<p>另一个问题是，客户端错误升高时通常要推送新版本，而这一般由客户端设备的软件提供商控制。推送所需时间往往远长于两个九或更高 SLO 所涉及的任何响应周期。有时，服务端干预可以争取一些时间，等待客户端版本完成推送。</p>
+
+<p>一种可能的办法，是消除噪声或在计算中扣除其影响。有些服务的本底噪声变化很大，常由特定客户、特定查询的性能特征或其他系统属性造成。这会产生混合效应：观测到的性能变化，往往只是流量构成改变的结果。有关处理这类变化的策略，参见<a data-type="xref" href="ch09-zh.html#ch09_variation_based_monitoring_and_statistics">“基于变异的监控与统计”</a>。</p>
+
+<p class="fix_tracking">不过，如果<a data-primary="errors, client-side SLOs" data-startref="err_csslo" data-type="indexterm" id="id1598"/>本底噪声相对稳定，例如错误率长期在 5% 左右，就可以通过<em>坏分钟</em>模型把噪声纳入 SLO 定义。<a data-primary="bad minute model" data-type="indexterm" id="id1599"/>这种方法按一分钟一个区间评估服务表现。SLO 负责人先规定什么算“坏
+<span class="keep-together">分钟”，例</span>
+如错误率超过 6%；再把 SLO 预算定义为报告期内允许出现的坏分钟数，例如 30 天内允许 43 分钟。把坏分钟阈值设在观测到的本底噪声略上方，就能定义更严格的 SLO，更有效地发现原本会被简单错误预算掩盖的突发性能变化。例如，可以要求 99.9% 的分钟为好分钟，而按成功请求比例计算时，上限只能是<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-startref="slo_clsd_nfc" data-tertiary="high noise floor considerations" data-type="indexterm" id="id1600"/><a data-primary="client-side SLOs" data-secondary="high noise floor considerations" data-startref="csslo_nfc" data-type="indexterm" id="id1601"/>
+<span class="keep-together">&lt;95%</span>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Undefined Denominators" data-type="sect2"><div class="sect2" id="ch08_undefined_denominators">
+<h2>未定义的分母</h2>
+
+<p>点击、崩溃等客户端事件，是判断服务健康状况的有力信号。崩溃增多，或热门功能的点击量下降，往往意味着服务中断。然而，要把这些指标转换为 SLI，通常还需要一个相关分母，而客户端 SLO 的分母常常难以确定。没有分母，就不知道一共有多少次可能失败的机会，只能设置“每天崩溃少于 X 次”之类的静态阈值；随着服务使用量波动，这些阈值必须不断调整。<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-tertiary="addressing undefined denominators" data-type="indexterm" id="slo_clsd_undenom"/><a data-primary="client-side SLOs" data-secondary="addressing undefined denominators" data-type="indexterm" id="csslo_undenom"/><a data-primary="service disruptions, addressing" data-type="indexterm" id="id1602"/></p>
+
+<p>Google 的许多团队用“会话化”解决分母未定义的问题，把 SLI 定义为：“经历过某个 <code translate="no">$event</code> 的会话（即用户）在一个 <code translate="no">$period</code> 内所占的百分比。”这里的 <code translate="no">$event</code> 可以是任何可观测的客户端事件，例如应用崩溃、应用无响应（ANR）、首页空白或错误提示。还可以组合多种事件，形成“发生过严重故障的会话比例”这类产品级 SLI。这种高层指标
+<span class="keep-together">提供了</span>很有价值的抽象，隐藏了原本会被遗漏或令指标过度复杂的产品与技术细节。采用这种定义时，应确保同一组中的事件严重程度相近，以免使用者误解 SLI，或在指标退化时产生争议。如果仅仅衡量服务是否正在运行、能否完成有用工作，还不足以反映用户实际感受到的可靠性，<a data-primary="SLOs (service level objectives)" data-secondary="client-side" data-startref="slo_clsd_undenom" data-tertiary="addressing undefined denominators" data-type="indexterm" id="id1603"/><a data-primary="client-side SLOs" data-secondary="addressing undefined denominators" data-startref="csslo_undenom" data-type="indexterm" id="id1604"/>这种专门方法就很有用。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Trustworthy SLIs" data-type="sect2"><div class="sect2" id="ch08_trustworthy_slis">
+<h2>值得信赖的 SLI</h2>
+
+<p>客户端 SLI 天生复杂，很容易让人搞不清究竟监控了什么，进而削弱对 SLI 的信任，最终限制相应 SLO 的价值。例如，用于度量功能渲染的 SLI 可能没有考虑该功能是否位于“首屏”（无需滚动即可看到），也没有体现它相对于页面其他元素的重要性。要真正理解用户体验，这些因素往往不可或缺；但把它们纳入指标又会显著增加定义复杂度。复杂度越高，越难向利益相关者解释 SLI，也越难判断报告的可靠性数字究竟代表什么、是否可信。<a data-primary="SLIs (service level indicators)" data-secondary="defining" data-type="indexterm" id="id1605"/></p>
+
+<p>为避免这种情况，必须为 SLI 定义建立明确的标准和指南，包括统一术语、采用一致的数据采集与聚合方法，并提供文档完善的优秀示例。标准化指标定义可以减少歧义，让所有利益相关者理解实际测量的内容，最终增强对可靠性数据的信任。</p>
+
+<p>此外，标准化 SLI 定义还能让利益相关者对 SLO 表现结果形成一致解释。标准应要求定义包含足够的元数据，说明所测量的具体产品功能、测量方法，以及指标使用者需要了解的限制。标准化真正落地后，SLO 违规应立即引发关于如何分配资源解决问题的讨论，而不是先投入更多调查来重新论证问题是否存在。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="SLO Tooling and Support Mechanisms" data-type="sect1"><div class="sect1" id="ch08_slo_tooling_and_support_mechanisms">
+<h1>SLO 工具和支持机制</h1>
+
+<p>随着定义和管理 SLO 的需求增长，各大云提供商和几乎所有主要应用监控服务都在积极倡导使用 SLO。还有专门服务可以接收应用监控系统的数据，再在其上应用 SLO 最佳实践。当然，没有任何单一方案能保证成功，各家 SLO 工具的产品差异也很大。虽然核心概念相通，不同可观测性平台仍有各自的时序数据库和查询语言，用来访问支撑 SLO 定义的时序数据。SLO 实现上的主要差异往往源于底层存储和处理方式。各家有不少共同点，例如普遍认同按消耗率告警，但也存在细微差别。选择过多会促使一些团队干脆自建 SLO 管理平台，而不再花时间评估现有产品；有经验的读者对此大概并不意外。<a data-primary="SLOs (service level objectives)" data-secondary="tools and support" data-type="indexterm" id="slo_tolsup"/><a data-primary="tools" data-secondary="SLOs" data-type="indexterm" id="tol_slo"/></p>
+
+<p>不存在唯一最佳的 SLO 工具，但至少<em>拥有</em>一套 SLO 工具至关重要。在实践早期就集中并标准化工具，可以免去日后大量麻烦；随着各系统中的数据增多，整合多个异构系统只会越来越复杂、昂贵。Google 内部的“SLO Repository”由中央统一投入，支持用户自助定义基于指标或日志分析的 SLI 和 SLO。它覆盖不同的易用性与复杂度取舍：从根据请求数和错误数推导的基础 RPC 服务 SLO，到面向 Gmail 等复杂消费产品的精细用户历程监控。工程师换组、团队重组，或多人协作进行事故复盘时，所有参与者都可以使用同一套通用工具。</p>
+
+<p>如果每个服务团队各自建设 SLO 方案，就会产生各不相同的功能、缺陷和特殊行为，严重削弱工程师跨服务协作的能力。因此，按照本书其他章节所讨论的收敛价值，也就是平台标准化（见<a data-type="xref" href="ch18-zh.html#ch18">第 18 章</a>），我们建议团队统一<a data-primary="SLOs (service level objectives)" data-secondary="tools and support" data-startref="slo_tolsup" data-type="indexterm" id="id1606"/><a data-primary="tools" data-secondary="SLOs" data-startref="tol_slo" data-type="indexterm" id="id1607"/> SLO 工具，避免碎片化并促进协作。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automatic Alert Configurations on SLOs" data-type="sect2"><div class="sect2" id="ch08_automatic_alert_configurations_on_slos">
+<h2>SLO 的自动告警配置</h2>
+
+<p>定义一个良好的 SLO 需要考虑很多因素，<a data-primary="SLOs (service level objectives)" data-secondary="tools and support" data-tertiary="automatic alert configuration" data-type="indexterm" id="slo_tolsup_aac"/><a data-primary="tools" data-secondary="SLOs" data-tertiary="automatic alert configuration" data-type="indexterm" id="tol_slo_aac"/><a data-primary="alert configuration service" data-type="indexterm" id="id1608"/>若还要为每个 SLO 分别设计告警规则，难免令人望而生畏。于是一个自然的问题是：SLO 本身是否已经蕴含了合适的告警规则？毕竟，SLO 已包含 SLI 和阈值，而《<em>站点可靠性工作手册</em>》还用整整一章（<a href="https://sre.google/workbook/alerting-on-slos">第 5 章</a>）讨论如何建立稳健的告警策略。</p>
+
+<p>自工作手册出版以来，Google 已广泛采用其中的许多实践，例如面向 SLO 的多窗口、多消耗率告警。我们建设了一项<a data-primary="centralized alert configuration service" data-type="indexterm" id="cacs"/><a data-primary="slow burn alerts" data-type="indexterm" id="sba"/><a data-primary="fast burn alerts" data-type="indexterm" id="fba"/>集中式告警配置服务：输入 SLO 定义后，它会确定性地生成慢速消耗告警和快速消耗告警。前者创建工单，后者呼叫值班人员。两种消耗率的定义与工作手册大致相同：如果一小时内消耗 2% 的错误预算，就触发快速消耗告警；如果三天内消耗 10%，就触发慢速消耗告警，此时完整 SLO 窗口为 30 天。生成的规则还包含<a href="https://sre.google/workbook/alerting-on-slos/#6-multiwindow-multi-burn-rate-alerts">《站点可靠性工作手册》第 5 章“多窗口、多消耗率告警”<em/></a>中介绍的多种窗口计算，使底层服务恢复后告警信号也能恢复正常。这些技术组合后，会形成包含数十项条件、以多种“与”和“或”关系组织起来的告警配置。<a data-primary="slow burn alerts" data-startref="sba" data-type="indexterm" id="id1609"/><a data-primary="fast burn alerts" data-startref="fba" data-type="indexterm" id="id1610"/></p>
+
+<p>工作手册中的告警方法足够通用，可以为 Google 的许多 SLO 自动、确定性地生成告警规则。如果你正在寻找起点，我们相信其中一些方法也能成功应用到自己的环境。</p>
+
+<p>相较已公开的实践，一个重要改进是更好地处理低流量服务，例如每小时请求少于 100 次的服务；流量略高于这一水平的服务也能从中受益。</p>
+
+<p>低流量服务是<a data-primary="low-traffic services, alerts" data-type="indexterm" id="id1611"/>工作手册早已指出的一类难题。Google 的集中式告警配置服务采用一种新方法：利用二项检验，估计低流量条件下服务将无法达到 SLO 的置信度。低流量等同于样本量小；样本越小，越难从数据得出有力结论。在集中式服务出现前，一些人工规则按流量划分多个桶，对低流量桶采用更宽松的消耗度量，以近似二项检验。版本历史显示，这些桶会随时间调整，推测是为了减少误报和漏报。<a href="https://oreil.ly/Du0bX">Wilson 得分区间</a>之类的二项检验把这种直觉变得更严谨。如今，它和集中式告警配置服务都已成为 Google SLO 告警的标准做法。<a data-primary="centralized alert configuration service" data-startref="cacs" data-type="indexterm" id="id1612"/><a data-primary="SLOs (service level objectives)" data-secondary="tools and support" data-startref="slo_tolsup_aac" data-tertiary="automatic alert configuration" data-type="indexterm" id="id1613"/><a data-primary="tools" data-secondary="SLOs" data-startref="tol_slo_aac" data-tertiary="automatic alert configuration" data-type="indexterm" id="id1614"/></p>
+<aside class="pagebreak-before less_space" data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch08_using_binomial_testing">
+<h1>使用二项式测试</h1>
+<p>借助<a data-primary="alerts" data-secondary="binomial testing" data-type="indexterm" id="id1615"/><a data-primary="binomial testing, alerts" data-type="indexterm" id="id1616"/>二项检验，可以更优雅地选择告警阈值，避免为每个流量级别硬编码阈值并承担高昂维护成本。无需定义多套阈值，只要把 Wilson 得分区间的下界作为告警条件：</p>
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>T</mi><mi>R</mi><mi>I</mi><mi>G</mi><mi>G</mi><mi>E</mi><mi>R</mi><mi>_</mi><mi>E</mi><mi>R</mi><mi>R</mi><mi>O</mi><mi>R</mi><mi>_</mi><mi>R</mi><mi>A</mi><mi>T</mi><mi>E</mi><mo>=</mo><mi>P</mi><mo>+</mo><mrow><mo fence="true" form="prefix" stretchy="true">(</mo><mfrac><mrow><mi>Z</mi></mrow><mrow><mi>N</mi></mrow></mfrac><mo>×</mo><msqrt><mrow><mrow><mo fence="true" form="prefix" stretchy="true">(</mo><mi>N</mi><mo>×</mo><mi>P</mi><mo>×</mo><mrow><mo fence="true" form="prefix" stretchy="true">(</mo><mn>1</mn><mo>−</mo><mi>P</mi><mo fence="true" form="postfix" stretchy="true">)</mo></mrow><mo fence="true" form="postfix" stretchy="true">)</mo></mrow></mrow></msqrt><mo fence="true" form="postfix" stretchy="true">)</mo></mrow></mrow></math>
+</div>
+
+<p>假设希望在发出告警前达到很高置信度：若置信水平为 99%，就在标准双尾正态分布中查出 0.99 对应的 <em>z</em> 分数，并据此设置 <em>Z</em>，本例为 2.575。<em>P</em> 表示即使在低流量、小样本条件下也希望可靠检出的错误率。</p>
+
+<p class="fix_tracking">沿用<a href="https://sre.google/workbook/alerting-on-slos">《站点可靠性工作手册》第 5 章<em></em></a>中的例子，可以在一小时窗口内检测 14.4 的消耗率。若 SLO 为 99%，就希望在 <em>P</em> = 14.4% 时告警。样本数可能不同；若 <em>N</em> = 1,000，Wilson 得分区间下界给出的门槛是 173 次失败，即 17.3%，达到这一数值即可有 99% 的把握认为真实错误率不低于 14.4%。若一小时只有 200 个事件，门槛是 42 次失败；若只有 100 个事件，则要出现 24 次失败才触发告警。</p>
+
+<p>这种方法能严谨地检测不同低流量条件下威胁 SLO 的情况，还可以按需要调整置信水平。例如，降低告警配置中的置信水平和 <em>z</em> 分数，就能允许置信度较低的告警触发，从而提高灵敏度。<a data-primary="alerts" data-secondary="binomial testing" data-startref="alrt_binom" data-type="indexterm" id="id1617"/></p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SLO Taxonomy" data-type="sect2"><div class="sect2" id="ch08_slo_taxonomy">
+<h2>SLO 分类体系</h2>
+
+<p>随着 SLO 在 Google 大规模普及，<a data-primary="SLOs (service level objectives)" data-secondary="labels" data-type="indexterm" id="slo_lab"/><a data-primary="taxonomy, SLOs" data-type="indexterm" id="tax_slo"/><a data-primary="labels, SLOs" data-type="indexterm" id="lab_slo"/>整理所有 SLO 的需求也随之增长。Google 有数千个团队，每个团队都可能拥有几十乃至几百个重要程度不同的 SLO。因此，要从整体上掌握生产环境的健康状况并不容易；负责多个团队的管理者，以及产品和负责人众多的业务部门，尤其如此。</p>
+
+<p>我们的解决办法是使用<em>标签</em>。标签附加在 SLO 定义上，用来标明其组织归属和生命周期，是整理 SLO 的有力基础。例如，一个产品领域（如 Google Cloud）包含多个产品；一个产品（如 BigQuery）包含多个功能领域；一个功能领域（如 Cloud Storage）又包含多个功能团队；每个团队都要为自己构建的功能和服务维护 SLO，例如各区域流式写入请求的可用性达到 99.9%。按功能团队、功能领域、产品和产品领域为 SLO 打标签后，负责人就能俯瞰相应组织层级的所有 SLO。这些标签还能帮助我们判断某类故障在不同组织中的关键程度，例如公共依赖项退化，并评估共同根因的影响以及不同故障在 SLO 上体现出的爆炸半径。它也是聚合处理大量数据的便捷方式。</p>
+
+<p>我们还发现，明确标记 SLO 的生命周期很有帮助。例如，SLO 定义可以处于<em>实验性</em>、<em>愿景型</em>、<em>已承诺</em>或<em>已弃用</em>状态。标为“实验性”，表示底层 SLI 或目标仍在调整；“已承诺”则表明团队认为该服务水平能够实现并有把握维护，错误预算政策也可能只适用于这类 SLO。对于有价值、但团队尚未准备好正式承诺的服务水平，可以另设愿景型 SLO，跟踪下一阶段的性能与可靠性里程碑。愿景型 SLO 不适合、也不应驱动告警，却是验证更严格目标是否可行且有价值的重要工具。按差距整理 SLO 后，即使服务仍符合已承诺的目标，利益相关者也能看出服务水平是在进步还是倒退。<a data-primary="SLOs (service level objectives)" data-secondary="labels" data-startref="slo_lab" data-type="indexterm" id="id1618"/><a data-primary="taxonomy, SLOs" data-startref="tax_slo" data-type="indexterm" id="id1619"/><a data-primary="labels, SLOs" data-startref="lab_slo" data-type="indexterm" id="id1620"/></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Measuring SLO Failure Concentration" data-type="sect1"><div class="sect1" id="ch08_measuring_slo_failure_concentration">
+<h1>衡量 SLO 故障的集中程度</h1>
+
+<p><a data-primary="SLOs (service level objectives)" data-secondary="availability reporting, failure concentration" data-type="indexterm" id="slo_avalrep_falcon"/><a data-primary="availability reporting, SLOs" data-type="indexterm" id="avarep_slo"/>SLO 可用性报告的一项弱点是：面对高基数数据，单个数字不足以呈现重要细节。</p>
+
+<p>举例来说，当用户规模超过一定程度后，即使完全达到三个九或四个九的 SLO，也无法说明究竟哪些人或哪些请求受到了故障影响。只要用户群或底层服务量足够大，一次故障就可能影响数量可观的客户或查询，却仍不足以触发 SLO 违规。事实上，故障是否“广泛”，取决于用户群规模，<em>而不是 SLO 本身。</em></p>
+
+<p>更重要的是，单一数字的 SLO 报告无法呈现故障的<em>分布</em>。如果用户群中某个很小的子集受到中断影响，甚至反复受影响，这种报告方式不会帮助你发现问题。长期遭受系统性影响的群体，流失率很可能显著升高。当然，也可以说单靠 SLO 无法解决这一问题；本节暂且假定，我们希望尽量仍在 SLO 框架内处理它。</p>
+
+<p>前文讨论的客户级 SLO 能部分解决这个问题。另一种办法，是用一个简单数值表示故障的集中程度，与通常的单值 SLO 达标率并列展示，让查看者立刻看出故障有多集中。可以类比标准差：它用于描述正态分布总体中数据偏离均值的程度。无需重复统计学常识，举例即可说明。欧洲男性平均身高为 178 厘米，标准差为 7 厘米，意味着约 68% 的人身高在 171～185 厘米之间，约 95% 在 164～192 厘米之间。之所以能精确作出这种描述，是因为正态分布具有特定性质。标准差越大，身高差异越大；标准差越小，差异越小。从这个意义上说，它也是一种集中程度指标。</p>
+
+<p>把这种方法用于在线服务而非身高数据，高度依赖带标签的指标，也就是每条观测都附有一个或多个可独立识别的标签或属性。这样就能在数据中划分不同群体，并度量故障在这些群体之间的集中程度。</p>
+
+<p>以 Prometheus 为例，假设某项指标带有浏览器请求语言、源 IP 地址、托管区域等标签。最直接的做法，是根据数据点在每个标签取值上的分布是否均匀来计算集中度，但低基数数据会使这种方法失效，例如只支持一两种语言，或所有流量看起来都来自有限的一组负载均衡器。应当选择高基数标签，底层指标最好也有较大的潜在变动范围，例如延迟。可划分的候选群体越多，就越容易有效识别故障集中现象。</p>
+
+<p>最清晰的实现方式是使用<em>熵损失</em>。<a href="https://oreil.ly/D3Slh">twinslo 仓库</a>给出了详细示例：可以用决策树——本例具体采用 <a href="https://oreil.ly/1-dV-"><code translate="no">DecisionTreeClassifier</code> 方法</a>——比较故障分布；严格说它度量的是对数损失，但总体效果相同。这个<a href="https://oreil.ly/GbE24">scikit-learn 模块</a>还可以对各项损失贡献因素排序，并在某个因素格外突出时将其直接呈现出来。</p>
+
+<p>也可以这样理解：我们有一组带类别标签的数据，分类器接收新的无标签数据并尝试预测其类别，回归器则尝试预测数值。按照经典的机器学习和数据科学方法，训练数据被划分为两组：集合 A 满足 <em>f</em><sub>1</sub> ≥ <em>x</em>，集合 B 满足 <em>f</em><sub>1</sub> &gt; <em>x</em>。分类器选择使熵或平方损失最小的特征（<em>f</em><sub>1</sub>）和阈值（<em>x</em>）。理想情况下，数据集的任何划分都不应造成熵的大幅下降；用不那么精确却更直观的话说，任何一次划分都不应带来意外。如果出现意外，就说明某个特征的表现与其他特征明显不同，适合将它呈现为故障的致因。例如，用 <code translate="no">region</code>、<code translate="no">browser</code> 和 <code translate="no">user_type</code> 训练 <code translate="no">DecisionTreeClassifier</code> 后，若一次划分显示 <code translate="no">browser = 'Firefox'</code> 的错误率为 80%，另一项划分又显示 <code translate="no">user_type = 'Enterprise'</code> 且 <code translate="no">browser = 'Firefox'</code> 的群体错误率为 95%，模型就发现了这些特征之间很强的交互作用<a data-primary="SLOs (service level objectives)" data-secondary="availability reporting, failure concentration" data-startref="slo_avalrep_falcon" data-type="indexterm" id="id1621"/><a data-primary="availability reporting, SLOs" data-startref="avarep_slo" data-type="indexterm" id="id1622"/>。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Weaknesses of the SLO Model" data-type="sect1"><div class="sect1" id="ch08_weaknesses_of_the_slo_model">
+<h1>SLO 模型的局限</h1>
+
+<p>和任何模型一样，SLO 模型会舍弃现实世界的复杂性，把问题简化成通常有助于实现某一目标的形式。与此相呼应的是，SLO 本身也相当激进地建议舍弃信息，只关注真正重要的部分。好在这种方法大多数时候有效；随着实践积累，我们也逐渐找到办法处理过去效果不佳的场景。然而，模型为了让问题可处理而忽略的现实特征，有时恰恰十分重要。<a data-primary="SLOs (service level objectives)" data-secondary="weaknesses" data-type="indexterm" id="slo_wknss"/></p>
+
+<p>SLO 模型建立在一个明确的核心假设上：被测对象可以计数，也就是由离散事件构成，而且每个事件都能归类为成功或失败。另一个相关的隐含假设是，这些测量结果能够驱动有效响应。对使用 HTTP 协议的电子商务网站而言，这通常成立；对飞行控制之类的连续计算过程，乃至一般的动态系统，则未必如此。后一类系统合适的抽象不是协议操作，而是微分方程。你仍然可以为它编写 SLO，但很难通过事件计数获得支撑指标。</p>
+
+<p>有些场景甚至会动摇“成功”和“失败”这两个类别本身。例如，对 AI 模型而言，如果“成功”只表示模型向用户返回了响应，那么即使响应错误、不可接受，甚至具有现实危害，协议层也可能把它欣然计为成功，应用层却不会。SLO 模型仍可使用，但抽象层次已经不同，而且事件所属类别未必稳定。</p>
+
+<p>先不谈如何<em>定义</em> SLO，关于<em>响应</em>方式——也就是违反 SLO 后怎么办——的一些假设偶尔也会带来问题。首先，几乎没有证据表明，用一串重复的 9 所表示的百分比来衡量可靠性，对人类具有直观意义。每月停机 4 分 23 秒，也就是四个九的可用性，并不对应任何人类能够感知的天然边界。尽管如此，这种惯例已成为行业标准，实际上很难再被取代。</p>
+
+<p>尽管 CUJ 建模以及 SLI 和聚合方式的选择十分复杂，响应侧却简单得多。真正关键的基本只有一个阈值：人工响应是否可能，甚至是否值得。其余都属于自动化范畴。如果期望 SLO 能让组织按尾部风险的程度作出渐进、成比例的响应，最常见的实现并不能满足这一点。它本质上是布尔式的：要么情况糟糕，需要所有人或部分人员立即投入；要么一切正常，无需人工介入。于是，这套框架把组织响应固化成锯齿形模式。它或许适合“全部宕机”的场景，却无法有效体现中间层次响应或预防措施的价值。</p>
+
+<p>最后，错误预算<a data-primary="error budgets" data-secondary="key weakness" data-type="indexterm" id="id1623"/>在组织层面有助于沟通风险、协调利益相关者，但它有一个关键弱点：如果错误预算被远远超支，接下来该怎么办？例如，我们见过团队在一月份就耗尽<em>年度</em>错误预算；不可能因此假定全年剩余时间都不再发布功能。严重的可靠性失控也不能毫无后果，否则组织等于宣告用户体验无关紧要。一种成本较低且效果不错的办法，是按月刷新错误预算，无论当月表现多差，下月都重新开始。不过，修复根因的项目，尤其是争取产品和产品工程团队支持的工作，可以跨月持续，以降低复发风险。组织若有能力，还可采取多种其他措施，包括 <a href="https://oreil.ly/8ZVtk">Code Yellow</a>，<sup><a data-type="noteref" href="ch08-zh.html#id1624" id="id1624-marker">7</a></sup>一般性的事后或预防性计划——有时当然必须补救，但关键可靠性问题通常更适合以预防为主题——以及按合理顺序处理长清单的燃尽式<a data-primary="SLOs (service level objectives)" data-secondary="weaknesses" data-startref="slo_wknss" data-type="indexterm" id="id1625"/>计划。<sup><a data-type="noteref" href="ch08-zh.html#id1626" id="id1626-marker">8</a></sup></p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Additional Resources" data-type="sect1"><div class="sect1" id="ch08_additional_resources">
+<h1>其他资源</h1>
+
+<p>若想进一步了解 SLO，最全面的指南是 Alex Hidalgo 的《<a class="orm:hideurl" href="https://www.oreilly.com/library/view/implementing-service-level/9781492076803/"><em>Implementing Service Level Objectives</em></a>》，同样由 O’Reilly 出版。更广泛的社区也通过大量文章和演讲推进了集体认识。相关资料不胜枚举，其中两个由社区维护、收录大量 SLO 内容的 SRE 资源汇总是 <a href="https://oreil.ly/nUB16">Awesome Site Reliability Engineering</a>和<a href="https://oreil.ly/JuCDc"><em>How They SRE</em></a>。</p>
+
+<p>Google 当然也提供了大量相关资料，尤其关注 SLO 的具体机制。<em>《站点可靠性工作手册》</em>有一章侧重实施，也就是<a href="https://sre.google/workbook/implementing-slos">第 2 章</a>，既有纸质版，也可免费在线阅读。供个人自学或大型团队培训使用的知识共享许可工作坊 <a href="https://sre.google/resources/practices-and-processes/art-of-slos">“The Art of SLOs”</a>，全面介绍了 SLI 和 SLO；任何人都可直接使用或按需改编，用于提升整个组织的能力。喜欢播客的读者可以收听<em>Google Cloud Platform Podcast</em>中<a href="https://oreil.ly/9xKQm">介绍 SLO 的一期节目</a>，<a href="https://sre.google/prodcast"><em>SRE Prodcast</em></a>也有多期相关节目；<a href="https://www.case-podcast.org"><em>Conversations about Software Engineering（CaSE）</em></a>的三期系列节目对同一主题讲得更深入。最后，<a href="https://oreil.ly/FNXIE"><em>CRE Life Lessons</em></a>收录了更多具体 SLO 用例的详细案例研究。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch08_conclusion">
+<h1>结论</h1>
+
+<p>SLO 是实现目标的手段：让服务的可靠性在用户期望与业务需求之间取得平衡。SLO 本身并不是目标。</p>
+
+<p>人们很容易走得过头，试图为眼前的每个 API、应用里的每次用户交互都设置 SLO。然而，并非一切都需要 SLO，也不是每个 SLO 都需要告警。请记住，这些工作的目的不是“拥有 SLO”，而是提供一种工具，让组织就可接受的表现达成共识，并在必要时调动工程资源加以改进。因此，最好的 SLO 不是教条地套用某种僵硬结构，而是最准确地刻画用户与业务需求的 SLO。</p>
+
+<p>本书第一版出版后的十年间，我们对 SLO 的一些方面有了不同认识，但有一点始终不变：SLO 的力量，在于促使工程、运维、产品开发和业务团队共同理解何谓成功。经过审慎设计、持续执行、配套适当后果并定期更新后，SLO 会成为确定工程工作优先级的有力工具，确保工程资源投入最有意义的可靠性改进，同时服务用户与业务。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1546"><sup><a href="ch08-zh.html#id1546-marker">1</a></sup> SLO 只是这套框架的一部分，但人们常用它来泛指整个框架。</p><p data-type="footnote" id="id1556"><sup><a href="ch08-zh.html#id1556-marker">2</a></sup> 更详细的介绍见《<a href="https://sre.google/workbook/alerting-on-slos"><em>站点可靠性工作手册</em>》第 5 章</a>。</p><p data-type="footnote" id="id1558"><sup><a href="ch08-zh.html#id1558-marker">3</a></sup> 一般而言，SLO 宜少不宜多，因为把注意力和影响力集中在较小范围内通常更有效。不过，正如本章后文所示，在某些场合也能<a data-primary="SLOs (service level objectives)" data-startref="slos" data-type="indexterm" id="id1627"/>成功管理大量 SLO。</p><p data-type="footnote" id="id1576"><sup><a href="ch08-zh.html#id1576-marker">4</a></sup> 另一种观点是，为少数重要客户建设的系统，通常只需增加相对较少的成本就能扩展给其他客户。换句话说，既然已经为一部分客户做了，惠及全部用户可能并不需要太多额外工作。</p><p data-type="footnote" id="id1582"><sup><a href="ch08-zh.html#id1582-marker">5</a></sup> Alex Palcuie 在 SRECon 2022 的演讲<a href="https://oreil.ly/YtHl-">“从 30 个 SLO 到 300 万个 SLO”</a>是一份很有实操价值的资料。</p><p data-type="footnote" id="id1591"><sup><a href="ch08-zh.html#id1591-marker">6</a></sup> <a href="https://oreil.ly/ciCpe">前 Google 员工 John Looney</a>（个人交流）表示，他<a data-primary="Looney, John" data-type="indexterm" id="id1628"/>每隔一两个季度就会向服务使用方了解情况，例如询问“最近 SLO 有没有让你们感到不满？”，并偶尔提醒他们：“你们确实知道，我们的实际表现经常好于明示的 SLO 吧？可别习以为常。”</p><p data-type="footnote" id="id1624"><sup><a href="ch08-zh.html#id1624-marker">7</a></sup> 在 Google，Code Yellow 表示优先级第二高的问题。发生此类事件时，我们会立即暂停功能开发，组建临时团队解决问题。</p><p data-type="footnote" id="id1626"><sup><a href="ch08-zh.html#id1626-marker">8</a></sup> 例如 Microsoft 的 <a href="https://oreil.ly/YXeoD">Meltdown 与 Spectre 修复计划</a>。</p></div></div></section></body></html>
