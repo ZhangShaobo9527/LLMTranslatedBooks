@@ -1,0 +1,968 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 如何支持 AI</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第 20 章 SRE 如何支持 AI" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch20">
+<h1><span class="label"> 第 20 章：</span> SRE 如何支持 AI</h1>
+
+
+<p class="byline">作者：Dan Dennison、Isaac Albarrán Muñoz、John Lunney、Rita Lu<br/> <span class="keep-together">Garrett Holthaus 参与撰写</span></p>
+
+<p>本章是本书中讨论 AI 与站点可靠性工程交叉领域的两章之一。在这里，我们重点关注 SRE 各项实践如何应用于 AI 服务运营。 <a data-type="xref" href="ch21.html#ch21"> 第 21 章 </a> 重点介绍 AI 在 SRE 学科中的应用。</p>
+
+<p>人工智能<a data-primary="AI (artificial intelligence)" data-type="indexterm" id="id2724"/>（AI）是一个致力于创造具备类人推理与问题解决能力的机器的广泛领域，涵盖从简单的专家系统，到以大语言模型（LLM）为推理引擎的自主智能体。机器学习<a data-primary="ML (machine learning)" data-type="indexterm" id="id2725"/><a data-primary="machine learning" data-see="ML" data-type="indexterm" id="id2726"/>（ML）是 AI 的一个特定子领域，使系统无需显式编程便能从数据模式中学习，并支撑图像识别、欺诈检测等任务；不过，这两个领域经常交叠。这种交叠在<a data-primary="LLMs (large language models)" data-type="indexterm" id="id2727"/><a data-primary="large language models (LLMs)" data-type="indexterm" id="id2728"/>LLM 等技术中最为明显：它们运用深度学习（一种 ML 技术）实现理解和生成类人语言的高级 AI 能力，从而模糊了数据驱动学习与更广义智能行为之间的界限。</p>
+
+<p class="fix_tracking">AI 和 ML 应用的广泛普及也深刻影响了<a data-primary="ML (machine learning)" data-secondary="early support" data-type="indexterm" id="ml_sre_erlsup"/><a data-primary="AI (artificial intelligence)" data-secondary="early support" data-type="indexterm" id="ai_sre_erlsup"/>SRE。事实上，第一个支持 ML 应用的 Google SRE 团队成立于 2009 年，负责支持<a data-primary="Smart Ad Selection System" data-type="indexterm" id="id2729"/>智能广告选择系统<sup><a data-type="noteref" href="ch20-zh.html#id2730" id="id2730-marker">1</a></sup>。该系统创建于五年前，通过日志数据训练模型，为 Google 搜索广告竞价提供最新的点击率预测数据。自第一个 SRE 团队成立以来，AI 和 ML 的应用与用例、所开发的系统，以及为其提供支持的 SRE 团队数量都迅速增长。</p>
+
+<p>如今，Google SRE 支持各种 AI 系统及其底层 ML 系统，并采用不同的协作模式。一些基础设施团队专注于不同的领域，尤其关注 LLM 服务与智能体技术栈、实验基础设施和存储。另一些团队偏重消费者产品，还有一些则偏重企业产品。</p>
+
+<p>主要专注于支持研究人员工作流程的团队采用了混合式 SRE 协作模式，既延续企业领域对长期合作关系的重视，又采用消费者产品领域“先缓解、后沟通”的做法，以维持业务所需的高<a data-primary="ML (machine learning)" data-secondary="early support" data-startref="ml_sre_erlsup" data-type="indexterm" id="id2731"/><a data-primary="AI (artificial intelligence)" data-secondary="early support" data-startref="ai_sre_erlsup" data-type="indexterm" id="id2732"/>迭代速度。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="核心机器学习概念" data-type="sect1"><div class="sect1" id="ch20_core_ml_concepts">
+<h1>核心机器学习概念</h1>
+
+<p>在深入探讨 AI 的架构和运行机制之前，先来明确<a data-primary="ML (machine learning)" data-secondary="terminology" data-type="indexterm" id="ml_term"/>几个定义，以便在后续分析整个技术栈时有清晰的参照。本章将讨论以下 ML 核心概念：</p>
+<dl>
+<dt>训练（模型创建）</dt>
+<dd>
+<p>将大量准备好的数据输入算法的计算<a data-primary="training" data-secondary="model creation" data-type="indexterm" id="id2733"/>密集型过程。在此阶段，系统学习模式并调整其内部参数（权重和偏差），直到它能够准确地执行其预期任务。为了防止模型随着时间的推移而退化，这一过程通常会转化为自动化、周期性运行的生产流水线，通常称为持续训练<a data-primary="continuous training" data-type="indexterm" id="id2734"/>(CT)。</p>
+</dd>
+<dt>推理（模型服务）</dt>
+<dd>
+<p>将经过训练的<a data-primary="inference, model serving" data-type="indexterm" id="id2735"/>模型部署到可以接收新的、未见过的输入数据并生成预测、分类或生成响应的环境的阶段。</p>
+</dd>
+<dt>模型质量和性能</dt>
+<dd>
+<p>衡量<a data-primary="models" data-secondary="quality" data-type="indexterm" id="id2736"/><a data-primary="models" data-secondary="performance" data-type="indexterm" id="id2737"/>模型执行预期任务的有效性和可靠性的指标。这包括其预测准确性、精确度和召回率，以及是否遵守公平性与安全性约束。</p>
+</dd>
+<dt>在线机器学习</dt>
+<dd>
+<p>系统<a data-primary="online machine learning" data-type="indexterm" id="id2738"/>使用实时数据流不断更新其模型的范例，使其能够近乎实时地适应不断变化的模式。这与在静态数据集上离线训练再投入服务的模型（许多 LLM 即属此类）形成鲜明对比。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>词元与上下文窗口</dt>
+<dd>
+<p>在生成式 AI 中，词元（token）<a data-primary="tokens" data-type="indexterm" id="id2739"/><a data-primary="context windows" data-type="indexterm" id="id2740"/>是模型处理数据的基本单位。词元通常表示文本（如单词或子词），但在多模态模型中也可以表示图像、音频或视频的离散元素。上下文窗口是模型在单个请求中可以处理的最大词元数。上下文窗口由多部分组成：它通常包含系统提示（规定模型行为的前置说明和配置）、用户的当前输入，以及当前会话中<a data-primary="ML (machine learning)" data-secondary="terminology" data-startref="ml_term" data-type="indexterm" id="id2741"/>此前输入与生成输出的累积历史。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="交付AI和机器学习系统" data-type="sect1"><div class="sect1" id="ch20_delivering_ai_and_ml_systems">
+<h1>交付 AI 和机器学习系统</h1>
+
+<p>AI 系统与<a data-primary="AI systems" data-secondary="architecture" data-type="indexterm" id="aisys_arch"/><a data-primary="ML system architecture" data-type="indexterm" id="mlsysarch"/><a data-primary="architecture, AI and ML systems" data-type="indexterm" id="archi_aiml"/>传统系统一样采用分层结构。示例参考架构从专用硬件（如 GPU，以及 TPU、Trainium 等其他加速器）开始，并由高性能网络和存储提供支持。在此之上，集群管理层（例如 Kubernetes 或其他专有集群和作业管理系统）编排这些资源，处理复杂的调度需求，例如拓扑感知和成成成成成成成组调度——大规模训练和推理的关键要素。 <sup> <a data-type="noteref" href="ch20-zh.html#id2742" id="id2742-marker"> 2 </a> </sup> ML 框架和系统层管理分布式数学运算，确保无论选择哪种框架（例如 PyTorch 加自定义内核），编译都会为学习任务生成正确的面向特定架构的代码和作业布局。 <sup> <a data-type="noteref" href="ch20-zh.html#id2743" id="id2743-marker"> 3 </a> </sup> 例如，使用 Google Cloud，JAX <sup> <a data-type="noteref" href="ch20-zh.html#id2744" id="id2744-marker"> 4 </a> </sup> 或 PyTorch 可以编译为 <a href="https://oreil.ly/JqivA"> 加速线性代数 (XLA) </a> 以便部署到<a href="https://oreil.ly/lTyP2"> Pathways </a> .</p>
+
+<p>采用如<a data-type="xref" href="#ch20_fig01">图 20-1</a>所示的垂直整合平台——无论自行开发，还是通过先进的云服务使用——都能让组织提高 AI 工作负载的可靠性与效率基线。通过使用统一硬件、库和编译器的平台，团队可以摆脱定制但难以扩展的方案，并受益于由集中式服务对昂贵的加速器实施精细的资源管理。这种基于平台的方法为模型训练和服务提供开箱即用的组件，从而产生“飞轮效应”，基础设施的改进使所有用户受益，并允许产品团队专注于核心逻辑而不是底层系统。最终，选择从一开始就嵌入可靠性的集成 AI 技术栈可确保环境具有可观测性、可扩展性和弹性，足以满足高速迭代的要求。</p>
+
+<figure><div class="figure" id="ch20_fig01">
+<img alt="ML 系统架构堆栈图显示了从硬件到应用程序的各层，说明了可扩展 AI 工作负载的集成组件。" src="assets/sre2_2001.png"/>
+<h6><span class="label"> 图 20-1。</span> Google ML 系统架构的各个层次</h6>
+</div></figure>
+
+<p>沿技术栈向上，共享模型推理层负责让训练好的模型根据输入作出预测，并提供一组通用原语来支持大规模模型服务。数据管理系统层负责训练数据和模型本身的血缘追踪与策略执行。尽管建议采用这一层，但实际部署仍没有达到应有的普及程度。最后，代理和应用程序层消费模型输出，其形态从直接调用 API，到利用代理框架进行规划和工具调用的复杂多步骤代理系统不等。</p>
+
+<p>从 SRE 的角度看，可靠的 AI 系统架构依赖以下<span class="keep-together">原则</span>：</p>
+
+<ul>
+<li>
+<p>控制平面和数据平面的明确分离</p>
+</li>
+<li>
+<p>对稀缺加速器实施稳健的资源管理</p>
+</li>
+<li>
+<p>优异的可观测性</p>
+</li>
+<li>
+<p>无缝的 AI 制品管理生命周期（版本控制、部署、回滚）</p>
+</li>
+</ul>
+
+<p>由于推理（甚至训练）需求波动很大，因此可扩展性和弹性至关重要。可靠的自动扩缩容和负载均衡设计能极大改善 AI 推理负载。为了确保可靠性、性能和快速诊断问题，堆栈还必须满足传统要求，例如数据流可靠性和故障<a data-primary="AI systems" data-secondary="architecture" data-startref="aisys_arch" data-type="indexterm" id="id2745"/><a data-primary="ML system architecture" data-startref="mlsysarch" data-type="indexterm" id="id2746"/><a data-primary="architecture, AI and ML systems" data-startref="archi_aiml" data-type="indexterm" id="id2747"/>域隔离。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="应用和智能体" data-type="sect2"><div class="sect2" id="ch20_application_and_agents">
+<h2>应用和智能体</h2>
+
+<p>应用和智能体系统<a data-primary="AI systems" data-secondary="applications" data-type="indexterm" id="id2748"/><a data-primary="applications" data-secondary="AI systems" data-type="indexterm" id="id2749"/><a data-primary="AI agents" data-type="indexterm" id="id2750"/>位于该层次结构的顶端，因此在 AI–ML 连续谱上更偏向 AI 一侧。应用本身与 SRE 负责交付的其他系统并无二致，具有前端、用户状态和标准业务逻辑。区别在于它们的后端，后端嵌入了智能体和模型服务基础设施来实现其智能功能。</p>
+
+<p>AI 智能体是一种软件实体，它使用模型的推理能力来独立规划和执行任务（例如调用 API 或查询数据库）以实现高级目标。应用程序通常具有与模型和其他应用程序后端交互以执行预期结果的专用智能体。例如，自动驾驶汽车将具有与转向、加速和制动系统相对应的智能体或类似智能体的组件，以行驶到用户请求的目的地。要快速开发能够利用 AI 技术的应用，可复用的智能体平台组件与能力必不可少。在撰写本文时，AI 的最新进展包括记忆管理、智能体间通信和沙箱化，并且这些领域仍在不断发展。</p>
+
+<p>由于智能体包含针对具体产品定制的专用代码，Google 发现让现有 SRE 团队在其产品职责范围内支持新的 AI 应用更为合适，而不必仅为应用中的 AI 用例另建专门团队。应用专属智能体同样如此，因为保持它们运行所需的专业知识取决于相应业务领域。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="模型服务" data-type="sect2"><div class="sect2" id="ch20_model_serving">
+<h2>模型服务</h2>
+
+<p>模型服务<a data-primary="AI systems" data-secondary="model serving stack" data-type="indexterm" id="id2751"/><a data-primary="model serving stacks" data-type="indexterm" id="id2752"/>栈需要根据一组约束智能地路由查询，完成推理，并向调用它的应用和智能体返回答案。例如，许多模型服务栈会提供尺寸、系列和配置（如上下文窗口大小）各不相同的模型。路由层也是保障可靠性的重要手段。如果主模型容量不足或延迟激增，基础设施可以无缝回退到更小、资源消耗更低的替代模型，有意以轻微的响应质量下降换取系统持续可用。同样，这种路由能力也支持在线 A/B 测试，让 SRE 能够谨慎地把流量切换到新的模型权重，而不危及用户体验。</p>
+
+<p>管理这些路由约束，以及 AI 推理高度多变的计算成本与延迟，需要多层前端基础设施。该层采用专门的分布式负载平衡技术并往往还要管理流式连接，<sup><a data-type="noteref" href="ch20-zh.html#id2753" id="id2753-marker">5</a></sup>实时返回生成的词元以保持流畅、及时的用户体验。由于这种环境的复杂性，模型服务基础设施通常由一个或多个专业的 SRE 团队管理。尽管应用程序多种多样，但 Google 发现统一的模型服务系统适用于绝大多数用例，<a data-primary="AI systems" data-secondary="model serving stack" data-startref="aisys_modsrvstk" data-type="indexterm" id="id2754"/>从小型欺诈检测和点击率模型到最大的 LLM。<sup><a data-type="noteref" href="ch20-zh.html#id2755" id="id2755-marker">6</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="模型创建" data-type="sect2"><div class="sect2" id="ch20_model_creation">
+<h2>模型创建</h2>
+
+<p>为生产服务提供<a data-primary="models" data-secondary="stages of creation" data-type="indexterm" id="mod_stgcreat"/><a data-primary="ML models" data-secondary="stages of creation" data-type="indexterm" id="mlmod_stgcreat"/>高质量模型涉及几个关键阶段。 <sup> <a data-type="noteref" href="ch20-zh.html#id2756" id="id2756-marker"> 7 </a> </sup> 首先，需要建立高质量输入数据的基础。强大的数据处理管道摄取原始数据流；清理错误数据、重复项和离群值；并格式化数据以供模型使用。这对于在线和批量学习系统都是至关重要的。由于机器学习模型从根本上是由其训练集定义的，因此数据实际上被“编译”进了系统的核心逻辑。因此，任何引入异常、偏差或陈旧信息的管道故障都可能导致回归，从而导致用户体验下降、看似可信实则错误的输出，或者下游智能体工作流中的级联逻辑故障。</p>
+
+<p>其次，使用准备好的数据训练模型<a data-primary="models" data-secondary="training" data-type="indexterm" id="mod_trn"/><a data-primary="training" data-secondary="models" data-type="indexterm" id="trn_mod"/>。训练方式既可以是持续吸收新数据的在线机器学习全自动流水线，也可以是工程师以实验为导向的交互式模型训练。最后，必须严格评估新训练的模型。验证不仅要考察预测质量和性能，还要考察<a href="https://oreil.ly/N7n6S">公平性</a>、<a href="https://oreil.ly/OF43d">安全性</a>和资源效率等其他关键属性。</p>
+
+<p>模型训练远不如模型服务标准化，部分原因是任务的结构要复杂得多，部分原因是研究人员不断尝试不同的方法。也就是说，不同的产品倾向于使用不同类型的框架或基础设施来进行模型训练。当模型从研究人员的实验沙箱转变为自动化、重复的生产管道（前面提到的持续训练）时，通常会触发深度 SRE 参与。如果存在常用的数据摄取或模型训练自动化系统（例如 Google Ads 中的情况），SRE 能够保障端到端系统的 SLO（请参阅 <a data-type="xref" data-xrefstyle="select:nopage" href="#ch20_service_level_objectives_in_ai_systems">“AI 系统中的服务等级目标”</a>）。在这些成熟的管道中，未能在指定时间范围内生成新模型将被视为生产中断。然而，对于初始研究阶段或人工发起的模型训练，SRE 通常扮演更有限的<a data-primary="models" data-secondary="stages of creation" data-startref="mod_stgcreat" data-type="indexterm" id="id2757"/><a data-primary="ML models" data-secondary="stages of creation" data-startref="mlmod_stgcreat" data-type="indexterm" id="id2758"/><a data-primary="models" data-secondary="training" data-startref="mod_trn" data-type="indexterm" id="id2759"/><a data-primary="training" data-secondary="models" data-startref="trn_mod" data-type="indexterm" id="id2760"/>咨询角色，提供战略工作，使大量产品的工作更加高效和更具成本效益。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 如何支持 AI 工作负载" data-type="sect1"><div class="sect1" id="ch20_how_sre_supports_ai_workloads">
+<h1>SRE 如何支持 AI 工作负载</h1>
+
+<p>虽然<a data-primary="AI (artificial intelligence)" data-secondary="SRE support for AI workloads" data-type="indexterm" id="id2761"/><a data-primary="AI systems" data-secondary="SRE support" data-type="indexterm" id="id2762"/> SRE 的核心使命保持不变，与传统软件系统相比，AI 工作负载引入了独特的复杂性。AI 开发节奏极快，模型和基础设施持续迭代，需要速度和稳定性之间的微妙平衡。此外，AI 的非确定性意味着输出质量本身成为可靠性的主要衡量标准。<sup><a data-type="noteref" href="ch20-zh.html#id2763" id="id2763-marker">8</a></sup> 本节探讨如何调整 SRE 原则来应对整个 ML 生命周期中的这些挑战，从在概率环境中定义 SLO 到管理加速器硬件的极端容量限制。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI 系统的服务等级目标" data-type="sect2"><div class="sect2" id="ch20_service_level_objectives_in_ai_systems">
+<h2>AI 系统的服务等级目标</h2>
+
+<p>SLO<a data-primary="AI (artificial intelligence)" data-secondary="service level objectives" data-type="indexterm" id="sre_aisyssup_slo"/><a data-primary="AI systems" data-secondary="SLOs (service level objectives)" data-type="indexterm" id="aisys_sresup_slo"/><a data-primary="SLOs (service level objectives)" data-secondary="AI systems" data-type="indexterm" id="slo_aisys"/>对管理任何系统的可靠性都至关重要，AI 系统也不例外。然而，AI 工作负载的独特特征，例如其不确定性和多维复杂性，需要采用定制的逐层方法才能以一致方式定义和衡量这些 SLO。</p>
+
+<p>为了简化这种复杂性，在将 AI SLO 应用到整个堆栈之前，将它们分为四个主要支柱会很有帮助：</p>
+
+<ul>
+<li>
+<p><em>可用性</em>不只是基本的正常运行时间。在机器学习中，这包括专用硬件的可用性、编排训练作业的控制平面的可靠性以及主动强制执行安全远程证明。</p>
+</li>
+<li>
+<p><em>吞吐量</em>对于长时间运行和资源密集型工作负载至关重要。这里的主要指标是 <em>ML 有效计算占比（goodput）</em> ，它衡量分配的资源有效执行有用计算的时间比例，并将中断和系统开销计入其中。</p>
+</li>
+<li>
+<p><em>延迟</em>是传统的请求/响应指标，但还需要补充生成式 AI 特有的指标，例如离线工作负载的任务调度延迟，以及流式生成模型的首个词元生成时间 (TTFT)。对于强调时效性的在线训练，延迟 SLO 也可以关注数据的新鲜程度。</p>
+</li>
+<li>
+<p><em>质量</em>是 AI 最具决定性的支柱。由于模型可以成功生成响应，但响应在事实上有误，因此 SLI 必须衡量输出的正确性。这包括监控预测偏差、针对黄金数据集的验证以及智能体系统中工具使用的成功率。</p>
+</li>
+</ul>
+
+<p>训练工作负载通常以吞吐量为导向，并且可以承受阶段性的不可用。另一方面，它们需要底层硬件、其运行时以及工作负载本身协同工作，以尽可能高效地执行。衡量这种效能的一项公认指标是<a data-primary="ML goodput" data-type="indexterm" id="id2764"/><a data-primary="SLOs (service level objectives)" data-secondary="ML goodput" data-type="indexterm" id="id2765"/>ML 有效吞吐量，这一层通常用它来定义 SLO。 <sup> <a data-type="noteref" href="ch20-zh.html#id2766" id="id2766-marker"> 9 </a> </sup> 同样，集群管理层的 SLO 以可靠的作业编排以及控制平面可用性和调度延迟保证为中心。</p>
+
+<p>尤其对于<a data-primary="online machine learning" data-secondary="data-quality SLOs" data-type="indexterm" id="oml_dqslo"/>在线机器学习，模型会摄取实时数据，输入质量直接影响模型的可靠性。必须对上游数据生产者严格执行 SLO，例如数据摄取管道、特征存储或原始遥测系统。如果上游数据源降级，则此故障状态必须通过系统的控制平面传播，以在模型受到污染之前暂停下游使用方，包括模型训练作业或推理服务器。为了在不超出计算预算的情况下保障这些数据质量 SLO，SRE 使用分层方法进行自动评估，包括：</p>
+<dl>
+<dt>依赖关系跟踪</dt>
+<dd>
+<p>通过分析数据血缘，SRE 可以绘制复杂的依赖关系树。如果关键上游表中的数据时效性或数据量低于某个阈值，系统可以自动发出警报并停止下游机器学习流程。</p>
+</dd>
+<dt>统计监控</dt>
+<dd>
+<p>为了检测<em>预测偏差</em>（模型的预测输出分布与观测现实之间的偏移），我们使用统计检查持续监控输入数据和输出分布的形态。这些检查成本低、实时性强，可以作为发现模型退化的预警线。</p>
+</dd>
+<dt>AI 辅助评估</dt>
+<dd>
+<p>对于更细致的质量分析，系统会采用 AI 机制，例如从验证数据中学习动态误差阈值或使用次级模型对输出进行评分（模型充当评判者）。 <sup> <a data-type="noteref" href="ch20-zh.html#id2767" id="id2767-marker"> 10 </a> </sup> 由于这些方法的计算成本较高，因此它们通常定期应用或应用于流量的采样子集，以补充<a data-primary="online machine learning" data-secondary="data-quality SLOs" data-startref="oml_dqslo" data-type="indexterm" id="id2768"/>实时统计监控。</p>
+</dd>
+</dl>
+
+<p>一旦模型通过了这些严格的数据与质量门禁，便会进入生产服务阶段。在这个阶段，SLO 范式发生了巨大的变化：我们从测量训练管道的吞吐量和统计正确性转向评估应用程序的即时、实时性能。</p>
+
+<p>模型服务工作负载<a data-primary="model serving workloads, SLOs" data-type="indexterm" id="msw_slo"/><a data-primary="SLOs (service level objectives)" data-secondary="model-serving workloads" data-type="indexterm" id="slos_modsrvwrklds"/>通常支撑实时、面向用户的应用，需要严格的 SLO，重点关注高可用性和低延迟。与训练不同，即使是短暂的中断或延迟也会显著降低用户体验。在硬件和集群管理层，这转化为基础设施级 SLO，重点关注各个服务副本（构成负载均衡池的后端模型服务器任务）的运行状况和响应能力，以及低任务调度延迟。最关键的推理 SLO 在推理平台级别定义。一个现实案例是 Vertex AI Prediction，它为来自各种前沿 AI 实验室的模型提供服务。这些 SLO 涵盖高预测可用性和低延迟目标。它们通常以不同的百分位数衡量平台开销，同时还包含可靠、快速的模型部署和扩展功能，以及用于管理的高度可用的控制平面 API。</p>
+
+<p>代理层和应用程序层使用模型输出并与其他业务逻辑相结合，也需要反映端到端用户体验的 SLO。模型服务专用指标（例如首个词元生成时间 (TTFT)）是据以制定 SLO、确保流畅的用户交互的重要基础。除了通常的可用性和延迟保证之外，还需要代表正确性、准确性和质量的 ML 特定质量 SLO。由于 AI 智能体经常执行复杂的多步骤推理链，因此序列早期的一次幻觉就可能产生级联效应，破坏整个工作流程。为了保护这些工作流程，SRE 必须跟踪智能体系统中工具使用的成功率，例如，智能体能否可靠地构造对向量数据库的有效查询、调用内部 API 来检索用户状态或触发下游变更操作（例如创建工单）。其他关键质量指标包括响应格式的结构有效性（例如，确保模型返回可解析的 JSON）以及工作流程错误率或偏离用户预期任务的比率。</p>
+
+<p>虽然文献中通常不会使用这些术语来引用这些指标，但模型评估分数本身就构成一种 SLI。评估结果根据某个阈值判定通过或失败。在 SRE 术语中，最小阈值就是 SLO。因此，形成模型质量 SLO 就是使用自动评估工具以某个特定分数划定界线。然后，SRE 可以通过在质量事件发生时排查并修复问题来“捍卫 SLO”。</p>
+
+<p>最后，随着 AI 系统越来越多地用于敏感和受监管领域，SLO 还必须涵盖安全、隐私和合规保证。这一要求贯穿从面向吞吐量的训练工作负载，到推理、代理和应用层的完整流程。此时，举证和远程证明就至关重要。<em>举证</em>是向客户说明安全与合规状态的过程，提供透明的“状态声明”，其中包括模型血缘和环境状态度量。<em>远程证明</em>则以密码学方式保证证据所声明的状态确实正在被强制执行。它利用硬件信任根，确保模型和软件栈自证据生成后未遭篡改。对于 Private AI Compute 等产品，从最终用户角度看，远程证明失败就等同于服务中断。<sup><a data-type="noteref" href="ch20-zh.html#id2769" id="id2769-marker">11</a></sup> 在这种情况下，必须为远程证明系统本身定义 SLO，包括证据时效性、远程证明过程延迟以及经远程证明的服务环境的可用性。例如，客户端可能拒绝向无法提供有效证明的系统发送数据，因此远程证明的可用性<a data-primary="AI (artificial intelligence)" data-secondary="service level objectives" data-startref="sre_aisyssup_slo" data-type="indexterm" id="id2770"/><a data-primary="AI systems" data-secondary="SLOs (service level objectives)" data-startref="aisys_sresup_slo" data-type="indexterm" id="id2771"/><a data-primary="SLOs (service level objectives)" data-secondary="AI systems" data-startref="slo_aisys" data-type="indexterm" id="id2772"/><a data-primary="model serving workloads, SLOs" data-startref="msw_slo" data-type="indexterm" id="id2773"/><a data-primary="SLOs (service level objectives)" data-secondary="model-serving workloads" data-startref="slos_modsrvwrklds" data-type="indexterm" id="id2774"/>也是整体服务可靠性的关键组成部分。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="AI 可靠性" data-type="sect2"><div class="sect2" id="ch20_ai_reliability">
+<h2>AI 可靠性</h2>
+
+<p>简单来说，AI 可靠性<a data-primary="AI systems" data-secondary="reliability, measuring" data-type="indexterm" id="aisys_rel_measur"/>是指 AI 系统持续执行其预期任务，同时保持可接受的准确性、一致性和可靠性水平的能力。当 AI 系统在各种运行条件下都能交付预期结果时，就被认为是可靠的。尽管 AI 带来了许多新事物，但传统 SRE 方法仍然适用，这意味着仍然需要 SLO、监控与告警、容量规划、发布和变更管理、自动化和事件响应等核心实践。</p>
+
+<p>也就是说，AI 应用程序的一个显著区别在于，响应的评估范围从明确的服务器错误，到 AI“选择”放弃或返回低质量响应，再到高质量响应。虽然服务器错误应返回 <code translate="no">500</code> 状态码，但我们发现用于放弃查询和降级查询的错误代码不一致（特别是当服务堆栈有很多层时）。因此，有可能返回在 API 层成功的响应，但却因未实现预期结果而无法满足用户需求。</p>
+
+<p>为了系统地测量这些降级响应，我们必须超越传统的 HTTP 状态代码。这需要在服务层埋点，以记录系统何时有意降级响应（例如，在容量不足期间将请求路由到较小、能力较差的模型）或请求触发安全过滤器的情况。在应用程序层，我们通过跟踪显式用户反馈（例如点踩）和隐式行为信号（例如立即改写提示或放弃会话）来捕获质量代理指标。最后，把一部分技术上成功的响应样本送入异步自动评估（如结构验证或“模型充当评判者”评分），我们可以将主观退化转化为可测量的 SLI。</p>
+
+<p>产生这类响应的原因之一与概率输出或再训练周期有关。相同的输入可能会产生不同的输出，从而使得依赖于精确输出的传统方法变得无效。这种不可预测性使得一致地测量性能变得具有挑战性，也增加了可靠性观测的难度。相反，监控框架必须容纳可接受的输出范围，并专注于验证行为模式。</p>
+
+<p>如前所述，响应不良的另一个常见原因是为了补偿容量不足而进行降级。这就提出了一个问题：这些条件是否应该以不同方式显式呈现。通常，当容量受到限制时，免费用户和超出可用容量的请求可能会被路由到替代模型，这可能会导致质量较低的结果。 SRE 的可靠性定义和我们的 SLO 定义考虑了与容量相关的降级，以便这类情况在整个技术栈中可见，从而能够创建端到端的 SLO。在协作过程中，SRE 与产品工程领导层在可靠性目标上保持一致。达成一致后，该目标就会沿着堆栈向下级联，为底层基础设施服务定义 SLO。与往常一样，这些 SLO 必须是可实现的并可逐步迭代。虽然<a data-primary="AI systems" data-secondary="reliability, measuring" data-startref="aisys_rel_measur" data-type="indexterm" id="id2775"/>初始值可能与最终产品目标不匹配，但它们会随着时间的推移而收敛。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="实际可观测性和容量挑战" data-type="sect2"><div class="sect2" id="ch20_practical_observability_and_capacity_challenges">
+<h2>实际可观测性和容量挑战</h2>
+
+<p>尽管生成式 AI 产品功能<a data-primary="AI systems" data-secondary="observability issues" data-type="indexterm" id="id2776"/><a data-primary="observability" data-secondary="AI systems" data-tertiary="challenges" data-type="indexterm" id="id2777"/><a data-primary="capacity planning" data-secondary="AI systems, challenges" data-type="indexterm" id="id2778"/><a data-primary="AI systems" data-secondary="capacity planning, challenges" data-type="indexterm" id="id2779"/>通常以比传统功能低得多的速率处理请求，但每个请求的高成本意味着 SRE 必须像对待高请求率系统一样关注可靠性。这对监控规则和可观测性实践具有影响，包括限制噪声的阈值机制或假定查询成本均匀分布。由于一个请求与下一个请求之间的查询大小、延迟和计算成本可能存在很大差异，因此必须密切跟踪这些维度以防止资源争用。如果没有这种细粒度的可观测性，突然涌入的复杂、词元数很高的查询很容易使后端饱和，从而导致共享服务的所有用户出现严重的延迟峰值、超时或响应质量下降。这种极端的差异需要创造性的解决方案来实现跨用户群的高效供给容量和公平的容量共享。</p>
+
+<p>当前加速器资源稀缺，迫使容量规划达到远高于传统软件产品的严谨程度。对于传统系统，大规模基础设施与成熟自动化相结合，已经让容量规划变成相对简单、阻力较小的过程。然而，在 AI 环境中，硬件十分昂贵，因此必须结合财务成本和机会成本，重新审视 <span class="keep-together"><em>N</em> + 1</span> 配置等标准可靠性实践。简而言之，与传统计算基础设施相比，加速器价格高昂，大多数组织无法为 AI 工作负载保留与非 AI 工作负载同等比例的备用容量。此外，这类系统即使在技术上仍然可用，也可能返回降级结果，因此负载<a data-primary="AI systems" data-secondary="observability issues" data-startref="aisys_obsrviss" data-type="indexterm" id="id2780"/><a data-primary="capacity management" data-secondary="AI systems" data-startref="capman_aisys_chlngs" data-tertiary="challenges" data-type="indexterm" id="id2781"/><a data-primary="AI systems" data-secondary="capacity planning, challenges" data-startref="aisys_cappln_chlg" data-type="indexterm" id="id2782"/>测试也必须纳入质量阈值。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="推出AI 功能" data-type="sect2"><div class="sect2" id="ch20_launching_an_ai_feature">
+<h2>推出 AI 功能</h2>
+
+<p><a data-primary="AI systems" data-secondary="production-quality feature launch, best practices" data-type="indexterm" id="aisys_pqfc_bp"/><a data-primary="AI (artificial intelligence)" data-secondary="feature launch, best practices" data-type="indexterm" id="sre_aiftr_bp"/>在家动手试验或参加过 AI 黑客马拉松的人都能证明，使用现有模型构建 Gmail 的“帮我写”或 Meet 的“为我做笔记”的粗略版本并不困难。您可以在几天内制作出功能原型。然而，将该原型转变为具有足够质量、可预测性、可靠性和可扩展性的可投入生产的功能，尤其要达到 Google 的规模，是完全不同的事情。</p>
+
+<p>原型或简单功能可以在大模型之上使用简单的提示工程技术来指导生成以适应目标用例，但实现生产级质量需要更复杂的工作流程来提高模型的准确性和性能。这被称为<em>爬坡（hill climbing）</em>，并且它<span class="keep-together">需要</span>高质量的训练数据和多个迭代周期。以下 SRE 最佳实践对于降低 AI 功能发布的风险并确保其 <span class="keep-together">可靠性至关重要：</span></p>
+<dl>
+<dt>分阶段推出和实验</dt>
+<dd>
+<p>从小实验开始，逐步推出 AI 功能。使用支持 A/B 测试的框架来比较不同的模型版本或配置。这样可以在全面部署之前仔细监控性能、质量和资源影响。</p>
+</dd>
+<dt>全面监控</dt>
+<dd>
+<p>实施涵盖系统运行状况（延迟、错误率、资源利用率）和 AI 特定指标的监控。这包括跟踪模型输出质量、数据或预测的漂移以及回退响应或错误的频率。</p>
+</dd>
+<dt>容量管理</dt>
+<dd>
+<p>AI 功能，尤其是那些使用大型模型的功能，可能会产生巨大的计算成本。全面的负载测试和容量规划对于确保平稳运行和成本效率至关重要，特别是对于 GPU 或 TPU 等专用硬件。</p>
+</dd>
+<dt>快速回滚机制</dt>
+<dd>
+<p>确保在出现问题时，有经过充分测试的程序来快速恢复到以前的模型版本或禁用该功能。模型版本控制和管理系统是关键支撑。</p>
+</dd>
+<dt>持续反馈循环</dt>
+<dd>
+<p>发布只是开始。建立持续评估的管道，并将用户反馈和生产数据反馈到爬坡（hill climbing）过程中，以进行持续改进和适应。</p>
+</dd>
+</dl>
+
+<p>通过将这些迭代式<a data-primary="AI systems" data-secondary="production-quality feature launch, best practices" data-startref="aisys_pqfc_bp" data-type="indexterm" id="id2783"/><a data-primary="AI (artificial intelligence)" data-secondary="feature launch, best practices" data-startref="sre_aiftr_bp" data-type="indexterm" id="id2784"/>开发和评估周期与稳健的 SRE 发布实践相集成，团队可以更可靠地将 AI 功能从有潜力的概念转变为有价值且可靠的生产服务。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 如何鉴定新架构和模型" data-type="sect1"><div class="sect1" id="ch20_how_sre_qualifies_new_architectures_and_models">
+<h1>SRE 如何鉴定新架构和模型</h1>
+
+<p>鉴定 ML 模型<a data-primary="ML models" data-secondary="qualifying for production" data-type="indexterm" id="id2785"/>是否满足生产要求会带来超出传统软件发布的复杂性。虽然二进制文件发布侧重于代码的正确性和性能，但机器学习模型需要额外的审查，因为它们对特定硬件的复杂依赖、质量回归往往十分隐蔽以及它们对系统稳定性和用户信任产生更广泛影响的潜力。<a href="https://hyrumslaw.com">海勒姆定律</a><a data-primary="Hyrum's law" data-secondary="qualifying ML models" data-type="indexterm" id="id2786"/>会放大这些隐蔽的回归，其中特定且未记录的行为对于正确性至关重要。支持 AI 研究人员的混合式 SRE 协作模式尤其容易受到海勒姆定律影响：虽然面向消费者产品的 SRE 通常可以通过统计平均值忽略未记录的依赖关系的长尾，但一些 AI 研究人员可能恰恰依赖这些行为来保证实验完整性。在特定于 AI 的 CI/CD 流程成熟以捕获这些隐含保证之前，速度将与系统稳定性保持自然的、高风险的张力。</p>
+
+<p>SRE 通过建立强大的鉴定流水线来确保新模型或版本在大规模部署时安全、可靠、高效和有效，从而在缩小这一差距方面发挥着至关重要的作用。这涉及多方面的方法，检查从硬件兼容性到复杂 AI 系统的细微行为的一切。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="产品生命周期集成" data-type="sect2"><div class="sect2" id="ch20_product_lifecycle_integration">
+<h2>产品生命周期集成</h2>
+
+<p>由于加速器硬件<a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="accelerator hardware" data-type="indexterm" id="id2787"/><a data-primary="accelerator hardware" data-secondary="qualifying for production" data-type="indexterm" id="id2788"/><a data-primary="hardware" data-secondary="accelerator" data-type="indexterm" id="hrdw_acc_qfp"/>发展如此之快，生产环境中经常并存多代硬件，甚至完全不同的加速器平台，这些平台必须同时运行，同时共享相同的基础软件库。SRE 团队的共同经验表明，加速器的平台鉴定是一个持续的过程。这是必要的，因为变化速度很快，而技术栈多个层级的依赖项又缺乏充分的 CI/CD 集成测试覆盖。在特定硬件加速器下对给定 ML 模型运行良好的方法可能会导致新一代模型或不同 PyTorch 版本、XLA 编译器或 CUDA 库出现延迟和/或正确性回归。 SRE 以 SLO 推动这一过程，以确保硬件和硬件所依赖的软件平台（例如 XLA）可靠并为生产工作负载做好准备。这一鉴定流程深度融入到产品生命周期中，并持续贯穿架构的整个生命周期。 SRE 的参与始于新加速器架构生命周期的早期，通常是在工程验证和测试 (EVT) 阶段的后期。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="从 EVT 开始采用的通用测试策略" data-type="sect3"><div class="sect3" id="ch20_common_testing_strategy_from_evt_forward">
+<h3>从 EVT 开始采用的通用测试策略</h3>
+
+<p>从 EVT 开始，产品生命周期所有阶段使用的测试都是相同的。它们大致分为三类，重点回答以下问题：输出性能是否达标（延迟和吞吐量）？输出是否有意义（正确性）？输出如何根据各种指标（输出的相对质量）进行比较？测试规模会随被测系统规模调整。也就是说，如果只测试单个芯片，则首选微基准测试。如果是较大的系统，则使用完整的集成测试。</p>
+
+<p>由于堆栈的深度垂直集成，验证自然也涵盖支持模型的共享平台。这包括 Pathways 等框架和 XLA 等编译器。 SRE 必须确保这些框架在新硬件上正常运行，并且使用 TorchTPU 或 XLA 编译的模型能够生成既正确、性能又达标的结果。此验证对于实现不同加速器架构之间的硬件可互换性至关重要，从而推动实现无缝更新以最大限度地提高硬件利用率和效率的核心 SRE 目标。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="使用第一方模型进行验证" data-type="sect3"><div class="sect3" id="ch20_validation_with_first_party_models">
+<h3>使用第一方模型进行验证</h3>
+
+<p>随着新加速器的成熟并进入试点阶段，SRE在验收测试中发挥着主导作用。这些验收测试利用常见的测试策略，但使用真实的生产模型来确认新芯片能否在实际部署形态下正常工作。随着生命周期接近正式可用 (GA)，测试范围不断扩大以涵盖特定于产品的需求。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="持续硬件鉴定" data-type="sect2"><div class="sect2" id="ch20_continuous_hardware_qualification">
+<h2>持续硬件鉴定</h2>
+
+<p>验证新的<a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="continuous hardware qualification" data-type="indexterm" id="id2789"/><a data-primary="hardware" data-secondary="continuous hardware qualification" data-type="indexterm" id="id2790"/>硬件架构并不是一次性事件。在其上运行的软件堆栈不断变化，内核、驱动程序和机器学习框架经常更新。这些变化中的每一个都存在引入回归的风险。这些回归可能来自堆栈的所有部分，从内核和设备驱动程序到 XLA 编译器，再到二进制文件和模型。为了缓解这种情况，SRE 推动了采用通用测试策略的持续硬件鉴定流程。</p>
+
+<p>通用测试策略的核心是涵盖工作负载、架构和拓扑的综合测试矩阵。选择测试的工作负载来代表推理和训练的真实用户路径。这些架构对应于各种可用的加速器以及 CPU 架构。最后，拓扑与可用的芯片排列相对应。为了管理组合数量庞大的问题，SRE 使用生产系统的统计数据来识别最广泛使用的架构和拓扑，并重点测试这些架构和拓扑。</p>
+
+<p>这种持续测试提供了在将新软件版本（例如内核更新或新驱动程序）投入生产之前可靠地设置发布门禁所需的数据。这种统一的策略有助于及早发现不兼容性或潜在的资源问题，并防止回归影响到生产。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="符合 SLO 资格的加速器意味着什么" data-type="sect2"><div class="sect2" id="ch20_what_it_means_for_accelerators_to_be_slo_eligible">
+<h2>符合 SLO 资格的加速器意味着什么</h2>
+
+<p>只有能够切实保障，SLO<a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="SLO-eligible accelerators" data-type="indexterm" id="id2791"/><a data-primary="accelerator hardware" data-secondary="SLO-eligible accelerators" data-type="indexterm" id="id2792"/><a data-primary="hardware" data-secondary="accelerator" data-startref="hrdw_acc_qfp" data-type="indexterm" id="id2793"/>才有意义。<em>符合 SLO 保障条件</em>是指能够保障该 SLO 所必须满足的<a data-primary="SLO-eligible accelerators" data-type="indexterm" id="id2794"/>标准。例如，预发布硬件由于正在开发而尚未受到支持，而过时的硬件由于设备老化、备件短缺或优先级调整而不再受到支持。</p>
+
+<p class="pagebreak-before less_space">只有通过严格的鉴定流程证明其稳定性后，新架构才被视为符合 SLO 资格。随着持续鉴定测试的数据可用，SRE 和平台工程师会通过迭代解决任何发现的边缘情况。当这些测试能够持续产出稳定数据时，架构就已经为 SLO 做好了准备，表明该架构可以一致且可靠地服务生产流量。这种数据驱动的方法确保 SLO 不只是愿景目标，而是能够得到保障，并准确反映用户体验。</p>
+
+<p>SLO 资格的概念在速度和可靠性之间引入了良性的张力。随着产品生命周期流程的成熟，新平台可以更快地获得 SLO 资格，而现有平台可以更长时间地保持 SLO 资格。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="候选模型鉴定" data-type="sect2"><div class="sect2" id="ch20_qualification_of_candidate_models">
+<h2>候选模型鉴定</h2>
+
+<p>Google 的模型<a data-primary="ML models" data-secondary="qualifying candidate models" data-type="indexterm" id="id2795"/>推理平台通过执行一系列检查的自动验证流程，为所有新模型提交设置门禁，如 <a data-type="xref" href="#ch20_fig02"> 图 20-2 </a> 所示。这些检查包括验证模型的结构，确保所有操作与目标服务二进制文件和硬件兼容，以及估计基线资源需求。通过尽早发现不兼容性或潜在的资源问题，我们可以确保随着新一代硬件的推出，模型发布更加顺畅，性能更加可预测，并实现无缝过渡。这种预鉴定门禁对于维持机器学习服务基础设施的稳定性和可靠性至关重要。</p>
+
+<figure><div class="figure" id="ch20_fig02">
+<img alt="自动化模型生命周期管道图，说明了从开发到测试、准备情况检查和部署的各个阶段，强调了可靠模型发布的反馈和迭代。" src="assets/sre2_2002.png"/>
+<h6><span class="label"> 图 20-2。</span> 标准化、自动化的 CI/CD 流程，用于可靠的模型发布</h6>
+</div></figure>
+
+<p>模型权重发布是最容易想到的一类变更面。配置更改可能几乎与模型权重本身一样重要，提供参数、前导码和提示模板，根据其实现的功能定制模型。所有这些资产都应该通过自动化逐步推进，同时使用金丝雀分析技术扫描回归。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="性能和质量" data-type="sect3"><div class="sect3" id="ch20_performance_and_quality">
+<h3>性能和质量</h3>
+
+<p>除了基本的<a data-primary="ML models" data-secondary="qualifying candidate models" data-tertiary="performance and quality testing" data-type="indexterm" id="id2796"/>基础设施兼容性之外，在将 ML 模型视为可投入生产之前，对性能和质量回归进行严格的测试至关重要。性能回归测试的重点是确保模型满足服务的操作要求。这涉及对模型进行持续的基准测试和负载测试，以测量关键指标，例如服务延迟、查询吞吐量和硬件加速器资源利用率，包括加速器占空比（忙碌时间）和高带宽内存 (HBM) 利用率。 SRE 致力于定义和执行性能标准，确保新模型版本或服务堆栈中的更改不会引入可能危害 SLO 或导致资源利用效率低下的回归。部署过程中的自动告警和阻止标准通常基于这些性能指标。</p>
+
+<p>同样重要的是<a data-primary="quality regression testing, qualifying candidate models for production" data-type="indexterm" id="id2797"/>质量回归测试，它评估模型在执行预期任务时的有效性和可靠性。这不只关注原始性能，还要评估模型的实际输出。通常采用一套评估，旨在衡量模型针对核心用例的功效。这些评估旨在检测预测准确性、精确度、召回率和公平性方面的任何退化或漂移。该过程通常涉及针对黄金数据集和人工评分示例运行候选模型，或通过对其 <a href="https://oreil.ly/EfaKl">向量化</a>输出与当前生产模型进行统计比较来进行 A/B 测试（实时实验）。质量指标的重大偏差可能会阻止发布，从而引发对模型的训练数据或技术栈的底层环节的进一步调查。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="模型生命周期" data-type="sect3"><div class="sect3" id="ch20_model_lifecycle">
+<h3>模型生命周期</h3>
+
+<p>ML 模型鉴定<a data-primary="ML models" data-secondary="qualifying" data-tertiary="across model lifecycle" data-type="indexterm" id="id2798"/>必须集成到整个模型生命周期（从开发到弃用）和所有服务堆栈层。这需要检查硬件、基础设施、模型服务推理和应用程序层。应用程序级评估至关重要，因为模型的真正影响和正确性通常只能在其影响的产品和业务逻辑的上下文中进行评估。这涉及模拟真实的用户交互并测量对用户路径的影响以及与预期结果的接近程度，而不仅仅是原始模型输出质量。</p>
+
+<p>鉴于这些评估的复杂性和多方面性，自动化和标准化是实现可靠、高效的模型生命周期管理的关键。 SRE 积极推动采用旨在编排和自动化部署和管理模型的端到端流程的平台和工具。这包括版本控制、鉴定以及与安全、渐进的推出策略（例如金丝雀分析）的集成。通过标准化鉴定检查，并将其作为模型 CI/CD 流水线的一部分自动执行，团队可以减少手工劳动，最大限度地减少人为错误，并确保所有模型在向用户公开之前满足生产就绪<span class="keep-together">标准</span>。这种系统化方法可以实现持续验证，并实现更快、更可靠的更新。</p>
+
+<p>不幸的是，一些组织反对模型的正式<a data-primary="lifecycle management, AI models" data-type="indexterm" id="id2799"/>生命周期管理的结构和要求，认为流程和基础设施会减慢实验、创新和发布速度。虽然在模型生命周期管理工具的开发和采用阶段确实如此，但我们在生产中看到的是，这些工具引入了有效的控制，可以提高对 CI/CD 的信心，并推动研究和发布速度显著提高，达到其他方式无法实现的水平。这些约束可及早发现问题并立即向模型开发人员提供可操作的反馈，而不是让错误潜伏在生产中。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI 工作流评估" data-type="sect2"><div class="sect2" id="ch20_ai_workflow_evaluation">
+<h2>AI 工作流评估</h2>
+
+<p>复杂的智能体<a data-primary="ML models" data-secondary="qualifying" data-tertiary="evaluating complete workflow" data-type="indexterm" id="id2800"/>工作流（其中多个机器学习模型、工具或知识源按顺序或并行交互以实现更高级别的目标）的出现带来了严峻的新鉴定挑战。与单模型系统不同，智能体系统的行为不仅取决于其各个组件的质量，还取决于它们相互作用的动态。模型之间的相互作用可能会产生涌现行为、级联故障或不可预测的结果，从而使得传统的模型中心式鉴定方法不再充分。鉴定这些系统需要更全面的方法，重点关注整个工作流程的端到端可靠性和有效性。</p>
+
+<p>SRE<a data-primary="ML model workflow evaluation" data-type="indexterm" id="id2801"/>正在适应和开发新的实践，以满足这些复杂系统的鉴定需求。与标准模型质量评估（通常根据静态数据集衡量单个独立输出的安全性或准确性）不同，鉴定智能体需要评估动态执行循环。这通常涉及设计基于场景的测试，其中根据实际用例和潜在的边缘情况评估整个智能体工作流。这些测试不仅仅测量模型的准确性，还评估整个任务完成的成功率、稳健性和安全性：例如，衡量智能体能否正确制定多步骤计划并成功解决用户的请求，而无需采取未经授权或破坏性的操作。需要复杂的评估框架来捕捉这些交互的细微差别，可能涉及模拟、人在回路评估或与基线行为的比较。确保智能体系统的可预测性、可控性和安全运行需要转向对整个系统的行为进行鉴定，这是生产级 AI 可靠性的新领域。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="利用率、效率和容量规划" data-type="sect1"><div class="sect1" id="ch20_utilization_efficiency_and_capacity_planning">
+<h1>利用率、效率和容量规划</h1>
+
+<p>AI 加速器<a data-primary="accelerator hardware" data-secondary="capacity planning" data-type="indexterm" id="id2802"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-type="indexterm" id="id2803"/>目前是一种备受追捧且供给受限的计算资源。虽然传统的集群管理系统通常使标准计算资源感觉实际上是无限的，但 AI 加速器（例如 GPU 和 TPU）却在不同的经济和物理现实下运行。它们价格昂贵，容易受到供应链波动的影响，并且具有严格的电力和冷却要求。</p>
+
+<p>考虑到这些限制，AI 的容量规划比传统产品更为重要。资源稀缺迫使我们重新评估标准 SRE 实践；例如，传统的<em>N</em> + 1 容量配置模型在 AI 环境中可能成本过高，导致推出没有严格可用性保证的产品。此外，估计需求也充满困难。对于新功能来说，确定每秒每个查询 (QPS) 所需的 TPU 容量具有挑战性，特别是当单个用户查询可能扇出并触发多个模型或安全检查时。</p>
+
+<p>加速器的交付时间表是不确定的，因此将它们分配给任何特定用途成为业务优先级问题，而不是技术挑战。容量耗尽就意味着出现错误或不可接受的延迟。跟上新硬件发布的步伐也很复杂，这会改变成本结构并导致根据利用率目标进行重新平衡。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="加速器利用率和损失框架" data-type="sect2"><div class="sect2" id="ch20_accelerator_utilization_and_the_loss_framework">
+<h2>加速器利用率和损失框架</h2>
+
+<p>虽然最终目标是<a data-primary="capacity planning" data-secondary="accelerator hardware" data-tertiary="utilization as metric for efficiency" data-type="indexterm" id="cappln_acchrdw_ume"/>业务效率，但这通常很难直接量化。相反，我们使用加速器利用率作为代理指标。该指标大致定义为工作周期，可以在产品使用的所有加速器上进行汇总。作为示例，目标度量可以在一周内的第 95 百分位测量（7d95 占用率）。然而，仅仅依靠利用率可能会诱导没有产出的“忙碌”计算。为了解决这个问题，我们采用了损失分析框架。</p>
+
+<p>在我们的容量模型中，我们从 100% 利用率的理论基线开始。然后，我们将任何偏离该基线的行为描述为损失。通过对这些损失进行分类，我们可以确定哪些损失是不可避免的，哪些可以通过工程投资来减轻。我们通常将这些损失分为六种主要损失，在以下各节中进行描述。</p>
+
+
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="最大利用率损失" data-type="sect3"><div class="sect3" id="ch20_max_utilization_loss">
+<h3>最大利用率损失</h3>
+
+<p>机器学习<a data-primary="metrics" data-secondary="business efficiency" data-type="indexterm" id="met_buseff"/>模型无法在所有可用硬件资源上以 100% 的利用率有效地提供服务，而不会导致严重的推理错误或延迟峰值。确切的“安全”上限因模型和配置而异：具有严格延迟 SLO 的实时推理可能会在 50% 利用率时遇到排队瓶颈，而异步批处理可以安全地推至接近 90%。这种巨大的差异是由运行权衡和物理限制共同驱动的：严格的延迟 SLO 需要更小、效率更低的批大小；生成模型中的自回归解码本质上受到内存带宽的限制，而不是纯粹的计算；大型模型引入了不可避免的芯片间通信和主机级 I/O 瓶颈。该上限与 100% 之间的差距就是最大利用率损失。</p>
+
+<p>尽量减少最大利用率损失的推荐解决方案是经常使用代表性流量对关键模型进行负载测试。实施红线金丝雀（将一部分生产实例持续加压直至失效）有助于识别真实的失效临界点。理想情况下，在 CI/CD 流程中自动执行此操作，以检测新模型版本中的回归。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="未实现需求损失" data-type="sect3"><div class="sect3" id="ch20_unrealized_demand_loss">
+<h3>未实现需求损失</h3>
+
+<p>我们通常根据预测的需求为模型部署配置容量。然而，如果功能发布延迟或用户采用率增长速度慢于预期，结果就是“发布缓冲容量”和过度配置的容量。</p>
+
+<p>推荐的解决方案包括：</p>
+<dl>
+<dt>可抢占的工作负载</dt>
+<dd>
+<p>将尚未用于发布或预留作缓冲的容量用于有价值但可中断的工作，例如模型训练、评估或批处理。</p>
+</dd>
+<dt>汇集容量</dt>
+<dd>
+<p>释放未使用的容量以供其他团队使用（互惠互利），而不是将其囤积在特定的产品孤岛中。</p>
+</dd>
+<dt>阶梯式增长</dt>
+<dd>
+<p>根据实际发布爬坡节奏逐步提供容量，而不是 100% 预先提供。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="冗余（N+1）损耗" data-type="sect3"><div class="sect3" id="ch20_redundancy_n_1_loss">
+<h3>冗余（N+1）损耗</h3>
+
+<p>为了确保可靠性，SRE 传统上会为系统提供 <em>N</em> + 1 冗余，允许最大的隔离故障域停机，同时仍能满足全部需求。对于超大规模 AI 工作负载，这种闲置冗余的成本异常高昂。</p>
+
+<p class="pagebreak-before less_space">推荐的解决方案包括：</p>
+<dl>
+<dt>更小的故障域</dt>
+<dd>
+<p>使用更大的 <em>N</em> 可以减少 +1 的百分比开销。然而，它也增加了同时失去多个故障域的风险。</p>
+</dd>
+<dt>范围缩小</dt>
+<dd>
+<p>将冗余要求的范围限制为适用的工作负载关键程度或用户类别。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="分解不平衡损失" data-type="sect3"><div class="sect3" id="ch20_disaggregation_imbalance_loss">
+<h3>分解不平衡损失</h3>
+
+<p>在高级模型服务架构（例如解耦式模型服务）中，预填充（提示处理）与解码（词元生成）阶段是独立扩展的。虽然这通常比交错服务产生更好的性能，但这些阶段相对于流量构成的不适当平衡会导致瓶颈和容量闲置。</p>
+
+<p>推荐的解决方案是持续监控生产瓶颈并调整预填充与解码服务器的比率。通过使用代表性流量构成进行负载测试来验证这些比率。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="负载平衡损耗" data-type="sect3"><div class="sect3" id="ch20_load_balancing_loss">
+<h3>负载平衡损耗</h3>
+
+<p>即使有足够的总容量，负载平衡不足也可能导致“热点”，其中一些副本不堪重负，而另一些副本闲置。这在 AI 推理中尤其严重，其中请求成本非常不均匀（根据提示长度和解码步骤而显著变化）。此外，生成式 AI 服务在很大程度上依赖于键值 (KV) 缓存，即存储对话历史记录或共享提示前缀以避免重新计算词元的内存结构。这在缓存局部性的路由和均匀计算分布的路由之间引入了直接冲突。轮询等简单算法无法解释这种差异，迫使整个机群过度配置以容纳最热的副本。</p>
+
+<p>推荐的解决方案包括：</p>
+<dl>
+<dt>先进算法</dt>
+<dd>
+<p>不要再使用轮询，而应改用动态算法，例如考虑当前服务器负载的最小负载或峰值指数加权移动平均 (EWMA)。</p>
+</dd>
+<dt>成本感知路由</dt>
+<dd>
+<p>实施负载均衡器来检查请求特征（例如，输入词元数）以预测成本并更智能地分配高成本查询。</p>
+</dd>
+<dt>全局流量整形</dt>
+<dd>
+<p>使用全局负载均衡器来平滑地区间的流量不均，在延迟预算允许的情况下将负载转移到未充分利用的区域。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="碎片损失" data-type="sect3"><div class="sect3" id="ch20_fragmentation_loss">
+<h3>碎片损失</h3>
+
+<p>每个 LLM 都有最低服务资源占用。单个大型实例通常比多个碎片化的较小实例更高效。然而，大型基础模型通常具有巨大的最小占用空间（例如，每个集群 100 个芯片）。如果两个产品（例如 Gmail 和 Chat）分别部署相同的模型，但都没有充分利用它，则每个部署中的剩余容量都会被浪费。</p>
+
+<p>推荐的解决方案包括：</p>
+<dl>
+<dt>模型整合</dt>
+<dd>
+<p>限制生产中部署的不同模型变体的数量。</p>
+</dd>
+<dt>优先采用提示工程，而非微调</dt>
+<dd>
+<p>鼓励使用系统提示为多个用例定制单个通用模型，而不是为每个功能部署单独的专用模型。</p>
+</dd>
+<dt>多租户服务</dt>
+<dd>
+<p>探索跨不同产品共享模型部署，以避免基础设施级别的碎片<a data-primary="accelerator hardware" data-secondary="capacity planning" data-type="indexterm" id="id2804"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-startref="cappln_acchrdw_ume" data-tertiary="utilization as metric for efficiency" data-type="indexterm" id="id2805"/><a data-primary="metrics" data-secondary="business efficiency" data-startref="met_buseff" data-type="indexterm" id="id2806"/>。</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="通过集中式机群管理提升敏捷性" data-type="sect2"><div class="sect2" id="ch20_centralized_fleet_management_to_enable_agility">
+<h2>通过集中式机群管理提升敏捷性</h2>
+
+<p>管理分布在各个团队和产品领域的由不同加速器组成的大型<a data-primary="accelerator hardware" data-secondary="centralized fleet management" data-type="indexterm" id="id2807"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-tertiary="centralized fleet management" data-type="indexterm" id="id2808"/>加速器机群可能会导致效率严重低下，包括资源闲置以及无法将容量转移到最需要的地方。实施集中式机群管理策略可以创建大型共享加速器容量池。汇集资源可以增强统计复用效应，平滑单个用户的需求峰值并提高整个机群的利用率。</p>
+
+<p>这种共享模型通常由中央团队统一管理，可以实现更灵活的资源分配，从而可以将容量动态转移到影响最大或需求最紧迫的领域。这种方法打破资源孤岛，并确保组织的某个部分不会闲置昂贵的硬件，而另一个部分则资源匮乏。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="加速器硬件可替代性" data-type="sect2"><div class="sect2" id="ch20_accelerator_hardware_fungibility">
+<h2>加速器硬件可替代性</h2>
+
+<p>AI 硬件<a data-primary="accelerator hardware" data-secondary="fungibility" data-type="indexterm" id="acchrdw_fngblt"/><a data-primary="hardware" data-secondary="fungibility" data-type="indexterm" id="hdwr_fng"/>格局的特点是加速器快速换代、架构日趋多样的快速发展。将机器学习工作负载与特定硬件类型和代际紧密耦合需要在针对给定平台进行优化所需的耗时且主要是手动工作与该方法在容量规划和调度方面所提供的灵活性之间进行权衡。</p>
+
+<p>硬件可替代性旨在抽象出底层加速器的细节，允许工作负载跨不同类型（TPU 与 GPU）及不同代际无缝运行。这种解耦对于以下方面至关重要：</p>
+<dl>
+<dt>供应链弹性</dt>
+<dd>
+<p>它减少了对单一类型芯片的依赖。</p>
+</dd>
+<dt>成本优化</dt>
+<dd>
+<p>它支持在最具成本效益的可用硬件上进行择机调度。加速器的灵活性还可以提高您的议价能力并降低总体成本。</p>
+</dd>
+<dt>改进的可调度性</dt>
+<dd>
+<p>这增加了任何给定作业的可用资源池。</p>
+</dd>
+<dt>简化的容量规划</dt>
+<dd>
+<p>这允许根据总体计算需求而不是特定硬件进行规划。</p>
+</dd>
+</dl>
+
+<p>实现可替代性需要软件抽象和编译器支持，或者需要专门的团队为每个目标加速器实现特定于平台的高性能内核。 XLA 等技术通过编译 ML 模型以在各种硬件配置上高效运行，发挥着至关重要的作用。标准化数据中心基础设施、电源和冷却的平台级举措也有助于提高硬件<a data-primary="accelerator hardware" data-secondary="fungibility" data-startref="acchrdw_fngblt" data-type="indexterm" id="id2809"/><a data-primary="hardware" data-secondary="fungibility" data-startref="hdwr_fng" data-type="indexterm" id="id2810"/>的互换性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="自动化容量规划" data-type="sect2"><div class="sect2" id="ch20_automating_capacity_planning">
+<h2>自动化容量规划</h2>
+
+<p>随着系统规模的扩大，LLM 的手动容量<a data-primary="capacity planning" data-secondary="automating" data-type="indexterm" id="id2811"/><a data-primary="automation" data-secondary="capacity planning" data-type="indexterm" id="id2812"/>规划可能会变得难以维持。</p>
+
+<p>一种可能的方法是为推理引擎添加监测以报告每个查询的成本。然后，容量自动化预测自然需求（现有流量的自然、逐步增长），并添加计划中的非自然需求（由新功能、模型升级或引入大型租户驱动的阶跃式增长）。然后，自动化系统会根据这些输入提出容量部署计划。为了估计新功能的预期非自然增长，我们跟踪以小比例流量运行功能实验的服务器的容量使用情况，并推断完整部署的成本。这种自动化（<a data-type="xref" href="#ch20_fig03">图 20-3</a>）负责中期容量测算（基线容量），而自动扩展则管理短期峰值。</p>
+
+<figure><div class="figure" id="ch20_fig03">
+<img alt="该图说明了产能规划流程，显示了自然增长需求和无机需求、订单加速器、分配流程和生产端点之间的相互作用。" src="assets/sre2_2003.png"/>
+<h6><span class="label"> 图 20-3。</span> 自动化容量规划</h6>
+</div></figure>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="调度原语" data-type="sect2"><div class="sect2" id="ch20_scheduling_primitives">
+<h2>调度原语</h2>
+
+<p>专为基于 CPU 的工作负载设计的传统<a data-primary="accelerator hardware" data-secondary="schedulers" data-type="indexterm" id="acchrdw_schd"/><a data-primary="ML workloads" data-secondary="schedulers, features" data-type="indexterm" id="mlwrkld_shdlr_ftrs"/><a data-primary="schedulers, ML workloads" data-type="indexterm" id="schdlrs_mlwrklds"/>调度程序通常缺乏有效管理 ML 加速器资源所需的原语，导致装箱效果不佳和利用率低。 <sup> <a data-type="noteref" href="ch20-zh.html#id2813" id="id2813-marker"> 12 </a> </sup> ML 工作负载具有独特的特征，需要专门的调度功能。一些最相关的是：</p>
+<dl class="pagebreak-before less_space">
+<dt>拓扑感知调度</dt>
+<dd>
+<p>许多大规模训练作业需要加速器芯片之间的特定网络拓扑，例如，通过高速芯片间互连 (ICI) 链路连接的 TPU 切片。调度程序必须了解这些拓扑约束，才能将作业放置在满足必要要求的一组机器上。</p>
+</dd>
+<dt>成成成成成成成组调度</dt>
+<dd>
+<p>对于紧密耦合的分布式训练作业，必须同时安排所有任务 <span class="keep-together">。</span></p>
+</dd>
+<dt>有效计算占比感知调度</dt>
+<dd>
+<p>调度程序根据作业的进度和完成的可能性来确定作业的优先级，特别是在频繁抢占和高工作负载争用的环境中。</p>
+</dd>
+<dt>加速器拓扑碎片整理</dt>
+<dd>
+<p>调度程序主动管理作业放置，以保持大量连续的加速器可用于大型模型<a data-primary="ML workloads" data-secondary="schedulers, features" data-startref="mlwrkld_shdlr_ftrs" data-type="indexterm" id="id2814"/><a data-primary="schedulers, ML workloads" data-startref="schdlrs_mlwrklds" data-type="indexterm" id="id2815"/><a data-primary="accelerator hardware" data-secondary="schedulers" data-startref="acchrdw_schd" data-type="indexterm" id="id2816"/>训练和推理。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="针对具体工作的优化" data-type="sect2"><div class="sect2" id="ch20_job_specific_optimizations">
+<h2>作业级优化</h2>
+
+<p>除了整个机群层面的<a data-primary="ML workloads" data-secondary="optimization" data-type="indexterm" id="id2817"/><a data-primary="ML jobs, optimizing" data-type="indexterm" id="id2818"/>和调度效率之外，通过优化各个 ML 作业的结构和运行方式还可以实现显著的收益。</p>
+
+<p>对同一服务单元中的多个模型进行装箱调度可以显著提高加速器利用率，特别是对于单个模型可能没有足够的流量来使硬件完全饱和的推理工作负载。这需要模型之间进行有效的资源隔离，<sup> <a data-type="noteref" href="ch20-zh.html#id2819" id="id2819-marker"> 13 </a> </sup> 根据资源占用（HBM、计算）在服务器内对模型进行智能装箱调度，以及模型的动态加载和卸载。</p>
+
+<p>机器学习加速器机群可以运行生产关键型作业和低优先级工作负载的组合，例如，在服务需求偶尔下降所留下的闲置容量中运行训练和研究作业。有效的抢占机制对于确保高优先级作业能够在需要时访问资源至关重要。对于长时间运行的训练作业，抢占必须与频繁且高效的检查点相结合，以尽量减少已完成工作的损失。快速保存和恢复状态的能力对于保持机群的高生产效率至关重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="能源消耗和可持续发展" data-type="sect1"><div class="sect1" id="ch20_energy_consumption_and_sustainability">
+<h1>能源消耗和可持续发展</h1>
+
+<p>AI 基础设施的能源需求<a data-primary="AI infrastructure, energy consumption considerations" data-type="indexterm" id="aiinf_eccons"/><a data-primary="energy consumption, AI infrastructure" data-type="indexterm" id="enrgcons_aiinfr"/>对我们的行业构成了真正的挑战。这对于 SRE 来说并不是一个次要的问题；它处在容量规划、基础设施设计与电网物理极限的交汇处。解决这个问题需要我们重新思考关于如何配置、运营和优化数据中心的长期假设。这一挑战也带来了机遇：通过利用 AI 工作负载固有的灵活性，SRE 应将需求响应功能纳入容量计划中，以提高整个电网的安全性。 <sup> <a data-type="noteref" href="ch20-zh.html#id2820" id="id2820-marker"> 14 </a> </sup> 本节探讨能源格局的变化、我们用于将电力作为一等资源约束进行负责任管理的技术，以及在消耗超过容量时防止故障所需的安全机制。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="变化中的格局" data-type="sect2"><div class="sect2" id="ch20_shifting_landscape">
+<h2>变化中的格局</h2>
+
+<p>数据中心的功耗模式发生了巨大变化，以适应对 ML 工作负载的日益关注。虽然能源以前相对于其他系统瓶颈来说是充足的，但现在它本身已成为一个瓶颈。其原因有两个：在每台机器的层面上，每台机器包含更多的芯片，并且每个芯片消耗更多的功率。典型的 ML 机器的功耗比纯 CPU 机器高出 3 倍以上。</p>
+
+<p>机器学习机器有严格的托管要求。经典的仅 CPU 服务工作负载可以独立于其他机器的存在而取得进展。可替代性的最小单位是一台机器。然而，只有当所有所需的机器都位于同一网络上或至少非常接近时，机器学习训练工作负载才能继续进行。其最小的可替代性单位要大得多，通常约为数千台机器。这通常意味着数千台机器，所有这些机器都需要位于同一电网上。假设某个工作负载需要 1,000 台机器，这意味着最小有效能耗规模约为传统 CPU 工作负载的 3,000 倍（3 倍高消耗 × 1,000 台机器）。数据中心设计变得越来越大，以适应这种增加的能源需求。</p>
+
+<p>使用模式也不同。虽然服务 CPU 工作负载通常遵循每日的高峰和低谷模式，但 ML 训练工作负载的使用更像是一个巨大的方波，功率波动可达数十兆瓦，爬升速度近乎瞬时。 <sup> <a data-type="noteref" href="ch20-zh.html#id2821" id="id2821-marker"> 15 </a> </sup> 功耗突然增加和减少可能会产生巨大影响，例如由于持续的热波动而缩短 TPU 或 GPU 的使用寿命，并损坏机架和数据中心设备。在数据中心之外，电网和公用设施也会受到影响。大型能源消费者长期以来与供应商签订了可中断电力协议。因此，制定需求响应计划是大型数据中心、电网和能源发电规划的关键部分，以减少昂贵的基础设施投资、缓解输电拥堵、提高运行可靠性并支持脱碳目标。 <sup> <a data-type="noteref" href="ch20-zh.html#id2822" id="id2822-marker"> 16 </a> </sup> 要详细了解 Google<a data-primary="AI infrastructure, energy consumption considerations" data-startref="aiinf_eccons" data-type="indexterm" id="id2823"/>在这些领域和其他领域的可持续发展工作，请关注 <a href="https://sustainability.google"> Google 可持续发展 </a>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="电力超配" data-type="sect2"><div class="sect2" id="ch20_power_oversubscription">
+<h2>电力超配</h2>
+
+<p>随着能源<a data-primary="AI infrastructure, energy consumption considerations" data-secondary="oversubscribing" data-type="indexterm" id="id2824"/>成为软硬件系统共同面临的瓶颈，传统的优化策略必须不断发展。一般原则是相对于物理机器超配电力容量。</p>
+
+<p>为了更好地理解这在实践中意味着什么，让我们考虑一个类比。对于只有 100 个座位的航班，售出 105 张机票相当于在可用功率只能支持 100 台机器的情况下，配置了 105 台机器。由于不可预见的延误或最后一刻的紧急情况而没有出现的乘客相当于机器未得到充分利用，从而导致功耗低于预期。</p>
+
+<p>一些乘客对于出发时间更加灵活，并且愿意乘坐较晚的航班。这类似于可以灵活安排运行时间的批处理作业。</p>
+
+<p>失败案例又如何呢？如果 105 名乘客全部到齐，则有 5 名乘客没有座位。他们不会高兴，航空公司将不得不向他们支付赔偿。不过，这笔额外费用会被正常运营中额外的机票销售所抵消，因此航空公司愿意偶尔接受这样的结果。</p>
+
+<p>在数据中心中，所有机器都可能同时经历利用率峰值。在这种情况下，可能必须强制卸载一些工作负载，以避免超过电源域的额定功率。这可能会导致工作负载可用性下降（虽然不一定违反 SLO），类似于航空公司需要补偿没有座位的乘客。</p>
+
+<p>需要连续、准确的功率监控以及软件触发、对延迟敏感的降功耗反馈回路，以便在断路器跳闸之前快速采取行动并降低功耗。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SLO" data-type="sect2"><div class="sect2" id="ch20_slos">
+<h2>SLO</h2>
+
+<p>由于电源容量导致的<a data-primary="AI infrastructure, energy consumption considerations, error budget for SLOs" data-type="indexterm" id="id2825"/>不可用以及其他类型的中断与其他类型的中断一样，计入工作负载 SLO 的错误预算。但与其他中断来源不同的是，许多工作负载之间的相关性同时故障在电源故障中很常见。对这些类型的故障敏感的服务应跨电源域（例如机架、机柜排、母线槽）进行冗余配置。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="优化原则" data-type="sect2"><div class="sect2" id="ch20_optimization_principles">
+<h2>优化原则</h2>
+
+<p>功耗和机器利用率之间的关系<a data-primary="AI infrastructure, energy consumption considerations" data-secondary="power optimization" data-type="indexterm" id="id2826"/>不是线性的。这对于我们如何获得每单位功率的最佳性能具有重要意义（<a data-type="xref" href="#ch20_fig04">图 20-4</a>）。</p>
+
+<figure><div class="figure" id="ch20_fig04">
+<img alt="该图显示归一化 GCU 利用率和归一化功率利用率之间的关系，说明功耗随机器利用率的非线性增加，并突出显示中值功率利用率曲线。" src="assets/sre2_2004.png"/>
+<h6><span class="label"> 图 20-4。</span> 每单位功率的性能</h6>
+</div></figure>
+
+<p>Y 截距是机器空闲功率（机器利用率为 0% 时的功率利用率）。机器以 0% 利用率闲置时仍然会消耗大量电力。机器利用率越高，功耗曲线越平坦。例如，将机器利用率从 75% 提高到 80% 仅略微增加功耗，而将利用率从 30% 提高到 35% 导致的功耗增幅要大得多。这意味着机器应该以尽可能高的利用率运行，以提高功耗效率，从而最大限度地提高每瓦特的 FLOPS。然而，出于性能原因，机器利用率受到限制。多租户在纯 CPU 工作负载中很常见，但在 ML 训练中不太常见，经常导致工作负载之间的机器层面的隔离失效（例如，内核锁争用、CPU 访问争用、内存带宽饱和），只有在机器<span class="keep-together">利用率较高时，这种情况才会变得明显。</span></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="安全原则" data-type="sect2"><div class="sect2" id="ch20_safety_principles">
+<h2>安全原则</h2>
+
+<p>优化中的主要<a data-primary="AI infrastructure, energy consumption considerations" data-secondary="safety considerations" data-type="indexterm" id="aiinf_ecc_sftcons"/>安全原则是构建一个系统，能够检测消耗何时大于容量，并在实体断路器跳闸、造成不必要的长恢复时间之前快速削减功耗。</p>
+
+<p>与电力相关的故障，无论是由于过度消耗（例如超配）还是底层基础设施故障（例如，变压器离线），都是突发且非正常终止的。从非正常关机中恢复是漫长而混乱的。重新启动具有复杂依赖链的复杂软件系统也会增加恢复时间。</p>
+
+<p>通过控制软件工作负载来减少能耗的主要方法有三种：应将这些方法结合起来，以平衡功耗降低能力、反应时间、恢复时间和性能影响。反应时间尤其重要，因为典型的断路器只能承受过量的功率或电流<em>几秒钟</em>，然后就会跳闸，整个域立即断电。选项有：</p>
+<dl>
+<dt>限流</dt>
+<dd>
+<p>在 ML 机器上，限制加速器计算（而不是主机 CPU 或加速器内存）是最节能的方法，因为它针对机器中最耗电的部分。这会导致功率立即降低（几毫秒内），并在限流结束后快速恢复功率。它能细粒度地降低功耗，最低可降至大约机器空闲功耗（机器利用率为 0% 时的功耗）。然而，与限流深度相关的性能影响很难确定。</p>
+</dd>
+<dt>任务终止</dt>
+<dd>
+<p>通过这种方法，您可以为工作负载分配优先级顺序，并在每个优先级档位内连续终止任务（通过 SIGKILL 信号），检查功耗是否已降至安全阈值以下。如果没有，您将转向下一个优先级档位。任务终止和功耗检查的循环需要几秒的时间才能生效。当机器上的所有工作负载都被移除后，功耗就会减少到机器空闲功率。</p>
+</dd>
+<dt>机器停机</dt>
+<dd>
+<p>关闭机器是消除剩余闲置功耗的唯一方法。由于机器必须在几秒钟内关闭，因此必须小心验证关闭是否干净并且机器可以顺利启动。</p>
+</dd>
+</dl>
+
+<p>管理能源消耗的总体目标是最大限度地减少每削减 1 kW 功率造成的性能损失，并以尽可能少的削减量把功耗降至安全水平。</p>
+
+<p>一旦检测到功率事件，需求响应计划就会启动。首先，采用限流来快速降低功耗，最大限度地减少瞬态事件（例如骤降或骤升）期间不必要的工作负载卸载。如果功率事件持续超过五秒，则启动任务终止序列或机器关闭程序。任务终止和机器关闭之间的选择取决于数据中心是否已配置<a data-primary="AI infrastructure, energy consumption considerations" data-secondary="safety considerations" data-startref="aiinf_ecc_sftcons" data-type="indexterm" id="id2827"/><a data-primary="energy consumption, AI infrastructure" data-startref="enrgcons_aiinfr" data-type="indexterm" id="id2828"/>以在电力短缺期间支持机器空闲功耗。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="安全与合规性" data-type="sect1"><div class="sect1" id="ch20_security_and_compliance">
+<h1>安全与合规性</h1>
+
+<p>Google 长期以来一直倡导<a href="https://saif.google">安全 AI 框架（SAIF）</a>，<a data-primary="Secure AI Framework (SAIF)" data-type="indexterm" id="id2829"/><a data-primary="SAIF (Secure AI Framework)" data-type="indexterm" id="id2830"/>鼓励人们对 AI 风险保持正确的心态，并确保以负责任的方式构建和部署系统。将 AI（尤其是 LLM 和生成式 AI）集成到生产系统中会带来新的安全挑战，并加剧现有的挑战。对于 SRE 来说，使用 SAIF 大规模了解和减轻这些风险对于构建和运营可靠且安全的 AI 服务至关重要。本节探讨生产环境中的威胁态势、防御平台功能以及不断变化的合规性要求。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="威胁和挑战" data-type="sect2"><div class="sect2" id="ch20_threats_and_challenges">
+<h2>威胁和挑战</h2>
+
+<p>在传统<a data-primary="AI systems" data-secondary="security" data-tertiary="challenges" data-type="indexterm" id="aisys_sec_chlngs"/><a data-primary="security" data-secondary="AI system challenges" data-type="indexterm" id="sec_aisyschal"/>系统中，代码二进制文件很少成为盗窃的主要目标；用户数据才是。在 AI 系统中，模型本身以及用于训练模型的数据承载着巨额资本投入和宝贵的知识产权。机器学习资产可能成为攻击者的主要目标，因此需要安全控制来在整个生命周期中保护它们。这包括防止模型被直接窃取和检测未经授权的访问。</p>
+
+<p>AI 系统还引入了显著扩大攻击面的架构模式和依赖关系。与具有严格类型输入的传统 API 不同，AI API 通常是开放式且灵活的，旨在接受自然语言和其他非结构化输入。至关重要的是，这些系统的架构通过将控制逻辑与用户数据混合而产生了根本性的漏洞。在此环境中，系统提示（充当模型的基础配置和 <span class="keep-together">运行</span> 边界）通过与用户输入相同的通道进行处理。这种指令和数据的混合使得阻止模型将用户的恶意输入视为对其原始系统约束的合法覆盖变得异常困难。这种灵活性使得这些系统容易受到提示注入，其中恶意输入操纵模型覆盖其系统指令或安全过滤器。减轻这些类型的风险需要设置一个检查层来审查模型输入和输出，例如 Google Cloud Armor。 <sup> <a data-type="noteref" href="ch20-zh.html#id2831" id="id2831-marker"> 17 </a> </sup></p>
+
+<p>除了输入层之外，AI 系统的组成还引入了其他风险，<span class="keep-together">包括：</span></p>
+<dl>
+<dt>供应链漏洞</dt>
+<dd>
+<p>AI 系统严重依赖预训练模型、开源数据集和第三方框架的复杂供应链。 SRE 必须以与二进制导入相同的审查方式对待这些外部依赖项，因为遭篡改的权重和被投毒的数据集可能会引入难以通过现有流程检测到的后门。</p>
+</dd>
+<dt>智能体风险</dt>
+<dd>
+<p>转向可通过<span class="keep-together">模型上下文协议等协议</span>与外部系统交互的智能体，会形成新的信任边界。当智能体与其他智能体（智能体到智能体）交互时，这些信任关系的复杂性会成倍增加。生产系统负责人应考虑有权调用工具或修改其他系统中的状态的 <span class="keep-together">自主</span>智能体的影响范围。参见<a data-type="xref" href="#ch20_fig05">图 20-5</a>，它说明了我们应对智能体和动态代码执行风险的深度防御方法。</p>
+</dd>
+<dt>动态代码执行</dt>
+<dd>
+<p>也许对生产稳定性最关键的是动态生成和执行代码以执行数据分析等任务的系统的趋势。这实际上把远程代码执行从缺陷变成了功能。如果没有严格的沙箱和资源限制，此功能会给整个底层基础设施带来重大风险。</p>
+</dd>
+</dl>
+
+<figure><div class="figure" id="ch20_fig05">
+<img alt="该图展示了 Google 的分层 AI 代理安全方法，强调运行时策略执行、基于推理的防御以及漏洞测试。" src="assets/sre2_2005.png"/>
+<h6><span class="label"> 图 20-5。</span> Google 针对 AI 智能体安全性的混合深度防御方法 <sup> <a data-type="noteref" href="ch20-zh.html#id2832" id="id2832-marker"> 18 </a> </sup></h6>
+</div></figure>
+
+<p>这些技术挑战存在于不稳定的监管环境中。AI 监管尚不成熟且不稳定，这意味着合规要求可能会随时发生变化。这种不确定性迫使我们采取前瞻性的设计思维。我们无法把每一项合规假设都固化到架构深处；相反，我们必须构建灵活的系统，使我们能够适应安全态势，而不需要对堆栈进行彻底重构<a data-primary="AI systems" data-secondary="security" data-startref="aisys_sec_chlngs" data-tertiary="challenges" data-type="indexterm" id="id2833"/><a data-primary="security" data-secondary="AI system challenges" data-startref="sec_aisyschal" data-type="indexterm" id="id2834"/>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="通过平台进行扩展" data-type="sect2"><div class="sect2" id="ch20_scaling_through_the_platform">
+<h2>通过平台进行扩展</h2>
+
+<p>作为生产系统的最终<a data-primary="AI systems" data-secondary="security" data-tertiary="policies and threat models" data-type="indexterm" id="aisys_sec_polthrtmod"/>所有者，我们在把安全与合规要求落地方面拥有独特的优势。为此，我们必须与其他工程部门密切合作，制定相关政策和威胁模型，然后利用我们在生产平台、监控和自动化方面的广泛背景，大规模实施由此形成的控制措施，同时考虑到可靠性和可持续性。</p>
+
+<p>实现这些目标的最有效方法是推动通用 AI 基础设施和平台服务的融合。正如 SRE 支持通用平台来优化资源效率一样，这种集中化也允许统一落实安全基线与合规要求。通过将控制措施直接嵌入到模型服务平台中，我们可以确保审计日志记录、访问透明度和其他可执行约束等功能可以跨大量应用程序和用例进行扩展。</p>
+
+<p>Google 的 Private AI Compute 产品就是一例，它确保内部人员和基础设施运营商无法访问推理载荷。这是通过可信执行环境的无缝平台支持来实现的，该环境将工作负载一直隔离到硬件层。这种密码学隔离保证了处理过程中敏感用户数据和宝贵的模型知识产权在内存中都不可见，从而降低了内部人员或基础设施受损的数据泄露风险。</p>
+
+<p>然而，强制使用集中式平台可能会带来难以接受的阻力，并显著降低从事快节奏前沿 AI 开发的各个团队的灵活性。平衡这种权衡至关重要；过早锁定基础设施可能会抑制寻找产品与市场契合度所需的业务推进速度。因此，至关重要的是要仔细把握 AI 技术栈组件平台化的时机，并接受在早期探索阶段，定制解决方案可能是最实用的<a data-primary="AI systems" data-secondary="security" data-startref="aisys_sec_polthrtmod" data-tertiary="policies and threat models" data-type="indexterm" id="id2835"/>前进道路。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="增强AI 安全的可观测性" data-type="sect2"><div class="sect2" id="ch20_enhanced_observability_for_ai_security">
+<h2>增强 AI 安全可观测性</h2>
+
+<p>传统的<a data-primary="AI systems" data-secondary="security" data-tertiary="enhanced observability considerations" data-type="indexterm" id="id2836"/><a data-primary="observability" data-secondary="enhanced, AI system security" data-type="indexterm" id="id2837"/>可观测性不足以应对 AI 系统带来的独特安全性和合规性挑战。AI 系统，尤其是涉及 LLM 和智能体的系统，通常运行不透明，因此很难理解它们的行为并发现非预期活动。增强可观测性对于揭开这些系统的神秘面纱并确保它们安全运行是必要的。这意味着不仅要对基础设施埋点，还要对 AI 专用的组件和抽象。我们需要详细记录提示和响应（对敏感数据进行适当脱敏）、智能体调用的任何工具或 API 的输入和输出，甚至在可能的情况下跟踪智能体的内部“推理”或决策过程。</p>
+
+<p>由于多种原因，这种专门的可观测性数据至关重要。它可以通过分析输入模式和 AI 行为中的意外偏差来检测潜在的提示注入尝试。它还允许审核自主智能体执行的操作，确保它们符合预期的权限和用户意图。这些可观测性数据可能需要实时处理以进行时效要求严格的检测。在这种情况下，首选快速机制，例如基于嵌入的语义漂移检查，或启发式规则与正则表达式过滤器。为了进行更全面的检测，我们可以利用先进的技术，例如模型充当评判者，其中先进的机器学习模型用于评估 AI 工作流并确定它是否会带来任何风险，包括但不限于安全风险。</p>
+
+<p>一旦发生安全事件，这些丰富的数据对于取证来说非常宝贵，可以帮助我们了解攻击是如何发生的以及如何防止未来再次发生。如果没有这种深入的洞察力，保障复杂 AI 系统的安全并建立对它们的信任几乎是不可能的任务。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="结论" data-type="sect1"><div class="sect1" id="ch20_conclusion">
+<h1>结论</h1>
+
+<p>AI 和机器学习的出现深刻地影响了软件工程，SRE 也不例外。 SRE 的角色已从管理确定性软件扩展到在前所未有的高速迭代与资源约束下，为概率性 AI 工作负载开展可靠性工程。但 SRE 始终致力于这种平衡工作：解决快速功能部署的关键业务需求与运营可靠性和效率支柱之间的固有紧张关系。</p>
+
+<p>虽然核心理念不变，转向支持 AI 也需要整个 SRE 工具箱进行深入的技术与运维调整。可靠性不再是二元衡量标准；它现在包含质量和非确定性结果，并以定制 SLO 和模型服务专用延迟指标加以衡量。 <sup> <a data-type="noteref" href="ch20-zh.html#id2838" id="id2838-marker"> 19 </a> </sup> 强大的鉴定管道现在对于安全部署和管理模型和配置的频繁更新以及防止未兑现的需求和碎片造成的损失至关重要。</p>
+
+<p>本章讨论的实践代表了 AI SRE 的早期探索。我们清楚，自己身处一个新兴且快速演进的领域，随着底层模型和架构继续以超指数速度发展，我们预计我们的既定实践将会成熟，新的实践将会出现。我们期待未来的发展。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2730"><sup> <a href="ch20-zh.html#id2730-marker"> 1 </a> </sup> 请参阅 Todd Underwood 在 SREcon21 上的主题演讲，<a href="https://oreil.ly/8vQt1">“ML 的 SRE：前 10 年和未来 10 年”</a>。</p><p data-type="footnote" id="id2742"><sup> <a href="ch20-zh.html#id2742-marker"> 2 </a> </sup> 我们将在 <a data-type="xref" href="#ch20_scheduling_primitives">“调度原语”</a> 中讨论调度原语。</p><p data-type="footnote" id="id2743"><sup> <a href="ch20-zh.html#id2743-marker"> 3 </a> </sup> 考虑 TorchTPU；请参阅 Claudio Basile 等人，<a href="https://oreil.ly/rfCCg">“TorchTPU：在 Google 规模的 TPU 上本地运行 PyTorch”</a>，Google 开发者博客，2026 年 4 月 7 日。</p><p data-type="footnote" id="id2744"><sup> <a href="ch20-zh.html#id2744-marker"> 4 </a> </sup> Roy Frostig、Matthew James Johnson 和 Chris Leary，<a href="https://oreil.ly/uMG89">“通过高级跟踪编译机器学习程序”</a>，SysML 会议，2018 年。</p><p data-type="footnote" id="id2753"><sup> <a href="ch20-zh.html#id2753-marker"> 5 </a> </sup> Wenxin Zhang 等人，<a href="https://oreil.ly/jCFp_">“具有与工作负载相关的服务速率的分布式负载平衡”</a>，第 26 届 ACM 经济与计算会议论文集 <em></em> （2025）。</p><p data-type="footnote" id="id2755"><sup> <a href="ch20-zh.html#id2755-marker"> 6 </a> </sup> Christopher Olston 等人，<a href="https://oreil.ly/t53PS">“TensorFlow-Serving：灵活、高性能的 ML 服务”</a>，NIPS 2017 年 ML 系统研讨会。</p><p data-type="footnote" id="id2756"><sup> <a href="ch20-zh.html#id2756-marker"> 7 </a> </sup> 与生产训练不同，生产服务是一个技术术语，指的是对响应能力有很高期望并提供交互流量的模型。</p><p data-type="footnote" id="id2763"><sup> <a href="ch20-zh.html#id2763-marker"> 8 </a> </sup> 例如，Todd Underwood 在 2022 年 10 月荷兰阿姆斯特丹 USENIX SREcon22 EMEA 上的 SREcon22 演讲“SRE 和 ML：为什么重要”中指出，将模型质量（性能/正确性）识别为与 ML 最相关的 SLI。 <a class="bare" href="https://oreil.ly/9Qr2U"><em class="hyperlink">https://oreil.ly/9Qr2U</em></a></p><p data-type="footnote" id="id2766"><sup> <a href="ch20-zh.html#id2766-marker"> 9 </a> </sup> Arissa Wongpanich 等人，<a href="https://oreil.ly/cDiLV">“机器学习机群效率：利用 ML 生产力 Goodput 分析和优化大规模 Google TPU 系统”</a>，预印本，arXiv，2025 年 4 月 20 日。</p><p data-type="footnote" id="id2767"><sup> <a href="ch20-zh.html#id2767-marker"> 10 </a> </sup> 有关更多信息，请参阅 D. Sculley 等人，<a href="https://oreil.ly/tJdkL">“机器学习系统中的隐藏技术债务”</a>，<em>第 29 届神经信息处理系统国际会议（NIPS）论文集</em>，2015 年。</p><p data-type="footnote" id="id2769"><sup> <a href="ch20-zh.html#id2769-marker"> 11 </a> </sup> Google 平台和设备、Google DeepMind 和 Google Cloud，<a href="https://oreil.ly/Ta64x">“Google Private AI Compute：利用云的力量扩展设备上的隐私”</a> (2025)。</p><p data-type="footnote" id="id2813"><sup> <a href="ch20-zh.html#id2813-marker"> 12 </a> </sup> 装箱调度是指根据特定的计算和 HBM 占用情况，智能地调度多个不同工作负载（例如单独的 ML 模型）并将其放置到一组共享硬件资源（例如服务器或加速器）上的过程。装箱调度的目标是最大限度地提高整体硬件利用率并最大限度地减少碎片和浪费的容量。</p><p data-type="footnote" id="id2819"><sup> <a href="ch20-zh.html#id2819-marker"> 13 </a> </sup> 虽然传统隔离侧重于更标准的资源（CPU、RAM、I/O 和网络），但 AI 服务环境引入了更复杂的稀缺维度。有效的隔离现在必须考虑到 <em>HBM</em> 容量和吞吐量、用于持续搬运权重和激活值的 <em>PCIe/互连带宽</em>，以及独立于主机 CPU 运行的<em>加速器核心占空比</em>。未能隔离这些可能会导致模型间干扰，其中一个模型的预填充阶段会导致另一个模型的解码阶段内存带宽不足。</p><p data-type="footnote" id="id2820"><sup> <a href="ch20-zh.html#id2820-marker"> 14 </a> </sup> 有关需求响应能力的更多信息，请参阅 Michael Terrell，<a href="https://oreil.ly/80COk">“智能、经济实惠电力增长的新里程碑”</a>、<em>News from Google</em>，2026 年 3 月 19 日。</p><p data-type="footnote" id="id2821"><sup> <a href="ch20-zh.html#id2821-marker"> 15 </a> </sup> Houle Gan 和 Parthasarathy Ranganathan，<a href="https://oreil.ly/TeCki">“功率平衡：机器学习基础设施中功率和热波动的全栈方法”</a>，图 5，<em>Google Cloud 博客</em>， 2025 年 2 月 12 日。</p><p data-type="footnote" id="id2822"><sup> <a href="ch20-zh.html#id2822-marker"> 16 </a> </sup> Xin Chen 等人，<a href="https://oreil.ly/W-E2y">“AI 数据中心的电力需求和电网影响：挑战与前景”</a>，预印本，arXiv，2026 年 7 月 2 日。</p><p data-type="footnote" id="id2831"><sup> <a href="ch20-zh.html#id2831-marker"> 17 </a> </sup> 如需快速入门的 Codelab，请参阅 Abirami Sukumaran 的 <a href="https://oreil.ly/RrUnS">“使用 Model Armor 构建安全代理系统”</a>。</p><p data-type="footnote" id="id2832"><sup> <a href="ch20-zh.html#id2832-marker"> 18 </a> </sup> Santiago Díaz、Christoph Kern 和 Kara Olive，<a href="https://oreil.ly/mypXe">“Google 的安全 AI 智能体方法：简介”</a> (2025)。</p><p data-type="footnote" id="id2838"><sup> <a href="ch20-zh.html#id2838-marker"> 19 </a> </sup> 有关模型质量评估的更多信息，请参阅 D. Sculley 等人，<a href="https://oreil.ly/tJdkL">“机器学习系统中的隐藏技术债务”</a>，载于<em>第 29 届神经信息处理系统国际会议（NIPS）论文集</em>，2015 年，以及 Eric Breck 等人，<a href="https://oreil.ly/8RVLB">“机器学习的数据验证”</a>，载于<em>第二届 SysML 会议论文集</em>，2019 年。</p></div></div></section></body></html>
