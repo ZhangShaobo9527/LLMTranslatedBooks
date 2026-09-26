@@ -1,0 +1,1370 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 的文化背景</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 4. The Cultural Context of SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch04">
+<h1><span class="label">第 4 章　</span>SRE 的文化背景</h1>
+
+
+<p class="byline">作者：Ayelet Sachto、Brian Kudzia、Igor Oks、<span class="keep-together">Jennifer Petoff、</span> <span class="keep-together">Luca Cervasio、</span>Nathen Harvey 和 Roman Seibel<br/> <span class="keep-together">以及 Garrett Holthaus</span></p>
+
+<p>组织文化是 SRE 转型能否取得长期成功的基础。SRE 虽然依赖技术实践和流程，但这些实践和流程会受到实施环境及参与人员的深刻影响。我们并不是说第一天就必须具备适宜的文化，而是说，建立支持性的文化有助于成功创立并长期维持 SRE 实践。本章将以数据和研究为依据，说明文化为何至关重要；帮助你识别支持 SRE 的文化要素，阐明文化对 SRE 成功的重要性，制定建立和培育可靠性文化的计划，并识别和缓解文化反模式。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Case for Culture" data-type="sect1"><div class="sect1" id="ch04_the_case_for_culture">
+<h1>为什么文化如此重要</h1>
+<blockquote>
+<p>第五个 9，取决于人。</p>
+<p data-type="attribution">Google SRE 经理 Trisha Weir</p>
+</blockquote>
+
+<p>让我们首先说明为什么文化是用户、快乐的工程师以及技术驱动环境中整体组织成功的强大催化剂。</p>
+
+<p>Weir 所说的“9”，是指可靠性百分比中 9 的个数：99.999% 的可用性<a data-primary="five nines" data-type="indexterm" id="id1215"/>称为“五个 9”。这一观点强调，流程和工具固然能够提升可靠性，但要达到并保持卓越表现，人的行为、协作方式以及深层文化同样不可或缺。成熟度达到这一水平的组织，能够让<span class="keep-together">可靠性</span>获得最高一个数量级的改善。Google SRE 创始人 Ben Treynor Sloss 认为，SRE 团队能够专门代表可靠性发声至关重要；而要让 SRE 有效发挥作用，文化要素必不可少。下面进一步展开讨论。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Key Elements of a Reliability-Focused Culture" data-type="sect2"><div class="sect2" id="ch04_key_elements_of_a_reliability_focused_culture">
+<h2>可靠性文化的关键要素</h2>
+
+<p>在其核心,SRE应用软件<a data-primary="culture" data-seealso="organizational culture" data-type="indexterm" id="id1216"/><a data-primary="organizational culture" data-seealso="culture" data-type="indexterm" id="id1217"/><a data-primary="organizational culture" data-secondary="key elements" data-type="indexterm" id="id1218"/>在生产中管理服务的工程思维。 这种办法促进结构化、战略性和可再生的改进,使系统能够可持续地扩大规模,同时减少对人工努力的依赖。 工程思维是牢固的以可靠性为重点的文化蓬勃发展的基石。</p>
+
+<p>需要采取哪些实际步骤来培养这种文化,把这些原则变成日常现实? 以可靠性为重点的高绩效文化建立在几个关键要素之上,这些要素优先调整、学习、协作和用户满意度。 这些文化组成部分对于各小组有效管理复杂系统、应对事件并不断改进至关重要。 它们共同创造了条件SRE(c) 推广和提供有意义的成果的做法。</p>
+
+<p>让我们从基本点开始。 注重可靠性的文化有两个基本方面:</p>
+<dl>
+<dt>关注用户</dt>
+<dd>
+<p>SRE本质上以用户为中心。 它涉及深入了解最终用户的需要和目标,并利用其信号来不断改进产品和服务。 这个SRE方法为<em>没有</em>可靠性不惜任何代价。 相反,SRE重点是在可靠性-高速频谱方面平衡最终用户和企业的期望。 维持可靠的系统从根本上讲就是要达到这些期望,这反过来又会让用户高兴. 这就需要以密切反映用户经验的方式衡量系统健康和绩效。</p>
+</dd>
+<dt>将可靠性视为核心价值</dt>
+<dd>
+<p>组织对可靠性的承诺是一个先决条件。 可靠性不仅被理解为技术目标,而且也被理解为任何产品或服务的基本特征。 必须在整个组织中加以重视、承认和奖励,从工程师到高管,确保SRE在决策桌上有一个席位。</p>
+</dd>
+</dl>
+
+<p>这些概念是其他一切的基础,但它们必须得到具体文化要素和做法的支持。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Fostering a Reliability-Focused Culture" data-type="sect2"><div class="sect2" id="ch04_fostering_a_reliability_focused_culture">
+<h2>培养可靠性文化</h2>
+
+<p>七号<a data-primary="organizational culture" data-secondary="fostering" data-type="indexterm" id="id1219"/>文化要素支持上一节概述的基本原则,以及高水平的卓越标准。SRE已经知道。 它们是:</p>
+
+<ul>
+<li>
+<p>数据驱动的思维方式</p>
+</li>
+<li>
+<p>协作与共同负责</p>
+</li>
+<li>
+<p>学习与持续改进</p>
+</li>
+<li>
+<p>无责文化</p>
+</li>
+<li>
+<p>心理安全</p>
+</li>
+<li>
+<p>信任</p>
+</li>
+<li>
+<p>赋能</p>
+</li>
+</ul>
+
+<p>本节将从多个维度逐一探讨这些要素。“将可靠性视为核心价值”和“关注用户”这两个基本方面，是其他一切的基础。接下来，我们将深入说明其余七个文化要素<em>如何</em>促进这两个基本方面，并考察组织如何在整个软件开发生命周期和业务活动中融入可靠性文化与实践。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Data-driven mindset" data-type="sect3"><div class="sect3" id="ch04_data_driven_mindset">
+<h3>数据驱动的思维方式</h3>
+
+<p>SRE需要数据驱动<a data-primary="organizational culture" data-secondary="data-driven mindset" data-type="indexterm" id="orgcult-relfoc_ddmndst"/>* 有效安排工作的优先次序并尽量减少今后发生的事件。 您需要建立各种指标, 例如, 来衡量您在目标方面做得如何, 当有问题时提醒, 通过<em>测量文化</em>便利<a data-primary="measurement culture" data-type="indexterm" id="mesrcltr"/>这种数据驱动的方法。</p>
+
+<p>要确定正确的目标,提高透明度,建立数据驱动的决策进程,就需要衡量<em>一切重要或相关的</em>这意味着你不仅需要可靠度量衡,而且还需要使用代表客户经验的度量衡和数据。 这些数据帮助您根据业务需要和客户的期望,找出差距并优先解决. 例如,事后复盘数据(也称为事件后审查,或PIRs对于确定模式和指导对失败分析的投资至关重要。</p>
+
+<p>SRE 最初正是为了解决 Google 大型生产系统的运行与扩展难题。要实现这种扩展，不仅需要技术变革，还需要<span class="keep-together">组织</span>和人员层面的变化。组织必须围绕“让客户满意”这一共同目标达成一致，同时又不能阻碍创新。这意味着要协调业务、开发和运维组织之间的激励机制，而这需要一种贯穿产品生命周期的共同语言。在系统可靠性领域，服务等级指标（SLI）和服务等级目标（SLO）等概念已经成为广泛使用的共同语言。这些要素将在<a data-type="xref" href="ch08.html#ch08">第 8 章</a>讨论；它们奠定了 SRE 度量文化的基础，也为数据驱动的思维方式提供了上下文。</p>
+
+<p>为了持续创新，而不是把全部精力耗在“100% 可靠”这一无法实现的目标上，我们需要用数字估算系统在仍能满足用户期望的前提下，最多可以承担多少风险、容忍多少故障。我们用<em>错误预算</em>来表达这一限度，也就是用户愿意容忍的停机量（见<a data-type="xref" href="ch08.html#ch08">第 8 章</a>）。我们会衡量错误预算的消耗情况，并据此制定数据驱动的流程、决策和工作计划。例如，我们可能决定暂停发布，或暂时让团队中的一部分人转而从事可靠性工作。</p>
+
+<p>衡量文化不仅适用于可靠性的指标,而且适用于我们业务的方方面面,这些方方面面支撑着我们所坚持的高水平的优秀水平。 例如,在Google我们有一个非常强大的 事后复盘<a data-primary="postmortems" data-secondary="importance" data-type="indexterm" id="id1220"/>包括详细报告和跟踪事后复盘行动项目。 当我们注意到在编写报告和执行行动项目方面的系统性拖延时,我们采取了由数据驱动的办法。 我们收集了指标和设定SLOs与事后复盘过程有关,如撰写并审查和公布第一稿的最大时间。 我们还创建了仪表板、警报和管理层可见的报告系统,以跟踪遵守这些标准的情况。SLOs这导致报告出版时间缩短,行动项目的执行增加,经常发生的 " 同一根源 " 事件减少。</p>
+
+<p class="fix_tracking">同样,我们介绍SLOs(有报告和明确的预期)处理高度优先的内部问题,包括提供内部最新情况的时间和解决问题的时间。 就事件而言,我们制定并执行下列指标的目标:</p>
+<dl>
+<dt>无须处置的事件占比</dt>
+<dd>
+<p>无须处置的事件占比过高，说明<span class="keep-together">监控</span>噪声太多或配置不当。</p>
+</dd>
+<dt>人工发现的事件百分比</dt>
+<dd>
+<p>用户或其他团队首先报告的问题比例高,说明定义不正确SLIs或监测覆盖面不足。</p>
+</dd>
+<dt>每起事件的告警数</dt>
+<dd>
+<p>太多的警示事件可能会转移值班人员的注意力,</p>
+</dd>
+</dl>
+
+<p>我们把同样的测量文化 应用在人的行动。 为了防止耗尽,我们追踪值班时间的指标。 我们还跟踪值班人员在生产中如何频繁采用人工改变,我们努力使这一数字接近零。<a data-primary="measurement culture" data-startref="mesrcltr" data-type="indexterm" id="id1221"/>尽可能。</p>
+
+<p>归根结底,数据驱动的心态是一切的基础SREs做,从衡量性能<a data-primary="organizational culture" data-secondary="data-driven mindset" data-startref="orgcult-relfoc_ddmndst" data-type="indexterm" id="id1222"/>推动有效的优先安排和协作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Collaboration and shared responsibility" data-type="sect3"><div class="sect3" id="ch04_collaboration_and_shared_responsibility">
+<h3>协作与共同负责</h3>
+
+<p>SRE 的职责范围十分广泛，<a data-primary="organizational culture" data-secondary="collaboration and shared responsibility" data-type="indexterm" id="orgcult-relfoc_colab"/>因此需要紧密协作并保持一致。这种协作必须发生在各个层面：SRE 团队内部、更大的 SRE 组织内部，以及 SRE 与相关软件开发团队之间。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Within a team" data-type="sect4"><div class="sect4" id="ch04_within_a_team">
+<h4>在团队内部</h4>
+
+<p>我们经常描述孤岛<a data-primary="collaboration" data-secondary="within teams" data-secondary-sortas="teams" data-type="indexterm" id="id1223"/>不同职能或组织之间,但小组内部也可以以孤立的信息、专长或技能的形式存在分仓。 形成知识孤岛的共同原因是囤积知识,以保障工作、无知(不理解合作为何有益)、不信任(不认为潜在的伙伴关系实际上会有帮助)或缺乏时间或明确的预期。 为了克服各自为政的趋势,必须创造一种人们从分享信息中受益的文化。 以学习为重点的组织鼓励一种增长思维,投资于持续改善,而不是期望人们了解一切。 时Google我们努力通过表彰和晋升积极奖励合作。 为此,我们鼓励通过各种战略提高透明度并广泛分享知识。</p>
+
+<p>每周一次交流最新情况和审查可靠性问题的机制<em>生产会议</em>(见<a data-type="xref" href="ch06.html#ch06">第六章</a>何处<a data-primary="production meetings" data-type="indexterm" id="id1224"/>SRE团队成员互相更新以往的事件和学习以及即将到来的制作变化,发射和测试.</p>
+
+<p>另外一个策略是每周<em>培训班</em>时,<a data-primary="training sessions" data-type="indexterm" id="id1225"/>在产品、技术、SRE基础,个人主动性等等. 除了知识共享之外,培训课程通过教学、改进值班准备和鼓励学习文化,使个人得以成长。</p>
+
+<p>打破知识孤岛和分享专门知识的第三个机制正在参与模拟活动,如<a data-primary="Wheel of Misfortune" data-type="indexterm" id="id1226"/>同上。<em>不幸之轮</em>(见<a data-type="xref" href="ch05-zh.html#ch05">第五章</a>).</p>
+
+<p class="fix_tracking">我们努力避免依赖<a href="https://sre.google/resources/practices-and-processes/no-heroes"><em>英雄们</em></a>必要时自行作出非凡努力解决或防止复杂问题的个人。 虽然这时常满足并受到赞誉,但从长远来看,这种行为是不好的,并导致数起SRE反模式:</p>
+
+<ul>
+<li>
+<p>它掩盖了系统问题, 从来没有得到修复。 团队并没有建立现实的动机。SLO或致力于长期的系统性改进。</p>
+</li>
+<li>
+<p>它培养了团队文化,加强了对团队成员所期望的工作的不切实际的期望.</p>
+</li>
+<li>
+<p>它无法持续,</p>
+</li>
+<li>
+<p>通取入仓.</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Within the broader SRE organization" data-type="sect4"><div class="sect4" id="ch04_within_the_broader_sre_organization">
+<h4>在更广泛的 SRE 组织内</h4>
+
+<p>少年SREs福利<a data-primary="collaboration" data-secondary="within SRE organizations" data-secondary-sortas="SRE organizations" data-type="indexterm" id="id1227"/>从与经验丰富的互动SREs在整个组织内学习方法和最佳做法。 他们也可以观察和复制经验丰富的SREs个人和组织增长战略。 在可能情况下,地域合用为一对学习作出积极贡献。</p>
+
+<p>与团队层面的生产会议类似，Google 每周还会举行覆盖整个站点的<em>生产会议</em>，<a data-primary="production meetings" data-type="indexterm" id="id1228"/>各团队在会上分享值班工作中的挑战和经验，包括讨论已经处理过的事件、新项目的设计，以及有益于 SRE 的新自动化方案（见边栏<a data-type="xref" href="ch06.html#ch06_production_meetings">“生产会议”</a>）。此外，SRE 领导层还会定期发布一份全公司报告，题为“Google’s Greatest Hits and Misses”。这份报告以透明、易读的方式，每季度回顾对用户或收入影响最大的事件，目的是教会工程师如何防止停机并构建可靠的系统。</p>
+
+<p><em>技术会谈</em>主题<a data-primary="tech talks" data-type="indexterm" id="id1229"/>一个小组中的专家向更广泛的组织作介绍或演示,也促进协作、分担责任和知识交流。 我们将深入探讨这个话题<a data-type="xref" href="ch05-zh.html#ch05">第五章</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Outside SRE" data-type="sect4"><div class="sect4" id="ch04_outside_sre">
+<h4>在 SRE 之外</h4>
+
+<p>Google 有意将<a data-primary="collaboration" data-secondary="SRE and development functions" data-type="indexterm" id="colab_sredev"/> SRE 与开发职能分开，以保持自主性——SRE 团队不向开发负责人汇报（见<a data-type="xref" href="ch06.html#ch06">第 6 章</a>）。这样做的目标，是促进 SRE 与开发团队以平等伙伴的身份密切协作。</p>
+
+<p>A级<em>以用户为重点的</em>文化教育<a data-primary="user-focused culture" data-type="indexterm" id="id1230"/>提供一个共同框架SRE与发展<em>适当可靠</em>系统,在适当的情况下,可靠性由客户需求确定。 企业所有者必须确定某一产品的“正确”可靠性水平,组织文化应使开发商和运营商都能够实施。</p>
+
+<p>这个SRE发展组织与发展Google发展的主要重点是提供有助于产品功能的特性,以及SRE可靠性(其本身是一个任务关键特征)。 这两项工作都致力于实现创造有价值和稳定的产品的共同目标,两者的作用必须具有产品所有权感,并使决定和优先事项与商业目标相一致。 例如,一个需要5个9个可靠性的既定产品将有意地以自动回滚和广泛的金丝雀方式缓慢推出。 反之,有了新产品,顾客往往更有兴趣快速看到新特征,并且可能更能容忍停产,因此,SRE团队可能决定一个较低的SLO将平衡转向速度和创新。 但是,这并不意味着开发能够或应该单方面忽视可靠性或刷新。SRE除了由于新兴产品的快速流动性质而带来的各种考虑之外,它们还应就正在作出的权衡和原因达成明确协议。</p>
+
+<p>SLOs和错误预算允许企业、发展和业务小组跟踪实现商定业务目标的进展情况。 我们都想在发展速度与可靠性之间取得平衡,为我们用户提供最大价值。</p>
+
+<p>协作SREs参与生产会议、事故和事后复盘合作,以及SRE- 坚定的领导<em>业务审查</em>,其中各小组联合审查生产指标和主要指标。</p>
+
+<p>一个常见的争论点是 有多早SRE应参与新产品的设计。 迟到的参与可能导致SRE如果设计或操作的风险不符合可靠性标准,则审查推迟发射。 作为可靠性专家,SREs必须能够就未来产品的可靠性和可扩展性进行协商。 此外,作为生产业主,SREs必须<a data-primary="organizational culture" data-secondary="collaboration and shared responsibility" data-startref="orgcult-relfoc_colab" data-type="indexterm" id="id1231"/><a data-primary="collaboration" data-secondary="SRE and development functions" data-startref="colab_sredev" data-type="indexterm" id="id1232"/>提前了解新的事态发展,分配生产和支助所需的人力和计算资源。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Learning and continuous improvement" data-type="sect3"><div class="sect3" id="ch04_learning_and_continuous_improvement">
+<h3>学习与持续改进</h3>
+<blockquote>绝不要浪费一场有价值的危机。
+<p data-type="attribution">广泛归功于温斯顿·丘吉尔</p>
+</blockquote>
+
+<p>创新,例如<a data-primary="organizational culture" data-secondary="postmortems" data-type="indexterm" id="id1233"/><a data-primary="postmortems" data-type="indexterm" id="id1234"/>增加新的特征,内在涉及变化和风险,使得某种程度的系统故障不可避免. 我们认为停学是学习和改善的宝贵机会。<a data-type="xref" href="ch11.html#ch11">第十一章</a>但只有我们查明程序和(或)系统原因,才有可能做到这一点。<em>事后复盘</em>这是从停电中学习的正式过程。 它们提供了一个基础广泛的机制来防止和减少再起事件,或至少减少其可能性和影响。 我们内部公布了事件的书面记录,包括缓解行动、影响、根源以及防止再次发生的后续行动。 此外,我们广泛分享事后复盘结果,以帮助各小组集体从停课中吸取教训,将经验教训转化为改善的具体行动,并让其他人能够防止在自己的系统内发生类似事件。</p>
+
+<p>好事后复盘是无可指责的, 重点不是要怪罪,而是要理解和<span class="keep-together">改进。</span></p>
+
+<p>事后复盘过程只是推动不断改进和巩固高水平优异程度的机制的一个例子。SRE产生。 学习和不断改进的核心是发挥杠杆作用。SRE数据驱动和软件工程思维,从根本上改善系统本身,使其更加自主,帮助防止未来停用. 这个线条被编织在本书的一些章节中,包括章节<a data-type="xref" data-xrefstyle="select:labelnumber" href="ch05-zh.html#ch05">5</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch11.html#ch11">11</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch12.html#ch12">12</a>,以及<a data-type="xref" data-xrefstyle="select:labelnumber" href="ch13.html#ch13">13</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Blamelessness and blame awareness" data-type="sect3"><div class="sect3" id="ch04_blamelessness_and_blame_awareness">
+<h3>无责文化与责备意识</h3>
+
+<p>无责事后复盘<a data-primary="organizational culture" data-secondary="blamelessness" data-type="indexterm" id="id1235"/>是无责文化的一种体现。要营造安全环境、培养学习文化，就必须理解责备心理并认识认知偏差。正如<a href="https://oreil.ly/UWN5A">Brené Brown 所说</a>，责怪他人可以暂时释放不适感。同时还要认识<a href="https://oreil.ly/AY7oG">认知偏差</a>，例如基本归因错误（把他人的行为归因于其内在特征，却把自己的行为归因于外部环境），以及事后偏差（倾向于认为过去发生的事件本可预测）。</p>
+
+<p><em>耻辱</em>移动<a data-primary="blamelessness" data-type="indexterm" id="id1236"/>责任的焦点<em>人员</em>改为<em>系统和程序</em>事发后 指指针会导致对风险的厌恶、恐惧和隐藏错误的倾向,从而降低对情况的认识,增加问题累积的风险,并限制组织积极主动的能力 -- -- 削弱创新和改进的能力。 无责文化则侧重于查明和改进哪些制度和程序<em>允许</em>发生的事情。 它假定个人本着诚意行事,并根据现有的最佳信息作出决定。</p>
+
+<p><em>怪罪意识</em>拿着<a data-primary="blame awareness" data-type="indexterm" id="id1237"/>更进一步。 它承认指责是人类的自然反应,但是它不但没有忽视它,反而鼓励人们自觉地、好奇地研究<em>为什么</em>对于当时接受错误的人来说 似乎是错误的 它问,“鉴于当时的情况、现有资料和压力,为什么这样做是合理的?” 这种办法力求理解“什么”背后的“原因”,从而加深对系统缺陷的理解。</p>
+
+<p>然而,不应将这种从责难到理解的转变视为零<a data-primary="accountability, blameless cultures" data-type="indexterm" id="id1238"/>问责制。 虽然事后复盘并不注重在停工期间发生的人为错误,但重要的是,每个人都要遵守高工程标准。 我们满怀希望Google在研究那些具有广泛影响Google用户及其业务。 事后复盘应评估在代码和系统操作中是否遵守了适当的工程标准,并在发现缺陷时规定适当的后续措施。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1239">
+<h1>如果员工蓄意作恶怎么办？</h1>
+<p>共同关注的问题是:<a data-primary="organizational culture" data-secondary="malicious actions" data-type="indexterm" id="id1240"/>我们听到那些想领养孩子的人说SRE原则,特别是在金融和受监管的行业,是:如果雇员采取恶意行动(如偷窃)怎么办? 指责或严格追究民众的责任,</p>
+
+<p>A. 原则<a href="https://oreil.ly/qK7RN"><em>纯文化</em></a>可以区分诚实错误,风险行为,鲁莽行为,以及普通刑事案件. 后两种情况是少有的纪律行动或法律后果是适当的。 然而,在提到雇员的日常行动时,我们希望避免责备,以鼓励适当的风险承担和创新。 即使在跨出一线的情况下,重要的是进行事后复盘,并问:我们能够改进我们的系统,使某人无法跨出一线? 我们用的是<a href="https://oreil.ly/9KgSy">最低特权原则</a>我们是否允许对这些资源进行审计? 敏感业务是否有适当的审查和核准程序?</p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Psychological safety" data-type="sect3"><div class="sect3" id="ch04_psychological_safety">
+<h3>心理安全</h3>
+
+<p><a href="https://oreil.ly/z-Msz">艾米·埃德蒙德森医生说</a>, <em>心理健康</em>相信自己不会受到惩罚或<a data-primary="organizational culture" data-secondary="psychological safety" data-type="indexterm" id="id1241"/><a data-primary="psychological safety" data-type="indexterm" id="id1242"/>被羞辱的说出想法、问题、关切或错误。</p>
+
+<p>无责文化对于创造这种条件至关重要。有了心理安全，人们才会放心地尽早升级事件、报告问题、提出问题以查明根因，并分享信息。缺少心理安全，整个事件响应生命周期都会受损：缓解措施可能延误，解决问题可能耗时更久，关键的学习阶段也会受到影响（见<a data-type="xref" href="ch10.html#ch10">第 10 章</a>）。</p>
+
+<p>此外,心理安全是不断改善文化的关键促成因素。 当小组成员感到安全时,他们有权质疑现状并提议更好的工作方式,远远不在停工和事后复盘的情况下。 这表现在如下问题上:“为什么我们不得不以这种方式完成这一艰难的任务? 系统架构合理吗? 我们没有测试我们的备份, 如果... ...... ...... 怎么办?”</p>
+
+<p>管理者和组织对于营造一种让人们能够安心表达想法、并有能力这样做的环境至关重要。具体做法包括：管理者承认自己也可能犯错（例如坦率地说“我不明白”），通过提问示范好奇心，以身作则地鼓励而不是阻止他人提问，并避免<a href="https://oreil.ly/xWjmg">假装惊讶</a>之类的不良习惯。管理者有明确责任促进心理安全，把工作定义为学习机会，而不只是执行任务。人们必须相信，提问或寻求帮助会得到鼓励，而不是惩罚。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Trust" data-type="sect3"><div class="sect3" id="ch04_trust">
+<h3>信任</h3>
+<blockquote>Trust is a fragile thing—hard to earn, easy to lose.
+<p data-type="attribution">M. J. 箭头</p>
+</blockquote>
+
+<p>自由地<a data-primary="organizational culture" data-secondary="trust" data-type="indexterm" id="orgclt_relfoc_trst"/><a data-primary="trust" data-type="indexterm" id="trst"/>说出错误,人们需要<em>信托</em>在其团队、管理人员和组织中,相信他们的投入将用于改进系统,而不是责备或惩罚。</p>
+
+<p>以下各段叙述可帮助领导人在人民之间建立对其组织的信任的若干战略。</p>
+
+<p>一项战略是建立一个组织,人们从“保持良好意愿,在可能的情况下”的心态中选择运作。 这使得人们能够安全地假定他们的同僚是有能力和值得信赖的。 培养员工有能力且可信赖的文化, 然而,这确实意味着你客观地评价绩效,没有初步的假设.</p>
+
+<p>多项研究表明,人们需要经历至少5到7个正交,以修复单一紧张事件可能造成的信任损害.<sup><a data-type="noteref" href="ch04-zh.html#id1243" id="id1243-marker">1</a></sup>时Google因此,当后来发生分歧或冲突时,人们会记住同事的好面子,不要跳出消极的假设,并且能够以健康和建设性的方式解决问题。 全球分布SRE除了虚拟互动之外,目标明确的面对面会议可以成为对这一信托储备的重要投资(见<a data-type="xref" href="ch06.html#ch06">第六章</a>).</p>
+
+<p>各级领导人通过将信任扩大到他们的报告、承认他们自己的错误并实行问责制来建立信任。 如前所述,领导人还应树立无责的榜样,奖励人们承认和解决问题。 在团队一级,管理人员可以通过协作活动和演习建立信任和社区。 以工作为重点的有效办法包括举办讲习班,界定具体团队的沟通风格和规范,以及协作演练,例如共同实践事件应对情景。 这些活动帮助小组成员了解其同事如何在压力下解决问题并沟通,通过共享专业经验建立关系和相互尊重。 这样的<a data-primary="organizational culture" data-secondary="trust" data-startref="orgclt_relfoc_trst" data-type="indexterm" id="id1244"/><a data-primary="trust" data-startref="trst" data-type="indexterm" id="id1245"/>办法<a href="https://oreil.ly/ZVIdg">改善心理安全、表现和保留</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Empowerment" data-type="sect3"><div class="sect3" id="ch04_empowerment">
+<h3>赋能</h3>
+
+<p>这很重要,<a data-primary="organizational culture" data-secondary="empowerment" data-type="indexterm" id="orgclt_relfoc_empwr"/><a data-primary="empowerment" data-type="indexterm" id="empwr"/>授权SREs在可靠性受到设计或发射计划不佳的威胁时,甚至在错误预算等指标受到影响之前,就应大声疾呼。SREs还需要规范其业务工作量。 当系统性能达不到预期时,它们必须倡导在可靠性方面花更多的时间,即使这意味着减缓特性发布的速度.</p>
+
+<p>防止燃烧<a data-primary="burnout, preventing" data-type="indexterm" id="id1246"/>从SRE在开发周期为可靠性工作设定专用时间, 这份工作有帮助SREs推动他们的事业,为企业带来价值。</p>
+
+<p>然而,增强权能更进一步。SREs必须能够理解和解决系统中的可靠性问题。SRE这也是一种主动的文化。SREs不仅允许而且预期会推动不断改进。</p>
+
+<p>时Google这种授权的一种表现方式就是通过访问代码和修复代码库中事物的能力. 团队中的任何成员(无论角色)都可以提议修改或固定代码. 一旦该修改得到代码所有人审查并获得批准,即提交。</p>
+
+<p>一个长期Googleer 记得他们的新雇员时间SRE他们在头一天就发现了一个问题。 他们用他们的技术领导提出这个问题,他说:“让我告诉你核对表编码的位置。 你可以自己解决的 这是你第一次提交代码。”</p>
+
+<p>增强权能还体现在学习失败的文化上。SRE调查组可就任何技术(甚至组织)问题,包括近乎缺失的问题,提出事后复盘要求,所有相关方将参与调查,以发现系统性原因。 他们还可将后续行动项目分配给其他小组和领导人,以确保所吸取的经验教训导致具体改进并预防再次发生。</p>
+
+<p>时Google, SRE各小组也有权管理自己的业务工作量。 如果一个团队花太多时间 手动,重复的任务,SRE管理器可以和相应的dev团队管理器合作,推回新的特性发布,并花时间用于自动化和其他可靠性的改进. 在一些服务不稳定的极端情况下,他们也可以决定将传呼机交给开发团队.</p>
+
+<p>目标是建立一个组织,使人民对可靠性有主人翁感,并获得领导授权,以询问、恭敬地挑战他人,并不断改进系统和相关进程。 这需要一种文化,使人们有冲破孤岛、合作、不惧受惩罚地谈论错误,并努力提高可靠性,相信这项工作将得到承认。<a data-primary="organizational culture" data-secondary="empowerment" data-startref="orgclt_relfoc_empwr" data-type="indexterm" id="id1247"/><a data-primary="empowerment" data-startref="empwr" data-type="indexterm" id="id1248"/>作为闪亮的新产品特性。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="DORA’s Findings on Culture and Performance" data-type="sect1"><div class="sect1" id="ch04_dora_s_findings_on_culture_and_performance">
+<h1>DORA 关于文化与绩效的研究发现</h1>
+
+<p><a href="https://dora.dev">DevOps 研究和评估DORA)</a>是一个<a data-primary="organizational culture" data-secondary="DORA" data-type="indexterm" id="orgcltr_dora"/><a data-primary="DORA" data-type="indexterm" id="dora"/>综合研究方案致力于了解推动技术驱动的团队和组织取得成功的能力。 通过年度全球调查<span class="keep-together">技术</span>专业人员,DORA调查技术做法、精益管理、文化规范和领导如何影响信息技术的绩效、软件交付和整体组织成果。 一. 主要方面DORA通常通过罗恩的镜头来描述Westrum组织文化的类型突出了文化对绩效的深刻影响。Westrum其模式将文化分为以权力为导向的(病态型),以规则为导向的(官僚型)和以绩效为导向的(生成型),说明一个组织内部的信息流动和处理如何是安全和成功的关键预测因素。 这种系统化的循证方法为确定取得所期望的成果的最有效做法奠定了基础,特别是在实现这些成果方面。SRE实践和实践<a data-primary="organizational culture" data-secondary="DORA" data-startref="orgcltr_dora" data-type="indexterm" id="id1249"/><a data-primary="DORA" data-startref="dora" data-type="indexterm" id="id1250"/>表现良好的球队.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Empirical Link: Culture and Performance" data-type="sect2"><div class="sect2" id="ch04_the_empirical_link_culture_and_performance">
+<h2>实证联系：文化与绩效</h2>
+
+<p>一贯和关键<a data-primary="organizational culture" data-secondary="DORA" data-tertiary="culture and performance" data-type="indexterm" id="id1251"/><a data-primary="DORA" data-secondary="culture and performance" data-type="indexterm" id="id1252"/><a data-primary="performance, link with culture" data-type="indexterm" id="id1253"/>整个发现DORA研究是组织文化之间的重要联系<sup><a data-type="noteref" href="ch04-zh.html#id1254" id="id1254-marker">2</a></sup>以及各种绩效计量。 具体而言,注重可靠性的文化有助于改进绩效成果。DORA经验证明,组织文化预测软件交付和业务绩效(统称为<em>SDO 性能</em>和<a data-primary="SDO performance" data-type="indexterm" id="id1255"/>总体组织绩效。 一种鼓励学习和合作气氛的高度信任文化已被确定为最明确的绩效预测因素之一。 此外,DORA研究将高绩效与灵活性、知识共享和用户中心等具体文化方面联系起来。</p>
+
+<p>除了绩效计量以外,健康<a data-primary="organizational culture" data-secondary="benefits of healthy" data-type="indexterm" id="orgcult"/><a data-primary="DORA" data-secondary="benefits of healthy culture" data-type="indexterm" id="dora_benhlth"/>文化有助于改善福祉,包括增加工作满意度、减少疲劳和提高生产力。 健康的组织文化也有助于各小组更成功地落实与改进成果有关的技术能力。</p>
+
+<p>简言之,研究表明文化对于建设技术能力,提高技术绩效,实现组织绩效目标,帮助员工取得成功具有基础性.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Practices, Reliability, and Practitioner Well-Being" data-type="sect2"><div class="sect2" id="ch04_sre_practices_reliability_and_practitioner_well_being">
+<h2>SRE 实践、可靠性与从业者福祉</h2>
+
+<p>DORA研究表明,在现代业务做法方面表现优异的团队包括:SRE,报告软件交付绩效提高的概率为1.4倍,报告业务成果改善的概率为1.8倍。<sup><a data-type="noteref" href="ch04-zh.html#id1256" id="id1256-marker">3</a></sup>一个共同负责的运营模式,即开发者和运营者共同获得授权,也预测了更好的可靠性结果.<sup><a data-type="noteref" href="ch04-zh.html#id1257" id="id1257-marker">4</a></sup>研究表明,SRE习俗和从业人员的福利:</p>
+<blockquote>除了改善客观绩效指标，SRE 也能改善技术从业者的工作体验。通常，承担大量运维任务的人容易倦怠，但 SRE 会产生积极影响。我们发现，团队采用 SRE 实践越多，成员出现倦怠的可能性就越低。SRE 还可能有助于优化资源：通过应用 SRE 实践达到可靠性目标的团队报告称，与没有采用 SRE 的团队相比，他们会把更多时间用于编写代码。<sup><a data-type="noteref" href="ch04-zh.html#id1258" id="id1258-marker">5</a></sup></blockquote>
+
+<p>另一个有趣的<a data-primary="organizational culture" data-secondary="benefits of healthy" data-startref="orgcult" data-type="indexterm" id="id1259"/><a data-primary="DORA" data-secondary="benefits of healthy culture" data-startref="dora_benhlth" data-type="indexterm" id="id1260"/>调查结果是,拥有高质量文件的小组更有可能执行SRE实践。<sup><a data-type="noteref" href="ch04-zh.html#id1261" id="id1261-marker">6</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Westrum’s Typology of Organizational Culture" data-type="sect2"><div class="sect2" id="ch04_westrum_typology_of_organizational_culture">
+<h2>Westrum 的组织文化类型学</h2>
+
+<p>如前所述,<a data-type="xref" href="#ch04_the_case_for_culture">“文化理由”</a>组织文化是建立SRE实践。DORA研究利用了社会学家开发的一种类型<a data-primary="Westrum, Ron" data-type="indexterm" id="id1262"/><a data-primary="Westrum’s typology of organizational culture" data-type="indexterm" id="typorgcult"/>罗恩·韦斯特鲁姆<sup><a data-type="noteref" href="ch04-zh.html#id1263" id="id1263-marker">7</a></sup>提供一个了解组织文化的框架。Westrum其工作审查了作为安全预测器的组织文化,特别是在保健和航空等高风险领域,突出了各组织处理信息方式的关键作用。DORA调整了这一模式,以便在技术驱动的组织背景下研究文化。</p>
+
+<p>Westrum 模型根据信息的流动与处理方式，将组织文化分为三种主要类型（见<a data-type="xref" href="#ch04_table_01">表 4-1</a>）。</p>
+<table id="ch04_table_01">
+<caption><span class="label">表 4-1　</span>权力导向、规则导向和绩效导向文化的特征</caption>
+<thead>
+<tr>
+<th>面向电力(病理)</th>
+<th>面向规则(官僚型)</th>
+<th>注重绩效(基因)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>合作不力</p></td>
+<td><p>适度合作</p></td>
+<td><p>高度合作</p></td>
+</tr>
+<tr>
+<td><p>信使受罚</p></td>
+<td><p>被忽略的使者</p></td>
+<td><p>信使接受培训</p></td>
+</tr>
+<tr>
+<td><p>推卸的责任</p></td>
+<td><p>责任狭窄</p></td>
+<td><p>分担风险</p></td>
+</tr>
+<tr>
+<td><p>劝阻沟通</p></td>
+<td><p>容忍的桥梁</p></td>
+<td><p>鼓励建立联系</p></td>
+</tr>
+<tr>
+<td><p>失败导致替罪羊</p></td>
+<td><p>失败导致正义</p></td>
+<td><p>失败导致调查</p></td>
+</tr>
+<tr>
+<td><p>小说被粉碎了</p></td>
+<td><p>小说导致问题</p></td>
+<td><p>已执行</p></td>
+</tr>
+<tr>
+<td><p>领导人的重点:个人需要</p></td>
+<td><p>领导人的重点:部门转会</p></td>
+<td><p>领导人的重点:任务</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>下面看看不同类型的组织可能如何应对同一起事件。如<a data-type="xref" href="#ch04_table_01">表 4-1</a>所示，Westrum 类型学依据<a data-primary="organizational culture" data-secondary="types" data-type="indexterm" id="id1264"/>组织处理信息和开展协作的方式，将文化分为三类：权力导向（病态型）、规则导向（官僚型）和绩效导向（生成型）。<a data-primary="power-oriented culture" data-type="indexterm" id="id1265"/><a data-primary="rule-oriented culture" data-type="indexterm" id="id1266"/><a data-primary="performance-oriented culture" data-type="indexterm" id="id1267"/>假设一个虚构组织最近发生了事故，客户无法完成交易，企业因此损失了大量收入。调查发现，应用程序近期的一项行为变更是事故的促成因素之一。以下是三类组织各自可能作出的反应：</p>
+<dl>
+<dt>权力导向（病态型）</dt>
+<dd>
+<p>领导新功能设计的工程师试图将责任从该功能转移到应用程序的另一个领域:"我的设计没有瑕疵;造成事件的原因是数据库的性能!</p>
+</dd>
+<dt>规则导向（官僚型）</dt>
+<dd>
+<p>工程经理要求对所有交割和文件进行审计,以证明工程小组遵守了导致该事件的所有规定流程和程序。 然后,经理建议对数据库小组中的人进行训斥。</p>
+</dd>
+<dt>绩效导向（生成型）</dt>
+<dd>
+<p>一个跨功能的团队会聚一堂来更好地理解出局的性质. 该小组寻求改进新功能的绩效以及改进流程的方法,以便能够更快地反馈潜在的绩效瓶颈。</p>
+</dd>
+
+</dl>
+
+<p>DORA研究通过评估与这种类型相一致的属性来衡量组织文化。 研究结果始终强调,生成型文化可以预测:<a data-primary="Westrum’s typology of organizational culture" data-startref="typorgcult" data-type="indexterm" id="id1268"/>软件交付和组织绩效的积极成果。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Characteristics of a Generative Culture" data-type="sect2"><div class="sect2" id="ch04_characteristics_of_a_generative_culture">
+<h2>生成型文化的特征</h2>
+
+<p>DORA 的研究<a data-primary="organizational culture" data-secondary="generative, characteristics" data-type="indexterm" id="orgcult_gen_chrst"/><a data-primary="generative organizational culture, characteristics" data-type="indexterm" id="genorgcult_charst"/>和 Westrum 模型详细描述了生成型组织的典型特征，以及这些特征如何促成高绩效和积极成果。这些特征与成功 SRE 实践所依据的原则高度吻合，如<a data-type="xref" href="#ch04_table_02">表 4-2</a>所示。</p>
+<table class="less_space pagebreak-before" id="ch04_table_02">
+<caption><span class="label">表 4-2　</span>Westrum 生成型文化与可靠性文化的比较</caption>
+<thead>
+<tr>
+<th>Westrum遗传文化</th>
+<th>以可靠性为重点的文化的关键要素</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>良好的信息流动(信使接受培训)</p></td>
+<td><p>增强能力和信任,一种由数据驱动的心态</p></td>
+</tr>
+<tr>
+<td><p>高度合作与信任</p></td>
+<td><p>协作与共同负责</p></td>
+</tr>
+<tr>
+<td><p>各小组之间的沟通</p></td>
+<td><p>协作与共同负责</p></td>
+</tr>
+<tr>
+<td><p>意识调查(失败导致调查)</p></td>
+<td><p>责备、学习和不断改进</p></td>
+</tr>
+<tr>
+<td><p>小说已执行</p></td>
+<td><p>学习与持续改进</p></td>
+</tr>
+<tr>
+<td><p>分担风险</p></td>
+<td><p>协作与共同负责</p></td>
+</tr>
+<tr>
+<td><p>领导人的重点:任务</p></td>
+<td><p>可靠性作为核心价值并侧重于用户</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>下面更详细地说明<a data-type="xref" href="#ch04_table_02">表 4-2</a>中的各项内容：</p>
+<dl>
+<dt>良好的信息流动（培养信使）</dt>
+<dd>
+<p>在遗传文化中,信息自由流通,并积极寻求。 坏消息没有被压制或惩罚;相反,信使被视为是揭露问题以便解决问题的宝贵手段。DORA将这一点与诸如举行无责的事后复盘等做法直接联系起来,重点是了解系统和处理失败,而不是责备个人。 消除指责可以减少恐惧,使团队能够浮出水面,解决更多问题<span class="keep-together">有效地。</span></p>
+</dd>
+<dt>高度合作与信任</dt>
+<dd>
+<p>基因组组织的特点是团队和职能之间高度合作和信任。 这与SRE重视发展、质量保证、业务、<span class="keep-together">资料</span>保安人员。 高信任文化允许人们自由实验.DORA其研究也反映了其他研究的结果,包括:Google’:<a href="https://oreil.ly/BkbpX">亚里士多德项目</a>心理安全——安全地承担风险——是表现良好的团队的最重要因素。 一种重视心理安全,信任和尊重的文化,通过让员工专注于解决问题而不是导航组织上的政治,有利于生产力.</p>
+</dd>
+<dt>各小组之间的沟通</dt>
+<dd>
+<p>生成型文化积极鼓励搭桥,打破组织不同部门之间的分仓. 可以通过建立跨功能团队,组合不同角色,或者在整个软件开发生命周期中包含更多的团队来推动这项工作. 各小组之间的非正式讨论和合作也可促进更好的沟通和创造性<span class="keep-together">解决问题。</span></p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>有意识的探究（失败引发调查）</dt>
+<dd>
+<p>生成型组织不会在失败发生时追究个人责任，而会把失败视为有意识探究的机会。组织如何应对失败至关重要：如果应对过程促使人们追问系统性问题及其预防方法，就能强化技术系统、流程和文化。无责事后复盘是其中的关键实践，它确保事件带来的结果是学习和改进，而不是惩罚。更多信息见第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch10.html#ch10">10</a> 章和第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch11.html#ch11">11</a> 章。</p>
+</dd>
+<dt>落实创新</dt>
+<dd>
+<p>生成型文化接受并落实了新思想,鼓励实验,并大力强调不断改进. 给予员工探索的自由可以带来创新,给组织带来重要价值. 这不仅适用于新产品或新特点,而且适用于工艺和协作的改进。</p>
+</dd>
+<dt>分担风险</dt>
+<dd>
+<p>责任和风险在遗传文化中在整个组织中共同承担。 质量、吞吐量、可靠性和安全性被视为每个人的工作。 开发者分担维持生产中代码的责任等做法可以改善协作并减少风险. 自动化也在减少风险方面发挥作用。 见<a data-type="xref" href="ch08.html#ch08">第八章</a>欲了解更多信息SREs与其他团队分担风险。</p>
+</dd>
+<dt>领导者的重点：使命</dt>
+<dd>
+<p>在一个生成型文化中,领导者的首要重点是明确的任务.SRE视图SLOs并不是任意的目标,而是反映了让用户高兴的基本使命。</p>
+</dd>
+</dl>
+
+<p>这些特征与 SRE 的理念高度一致：共同拥有可靠性，通过无责事后复盘从事件中学习，开展跨职能协作，并持续改进。DORA 的研究证实，具备这些特征的文化不只是锦上添花；它能够预测 SRE 所要改善的领域能否成功，包括软件交付速度、稳定性、组织<a data-primary="organizational culture" data-secondary="generative, characteristics" data-startref="orgcult_gen_chrst" data-type="indexterm" id="id1269"/><a data-primary="generative organizational culture, characteristics" data-startref="genorgcult_charst" data-type="indexterm" id="id1270"/>绩效，乃至技术团队的福祉。持续学习和适应的承诺正是 DORA 理念的核心：“不断提升改进能力。”</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="How Learning Drives Culture" data-type="sect1"><div class="sect1" id="ch04_how_learning_drives_culture">
+<h1>学习如何推动文化发展</h1>
+
+<p>正如<a data-primary="organizational culture" data-secondary="relationship to learning" data-type="indexterm" id="orgcltr_rellrn"/><a data-primary="learning" data-secondary="relationship to culture" data-type="indexterm" id="leng_relcult"/>上一节所述，软件交付和运维绩效以及组织绩效，都与文化存在内在联系。DORA 强调，如果没有健康的文化，仅靠改进技术、流程和能力不足以取得成功。</p>
+
+<p>学习通过催化连锁反应来推动文化.<em>学习驱动信心 信心驱动行为 行为 随时间推移重复 驱动文化</em>.</p>
+
+<p>转变的组织文化可能感到不可能,特别是当我们从抽象的意义上来考虑这种文化时——文化是一种心态或状态。 作为<a href="https://oreil.ly/B6J2m">麻省理工学院的著名研究员和工业人类学家约翰·肖克说</a>“改变的方式<a data-primary="Shook, John" data-type="indexterm" id="id1271"/>文化不是首先改变人们的思维方式,而是首先改变人们的行为——他们的行为。” 换句话说:用新思维方式行事比用新思维方式行事容易。</p>
+
+<p><em>怎么样</em>人们工作,他们做什么<em>对</em>这是改变文化的关键, 反过来,信心,<a href="https://oreil.ly/Ap7fi">自我效能或感知能力</a>,是研究良好的解锁行为改变的密钥.</p>
+
+<p>培训<a data-primary="training" data-type="indexterm" id="id1272"/>在成人学习的背景下,这不是要向人们喷洒信息并让他们喝。 训练内容是<em>建立信任</em>帮助与冒名顶替综合症作斗争,特别是针对刚加入一个团队的人或从事SRE学习有效地发挥“信心引擎”的作用,<a data-primary="organizational culture" data-secondary="relationship to learning" data-startref="orgcltr_rellrn" data-type="indexterm" id="id1273"/><a data-primary="learning" data-secondary="relationship to culture" data-startref="leng_relcult" data-type="indexterm" id="id1274"/>可以把你的可靠性文化转移到高档。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Benchmarking Culture Through Confidence" data-type="sect2"><div class="sect2" id="ch04_benchmarking_culture_through_confidence">
+<h2>通过信心衡量文化</h2>
+
+<p>计量和<a data-primary="organizational culture" data-secondary="benchmarking through confidence assessment" data-type="indexterm" id="orgcltr_bnchmconf"/><a data-primary="confidence, assessing" data-type="indexterm" id="conf_asing"/>评估文化本身就很困难。 然而,一种“低油层”做法是通过评估个人自报的对完成与所期望的文化特征和技术实践有关的任务的能力的信心来衡量文化。 可以通过结构化的<a data-primary="surveys, assessing confidence" data-type="indexterm" id="surv_assconf"/>四步进程:</p>
+<ol>
+<li>
+<p>界定调查问题</p>
+</li>
+<li>
+<p>确定评级等级</p>
+</li>
+<li>
+<p>随着时间的推移衡量信心</p>
+</li>
+<li>
+<p>分析/比较结果</p>
+</li>
+
+</ol>
+
+<p>时Google例如,SREEDU 方向<a data-primary="SRE EDU Orientation program" data-type="indexterm" id="id1275"/><a data-primary="Google" data-secondary="SRE EDU Orientation program" data-type="indexterm" id="id1276"/>程序使用此方法<a href="https://oreil.ly/z3_Wz">测量其在信心上移动针头的效果</a>可靠性文化问题已纳入SREEDU方向和一般开发者登机调查. 这些问题要求与会者评估其执行与关键事项有关的具体任务的能力。SRE文化属性,例如:</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>说明无责事后复盘文化的益处。</p>
+</li>
+<li>
+<p>使用SLOs错误<span class="keep-together">预算</span>(数据驱动的心态).</p>
+</li>
+<li>
+<p>利用监控和警示,合理决定我的服务(由数据驱动的心态).</p>
+</li>
+</ul>
+
+<p>这些问题都注重行动,与学习目标有关(“学生应当......”)。 我们将更深入地讨论这个议题。<a data-type="xref" href="ch05-zh.html#ch05">第五章</a>.</p>
+
+<p>为了让每个人都以同样的方式思考这些问题并减少答复中的可变性,必须使用一个有根据的评级表,而不是简单的数值表。 基准尺度为每一点提供了具体描述。 我们的五分评级基于以下描述的信任措施:</p>
+
+<ul>
+<li>
+<p>不知道从哪里开始</p>
+</li>
+<li>
+<p>只要有人帮忙就可以</p>
+</li>
+<li>
+<p>可以读出文件,然后自己想出来</p>
+</li>
+<li>
+<p>大部分都是从记忆中完成的</p>
+</li>
+<li>
+<p>大多可以从记忆中教别人</p>
+</li>
+</ul>
+
+<p>来了解<a data-primary="training" data-secondary="impact on confidence" data-type="indexterm" id="id1277"/>这些问题在多个方面得到调查:</p>
+<ol>
+<li>
+<p>预定向</p>
+</li>
+<li>
+<p>后定向</p>
+</li>
+<li>
+<p>一个月后定向</p>
+</li>
+<li>
+<p>6个月后定向</p>
+</li>
+
+</ol>
+
+<p>此外，我们还比较了两类学员自我报告的信心水平：一类接受以可靠性原则为重点的培训（SRE EDU 入职培训），另一类参加通用开发者入职培训，即 Google 的 engEDU Google Tech Immersion（GTI）。engEDU GTI 是一门优先介绍 Google 开发者工作流程的基础课程，不会专门深入讲解可靠性概念。我们与 engEDU 团队合作，在同一时期向两组学员提出相同的三个可靠性信心问题，从而衡量 SRE EDU 入职培训在整个 Google 推广可靠性文化的成效。</p>
+
+<p class="pagebreak-before less_space"><a data-type="xref" href="#ch04_table_03">表4-3 按支出用途开列的所需资源</a>调查答复者自报最高信任程度(“主要靠记忆”和“主要靠记忆来教别人”)的比例比较的结果SREEDU和engEDU GTI上载程序. 调查结果表明:SREEDU参与者不断报告,对与可靠性有关的领域具有更高的信心。<span class="keep-together">各种</span>与通过一般开发者登入的同行相比,在他们的登入过程中得分。</p>
+<table id="ch04_table_03">
+<caption><span class="label">表 4-3　</span>SRE EDU 与开发者入职培训的结果：通过信心衡量可靠性文化</caption>
+<thead>
+<tr>
+<th>可靠性文化方面</th>
+<th>员额</th>
+<th>1个月</th>
+<th>6个月</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>说明无责事后复盘文化的益处。</p></td>
+<td><p>+23页</p></td>
+<td><p>+19页</p></td>
+<td><p>+28页<sup><a data-type="noteref" href="ch04-zh.html#id1278" id="id1278-marker">(单位:千美元)</a></sup></p></td>
+</tr>
+<tr>
+<td><p>衡量我的服务与业务目标的一致性。</p></td>
+<td><p>+27页</p></td>
+<td><p>+15页</p></td>
+<td><p>+34页</p></td>
+</tr>
+<tr>
+<td><p>利用监控和警示 对我的服务做出合理的决定</p></td>
+<td><p>+49页</p></td>
+<td><p>+26页</p></td>
+<td><p>+43页</p></td>
+</tr>
+</tbody>
+<tbody><tr class="footnotes"><td colspan="4"><p data-type="footnote" id="id1278"><sup><a href="ch04-zh.html#id1278-marker">(单位:千美元)</a></sup> <em>页 次</em>代表百分点。</p></td></tr></tbody></table>
+
+<p>这些数据表明,像我们这样强调可靠性概念,SREEDU 方向可有效建立对注重可靠性行为的信心,<a data-primary="surveys, assessing confidence" data-startref="surv_assconf" data-type="indexterm" id="id1279"/><a data-primary="organizational culture" data-secondary="benchmarking through confidence assessment" data-startref="orgcltr_bnchmconf" data-type="indexterm" id="id1280"/><a data-primary="confidence, assessing" data-startref="conf_asing" data-type="indexterm" id="id1281"/>反过来又加强了我们注重可靠性的文化。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Tailoring Training to Different Audiences" data-type="sect2"><div class="sect2" id="ch04_tailoring_training_to_different_audiences">
+<h2>针对不同受众设计培训</h2>
+
+<p>前一个<a data-primary="organizational culture" data-secondary="effect of training" data-type="indexterm" id="orgclt_efttrn"/><a data-primary="training" data-secondary="effect on organizational culture" data-type="indexterm" id="trn_eftorgclt"/>一节介绍了研究支持的社会科学处理文化问题的方法,并表明培训方案如何通过注重围绕所希望的行为建立信心来维持一种积极文化。</p>
+
+<p>培训方案还可以帮助推动文化的显著转变。<em>学习 信心 行为 文化</em>阶梯。 了解贵组织文化的现状是设计培训方案的关键。<sup><a data-type="noteref" href="ch04-zh.html#id1282" id="id1282-marker">8</a></sup>根据这一组织背景和受训人员的特点调整内容和办法是重要的。 应考虑的关键方面包括:</p>
+<ol>
+<li>
+<p>该组织收养的成熟程度SRE原则</p>
+</li>
+<li>
+<p>个人以前在SRE实践</p>
+</li>
+<li>
+<p>小组成员对变革的接受程度</p>
+</li>
+
+</ol>
+
+<p class="pagebreak-before less_space">早期组织SRE克服基本技能差距至关重要。 这可能需要就如何使用缺陷跟踪系统、Agile等项目规划模型、版本控制系统和共享工具库进行培训,并就如何编写设计文件进行培训。</p>
+
+<p class="fix_tracking">了解现有的团队组合也至关重要。 个人可根据其SRE体验和接受新的工作方式。 例如:</p>
+
+<ul>
+<li>
+<p><em>改变好奇心</em>团队成员往往是公司新人,经验较少或没有经验的个人。SRE实践。 他们经常问“为什么我们这样做?” 和“为什么这一进程与我在定向方面学到的东西不同?” 这种好奇心有助于推动整个组织的行为改变,进而推动文化改变。 保证您的训练计划符合您所追求的理想行为,</p>
+</li>
+<li>
+<p><em>改变阻力器</em>对该组织的收养愿望持怀疑态度的雇员SRE工作方法。 为了帮助他们克服怀疑,这些人通常想知道“对我有什么好处?</p>
+</li>
+<li>
+<p><em>改变冠军</em>经常是个人 刚进入你的公司,但拥有高水平SRE其他地方的经验。 给SRE变革的冠军是一个分享他们成功故事的平台(例如如何)SRE如何消除无价值的劳作给他们更多的自由时间去处理更有趣的问题,或者他们如何能够以企业欢呼的方式提高其服务的可靠性。 童话故事可以是一个非常有效的载体 驱动变革 并说服抵抗变革者SRE工作方式值得接受</p>
+</li>
+</ul>
+
+<p>使培训的形式和内容适应这些不同的需要,有助于确保培训与每个群体产生共鸣,并尽量扩大成功种苗和种苗的机会。<a data-primary="organizational culture" data-secondary="effect of training" data-startref="orgclt_efttrn" data-type="indexterm" id="id1283"/><a data-primary="training" data-secondary="effect on organizational culture" data-startref="trn_eftorgclt" data-type="indexterm" id="id1284"/>注重可靠性的有效文化。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Practical Considerations" data-type="sect1"><div class="sect1" id="ch04_practical_considerations">
+<h1>实践注意事项</h1>
+
+<p>如果你已经是了<a data-primary="adopting SRE" data-type="indexterm" id="sre_adoptcons"/>在一个健康、可靠、注重文化的环境里工作, 具有前面描述的许多或所有特征, 你也许可以在这里停止阅读,然后跳到下一章。 但是,如果你正积极尝试带来SRE接下来的章节 提供了一些实用的建议 如何处理这一点。</p>
+
+<p class="pagebreak-before less_space fix_tracking">走向强壮的旅程SRE实践和注重可靠性的文化并非总能从空白板块或全组织自上而下的任务入手。 更经常的是,它从具体情况下的务实、有重点的努力入手。 对于许多组织,特别是那些超规模世界以外的组织,SRE发源地,全宽SRE理论可以感觉到压倒性。 关键是将其核心原则提炼成可采取行动的独立战略,迅速提供有形价值,从而形成势头并有机地促进文化变革。 正如我们在前几节所讨论,随着时间的流逝,行为上的细微变化可以催化组织文化的重大变化.</p>
+
+<p>事实证明,这种逐步采用有两种主要途径是有效的:在现有“褐地”系统内逐步提高可靠性,并从一开始就将其注入“绿地”项目。 这两种办法在经过深思熟虑后,可成为引入SRE概念,例如SLOs错误的预算,以及注重学习的文化,甚至在正式预算之前SRE函数存在。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Brownfield Evolution: Cultivating Reliability in Existing Systems" data-type="sect2"><div class="sect2" id="ch04_the_brownfield_evolution_cultivating_reliability_in_existing_systems">
+<h2>棕地演进：在现有系统中培养可靠性</h2>
+
+<p>多数<a data-primary="adopting SRE" data-secondary="existing brownfield systems" data-type="indexterm" id="sre_adoptcons_exbwnsys"/><a data-primary="brownfield systems" data-secondary="building reliability-focused culture" data-type="indexterm" id="brwnfld_relfoccul"/>各组织有一套现有服务,其中许多服务对业务至关重要,并且是随着时间的推移在内部开发的。 这些“褐地”系统具有既定的运作模式,而且往往积累了技术债务,似乎对建立以可靠性为重点的文化的候选者构成挑战。 然而,它们提供了丰富的环境,可以证明:SRE正是因为人们能够如此敏锐地感受到提高可靠性的影响。 这有助于建立势头。 核心理念是选择合适的现有服务,并将其作为试点用于SRE原则,从理想状态向后发展,这种理想状态“足够可靠”,考虑到目前绩效的商业目标,然后制定缩小差距的行动计划。 在完成这里概述的步骤时,你们还在培育关键的文化要素,这将使更多的变革更容易实现。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Educate your stakeholders" data-type="sect3"><div class="sect3" id="ch04_educate_your_stakeholders">
+<h3>培训利益相关方</h3>
+
+<p>开始之前<a data-primary="stakeholders" data-secondary="educating when implementing SRE" data-type="indexterm" id="id1285"/>思考执行, 有必要建立对关键概念的基础理解, 联合培训,向一个组织各部分的利益相关者——参与服务生命周期的每一个人——传授可靠性工程的基本知识,已证明是有效的第一步。 这类培训也表明学习和不断改进。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Select your starting point" data-type="sect3"><div class="sect3" id="ch04_select_your_starting_point">
+<h3>选择起点</h3>
+
+<p>选择正确的服务 开始你的渐进旅程<a data-primary="services" data-secondary="selecting for initial SRE implementation" data-type="indexterm" id="id1286"/>改为SRE是一个关键的步骤。 并非所有服务都为此目的平等设立。 理想候选人通常具有以下一种或多种特征:</p>
+<dl>
+<dt>业务关键性或明显痛点</dt>
+<dd>
+<p>选择一个可靠性重要(或缺乏可靠性)的服务。</p>
+</dd>
+<dt>参与意愿较强的团队</dt>
+<dd>
+<p>虽然你并不需要全部SRE拥有开发和业务小组(或DevOps尝试新的行为是有好处的。</p>
+</dd>
+<dt>内部开发且可访问代码</dt>
+<dd>
+<p>对服务进行仪器和代码修改的能力很有帮助,是树立赋予权力的文化宗旨模式的一种方式。</p>
+</dd>
+</dl>
+
+<p>如果组织缺乏编写可观测性代码的能力，例如不会添加监控库或日志库，那么培养这种技能有助于建立初步的可靠性文化，因为它为获得服务绩效数据、进而作出知情决策奠定了基础。组织可以举办监控研讨会，并实施适当的工具来收集应用指标（见<a data-type="xref" href="ch09.html#ch09">第 9 章</a>）。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Assess maturity and discover baseline reliability" data-type="sect3"><div class="sect3" id="ch04_assess_maturity_and_discover_baseline_reliability">
+<h3>评估成熟度并发现基线可靠性</h3>
+
+<p>潜水前<a data-primary="services" data-secondary="assessing with maturity matrix" data-type="indexterm" id="id1287"/>在具体指标中,利用成熟度矩阵评估该处更广泛的业务环境是有价值的。 详见<a data-type="xref" href="ch07.html#ch07">第七章</a>, SRE聘用并不总是从SLOs有时,必须首先解决更突出的业务挑战,例如过度地承受或管理出风险。 成熟度矩阵使您能够评估本组织在业务进程、风险管理和速度等不同层面所处的位置。</p>
+
+<p>确定一个小组是否处于被动反应阶段(侧重于确定退出状态),还是积极主动阶段(管理依赖性和风险),为明确的小组章程和路线图提供了必要的基础。 这些文件确保:SRE参与解决了与小组生命周期这一具体阶段有关的独特挑战,而不是采用一刀切的解决办法。</p>
+
+<p>一旦了解了成熟程度并选择了有希望的实验服务,下一个当务之急就是了解服务的具体性能和可靠性状态. 假设和传闻证据不足;你需要数据。 正是在这里界定和衡量SLIs与关键用户行程(CUJs)直接挂钩,</p>
+
+<p>这涉及到增加代码或配置工具, 以释放这些度量衡, 现代应用性能监测(APM)工具,伐木平台,以及时间序列数据库在这里都非常宝贵. 对于内部开发的服务,开发者可以添加针对CUJ或商业交易的自定义度量衡. 例如,对于一项电子商务验收服务,SLI“订单放置”尝试的成功率可能就是如此。</p>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>定义真正关键的用户行程可能很困难,并添加直接测量CUJ的仪器可能是硬的或不切实际的. 你可能必须依靠一些代词来最大限度地缩小你能够测量的东西和你希望测量的东西之间的差距.</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Have the crucial conversation" data-type="sect3"><div class="sect3" id="ch04_have_the_crucial_conversation">
+<h3>开展关键对话</h3>
+
+<p>这次谈话<a data-primary="stakeholders" data-secondary="assessing reliability during adoption" data-type="indexterm" id="id1288"/>应该回答一个根本问题:我们目前的可靠性是否足够好?</p>
+
+<p>有基线SLI数据积累(理想地通过几个商业周期来捕捉典型的波动),下一步是连接技术和商业领域。 这涉及介绍当前可靠性图,例如:SRE- 面向企业利益攸关方、产品所有人和主要用户。 这种做法继续培养本组织注重用户的实力,使团队在加强各方协作和分担责任的行为方面进一步实践。</p>
+
+<p>这与展示一堵仪表板无关。 有关焦点对话 : “ 当服务比 X 慢, 或在 Y 分钟内无法使用, 或者交易的 Z% 失败时, 实际业务影响是什么? ”</p>
+
+<p>这有什么关系? 这种对话是基础性的:它直接将技术性能与业务价值和用户满意度联系起来. 也正是需要,SLOs自然出现。 通常,什么工程都脱节<em>以为</em>企业利益攸关方可接受和可行(一种低估的趋势)<em>考虑</em>有必要(倾向于高估),以及哪些客户<em>其实</em>需要或预期。</p>
+
+<p>虽然确保领导层的接受至关重要,但让单个工程和产品小组成员参与这些关键的可靠性对话,使他们有能力真正重视和理解如何在实际中确定可靠性的优先次序,认识到可靠性是最重要的系统特征,需要采取具体行动并投入时间和精力来实现。 进行这些对话有助于该组织摆脱不惜一切代价的心态,走向速度和稳定性之间的平衡,将可靠性作为一种核心价值纳入该组织的文化。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Define initial SLOs" data-type="sect3"><div class="sect3" id="ch04_define_initial_slos">
+<h3>定义初始 SLO</h3>
+
+<p>见解<a data-primary="SLOs (service level objectives)" data-secondary="defining for brownfield SRE implementations" data-type="indexterm" id="id1289"/>从商业对话直接输入定义您的第一个SLOs(见<a data-type="xref" href="ch08.html#ch08">第八章</a>为棕地服务.</p>
+
+<p>这些SLOs代表了对服务的可靠性的共同承诺,这种承诺应当暗示或明确符合用户的期望。 它们也与其他业务指标(例如用户分类、收入影响)的关联性联系在一起,从而加强了本组织对用户的关注。</p>
+
+<p>良好的初始特征SLOs棕地服务包括:</p>
+<dl>
+<dt>简单</dt>
+<dd>
+<p>二到三个关键SLIs在商业讨论中,这一点很重要。 不要试图把海洋煮沸。 一次简单SLOs证明他们的价值,你可以从那里去。</p>
+</dd>
+<dt>现实</dt>
+<dd>
+<p>其依据是当前绩效以及企业认为“足够好”或合理的拉长目标。 如果您目前的可用率为99.5%,则设置初始值SLO99.999%的人可能会为自己失败做准备。 学习和不断改进是关键所在,需要整个组织努力实现新的目标。SLO.</p>
+</dd>
+<dt>理解并同意</dt>
+<dd>
+<p>工程和企业利益攸关方都应了解SLO表示并认同这是一个值得追求的目标。 达成这项协议再次加强了协作和共同责任,而这种协作和责任是注重可靠性的健康文化的基础。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Introduce blameless postmortems" data-type="sect3"><div class="sect3" id="ch04_introduce_blameless_postmortems">
+<h3>引入无责事后复盘</h3>
+
+<p>与一个SLO已到位,任何<a data-primary="postmortems" data-secondary="blameless" data-type="indexterm" id="id1290"/><a data-primary="blamelessness" data-secondary="postmortems" data-type="indexterm" id="id1291"/><a data-primary="blameless postmortems" data-type="indexterm" id="id1292"/>显著偏差(SLO违反义务或影响服务的重大事件)成为引入以可靠性为重点的文化的另一个核心要素:责难,可以通过写出无责的事后复盘行动明确引导。</p>
+
+<p>事件解决后，团队进入学习阶段（见<a data-type="xref" href="ch10.html#ch10">第 10 章</a>）。复盘过程必须体现并强化心理安全。目标是学习并改进系统（见<a data-type="xref" href="ch11.html#ch11">第 11 章</a>），而不是点名责备个人。应当假设每个人都是基于当时掌握的信息善意行事。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Spread the word and iterate" data-type="sect3"><div class="sect3" id="ch04_spread_the_word_and_iterate">
+<h3>推广并持续迭代</h3>
+
+<p>当你执行这些步骤 棕地服务——衡量SLIs,定义SLOs你不只是在改善这一服务。 你们正在为你们的可靠文化创造动力:</p>
+<dl>
+<dt>展示成功案例</dt>
+<dd>
+<p>分享进展。 “通过使我们的新延迟SLO我们确定并确定了一个瓶颈,将用户体验提高Y%,将投诉减少Z%。”</p>
+</dd>
+<dt>逐步推广</dt>
+<dd>
+<p>重访SLOs定期。 他们还是对的吗? 目标合适吗? 随着服务的发展,其指标也应有所改进(SLIs)和可靠性目标。</p>
+</dd>
+<dt>推广文化</dt>
+<dd>
+<p>你所展示的成功和结构化、数据驱动的业务方法<a data-primary="adopting SRE" data-secondary="existing brownfield systems" data-startref="sre_adoptcons_exbwnsys" data-type="indexterm" id="id1293"/><a data-primary="brownfield systems" data-secondary="building reliability-focused culture" data-startref="brwnfld_relfoccul" data-type="indexterm" id="id1294"/>通过这一试点服务,可以激励其他团队问“我们如何为我们的服务这样做?”</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Greenfield Design: Engineering Reliability from Day Zero" data-type="sect2"><div class="sect2" id="ch04_the_greenfield_design_engineering_reliability_from_day_zero">
+<h2>绿地设计：从第一天起构建可靠性</h2>
+
+<p>第二个<a data-primary="adopting SRE" data-secondary="new greenfield systems" data-type="indexterm" id="sre_adoptcons_nwgrnfldsys"/><a data-primary="greenfield systems" data-secondary="building reliability-focused culture" data-type="indexterm" id="grnfld_relfoccul"/>采取强有力的渐进办法SRE在 " 绿地 " 项目中采用----从一开始就设计可靠地作为核心非功能要求的新系统。 这提供了一套不同的优势,包括有能力在不与现有建筑限制或根深蒂固的业务习惯相对抗的情况下,为最佳做法编制预算和烤制最佳做法。 通过从零天开始围绕关键行为建立肌肉记忆,你可以确保你的以可靠性为重点的文化会与你的绿地服务同时增长和规模. 本节概述采取这一办法所要采取的步骤。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Use SLOs as a design input" data-type="sect3"><div class="sect3" id="ch04_use_slos_as_a_design_input">
+<h3>将 SLO 作为设计输入</h3>
+
+<p class="fix_tracking">在绿地上<a data-primary="SLOs (service level objectives)" data-secondary="defining for greenfield SRE implementations" data-type="indexterm" id="id1295"/>情景,关于SLOs发生<em>在此之前</em>任何重要的代码都有文字或基础设施。 这意味着你可以把嵌入式可靠性设定为核心值,并从一开始就强烈关注用户.</p>
+
+<p>与褐地办法一样,产品所有人、企业利益攸关方和潜在用户也及早参与,开展协作并分担责任。 然而,与这些利益攸关方的讨论具有前瞻性,提出了以下问题:</p>
+
+<ul>
+<li>
+<p>“要使这项新服务获得成功并使我们的客户感到高兴,它需要多少服务?”</p>
+</li>
+<li>
+<p>“关键的用户旅程是什么,需要多快?”</p>
+</li>
+<li>
+<p>“用户在失去信任或放弃服务之前能够容忍何种程度的错误?”</p>
+</li>
+</ul>
+
+<p>此外,SLOs驱动架构。 这些共同定义SLOs成为系统设计的基本投入。 如果一项服务需要99.99%的可用率,这可能导致你远离某些单居式建筑,转向包含冗余,自动故障和高级事件反应的设计. 如果某个API端点的低延迟度至关重要,这为缓存策略、数据库技术和数据位置的选择提供了依据。 使用SLOs作为设计投入,通过注重可靠性的透镜,为系统设计带来了一种由数据驱动的心态。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engineer the system to meet the SLOs" data-type="sect3"><div class="sect3" id="ch04_engineer_the_system_to_meet_the_slos">
+<h3>设计系统以满足 SLO</h3>
+
+<p>与SLOs定义,<a data-primary="SLOs (service level objectives)" data-secondary="meeting for greenfield SRE implementations" data-type="indexterm" id="id1296"/>工程组有明确的可靠性目标,它有权设计和建设与之相对. 这影响了几个方面,最终让团队实践将可靠性嵌入产品和组织的核心价值的行为:</p>
+<dl>
+<dt>技术选择</dt>
+<dd>
+<p>选择数据库,消息队列,负载平衡器,甚至编程语言或框架,可能受其已知的可靠性特征和对可观察性的支持所影响.</p>
+</dd>
+<dt>架构模式</dt>
+<dd>
+<p>团队可以设计断层隔离(因此一个组件故障不会发生级联),在临界点冗余,并优雅地退化(因此非关键特性可以在负载下被禁用来保护核心功能). 在这种脱钩的系统中,组件之间的重试对于可靠性来说更加常见,一能操作——确保多次处理的请求具有与一次执行相同的效果——成为有意识的设计选择。</p>
+</dd>
+<dt>将可观测能力作为一项功能</dt>
+<dd>
+<p>SLIs不是一个事后思考。 监控和可观察性悬钩随开发而被构建在服务中. 用于跟踪的盘子SLO遵守可与特征本身一起产生。</p>
+</dd>
+<dt>可靠性测试</dt>
+<dd>
+<p>这不仅包括功能测试,还包括性能测试,负载测试以验证系统的行为符合预期,还有潜在的混乱工程实验(小规模,最初)以揭示压力和故障条件下出乎意料的行为.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Establish operational readiness from the start" data-type="sect3"><div class="sect3" id="ch04_establish_operational_readiness_from_the_start">
+<h3>从一开始就建立运维就绪能力</h3>
+
+<p>一个绿地项目<a data-primary="operational readiness, establishing" data-type="indexterm" id="id1297"/>还提供机会,从第一天起就确立健全的业务做法,加强你们正在建立的以可靠性为重点的文化。 其中包括:</p>
+<dl>
+<dt>自动部署</dt>
+<dd>
+<p>执行<a data-primary="automated deployments" data-type="indexterm" id="id1298"/><a data-primary="deployments" data-secondary="automated" data-type="indexterm" id="id1299"/>强有力的CI/CD管道,包括自动测试和安全回滚机制。</p>
+</dd>
+<dt>清晰的运行手册和操作手册</dt>
+<dd>
+<p>文档<a data-primary="services" data-secondary="runbooks" data-type="indexterm" id="id1300"/><a data-primary="runbooks" data-type="indexterm" id="id1301"/><a data-primary="playbooks" data-type="indexterm" id="id1302"/>如何操作服务,诊断常见问题,并响应警报. 此文档一开始可以简单.</p>
+</dd>
+<dt>主动能力规划</dt>
+<dd>
+<p>制作<a data-primary="capacity planning" data-secondary="greenfield SRE implementations" data-type="indexterm" id="id1303"/>根据预期负荷和SLOs.</p>
+</dd>
+</dl>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1304">
+<h1>棕地方法与绿地方法</h1>
+<p>绿地方法避免了棕地项目经常需要的"技术考古学". 也有更多机会建立良好习惯,SRE- 从头开始的一致做法。 然而,准确预测全新的服务的使用模式和失败模式可能具有挑战性。</p>
+</div></aside>
+
+<p>通过推出新的<a data-primary="adopting SRE" data-secondary="new greenfield systems" data-startref="sre_adoptcons_nwgrnfldsys" data-type="indexterm" id="id1305"/><a data-primary="greenfield systems" data-secondary="building reliability-focused culture" data-startref="grnfld_relfoccul" data-type="indexterm" id="id1306"/>与企业共同界定的明确可靠性目标,并且旨在满足这些要求的服务,SRE这反过来又强化了注重可靠性的有力文化。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Error Budgets: SLO-Driven Operations" data-type="sect2"><div class="sect2" id="ch04_error_budgets_slo_driven_operations">
+<h2>错误预算：SLO 驱动的运维</h2>
+
+<p>在建立<a data-primary="SLOs (service level objectives)" data-secondary="error budgets" data-type="indexterm" id="id1307"/><a data-primary="error budgets" data-type="indexterm" id="id1308"/> SLOs对棕地服务来说,或者把它们设计成绿地服务,是极好的第一步,错误预算的概念是,SLO对日常决策而言,是可采取行动和具有变革性的。 错误预算意在通过平衡对快速创新的渴望和对稳定、可靠的服务的需求,在注重可靠性的文化中协调协作和分担责任。</p>
+
+<p>利用错误预算作为决策工具有助于指导发布速度和优先次序。 健康的预算允许有自信的部署,而预算耗尽则表明需要减缓或停止新的特征开发,以注重可靠性工作。 制定商定的错误预算政策将使这一做法正规化。</p>
+
+<p>执行错误预算需要在团队如何分配时间和精力方面进行文化转变,因此需要时间和精力。 定期审查误差预算消耗情况,确保调整,推动积极主动的改进工作,即使预算是健康的。 通过将可靠性工作直接纳入团队优先事项和日常业务,这有助于确立或加强可靠性这一核心价值。</p>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>虽然错误预算可以为注重可靠性的文化创造动力, 详细讨论SLOs以及误差预算的力学和潜在陷阱,见<a data-type="xref" href="ch08.html#ch08">第八章</a>.</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Revised Processes: Moving Beyond Cadence and Promises" data-type="sect2"><div class="sect2" id="ch04_revised_processes_moving_beyond_cadence_and_promises">
+<h2>修订流程：超越固定节奏与承诺</h2>
+
+<p>引进SLOs和错误预算,无论是通过褐地演化还是绿地设计,自然导致——事实上,必须——修订现有的业务和发展进程。 旧的工作方式往往与SRE数据驱动的心态和对可靠性作为核心价值的重视。 以<em>改变人们的工作方式</em>以这里描述的方式,你可以有效地搭起飞轮,促进组织文化的积极转变.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From cadenced deployments to SLO-gated deployments" data-type="sect3"><div class="sect3" id="ch04_from_cadenced_deployments_to_slo_gated_deployments">
+<h3>从定期部署转向 SLO 把关的部署</h3>
+
+<p>许多组织运作于<a data-primary="fixed-cadence deployments compared to SLO-gated deployments" data-type="indexterm" id="id1309"/><a data-primary="SLO-gated deployments, compared to fixed-cadence deployments" data-type="indexterm" id="id1310"/><a data-primary="deployments" data-secondary="fixed-cadence compared to SLO-gated" data-type="indexterm" id="id1311"/>定期部署(例如,“我们在星期二每两周部署一次”。 这一模式虽然可以预测,但往往导致各种变化被推出,而不论系统目前的稳定性或错误预算所定义的风险偏好如何。 也未能考虑该代码是否已准备好生产. 业务授权的部署,在特征承诺或营销承诺的推动下,可以压倒对稳定的关切,导致一种“不惜一切代价部署”的心态。 在倒转的一面,它们可能会减慢能够更高放出频率的开发团队. 这种办法不利于注重可靠性的文化的许多方面,包括协作和分担责任、赋予权力、数据驱动的心态、学习和不断改进。</p>
+
+<p>与SLOs以及错误的预算,部署决定变得更加细微,加强了注重可靠性的文化。 部署之前的核心问题是:</p>
+
+<ul>
+<li>
+<p>错误预算是否健康? 如果有,则继续部署,假定它已经通过所有其他质量门(数据驱动的心态)。</p>
+</li>
+<li>
+<p>错误预算低或已用尽? 如果是这样,默认反应应当是推迟部署,并侧重于恢复预算(由数据驱动的心态、协作和分担责任)。</p>
+</li>
+</ul>
+
+<p>如果可靠性不稳, 这并不意味着任何特性都不会被使用, 但这迫使人们就风险与回报进行明确、数据知情的对话。 有时一个关键的错误修复<em>必须</em>或者我们有意识地决定略微超出预算,</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Feature promises versus reliability guarantees" data-type="sect3"><div class="sect3" id="ch04_feature_promises_vs_reliability_guarantees">
+<h3>功能承诺与可靠性保证</h3>
+
+<p>产品路线图<a data-primary="SLOs (service level objectives)" data-secondary="as reliability guarantees" data-secondary-sortas="reliability guarantees" data-type="indexterm" id="id1312"/><a data-primary="features, role of SLOs" data-type="indexterm" id="id1313"/><a data-primary="product features, role of SLOs" data-type="indexterm" id="id1314"/>通常建立在一系列有期限的特征承诺之上。 工程团队被迫遵守这些最后期限,有时是通过在测试、非功能要求或可观察性方面切入角来达到的。</p>
+
+<p>SLOs实际上是对用户和企业的可靠性保证。 错误预算提供了维持这些保证的机制。 产品和工程必须协作,以便:</p>
+
+<ul>
+<li>
+<p>产品认识到,推动过多的特性太快会消耗错误预算,并导致(必要的)减速,以维持商定的可靠性。</p>
+</li>
+<li>
+<p>工程公司承诺SLOs并使用错误预算在系统需要“呼吸器”时进行交流,以注重稳定性。</p>
+</li>
+</ul>
+
+<p>这种模式还促进了与可靠性的更动态的关系,因为健康的误差预算可以增强SREs包括实验和更危险的发射。 它有助于将行动小组的观念从纯粹的守门人转变为创新和速度的积极推动者。</p>
+
+<p>我们再次看到SLOs并且错误的预算激励导致强烈的以可靠性为重点的文化的行为。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shifting team focus and effort" data-type="sect3"><div class="sect3" id="ch04_shifting_team_focus_and_effort">
+<h3>转变团队的重点与投入</h3>
+
+<p>这个新模式<a data-primary="organizational culture" data-secondary="shifting focus and effort" data-type="indexterm" id="id1315"/>需要改变工程团队如何分配能力,这反过来又加强了以可靠性为重点的文化的协作和分担责任的原则。 主要考虑因素是:</p>
+<dl>
+<dt>为可靠性工作预留时间</dt>
+<dd>
+<p>当错误预算较低时,团队需要专门时间来分析问题、执行纠正措施、改善监测或偿还造成不稳定的技术债务。 这次必须避免新功能开发带来的持续压力。 一些组织通过准则,确保保留很大一部分工程能力(例如50%)。 然而,关键是这种保留的能力是灵活的。 当错误预算是健康的,这次对SRE团队积极主动地管理项目,加强自动化,并本着可靠心态为运输新功能作出贡献。 当错误预算紧张时,恢复稳定需要同样受保护的时间。 甚至将这种重点突出的能力明确百分比降低SRE最初的工作(如20%)可有助于建立这种关键的平衡。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>主动应对办法</dt>
+<dd>
+<p>目标是从纯粹的被动模式(只在发生灾难性事件时才能解决问题)转向更加积极主动的立场,即找出并解决潜在的问题。<em>在此之前</em>导致重大SLO违者. 预算出错趋势可以突出这些主要指标。</p>
+</dd>
+</dl>
+
+<p>要么开始棕地进化 要么开始绿地设计SLOs各组织在改进服务可靠性方面可以取得重大进展,同时尊重错误预算。</p>
+
+<p>这些战术方法不仅仅是要通过具体的SRE工具或技术;更重要的是,这些工具或技术是启动向数据驱动的操作的深刻文化转变,共同承担可靠性责任,以及不断学习的心态。 虽然旅程是渐进的,但对服务质量、业务效率以及最终对客户满意程度的累积影响可起转变作用。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Common SRE Implementation Challenges" data-type="sect1"><div class="sect1" id="ch04_common_sre_implementation_challenges">
+<h1>实施 SRE 的常见挑战</h1>
+
+<p>我们在此讨论一些共同之处SRE在奠定文化基础时如何应对这些挑战。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Getting Executive Support" data-type="sect2"><div class="sect2" id="ch04_getting_executive_support">
+<h2>获得高管支持</h2>
+
+<p>播下<a data-primary="executive support for SRE" data-type="indexterm" id="sre_execsupt"/><a data-primary="stakeholders" data-secondary="executive support" data-type="indexterm" id="stkhld_sre_exsup"/>可靠性文化的种子并加以培育，可能会被视为“软性工作”，也就是不重要或浪费时间，而不是获取 SRE 实际收益的重要手段。正如<a data-type="xref" href="ch02-zh.html#ch02">第 2 章</a>所述，必须说服领导层参与这段旅程，才能为成功实施 SRE 铺平道路。如果只是把现有团队改名为“SRE”，却不鼓励符合 SRE 实践和原则的行为，就可能让整个组织对 SRE 产生反感，并在未来排斥这一理念。</p>
+
+<p>根据 Google Cloud 的经验，如果没有高管自上而下推动文化建设，建立 SRE 实践会困难得多。领导层与团队希望建立的文化如果和 SRE 实践不一致，就会造成紧张关系，并可能使 SRE 偏离正轨。还必须授权 SRE 作出决定。错误和故障不可避免；如果领导者在事件发生时仍试图寻找可以责怪的人，进步就很可能受到抑制。毕竟，剥夺权力、不信任和指责都是可靠性文化的反模式。</p>
+
+<p>怎样说服高管投资并支持组织文化改进？如前文<a data-type="xref" href="#ch04_dora_s_findings_on_culture_and_performance">“DORA 关于文化与绩效的研究发现”</a>所述，DORA 提供了一套由研究支持、获得行业认可的工具，<a data-primary="DORA" data-secondary="getting stakeholder buy-in" data-type="indexterm" id="id1316"/>可以帮助你争取利益相关方对 SRE 的认同。具体而言，DORA 说明了健康文化如何：</p>
+
+<ul>
+<li>
+<p>改进绩效成果</p>
+</li>
+<li>
+<p>能够预测 软件交付和运维绩效</p>
+</li>
+<li>
+<p>提高工作满意度、减少疲劳和提高生产力</p>
+</li>
+</ul>
+
+<p>DORA研究还表明,健康的组织文化能帮助各小组更成功地落实与改进后的技术能力。<a data-primary="executive support for SRE" data-startref="sre_execsupt" data-type="indexterm" id="id1317"/><a data-primary="stakeholders" data-secondary="executive support" data-startref="stkhld_sre_exsup" data-type="indexterm" id="id1318"/>商业成果。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Managing Tooling" data-type="sect2"><div class="sect2" id="ch04_managing_tooling">
+<h2>管理工具</h2>
+
+<p>正如我们早些时候看到的<a data-primary="tool management" data-type="indexterm" id="tolman"/>这一章,动作和行为驱动文化。 工具化可以极大地影响站点可靠性工程的实践,更重要的是影响以可靠性为重点的文化. 工具可阻碍SRE以各种方式执行。 潜在的陷阱包括:</p>
+
+<ul>
+<li>
+<p>错误地使用工具(例如,监测错误的组件)</p>
+</li>
+<li>
+<p>使用错误的工具( 所以你无法收集正确的信号)</p>
+</li>
+<li>
+<p>无法获得资金(因此无法获得合适的工作工具)</p>
+</li>
+<li>
+<p>受到变革阻力的阻碍</p>
+</li>
+</ul>
+
+<p>每个组织都是不同的,但是SRE原则保持不变。 这并不一定是需要一套具体工具;而是需要用最好的工具来做你的情况。</p>
+
+<p>改变工具并不是一个简单的过程,但是根据你的操作模式和目标使用正确的工具是有好处的. 让我们来探讨你为何考虑转换工具,SRE.</p>
+
+<p>新的工具可大大提高效率和生产力,从而节省大量时间。 这就腾出了宝贵的时间,让一个获得授权的团队能够开展更注重工程师的重要工作。</p>
+
+<p>培养以工程为动力、以可靠性为重点的文化的一个关键方面是,能够尽早自动发现并预防问题,同时尽量减少人类的劳作。 选择正确的工具对于加强支持这种文化的行为至关重要。 例如,在CI/CD管道中采用静态分析工具有助于查明共同的错误和安全弱点,防止开发人员将缺陷引入系统。</p>
+
+<p class="pagebreak-before less_space">同样地,基于数据的思维方式需要随时掌握有关下列方面的信息:SLO在任何特定的时间点遵守。 这是另一个好的工具可以加强以可靠性为重点的文化的地方。 提供数据和结构的工具可以帮助团队作出更好的、由数据驱动的决定。SLOs和错误的预算。</p>
+
+<p>以可靠性为重点的文化优先考虑用户,因此重视快速恢复和客户满意度。 在发生事故时协助减轻影响的工具至关重要,因为这些工具旨在加速恢复(引导更幸福的客户)。 让系统更容易恢复的工具将可靠性置于工程师思想的前列。</p>
+
+<p>一旦找到正确的工具,在整个组织内使其使用标准化,可以促进各小组之间的更好的沟通和共同理解,这通常导致加强合作和知识共享。 这加强了作为本组织文化一部分的学习和不断改进。 使用一致的工具跨越SRE和产品开发小组对于避免分歧和使工具改进的好处最大化十分重要。 它还能够使进程更加可重复,明显地提高效率,并经常导致共同的做法和政策,支持快速增长和规模。</p>
+
+<p>工具的标准化也有助于降低成本和减少劳累。 在云层环境中, 缩放选项使得资源消耗在需求低时容易节能, 即使没有完全标准化的组织也仍然可以通过删除能力相重叠的工具来降低成本。 一旦工具和流程标准化或至少一致,共同问题就可以更快地或自动化地得到解决,从而能够更频繁地部署,并把重点转移到更重要的工程工作上。</p>
+
+<p>虽然正在改变的工具可能觉得这是一个巨大的任务,但将开关作为通往SRE收养有助于建立一个更成功、更能发挥作用的团队。 如果没有能力追踪你们系统发出的正确信号,进行快速推出和回滚,或实施适当的安全控制,就很难建立以可靠性为重点的文化基础并实现你们的可靠性目标。 过渡可能很艰难,但好处通常大于代价。 有了标准化的工具,就可以期望降低成本并增加速度. 你们的队伍将更加自足,感觉更加有力量,也许更自我调节. 这反过来又应该<a data-primary="tool management" data-startref="tolman" data-type="indexterm" id="id1319"/>导致更可实现的可靠性目标和更幸福的用户。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Managing Expectations" data-type="sect2"><div class="sect2" id="ch04_managing_expectations">
+<h2>管理期望</h2>
+
+<p>最后一个挑战SRE执行是管理对什么的期望SRE能够为一个组织带来成果,并需要付出多少努力。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Expecting perfection" data-type="sect3"><div class="sect3" id="ch04_expecting_perfection">
+<h3>期望完美无缺</h3>
+<blockquote>
+<p>100%是完全错误的可靠性目标。</p>
+<p data-type="attribution">本·特雷诺·斯洛斯(英语:Ben Treynor Sloss).</p>
+</blockquote>
+
+<p>SREs在一个健全的地方,<a data-primary="expectations management" data-type="indexterm" id="expctman"/>实践和文化认识到,在任何相当长的时间内,完美都不可能实现,至少是禁止成本的。 对于刚刚开始的组织SRE领导层可能相信团队正在争取完美 更糟糕的是失败 这导致团队无法避免过度承诺和不足。 更何况,重要的是要正面教育该组织:SRE在满足用户的可靠性需要的同时实现最大特性速度。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Setting arbitrary reliability targets" data-type="sect3"><div class="sect3" id="ch04_setting_arbitrary_reliability_targets">
+<h3>设定任意的可靠性目标</h3>
+
+<p>实现对用户的关注,这对一个SRE文化,客户反馈循环是绝对必要的. 仅仅因为一个产品经理认为应用应该提供99.99%的上线时间, 用户反馈还推动注重现实SLOs. 每个系统以4个9的可靠性运行(在30天的时间内不到5分钟的故障时间)将是非常困难和昂贵的. 您的用户决定您的可靠性需求, 没有其他人。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Thinking there is an “easy button”" data-type="sect3"><div class="sect3" id="ch04_thinking_there_is_an_easy_button">
+<h3>以为存在“一键解决”方案</h3>
+
+<p>一些组织假定SRE很简单。 事实上,这是一项非常复杂的工作。 通常,业务在采用后有所改善。SRE但后来发生了意外 人们纷纷奔走,而停产可能比它应该持续的时间还要长,而该组织则想出如何在这个新模式下运作。 然而,团队通过实践来学习,在每次接连发生的事件中,他们都不断改进,并随着时间推移而加速. 组织如何在早期作出反应SRE实践。 作为工程师练习键SRE行为(一种在职学习的形式),他们的信心得到增强,这反过来又有助于以可靠性为重点的文化“坚持”以使本组织能够从这种新方式的运作中充分获益。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Believing it’s one and done" data-type="sect3"><div class="sect3" id="ch04_believing_it_s_one_and_done">
+<h3>以为可以一劳永逸</h3>
+
+<p>一旦建立,一个高绩效SRE必须培养实践和文化。 你需要把学习和不断改进的肌肉灵活起来,这些肌肉是注重可靠性的文化的核心。 确定你正在审查SLOs每年至少使用一次反馈循环。SLOs取决于您的系统是如何使用的,随时间而变化。 良好的想法可以来自任何地方,从全新的雇员到具有几十年经验的老兵工程师,因此建立论坛倾听、收集想法并进行实验。 虽然这不是一项要求,但在不同领域轮换工程师以提供不同的观点和学习新技能的能力是一个好主意。 了解工具的局限性,从而了解系统中的任何盲点,并利用这种知识来产生变化。 如果可能,参加公开会议,以更广泛地了解该行业的走向。 如果想发挥功能和成功, 站点可靠性<a data-primary="expectations management" data-startref="expctman" data-type="indexterm" id="id1320"/>工程必须适应性强.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch04_conclusion">
+<h1>结论</h1>
+
+<p>组织文化是成功的基础SRE实践。 虽然SRE这是一种不断发展的学科,其执行在各组织之间自然不同,注重可靠性文化的基本原则保持不变。 您的组织是否已经有专注SRE团队,开始建造一个, 或者只是好奇SRE我们鼓励大家集中精力制定和培育这些文化原则。 不断改进并增强推动变革的能力,是注重可靠性的文化的核心,因此建立反馈循环和机制,让团队进行实验,确保你的文化继续成长和演变. 如果某件事不符合您目前的做法, 记住,学习驱动着信心,信心驱动着行为,随着时间的推移,行为重复,确保了你的文化会继续繁荣.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1243"><sup><a href="ch04-zh.html#id1243-marker">1</a></sup>John M. Gottman和Robert Levenson,“后来解体的海事过程预测:行为、生理学和健康,”<em>个人和社会心理学杂志</em>63, 第2期(1992年):221–33;Marcial Losada和Emily Heaphy, " 可能性和连通性在商业团队绩效中的作用:非线性动态模型, "<em>美国行为科学家</em>47, 第6期(2004年): 740–65; Christian V. Sabey, Cade Charlton, 和Shawn R. Charlton, " The<em>魔术</em>正面与负面相互作用比率:效益、应用、注意和建议,”<em>情感和行为障碍杂志</em>27, 第3期 (2018年): 154–64 ( ).</p><p data-type="footnote" id="id1254"><sup><a href="ch04-zh.html#id1254-marker">2</a></sup>关于组织文化的更多信息,见Nicole Forsgren、Jez Humble和Gene Kim,<em>加速:精益软件和DevOps的科学</em>(IT革命, 2018), 29–40 ( ).</p><p data-type="footnote" id="id1256"><sup><a href="ch04-zh.html#id1256-marker">3</a></sup>Dustin Smith 等人著,<a href="https://oreil.ly/kJau4"><em>加速状态DevOps 2021</em></a> (DORA, 2021), 19.</p><p data-type="footnote" id="id1257"><sup><a href="ch04-zh.html#id1257-marker">4</a></sup>同上,第20页。</p><p data-type="footnote" id="id1258"><sup><a href="ch04-zh.html#id1258-marker">5</a></sup>同上。</p><p data-type="footnote" id="id1261"><sup><a href="ch04-zh.html#id1261-marker">6</a></sup>同上,第21页。</p><p data-type="footnote" id="id1263"><sup><a href="ch04-zh.html#id1263-marker">7</a></sup>罗恩Westrum, <a href="https://oreil.ly/uvy14">“组织文化类型”</a>, <em>BMJ 质量和安全</em>13, 第2期(2004年): ii22–ii27.</p><p data-type="footnote" id="id1282"><sup><a href="ch04-zh.html#id1282-marker">8</a></sup>Jennifer Petoff 等人,(美国)<a href="https://sre.google/resources/practices-and-processes/training-site-reliability-engineers"><em>培训地点可靠性工程师:你的组织需要什么来创建学习方案</em></a>(奥赖利, 2020).</p></div></div></section></body></html>
