@@ -1,0 +1,971 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Learning from Incidents</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 11. Learning from Incidents" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch11">
+<h1><span class="label">Chapter 11. </span>Learning from Incidents</h1>
+
+
+<p class="byline">By James Brookbank, Michelle Brush, Sue Lueder, and Tim Falzone<br/>
+
+<span class="keep-together">with Garrett Holthaus</span></p>
+
+<p>When the goal is reliable systems operating at scale, outages are more
+than disruptions to be resolved effectively; they are invaluable
+learning opportunities. For over a decade, the practices and culture of
+Site Reliability Engineering at Google have supported continual and
+iterative learning from our observed and narrowly avoided system
+failures. This fundamental aspect of SRE emphasizes blameless
+postmortems, psychological safety, collaboration, and executive support
+in order to understand what happened and improve the overall system,
+obtaining maximum benefit from each outage.</p>
+
+<p>This chapter covers these enduring core tenets of incident analysis and
+delves into how our understanding and application of them have evolved over the
+past 10 years. You’ll discover how we’ve refined our practices,
+leveraged advanced tooling, and deepened our appreciation for the human
+element, allowing us to learn from incidents to build more
+resilient and robust services.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Principles and Practices" data-type="sect1"><div class="sect1" id="ch11_principles_and_practices">
+<h1>Principles and Practices</h1>
+
+<p>The original <a href="https://sre.google/sre-book">SRE Book</a> and
+<a href="https://sre.google/workbook/postmortem-culture">Chapter 10 of <em>The Site Reliability Workbook</em></a> covered
+key principles and practices for <a data-primary="incidents" data-secondary="blameless postmortems" data-type="indexterm" id="id1867"/><a data-primary="blameless postmortems" data-type="indexterm" id="id1868"/><a data-primary="learning" data-secondary="incident postmortems" data-type="indexterm" id="id1869"/>learning from incidents through the
+deeply ingrained blameless postmortem culture at Google. Ten years on,
+the need to learn from failure remains central to building and operating
+resilient systems. This section walks through those foundational
+lessons on incident analysis and postmortems, including practices for operationalizing them. Building upon that
+base, we will then explore the evolution and advancements in our practices,
+tools, and understanding over the past decade, sharing how our
+approach to turning incidents into invaluable lessons has matured.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Foundations" data-type="sect2"><div class="sect2" id="ch11_foundations">
+<h2>Foundations</h2>
+
+<p><a href="https://sre.google/sre-book/postmortem-culture">Chapter 15</a> in the first edition of this book covered the principled
+foundations of a
+blameless postmortem culture. The following foundational concepts are
+still relevant today:</p>
+<dl>
+<dt>Prioritizing learning from failure</dt>
+<dd>
+<p>The main goal of<a data-primary="incidents" data-secondary="postmortems" data-tertiary="principles" data-type="indexterm" id="id1870"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="principles" data-type="indexterm" id="id1871"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="principles" data-type="indexterm" id="id1872"/> postmortems is to maximize the value of an incident by
+capturing key lessons that feed forward to the organization. Any
+incident worthy of remediation provides an opportunity to learn,
+whether due to the impact, duration, monitoring failures, or cascading
+side effects. To this end, the most essential components of a postmortem
+are:</p>
+
+<ul>
+<li>
+<p><em>Key facts</em> about the incident, like the timeline, activities, and
+personnel involved</p>
+</li>
+<li>
+<p><em>Impact analysis</em> covering which customers, users, or systems
+experienced degradation due to the incident</p>
+</li>
+<li>
+<p><em>Contributing causes</em> (deviations, activities, or data) that
+led to the incident</p>
+</li>
+<li>
+<p><em>Lessons learned</em> that synthesize the events with subject matter
+experts’ 
+<span class="keep-together">analysis</span></p>
+</li>
+</ul>
+
+<p>Together, these capture the return on the unplanned investment made in
+the incident and inform action plans to improve resilience.</p>
+</dd>
+<dt>Emphasizing blamelessness</dt>
+<dd>
+<p>A core principle of Google’s postmortem culture is blamelessness. It is
+essential that incident reviews focus on understanding systemic causes
+rather than assigning blame to individuals. This approach is
+foundational to psychological safety and effective learning. For a
+detailed exploration of blameless culture, see <a data-type="xref" href="ch04.html#ch04">Chapter 4</a>.</p>
+</dd>
+<dt>Collaboration and teamwork</dt>
+<dd>
+<p>Complex systems are the product of large, interdependent teams. When they
+fail in unexpected ways, teams must work together to identify
+the many contributing factors and jointly design corrective actions. This collaboration throughout the postmortem process is a driver of future resilience, as
+the teamwork itself makes the team more resilient in future incidents.</p>
+</dd>
+<dt>Executive support, visibility, and incentives</dt>
+<dd>
+<p>Leaders set the tone and priorities for the organization. When leaders
+model blamelessness and support, and raise the visibility of postmortems and learning-from-incidents programs, individuals and teams prioritize
+these activities over business as usual, leading to increased system
+resilience. Creating structural incentives around writing postmortems
+and closing out the prioritized action items further highlights the
+impact and importance of this work.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Operationalizing the Principles" data-type="sect2"><div class="sect2" id="ch11_operationalizing_the_principles">
+<h2>Operationalizing the Principles</h2>
+
+<p><em>The Site Reliability Workbook</em> highlights specific
+activities and behaviors that operationalize a
+blameless postmortem <a data-primary="incidents" data-secondary="postmortems" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1873"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1874"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1875"/>and learning culture. These include:</p>
+<dl>
+<dt>Thorough incident study</dt>
+<dd>
+<p>Due to the complexity of the systems in question, it is crucial to
+capture logs, events, and activities associated with an
+incident. A detailed timeline enables us to identify the earliest
+possible opportunities for detecting and preventing future incidents. In
+addition, incidents often have multiple contributing causes. Identifying these—including the social structures and behaviors that shaped both the events leading up to the
+incident and the incident response itself—is essential for developing effective corrective actions.</p>
+</dd>
+<dt>Avoidance of judgment</dt>
+<dd>
+<p>Humans are ultimately driving these postmortem practices, and it’s
+critical to address any behaviors and communication styles that erode psychological safety. Keeping questions open-ended and devoid of judgment leads to
+better analysis. For example, avoid asking questions like “Why did you think it was
+okay to deploy this code?” that might cause people to put up their defenses. Instead, ask “What about the
+situation made deploying the code seem like the best course of action?”
+This gives the person the opportunity to talk about the characteristics
+of the system or organization that influenced their decision.</p>
+</dd>
+<dt>Incident mitigation and prevention</dt>
+<dd>
+<p>Quick or temporary fixes on top of unstable systems are sometimes
+necessary to buy time to build the right set of fixes and tools.
+However, left in place too long, they may breed even worse fragility,
+defects, and incidents. A robust action plan after an incident not only considers
+ways to prevent, detect, or mitigate future incidents of that
+variety, but it also looks at impact mitigation or deeper interventions
+that could build more resilience into the system.</p>
+</dd>
+<dt>Action item closeout</dt>
+<dd>
+<p>Reliably executing the mitigation and prevention plans
+not only ensures a more stable and resilient system but also instills
+confidence in the overall postmortem process.
+Owners should be clearly identified and incentivized to prioritize
+closing out action items. Ensuring teams have adequate capacity to
+implement these changes is also critical. This will ensure fixes are
+robust and do not breed further fragility through hastily applied
+patches.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Socialization</dt>
+<dd>
+<p>Making postmortems and subsequent action plans visible and easily
+accessible can increase their impact beyond the immediate teams
+involved. Google sends out curated weekly outage reports and a biannual
+company-wide newsletter called <em>Google’s Greatest Hits</em>. These reports include links to the postmortems and ensure
+the learning Google acquires through this work reaches well beyond the
+SRE team.</p>
+</dd>
+</dl>
+
+<p>These measurable and observable activities are what bring the
+foundational principles into focus and ensure they persist within
+engineering teams as they evolve and grow.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Evolving the Learning from Incident Practices" data-type="sect2"><div class="sect2" id="ch11_evolving_the_learning_from_incident_practices">
+<h2>Evolving the Learning from Incident Practices</h2>
+
+<p class="fix_tracking">The principles and <a data-primary="incidents" data-secondary="postmortems" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="incid_pstmrt_sts"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="pstmrt_inc_sts"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="sociotechnical system" data-type="indexterm" id="lrn_incpst_sts"/><a data-primary="sociotechnical systems" data-secondary="incidents" data-type="indexterm" id="sts_inc"/>practices of blameless postmortem culture and
+learning from incidents created the underpinnings for the continuous
+learning that happens across Google SRE today. Thanks to this stable
+foundation, teams are continuously adapting and evolving to
+improve coverage and efficiency. In this section, we detail some of
+these advancements. Many of them stem from the increasing
+awareness that improving reliability involves not only software and
+hardware but also the humans who are part of the system. We use the
+term <em>sociotechnical system</em> to include the human component when studying incidents. In practice, this translates to an emphasis on the following:</p>
+<dl>
+<dt>Deeper sociotechnical system analysis and learning</dt>
+<dd>
+<p>SRE at Google has evolved to incorporate the practical application of safety science and
+systems and control theory.<sup><a data-type="noteref" href="ch11.html#id1876" id="id1876-marker">1</a></sup> This systems thinking allows us to embrace the inherent complexity of our systems, from software servers
+and client applications to datacenter, networking, and capacity
+systems. It is supported by a range of complementary methods and practices, including:</p>
+
+<ul>
+<li>
+<p>System-Theoretic Process Analysis (STPA)<sup><a data-type="noteref" href="ch11.html#id1877" id="id1877-marker">2</a></sup></p>
+</li>
+<li>
+<p>Causal Analysis based on Systems Theory (CAST)<sup><a data-type="noteref" href="ch11.html#id1878" id="id1878-marker">3</a></sup></p>
+</li>
+<li>
+<p>Capturing the incident “story” and unlocking the power of
+storytelling as a vehicle for learning</p>
+</li>
+<li>
+<p>Capturing and analyzing detailed communication logs</p>
+</li>
+<li>
+<p>Facilitating open discussions with incident responders
+to understand their mental models and decision-making processes</p>
+</li>
+</ul>
+</dd>
+<dt>Independent and holistic assessments</dt>
+<dd>
+<p>Many teams <a data-primary="incident analysis" data-type="indexterm" id="id1879"/>appoint an
+independent postmortem lead (who did not participate in the incident) to
+conduct an impartial analysis. This individual is responsible for gathering
+information, facilitating the analysis, and ensuring the incident is
+reviewed in a holistic manner. This often involves conducting interviews
+with the people who participated in the decisions leading up to and
+during the outage. The objective of this comprehensive analysis is to
+identify the contributing factors for all aspects of the incident,
+including decisions made during hardware or software
+development, system operations, and incident detection and
+response. Rather than singling out decisions as mistakes, the lead
+takes a blameless approach of capturing what made them seem
+like the right ones at the time. To be successful, they must pay
+careful attention to avoiding both outcome bias (the tendency to judge
+a decision based on its outcomes rather than the soundness of the reasoning
+that went into it) and hindsight bias (the tendency to assume that
+things that were obvious only in retrospect could have been known
+earlier in time). The postmortem lead also looks at what went right and
+identifies ways to make sure the right things will happen consistently
+in the future.</p>
+</dd>
+<dt>Balance of blamelessness and accountability</dt>
+<dd>
+<p>During the <a data-primary="blamelessness" data-secondary="balancing with accountability" data-type="indexterm" id="id1880"/>postmortem
+process, Google works to make sure that the people closest to the
+decisions and circumstances leading up to the incident are part of the
+analysis and remediation. More importantly, the people involved in the
+decisions contributing to the incident are <em>enlisted</em> and <em>empowered</em> to
+identify opportunities for improvement and own delivering the solutions.
+This removes blame and accusations from the learning discussion and
+emphasizes the criticality of the human participants in making the
+systems more resilient. This approach, where people are asked to
+participate in the work to make the system better rather than being
+punished for their perceived mistakes, is sometimes referred to as
+<a href="https://oreil.ly/89N63"><em>restorative
+accountability</em></a>. It’s essential to real
+learning and improvement and helps create a culture of accountability without
+sacrificing psychological safety.<sup><a data-type="noteref" href="ch11.html#id1881" id="id1881-marker">4</a></sup></p>
+</dd>
+<dt>Customer centricity</dt>
+<dd>
+<p>Over the last 10 years, Google Cloud has emerged as a key Google business, making customer success a central consideration in learning from incidents. Postmortems capture thorough
+customer impact analyses, document customer communications during the
+incident, analyze whether customers had any workarounds, and identify opportunities
+to improve the overall customer experience. Remediation <a data-primary="postmortems" data-secondary="remediation plans" data-type="indexterm" id="id1882"/><a data-primary="remediation plans, postmortems" data-type="indexterm" id="id1883"/>plans address
+how to better measure, prevent, and reduce customer impacts and/or
+improve customer communication and confidence. This has instilled higher
+confidence in Google Cloud’s reliability and better business outcomes for our
+customers. This approach is illustrated in <a data-type="xref" href="#ch11_case_studies">“Case Study: Paris Data Center Outage”</a>.</p>
+</dd>
+<dt>Layered reviews</dt>
+<dd>
+<p>Organizational <a data-primary="organizational learning, layered postmortem reviews" data-type="indexterm" id="id1884"/>learning goes deeper when incident
+postmortem reviews occur at multiple levels of the organization. Google
+teams prioritize the following best practices:</p>
+
+<ul>
+<li>
+<p><em>Peer reviews</em>: Independent reviewers assess postmortems to ensure
+lessons learned and action plans will reduce future impacts, such as how
+to detect issues sooner, or mitigate impacts, or communicate more
+smoothly.</p>
+</li>
+<li>
+<p><em>Team reviews</em>: Teams review postmortems to address areas of
+complexity that could be reduced through broader refactoring or better
+design practices.</p>
+</li>
+<li>
+<p><em>Organizational socialization</em>: Sharing postmortems and best practices
+across the organization increases knowledge of adjacent systems’
+behaviors and improves reliability.</p>
+</li>
+<li>
+<p><em>Executive reviews</em>: Senior leaders continuously and blamelessly
+review reliability trends, high-profile incidents, and successful
+launches to monitor the sociotechnical system and model the behaviors
+that reinforce safety culture.</p>
+</li>
+</ul>
+</dd>
+<dt>Improved postmortem automation</dt>
+<dd>
+<p>Over the <a data-primary="automation" data-secondary="incident postmortems" data-type="indexterm" id="id1885"/>last 10 years, the systems SRE
+teams use to manage and study incidents have become more sophisticated,
+connected, and automated, while continuing to emphasize deeper, human-driven
+discussion and study of the patterns and antipatterns that emerge during
+incident response and mitigation. These advancements allow SREs to
+gather critical data on complex system behavior and combine it with insights into human behavior. In turn, this enables broader sociotechnical
+system analysis, leading to deeper insights and more durable mitigation
+plans. Google’s AI tools, such as Gemini Notebook, have also unlocked new
+capabilities and automation that enhance learning from incidents. For
+example, you can seed a Gemini Notebook instance with a large number of
+postmortem documents, and then ask the AI whether a proposed design
+change would have prevented some of<a data-primary="incidents" data-secondary="postmortems" data-startref="incid_pstmrt_sts" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="id1886"/><a data-primary="postmortems" data-secondary="incidents" data-startref="pstmrt_inc_sts" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="id1887"/><a data-primary="learning" data-secondary="incident postmortems" data-startref="lrn_incpst_sts" data-tertiary="sociotechnical system" data-type="indexterm" id="id1888"/><a data-primary="sociotechnical systems" data-secondary="incidents" data-startref="sts_inc" data-type="indexterm" id="id1889"/> the incidents.</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Theoretical Research in the Field of Safety Science" data-type="sect1"><div class="sect1" id="ch11_theoretical_research_in_the_field_of_safety_science">
+<h1>Theoretical Research in the Field of Safety Science</h1>
+
+<p>Google has a historically <a data-primary="learning" data-secondary="approach to learning from incidents" data-type="indexterm" id="lrn_applrninc"/><a data-primary="incidents" data-secondary="approach to learning from" data-type="indexterm" id="incid_applrn"/>strong resilience engineering approach.<sup><a data-type="noteref" href="ch11.html#id1890" id="id1890-marker">5</a></sup>
+However, this is largely based on experiential learning and practical
+discovery. When situations arise that need a different approach, we often look to outside researchers to articulate the underlying
+theory of why things are done a certain way, and what might be done
+differently for a particular team or context. It’s important to note
+that these ideas are not universally applied across Google SRE. Rather,
+teams use the theories that best address each situation based on the
+specific circumstances and needs. This reflects the thinking that “All
+models are wrong, but some are useful.”<sup><a data-type="noteref" href="ch11.html#id1891" id="id1891-marker">6</a></sup></p>
+
+<p>For simple systems, learning from incidents involves breaking apart and
+understanding individual components and their failure states. But
+at a certain scale, our systems move beyond these simple linear chains
+to something more complex. New, emergent, often unpredictable
+system-wide behaviors arise because of the interactions between
+components, and these interactions can cause outages even when all
+component parts are working exactly as intended. The concept of a
+<em>complex adaptive system</em> (CAS) helps <a data-primary="complex adaptive system" data-see="CAS" data-type="indexterm" id="id1892"/><a data-primary="CAS (complex adaptive system)" data-type="indexterm" id="id1893"/>us reason about these interactions.
+A CAS is composed of many interconnected and interacting components and
+agents (including software, hardware, and human elements), adapting
+their behavior in response to each other and the environment. To deal with complex and emergent behaviors,<a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_applrninc" data-type="indexterm" id="id1894"/><a data-primary="sociotechnical systems" data-type="indexterm" id="id1895"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="incid_applrn" data-type="indexterm" id="id1896"/> we need to adopt a systems thinking perspective.<sup><a data-type="noteref" href="ch11.html#id1897" id="id1897-marker">7</a></sup></p>
+
+<p>The following sections give a sampling of relevant scientific studies,
+models, and frameworks that SRE teams use at Google. As mentioned, teams
+decide which concepts to apply based on their specific contexts and
+needs.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Swiss Cheese Model" data-type="sect2"><div class="sect2" id="ch11_swiss_cheese_model">
+<h2>The Swiss Cheese Model</h2>
+
+<p>One of the oldest concepts<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Swiss cheese model" data-type="indexterm" id="id1898"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Swiss cheese model" data-type="indexterm" id="id1899"/> used in <a data-primary="CAS (complex adaptive system)" data-secondary="Swiss cheese model" data-type="indexterm" id="id1900"/>CAS incident analysis is the Swiss cheese
+model, formulated by<a data-primary="Reason, James T." data-type="indexterm" id="id1901"/> James T. Reason, which explains how combinations of active and latent
+failures can interact to produce the emergent conditions that lead to an outage.<sup><a data-type="noteref" href="ch11.html#id1902" id="id1902-marker">8</a></sup>
+This is also popular with some of Google’s security teams as a<a data-primary="defense in depth" data-secondary="Swiss cheese model" data-type="indexterm" id="id1903"/> defense-in-depth concept. Importantly, the individual “cheese slices” are a mixture
+of technical and human components. Using this model for incident
+detection also provides near-miss coverage, for example where only one
+slice is left, or the impact was low for an unrelated reason. In
+postmortems we don’t just look for what goes right or wrong, but also
+where we got lucky. Just like in fields such as aviation, near-miss
+analysis and proactive improvements help us prioritize actions to take before similar incidents occur.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk Management in a Dynamic Society" data-type="sect2"><div class="sect2" id="ch11_risk_management_in_a_dynamic_society">
+<h2>Risk Management in a Dynamic Society</h2>
+
+<p>In <a data-primary="Rasmussen, Jens" data-type="indexterm" id="id1904"/>Jens Rasmussen’s risk management model, a continuous<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="risk management" data-type="indexterm" id="id1905"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="risk management" data-type="indexterm" id="id1906"/> flow of economic
+and reliability pressures combine to form a steady flow state instead of
+a stable one.<sup><a data-type="noteref" href="ch11.html#id1907" id="id1907-marker">9</a></sup></p>
+
+<figure><div class="figure" id="ch11_fig01">
+<img alt="Diagram illustrating Jens Rasmussen's risk management model, showing how pressures toward efficiency and least effort push performance toward the boundary of acceptable performance, creating 'Brownian movements.'" src="assets/sre2_1101.png"/>
+<h6><span class="label">Figure 11-1. </span>In the presence of strong gradients, behavior will very likely migrate toward the boundary of acceptable performance</h6>
+</div></figure>
+
+<p>Under this model, incidents occur at the boundary of acceptable
+performance (plus or minus the error margin). By the time incidents
+occur, we are at the “firefighting” stage. “Fire prevention” is
+continuously needed to push against the boundary. To improve safety
+culture, SRE uses postmortems alongside
+proactive tools such as STPA (discussed in <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>), which
+can anticipate system failures before they occur.<sup><a data-type="noteref" href="ch11.html#id1908" id="id1908-marker">10</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A Tale of Two Safeties" data-type="sect2"><div class="sect2" id="ch11_a_tale_of_two_safeties">
+<h2>A Tale of Two Safeties</h2>
+
+<p>Another key way of looking at<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="lrn_app_safiii"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="inc_app_safiii"/><a data-primary="Safety I system" data-type="indexterm" id="sfti"/><a data-primary="Safety II system" data-type="indexterm" id="safii"/> sociotechnical systems is to better
+differentiate between how systems operate in theory versus practice. <a data-primary="Hollnagel, Erik" data-type="indexterm" id="id1909"/>Erik
+Hollnagel
+<a href="https://oreil.ly/vcENY">proposes</a>
+that people can imagine many theoretical ways to prevent things from
+going wrong. In practice, however, they still go wrong, despite all of
+the planned defenses. It’s then that individuals have to provide the
+adaptability and flexibility to keep the system running. This contrast
+is often talked about externally as part of a <em>Safety II</em> (versus Safety I)
+approach. Safety I focuses on trying to prevent bad things from
+happening. Safety II involves looking at the normal functioning of our
+systems as a combination of technical components and ever-changing human
+interventions. It shifts the mindset from examining why things went
+wrong to ensuring that the right things are more likely to happen.<sup><a data-type="noteref" href="ch11.html#id1910" id="id1910-marker">11</a></sup></p>
+
+<p>Local human expertise is essential to this process. As such, a good
+default at Google worth highlighting is that our teams both build and run the
+services they manage, accumulating practical local expertise in their
+systems. Our systems perform reliably because people are flexible and
+continuously adapt to change, not because they have been
+perfectly designed to prevent failures. We’ve talked about proactive
+approaches such as STPA, but other obvious areas, such as Disaster
+Resilience Testing (DiRT), contribute to Google getting better at
+ensuring systems work effectively rather than responding reactively to
+incidents. Another example of this proactive approach is our investment
+in building generic mitigations, which<a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_safiii" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="id1911"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_safiii" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="id1912"/><a data-primary="Safety I system" data-startref="sfti" data-type="indexterm" id="id1913"/><a data-primary="Safety II system" data-startref="safii" data-type="indexterm" id="id1914"/> address common failure modes.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="How Complex Systems Fail" data-type="sect2"><div class="sect2" id="ch11_how_complex_systems_fail">
+<h2>How Complex Systems Fail</h2>
+
+<p>Richard Cook <a data-primary="Cook, Richard" data-type="indexterm" id="id1915"/><a data-primary="CAS (complex adaptive system)" data-secondary="failure considerations" data-type="indexterm" id="cas_fcons"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="failure in complex systems" data-type="indexterm" id="lrn_app_fics"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="failure in complex systems" data-type="indexterm" id="inc_app_fics"/>has argued that a CAS fails differently than a simple
+system.<sup><a data-type="noteref" href="ch11.html#id1916" id="id1916-marker">12</a></sup> It’s worth highlighting a few key observations from his work that are especially relevant to SREs. Notably:</p>
+<dl>
+<dt>Complex systems run in degraded modes and have multiple resilience layers.</dt>
+<dd>
+<p>Because of Google’s size and scale, it’s safe to assume that at any given moment, some components of our systems are operating in
+degraded states. For example,
+<a href="https://oreil.ly/MRGB-">Colossus</a>
+hosts exabytes of disks. At any moment, some have failed and are waiting
+for replacement, and others are on the verge of failure. As this illustrates, complex system failure modes are not binary but rather exist on a continuum. Since degradation is the norm,
+resilience mechanisms work in tandem to prevent overall system failure.</p>
+</dd>
+<dt>Continuous change increases system complexity.</dt>
+<dd>
+<p>Large-scale systems are inherently hazardous because changes to individual components can combine to form unexpected emergent
+properties.<sup><a data-type="noteref" href="ch11.html#id1917" id="id1917-marker">13</a></sup> These systems undergo continuous changes while
+under continuous usage, making it impossible to isolate system
+components in either space or time. For example, at any point in
+time, Google’s systems are continuously reconciling
+the production environment with the current state of the
+monorepo.<sup><a data-type="noteref" href="ch11.html#id1918" id="id1918-marker">14</a></sup></p>
+</dd>
+<dt>Reliability and other quality attributes (e.g., performance, security) are a high priority.</dt>
+<dd>
+<p>Because of the high impact of system failures and the high expectations
+for system quality, our systems have multiple defenses against failure
+and many automated interventions. As a result, multiple system
+component failures are needed to cause a catastrophic failure. However,
+because there is no stable system state, these failures are always
+feasible. This makes investing in quality a high priority, but one where
+it’s inherently not possible to predict the return on investment. As
+such, investing in these efforts is <a data-primary="CAS (complex adaptive system)" data-secondary="failure considerations" data-startref="cas_fcons" data-type="indexterm" id="id1919"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_fics" data-tertiary="failure in complex systems" data-type="indexterm" id="id1920"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_fics" data-tertiary="failure in complex systems" data-type="indexterm" id="id1921"/>more about managing risks than
+achieving specific outcomes.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Four Concepts for Resilience" data-type="sect2"><div class="sect2" id="ch11_four_concepts_for_resilience">
+<h2>Four Concepts for Resilience</h2>
+
+<p>One of the underpinnings <a data-primary="CAS (complex adaptive system)" data-secondary="resilience" data-type="indexterm" id="cas_resil"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="resilience" data-type="indexterm" id="lrn_app_resil"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="resilience" data-type="indexterm" id="inc_app_resil"/>of our approach to CAS systems management is
+the Safety II view of how to think differently about complex systems. One
+way of describing this is David Woods’s concept of “graceful extensibility” or
+“sustained adaptability.”<sup><a data-type="noteref" href="ch11.html#id1922" id="id1922-marker">15</a></sup> This perspective emphasizes that we should not just focus
+on making systems more redundant or robust.</p>
+
+<p>As we stated previously, many of our systems are constantly in a degraded state, so
+we explicitly design for the graceful degradation of these systems. Done
+well, this means systems can stretch to cover unexpected failure
+modes, which aligns with the graceful extensibility concept. However,
+this can also result in rapid decompensation or cascading system
+failures. Multiple individual component failures can be tolerated
+for a while without triggering an outage, then
+suddenly overwhelm the system. Network outages often follow this
+pattern: individual Points of Presence (PoPs) can go offline, and
+traffic will be rerouted to maintain service; however, once a critical number is reached, a single additional failure can cause the global network to suddenly go offline.</p>
+
+<p>Since many of our platforms need to support a multitude of both known
+existing and unknown future use cases, they need to have a level of
+sustained adaptability. Our core compute platform, Borg, has continuously
+evolved over 20+ years, its sociotechnical structure adapting to new
+challenges well beyond its original design. We didn’t set out with this
+principle in mind, but the approach we took closely aligns with the
+concept of sustained adaptability: assumptions and contexts of use are
+both unknown and unknowable, people adapt to shortfalls as they occur,
+and the system is constantly adjusting<a data-primary="CAS (complex adaptive system)" data-secondary="resilience" data-startref="cas_resil" data-type="indexterm" id="id1923"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_resil" data-tertiary="resilience" data-type="indexterm" id="id1924"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_resil" data-tertiary="resilience" data-type="indexterm" id="id1925"/> to other connected systems across
+the wider ecosystem.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engineering a Safer World" data-type="sect2"><div class="sect2" id="ch11_engineering_a_safer_world">
+<h2>Engineering a Safer World</h2>
+
+<p>For complex sociotechnical systems, traditional accident causality
+models based on a linear chain of events can be inadequate. An
+alternative approach is to use systems theory, as in <a data-primary="Leveson, Nancy" data-type="indexterm" id="id1926"/>Nancy Leveson’s<a data-primary="Systems-Theoretic Accident Model and Processes (STAMP) causality model" data-type="indexterm" id="id1927"/><a data-primary="STAMP (Systems-Theoretic Accident Model and Processes) causality model" data-type="indexterm" id="id1928"/>
+Systems-Theoretic Accident Model and Processes (STAMP) causality model.<sup><a data-type="noteref" href="ch11.html#id1929" id="id1929-marker">16</a></sup> STAMP provides techniques for deeper system analysis, such as CAST,<sup><a data-type="noteref" href="ch11.html#id1930" id="id1930-marker">17</a></sup> for retrospective
+incident analysis and STPA<sup><a data-type="noteref" href="ch11.html#id1931" id="id1931-marker">18</a></sup>
+for proactive hazard analysis. We discuss STAMP, STPA, and CAST in more
+detail, with real-life examples, in <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Paris Data Center Outage" data-type="sect1"><div class="sect1" id="ch11_case_studies">
+<h1>Case Study: Paris Data Center Outage</h1>
+
+<p>Earlier in this chapter, we <a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Paris Data Center outage" data-type="indexterm" id="lrn_app_pdco"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Paris Data Center outage" data-type="indexterm" id="inc_app_pdco"/><a data-primary="Paris Data Center outage case study" data-type="indexterm" id="pdco"/><a data-primary="outages" data-secondary="Paris Data Center case study" data-type="indexterm" id="out_pdco"/>outlined the best practices Google promotes across SRE. The case study described here provides a real-world example of these practices in action,
+to illustrate the impacts across our own sociotechnical systems.</p>
+
+<p>In April 2023, Google experienced a large, day-long outage impacting
+most of Google Cloud, stemming from a water leak in a cooling pipe in
+the Paris datacenter,<sup><a data-type="noteref" href="ch11.html#id1932" id="id1932-marker">19</a></sup> which supports the Google Cloud region europe-west9. This
+incident provided a significant opportunity for learning, not just about
+addressing and preventing water leaks, but also about how each Cloud
+product could improve its overall response to datacenter events. In
+this case study, we’ll look at how we approached learning about the
+incident from a customer communication and incident response
+perspective, with a focus on the impact and response for the Google
+Compute Engine product.</p>
+
+<p>The postmortem for the incident was started immediately following
+mitigation. To ensure that the incident analysis was blameless,
+fast, and thorough, we assigned the postmortem author lead role to a
+senior technical leader who had not been part of the response but who
+knew the relevant organizations and systems well. This choice also gave
+the responders a much-needed break. The lead was given access to all
+chat rooms, working documents, monitoring dashboards, and incident notes
+so they could do a comprehensive analysis. They also
+interviewed responders, customer support engineers, and technical
+leaders.</p>
+
+<p>To better understand the customer and responder experiences, the lead
+first compiled the timeline of events, capturing when we first detected
+the water leak, when we brought in various experts, when different
+mitigations were applied, and when we communicated with external
+customers. This timeline was used to facilitate discussions with
+responders and customer support engineers around what went well, what
+went wrong, and where we got lucky.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Timeline" data-type="sect2"><div class="sect2" id="ch11_timeline">
+<h2>Timeline</h2>
+
+<p>Times are in US Pacific Time (PT).</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Tuesday, 25 April 2023" data-type="sect3"><div class="sect3" id="ch11_tuesday_25_april_2023">
+<h3>Tuesday, 25 April 2023</h3>
+
+<p>16:46 — Water leak began above europe-west9-a zone.</p>
+
+<p>17:25 — First automated alert fired, signaling that some machines in the
+affected area were going offline. Engineers acknowledged the alert within
+minutes and began investigating.</p>
+
+<p>17:31 — Datacenter operations detected and alerted engineers about the
+water leak in the room, which would critically impact one cluster
+supporting our europe-west9-a zone. (A “cluster” represents a collection
+of servers along with their supporting equipment for networking, power,
+and cooling.)</p>
+
+<p>18:30 — Google gradually brought down Google Compute Engine (GCE)
+virtual machine instances from this cluster to prevent the water from
+interrupting customer workloads in an uncontrolled manner.</p>
+
+<p>18:37 — As a preventative measure, engineers preemptively powered down
+all networking, storage, and other equipment supporting the cluster.</p>
+
+<p>19:00 — Google posted a vague external incident summary to the Cloud
+status dashboard: “We are investigating an issue affecting multiple
+Cloud services in the europe-west9-a zone.”</p>
+
+<p>19:14 — Smoke was detected in the building with the water leakage.</p>
+
+<p>19:17 — Google responders paged in a Cloud product communications lead—someone whose role is product-specific customer communication during
+outages—to make sure future communication with customers would be more
+detailed and timely.</p>
+
+<p>19:42 — Google responders completed a remote power down of the impacted
+cluster.</p>
+
+<p>19:45 — The local fire department was called.</p>
+
+<p>20:00 — The fire department arrived on-site and took over incident command
+of the building fire.</p>
+
+<p>20:08 — Google responders were informed of the battery room fire.
+Responders realized that it was likely that the fire department would
+shut down building power (including backup power) to safely extinguish the
+fire.</p>
+
+<p>20:16 — Google responders assessed that regional impact was likely if
+power to the building was lost. The incident commander decided to move
+some critical services out of the building. Responders begin preparing
+and executing the necessary steps.</p>
+
+<p>22:45 — The building’s fire suppression system water supply ran out. The fire
+department ordered building power shut down. At this time, SREs learned
+they were out of time to move all critical services out of the building.
+They discussed alternative mitigations with additional experts.</p>
+
+<p>23:04 — Emergency shutdown commenced for one of the three buildings in
+europe-west9 on order of the fire marshal. At this time, our regional
+Spanner lost quorum. (Spanner<sup><a data-type="noteref" href="ch11.html#id1933" id="id1933-marker">20</a></sup> is Google’s globally distributed database.
+Compute Engine uses Spanner to store data for each cloud region.) This
+meant services could no longer read or write data in the region.</p>
+
+<p>Due to a software design flaw, this then triggered a global outage for
+some API methods that fan out and perform multiregional queries.</p>
+
+<p>23:37 — Responders attempted a known generic mitigation to address the
+issue with the API methods. The attempt did not succeed.</p>
+
+<p>23:46 — Responders brainstormed a list of potential mitigations. They
+assessed that only three could be safely implemented and tested in a matter
+of hours. The incident commander asked three responders to split off and
+work on implementing each of these ideas in parallel.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Wednesday, 26 April 2023" data-type="sect3"><div class="sect3" id="ch11_wednesday_26_april_2023">
+<h3>Wednesday, 26 April 2023</h3>
+
+<p>00:52 — The battery room fire suppression system was restored.</p>
+
+<p>03:10 — The first of the newly implemented mitigations was ready.
+Responders deployed it. Work on the other two ideas continued as backup
+options in case the first did not succeed.</p>
+
+<p>03:23 — The second of the newly implemented mitigations was now ready.
+Responders prepared to deploy it in case the previous mitigation did not
+work.</p>
+
+<p>03:38 — The deployed mitigation was successful, resolving the global
+issue with unavailable API methods. This meant the outage’s impact was confined to a single region.</p>
+
+<p>03:46 — Google posted a detailed description of the incident to its
+Cloud status dashboard.</p>
+
+<p>04:11 — The battery room fire was reported to be extinguished.</p>
+
+<p>04:17 — Datacenter operations started incrementally powering back on
+the clusters in the building that were not impacted by the fire or water
+leak. This allowed service teams to start their service recovery
+efforts.</p>
+
+<p>04:40 — First cluster was fully powered on.</p>
+
+<p>07:24 — Second cluster was fully powered on.</p>
+
+<p>At this point, Compute Engine waited for all of its dependencies to
+come online.</p>
+
+<p>12:47 — Regional Spanner quorum was restored and internal Spanner
+operations resumed. Services were able to read and write to regional
+data stores.</p>
+
+<p>13:00 — The fire department confirmed the battery temperatures were
+stabilized, and the majority of the fire crew departed.</p>
+
+<p>14:42 — The last Compute Engine dependency came back online. Compute
+Engine responders initiated its playbook to power on all of its
+services.</p>
+
+<p>19:00 — Google Compute Engine control plane services were restored
+across all zones in the region. For the clusters in europe-west9-a that
+were not affected by the water leak, everything was back up and running.
+The cluster in europe-west9-a that was affected by the water leak had
+smoke damage, so it could not be powered on. The severity of the
+smoke damage led to the whole cluster being decommissioned. Before
+decommissioning the cluster, we cleaned it and fully recovered all zonal
+data.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Interviews" data-type="sect2"><div class="sect2" id="ch11_interviews">
+<h2>Interviews</h2>
+
+<p>To fully capture the experience, the postmortem lead reached out to
+various people involved in the incident to get their perspectives. This
+included customer representatives, as well as the engineers who had joined
+the incident response.</p>
+
+<p>From the customer’s perspective, the two most frustrating aspects of the
+outage were the lengthy recovery time after power restoration (nearly 12
+hours, from 07:24 to 19:00) and the slow and unhelpful customer communication.
+While customers appreciated that Google was transparent about the
+situation, they felt that communication could have been faster, more
+proactive, and more accurate. The product communications lead also
+remarked that they felt balancing accuracy, precision, and speed was a
+challenge. At this stage in the outage, information was limited and the
+responders’ understanding was constantly evolving; it was hard to keep track of
+what we knew for certain and what were only hypotheses. As an example,
+during the outage, the product communications lead used the phrase
+“water intrusion.” This later became a distraction and a source of
+amusement for various news sources and social media users.</p>
+
+<p>Responders felt they had limited mitigation options, and the ones they
+had were too slow. This necessitated developing solutions during the
+high-stakes incident, increasing stress. Responders noted that the size
+and complexity of the response stretched the limits of the current
+incident management structures. The overall incident commander was
+responsible for the whole of the outage, from the datacenter operations
+to the multitude of Google Cloud products that were impacted. They lacked the
+context to make per-product decisions and often didn’t know who the correct
+product decision makers were.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Analysis" data-type="sect2"><div class="sect2" id="ch11_analysis">
+<h2>Analysis</h2>
+
+<p>The postmortem lead identified three key areas for improvement specific
+to Compute Engine:<sup><a data-type="noteref" href="ch11.html#id1934" id="id1934-marker">21</a></sup> the response
+structures, customer communication, and generic mitigations.</p>
+
+<p>When structuring the response, the biggest gap was that Google systems
+are so complex that even single products have multiple on-call
+rotations. During an outage, many of the rotations are gradually paged
+into the response as they are needed. For example, Compute Engine has
+on-call rotations for its control plane, data plane, and hardware, as
+they each require different expertise. In this outage, due to the
+complexity, all three responders were needed, but it was unclear who
+should make decisions for the product as a whole. A role was missing.</p>
+
+<p>For customer communication, the time it took to gather specifics,
+fact-check the information, and review the language delayed us getting
+information to our customers. Additionally, reviews did not catch
+obvious errors. For example, our public-facing status dashboard at one
+point said us-east1 was impacted when it was not. On top of that, when
+we tried to proactively reach out to customers to help them execute
+workarounds (like failing over to another region or restoring their
+workloads in a new zone), we realized we had no existing processes for
+large-scale customer outreach and had to invent them in the middle of
+the outage.</p>
+
+<p>Finally, in terms of generic mitigations, several existing options
+turned out to be ill-suited for this particular outage. Additionally,
+the generic mitigations we did have were slower than we would have
+liked, taking several hours when we needed them to be effective in minutes.
+The responders were scrappy and came up with many ideas on the spot.
+However, developing and testing mitigations during such an outage is slow.</p>
+
+<p>All that being said, learning from incidents is about more than identifying what went wrong during an
+outage; it’s also crucial to identify <em>what went right</em> so
+we can make sure those things continue to happen. For
+example, paging in the product communications lead to assist with
+communication really helped our customer communications move from being
+vague, slow, and mostly unhelpful to specific and more timely.
+Additionally, at several points during the outage, experienced incident
+responders stepped up and made hard decisions when needed.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Action Items" data-type="sect2"><div class="sect2" id="ch11_action_items">
+<h2>Action Items</h2>
+
+<p>The postmortem lead worked with the different teams to craft actions to
+address the challenges. For example, in large-scale outages, it makes
+sense to designate product-level incident commanders to manage the
+overall response for each product, even if there is a central incident
+commander for the incident as a whole. Immediately following the outage,
+Compute Engine designated a product-level incident response on-call
+rotation of the most experienced SREs that would be brought in to manage
+larger outages.</p>
+
+<p>Additionally, several actions were taken to improve our generic
+mitigations. We reduced the time it takes to bring down and then restore
+a cluster during a significant power event. One of the generic
+mitigations that was implemented during the outage (hiding the region)
+was implemented as a safe and repeatable tool. Finally, the teams
+analyzed the generic mitigations that didn’t work and improved them so that they would
+work for situations like the Paris event and more. We also recognized
+that for these mitigations to be effective, we needed to regularly test
+scenarios where they might be needed. As a result, we expanded our
+collection of disaster recovery exercises to include more scenarios that
+would involve these mitigations.</p>
+
+<p>Since bringing in a product communications lead was something we felt
+went right, we decided to make it something that we always do. We
+automated paging in the product communications lead for all significant
+outages to make sure we have someone handling public-facing
+communication as soon as possible. We also created a playbook and
+template communication to make sure we can move faster and be less
+vague. Finally, we formalized the customer outreach process to make sure
+we can execute it again if needed.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Outcome" data-type="sect2"><div class="sect2" id="ch11_outcome">
+<h2>Outcome</h2>
+
+<p>At Google’s scale, cluster-level failures happen
+more regularly than we’d like. All the work we did to learn from the
+Paris outage has paid dividends, including:</p>
+
+<ul>
+<li>
+<p>Shrinking the blast radius for these types of outages</p>
+</li>
+<li>
+<p>Reducing the time to bring down and restore a cluster</p>
+</li>
+<li>
+<p>Improving the speed and quality of communication</p>
+</li>
+</ul>
+
+<p>In March 2025, a cluster in us-east5-c lost power. This time, we
+avoided global or even regional impact. Also, it took the teams a total of 6 hours and 10 minutes to
+respond, triage, investigate, and resolve the outage—a huge improvement over the Paris outage, which took over 11 hours. Responders reported feeling a lot less stress and a lot more
+agency. Google has a culture of continuous improvement, so as we
+acknowledge we want to do even better, we still celebrate the
+incremental wins.</p>
+
+<p>Most importantly, learning from the Paris outage taught us that
+people being empowered to do the right thing at the right time (and it
+working) is key to reliability. Rather than solely focusing on failure
+prevention, we considered solutions that would reduce impact and create
+resilience by giving agency to <a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_pdco" data-tertiary="Paris Data Center outage" data-type="indexterm" id="id1935"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_pdco" data-tertiary="Paris Data Center outage" data-type="indexterm" id="id1936"/><a data-primary="Paris Data Center outage case study" data-startref="pdco" data-type="indexterm" id="id1937"/><a data-primary="outages" data-secondary="Paris Data Center case study" data-startref="out_pdco" data-type="indexterm" id="id1938"/>those involved.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch11_conclusion">
+<h1>Conclusion</h1>
+
+<p>Google continuously evolves its blameless postmortem practices,
+incorporating insights from internal experiences and leveraging
+industry findings. Over the years, we have expanded our approach to
+include more analysis of the communication and response. We also
+strongly encourage folks to examine the broader sociotechnical system
+and understand what about that system made decisions seem like the right
+ones at the time. Through this holistic approach, we have been able to
+identify surprising opportunities for improvement in our software
+development practices, communication processes, and response structures.
+To ensure that we’re continuously improving how we learn from incidents,
+we encourage teams to experiment with different approaches in areas like
+safety science, complexity theory, and resilience engineering. Because
+leadership is supportive and invested in this practice, teams are
+afforded the time to do the analysis and to implement the proposed
+remediations.</p>
+
+<p>Regardless of the specific approach adopted by teams, the focus on
+actually <em>learning</em> from incidents (rather than simply fixing what went
+wrong) is the most critical ingredient that contributes to a healthy SRE
+culture.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1876"><sup><a href="ch11.html#id1876-marker">1</a></sup> Tim Falzone and Ben Treynor Sloss, <a href="https://oreil.ly/OLrkl">“The Evolution of SRE at Google: Using STAMP to Improve Resilience in Google Production Systems”</a>, in <em>;login:</em>, December 2024.</p><p data-type="footnote" id="id1877"><sup><a href="ch11.html#id1877-marker">2</a></sup> Nancy G. Leveson and John P. Thomas, <a href="https://oreil.ly/AcM1f"><em>STPA Handbook</em></a>, 2018.</p><p data-type="footnote" id="id1878"><sup><a href="ch11.html#id1878-marker">3</a></sup> Nancy G. Leveson, <a href="https://oreil.ly/PSOfw"><em>CAST Handbook: How to Learn More from Incidents and Accidents</em></a>, 2019.</p><p data-type="footnote" id="id1881"><sup><a href="ch11.html#id1881-marker">4</a></sup> This concept of “restorative accountability” is very similar to ideas Sidney Dekker covered in his book <em>Just Culture: Balancing Safety and Accountability</em> (CRC Press, 2007).</p><p data-type="footnote" id="id1890"><sup><a href="ch11.html#id1890-marker">5</a></sup> Erik Hollnagel, David D. Woods, and Nancy Leveson (eds.), <em>Resilience Engineering: Concepts and Precepts</em> (CRC Press, 2007).</p><p data-type="footnote" id="id1891"><sup><a href="ch11.html#id1891-marker">6</a></sup> From George E. P. Box, <a href="https://oreil.ly/4Om3h">“Science and Statistics”</a>, <em>Journal of the American Statistical Association</em> 71, no. 356 (1976): 791–99.</p><p data-type="footnote" id="id1897"><sup><a href="ch11.html#id1897-marker">7</a></sup> For more on systems thinking, see <em>Thinking in Systems: A Primer</em>, by Donella Meadows (Chelsea Green Publishing, 2008).</p><p data-type="footnote" id="id1902"><sup><a href="ch11.html#id1902-marker">8</a></sup> J. Reason, <a href="https://oreil.ly/rAF01">“The Contribution of Latent Human Failures to the Breakdown of Complex Systems”</a>, <em>Philosophical Transactions of the Royal Society of London</em>, Series B, Biological Sciences, Vol. 327, No. 1241, Human Factors in Hazardous Situations (Apr. 12, 1990), pp. 475–484.</p><p data-type="footnote" id="id1907"><sup><a href="ch11.html#id1907-marker">9</a></sup> Jens Rasmussen, <a href="https://oreil.ly/c7osQ">“Risk Management in a Dynamic Society: A Modelling Problem”</a>, <em>Safety Science</em>, 27, no. 2–3 (1997): 183–213.</p><p data-type="footnote" id="id1908"><sup><a href="ch11.html#id1908-marker">10</a></sup> Nancy G. Leveson and John P. Thomas, <a href="https://oreil.ly/AcM1f"><em>STPA Handbook</em></a>, 2018.</p><p data-type="footnote" id="id1910"><sup><a href="ch11.html#id1910-marker">11</a></sup> Erik Hollnagel et al., <a href="https://oreil.ly/HznNU">“From Safety-I to Safety-II: A White Paper”</a>, 2015.</p><p data-type="footnote" id="id1916"><sup><a href="ch11.html#id1916-marker">12</a></sup> Richard I. Cook, <a href="https://oreil.ly/YPCOI">“How Complex Systems Fail”</a>, University of Chicago, 1998.</p><p data-type="footnote" id="id1917"><sup><a href="ch11.html#id1917-marker">13</a></sup> See also <a href="https://oreil.ly/LcZnk">the fallacy of composition</a>.</p><p data-type="footnote" id="id1918"><sup><a href="ch11.html#id1918-marker">14</a></sup> See Rachel Potvin and Josh Levenberg, <a href="https://oreil.ly/Zc5hQ">“Why Google Stores Billions of Lines of Code in a Single Repository”</a>, <em>Communications of the ACM</em> 59, no. 7 (2016): 78–87.</p><p data-type="footnote" id="id1922"><sup><a href="ch11.html#id1922-marker">15</a></sup> David D. Woods, <a href="https://oreil.ly/n6ZHe">“Four Concepts for Resilience and the Implications for the Future of Resilience Engineering”</a>, <em>Reliability Engineering and System Safety</em>, 2015.</p><p data-type="footnote" id="id1929"><sup><a href="ch11.html#id1929-marker">16</a></sup> Nancy Leveson, <em>Engineering a Safer World: Systems Thinking Applied to Safety</em>, The MIT Press, 2011.</p><p data-type="footnote" id="id1930"><sup><a href="ch11.html#id1930-marker">17</a></sup> Nancy G. Leveson, <a href="https://oreil.ly/PSOfw"><em>CAST Handbook: How to Learn More from Incidents and Accidents</em></a>, 2019.</p><p data-type="footnote" id="id1931"><sup><a href="ch11.html#id1931-marker">18</a></sup> Nancy G. Leveson and John P. Thomas, <a href="https://oreil.ly/AcM1f"><em>STPA Handbook</em></a>, 2018.</p><p data-type="footnote" id="id1932"><sup><a href="ch11.html#id1932-marker">19</a></sup> See the official external <a href="https://oreil.ly/HQmun">incident report</a> for complete details.</p><p data-type="footnote" id="id1933"><sup><a href="ch11.html#id1933-marker">20</a></sup> James C. Corbett et al., <a href="https://oreil.ly/V6Xb1">“Spanner: Google’s Globally-Distributed Database”</a>, in <em>ACM Transactions on Computer Systems (TOCS)</em>, 2013.</p><p data-type="footnote" id="id1934"><sup><a href="ch11.html#id1934-marker">21</a></sup> The overall outage had many areas, including some specifically covering the datacenter factors.</p></div></div></section></body></html>

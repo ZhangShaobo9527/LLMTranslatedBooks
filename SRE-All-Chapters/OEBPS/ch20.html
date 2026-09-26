@@ -1,0 +1,1909 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>How SRE Supports AI</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 20. How SRE Supports AI" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch20">
+<h1><span class="label">Chapter 20. </span>How SRE Supports AI</h1>
+
+
+<p class="byline">By Dan Dennison, Isaac Albarrán Muñoz, John Lunney, and Rita Lu<br/>
+
+<span class="keep-together">with Garrett Holthaus</span></p>
+
+<p>This chapter is one of two in this book that discuss the intersection
+of AI and Site Reliability Engineering. Here, we focus on the application of the
+various aspects of the SRE discipline to the operation of AI
+services. <a data-type="xref" href="ch21.html#ch21">Chapter 21</a> concentrates on the
+application of AI to the SRE discipline.</p>
+
+<p>Artificial intelligence <a data-primary="AI (artificial intelligence)" data-type="indexterm" id="id2724"/>is the overarching field dedicated to creating machines capable of
+human-like reasoning and problem solving, encompassing everything from
+simple expert systems to autonomous agents that use large language
+models (LLMs) as reasoning engines. While machine learning<a data-primary="ML (machine learning)" data-type="indexterm" id="id2725"/><a data-primary="machine learning" data-see="ML" data-type="indexterm" id="id2726"/> (ML) is a
+specific subset of AI that allows systems to learn from data patterns
+without explicit programming—powering tasks such as image recognition and
+fraud detection—the two fields often overlap. This is most evident in
+technologies like<a data-primary="LLMs (large language models)" data-type="indexterm" id="id2727"/><a data-primary="large language models (LLMs)" data-type="indexterm" id="id2728"/> LLMs, which use deep learning (an ML technique) to
+achieve the sophisticated AI capability of understanding and generating
+human-like language, effectively blurring the lines between data-driven
+learning and broader intelligent behavior.</p>
+
+<p class="fix_tracking">The wide proliferation of artificial intelligence and machine learning
+applications has not left the discipline of <a data-primary="ML (machine learning)" data-secondary="early support" data-type="indexterm" id="ml_sre_erlsup"/><a data-primary="AI (artificial intelligence)" data-secondary="early support" data-type="indexterm" id="ai_sre_erlsup"/>SRE untouched. In fact, the
+first Google SRE team supporting ML applications was
+founded in 2009 to support the <a data-primary="Smart Ad Selection System" data-type="indexterm" id="id2729"/>Smart Ad Selection
+System,<sup><a data-type="noteref" href="ch20.html#id2730" id="id2730-marker">1</a></sup> which had been created five years earlier to supply the Google Search ads auction
+with fresh predicted click-through rate data by training on log data.
+Since the formation of that first SRE team, the number of applications,
+use cases, systems developed, and SRE teams founded in support of AI and
+ML systems has expanded rapidly.</p>
+
+<p>Today, Google SRE supports both AI and underlying ML systems of all
+sorts, with differing engagement models. Some infrastructure teams
+specialize in distinct areas, including a significant focus on the LLM
+serving and agent stack, experiment infrastructure, and storage. Other
+teams are more consumer-focused in nature, while still others are more
+enterprise-focused.</p>
+
+<p>Teams that are focused primarily on supporting researcher workflows have
+adopted a hybrid SRE engagement model, aligning with
+the enterprise segment’s focus on long-term partnerships while embracing a consumer-style “mitigate first, communicate
+second” viewpoint to maintain the high <a data-primary="ML (machine learning)" data-secondary="early support" data-startref="ml_sre_erlsup" data-type="indexterm" id="id2731"/><a data-primary="AI (artificial intelligence)" data-secondary="early support" data-startref="ai_sre_erlsup" data-type="indexterm" id="id2732"/>velocity the business requires.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Core ML Concepts" data-type="sect1"><div class="sect1" id="ch20_core_ml_concepts">
+<h1>Core ML Concepts</h1>
+
+<p>Let’s start with a<a data-primary="ML (machine learning)" data-secondary="terminology" data-type="indexterm" id="ml_term"/> few definitions, before we dive into the architecture and operational mechanics of delivering AI. This will ensure you have a clear reference point as we explore the stack. The following core ML-specific concepts are discussed in this chapter:</p>
+<dl>
+<dt>Training (model creation)</dt>
+<dd>
+<p>The computationally <a data-primary="training" data-secondary="model creation" data-type="indexterm" id="id2733"/>intensive process of feeding vast amounts of
+prepared data into an algorithm. During this phase, the system learns
+patterns and adjusts its internal parameters (weights and biases) until
+it can accurately execute its intended task. To prevent a model from
+degrading over time, this process is frequently transformed into an
+automated, recurring production pipeline, often referred to as
+continuous training<a data-primary="continuous training" data-type="indexterm" id="id2734"/> (CT).</p>
+</dd>
+<dt>Inference (model serving)</dt>
+<dd>
+<p>The phase in which a trained <a data-primary="inference, model serving" data-type="indexterm" id="id2735"/>model is deployed to an environment where
+it can receive new, unseen input data and produce a prediction,
+classification, or generated response.</p>
+</dd>
+<dt>Model quality and performance</dt>
+<dd>
+<p>The measure of a <a data-primary="models" data-secondary="quality" data-type="indexterm" id="id2736"/><a data-primary="models" data-secondary="performance" data-type="indexterm" id="id2737"/>model’s effectiveness and reliability in performing its
+intended task. This encompasses its predictive accuracy, precision, and
+recall, as well as its adherence to fairness and safety constraints.</p>
+</dd>
+<dt>Online machine learning</dt>
+<dd>
+<p>A paradigm where a system <a data-primary="online machine learning" data-type="indexterm" id="id2738"/>continuously updates its model using a stream
+of live data, allowing it to adapt to changing patterns in
+near real time. This is in contrast to models that are trained offline
+on a static dataset and then served, such as many LLMs.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Tokens and context windows</dt>
+<dd>
+<p>In generative AI, a token <a data-primary="tokens" data-type="indexterm" id="id2739"/><a data-primary="context windows" data-type="indexterm" id="id2740"/>is the fundamental unit of data processed by
+the model. While often representing text (such as a word or subword),
+tokens can also represent discrete elements of images, audio, or video
+in multimodal models. The context window is the maximum number of tokens
+a model can process in a single request. This window is a composite: it
+typically contains the system prompt (the preamble and configuration
+that dictate the model’s behavior), the user’s current input, and the
+accumulated history of previous<a data-primary="ML (machine learning)" data-secondary="terminology" data-startref="ml_term" data-type="indexterm" id="id2741"/> inputs and generated outputs from the
+ongoing session.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Delivering AI and ML Systems" data-type="sect1"><div class="sect1" id="ch20_delivering_ai_and_ml_systems">
+<h1>Delivering AI and ML Systems</h1>
+
+<p>AI systems, like <a data-primary="AI systems" data-secondary="architecture" data-type="indexterm" id="aisys_arch"/><a data-primary="ML system architecture" data-type="indexterm" id="mlsysarch"/><a data-primary="architecture, AI and ML systems" data-type="indexterm" id="archi_aiml"/>traditional systems, are structured in layers. An
+example reference architecture starts with specialized hardware, like
+GPUs or other accelerators such as TPUs and Trainiums, and is supported
+by high-performance networking and storage. Above this, a cluster
+management layer (e.g., Kubernetes or other proprietary cluster and job
+management systems) orchestrates these resources, handling complex
+scheduling needs such as topology awareness and gang scheduling—critical
+elements for large-scale training and inference.<sup><a data-type="noteref" href="ch20.html#id2742" id="id2742-marker">2</a></sup> The ML frameworks
+and systems layer manages the distributed math operations, ensuring that,
+regardless of the framework chosen (e.g., PyTorch plus custom kernels), compilation produces the correct architecture-specific code and
+job layout for the learning task.<sup><a data-type="noteref" href="ch20.html#id2743" id="id2743-marker">3</a></sup>
+As an example, with Google Cloud, either
+JAX<sup><a data-type="noteref" href="ch20.html#id2744" id="id2744-marker">4</a></sup> or PyTorch can compile
+to <a href="https://oreil.ly/JqivA">Accelerated Linear Algebra (XLA)</a> for deployment to
+<a href="https://oreil.ly/lTyP2">Pathways</a>.</p>
+
+<p>Adopting a vertically integrated platform such as the one shown in
+<a data-type="xref" href="#ch20_fig01">Figure 20-1</a>—whether developed internally or accessed through advanced
+cloud services—allows organizations to achieve a higher baseline of
+reliability and efficiency across their AI workloads. By using platforms
+that unify hardware, libraries, and compilers, teams can move away from
+bespoke, unscalable solutions and benefit from centralized
+services that implement sophisticated resource management for expensive
+accelerators. This platform-based
+approach offers off-the-shelf components for model training and serving,
+creating a “flywheel effect” where infrastructure improvements benefit
+all users and allow product teams to focus on core logic rather than
+underlying systems. Ultimately, choosing an integrated AI stack where
+reliability is embedded from the outset ensures the environment is
+observable, scalable, and resilient enough to meet high-velocity
+requirements.</p>
+
+<figure><div class="figure" id="ch20_fig01">
+<img alt="Diagram of an ML system architecture stack showing layers from hardware to applications, illustrating integrated components for scalable AI workloads." src="assets/sre2_2001.png"/>
+<h6><span class="label">Figure 20-1. </span>Layers of the ML system architecture at Google</h6>
+</div></figure>
+
+<p>Moving up the stack, the shared model inference layer, where a trained
+model makes a prediction given an input, provides a common set of
+primitives to enable serving models at scale. The data management
+systems layer handles lineage and policy enforcement for both the
+training data and the models themselves. While recommended, this layer is not always implemented as widely as it should be. Finally, the agents and applications layers consume the model
+outputs, ranging from direct API calls to sophisticated multistep
+agentic systems leveraging the agency framework for planning and tool
+use.</p>
+
+<p>From an SRE perspective, reliable AI system architecture depends on
+these 
+<span class="keep-together">principles</span>:</p>
+
+<ul>
+<li>
+<p>A clear separation of control and data planes</p>
+</li>
+<li>
+<p>Robust resource management for coveted accelerators</p>
+</li>
+<li>
+<p>Excellent observability</p>
+</li>
+<li>
+<p>A seamless AI artifact management lifecycle (versioning, deployment,
+rollback)</p>
+</li>
+</ul>
+
+<p>Since inference (and even training) demands fluctuate so much,
+scalability and elasticity are critical. AI inference loads benefit
+enormously from solid autoscaling and load-balancing designs.
+To ensure reliability, performance, and quick diagnosing of issues, the
+stack must also meet traditional requirements such as data flow
+reliability and failure<a data-primary="AI systems" data-secondary="architecture" data-startref="aisys_arch" data-type="indexterm" id="id2745"/><a data-primary="ML system architecture" data-startref="mlsysarch" data-type="indexterm" id="id2746"/><a data-primary="architecture, AI and ML systems" data-startref="archi_aiml" data-type="indexterm" id="id2747"/> domain isolation.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Applications and Agents" data-type="sect2"><div class="sect2" id="ch20_application_and_agents">
+<h2>Applications and Agents</h2>
+
+<p>With their position<a data-primary="AI systems" data-secondary="applications" data-type="indexterm" id="id2748"/><a data-primary="applications" data-secondary="AI systems" data-type="indexterm" id="id2749"/><a data-primary="AI agents" data-type="indexterm" id="id2750"/> at the top of the hierarchy, application and agent
+systems lean more toward the AI side of the AI–ML continuum. The
+applications themselves look just like any other systems that SRE delivers, complete with frontends, user state, and standard business
+logic. The distinction is in their backends, which embed agents and
+model serving infrastructure to implement their intelligent features.</p>
+
+<p>An AI agent is a software entity that uses a model’s reasoning
+capabilities to independently plan and execute tasks—such as calling an
+API or querying a database—to achieve a high-level goal. It’s common for
+an application to have specialized agents that interact with the model
+and other application backends to execute the intended outcome. For
+example, a self-driving car will have agents or agent-like components
+corresponding to the steering, acceleration, and braking systems to drive
+to the user-requested destination. Reusable agent platform components
+and capabilities exist and are necessary for the rapid development of
+applications that can use AI technology. At the time of writing,
+recent advances in AI include memory management, cross-agent
+communication, and sandboxing, and these areas continue to evolve.</p>
+
+<p>Because agents contain specialized code tailored to products, Google has found it helpful to align with the existing SRE team to support a new AI application within their product scope rather than implementing a specialized team just for AI use cases in the application. This is also true for any application-specific agents
+that are needed, since the expertise required to keep them running is specific to
+the subject matter area.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Model Serving" data-type="sect2"><div class="sect2" id="ch20_model_serving">
+<h2>Model Serving</h2>
+
+<p>A model serving <a data-primary="AI systems" data-secondary="model serving stack" data-type="indexterm" id="id2751"/><a data-primary="model serving stacks" data-type="indexterm" id="id2752"/>stack that can intelligently route queries based on a
+set of constraints is required to make inferences and provide answers to
+calling applications and agents. For example, many model serving stacks
+serve multiple sizes and families of models with different
+configurations (e.g., context window sizes). This routing
+layer also acts as a lever for reliability. If a primary model
+experiences a capacity shortfall or latency spike, the infrastructure
+can seamlessly fall back to a smaller, less resource-intensive alternative, intentionally trading a slight degradation in response quality for continued system availability. Similarly, this routing capability
+facilitates live A/B testing, allowing SREs to cautiously shift traffic
+to new model weights without jeopardizing the user experience.</p>
+
+<p>Managing this variety of routing constraints, along with the highly
+variable computational cost and latency of AI inference, requires a
+multilayered frontend infrastructure. This layer employs specialized
+distributed load-balancing techniques and frequently manages
+streaming connections,<sup><a data-type="noteref" href="ch20.html#id2753" id="id2753-marker">5</a></sup> returning generated tokens in real time to
+maintain a responsive user experience. Because of the complexity of this
+environment, model serving infrastructure is usually managed by one
+or more specialized SRE teams. Despite the wide variety of applications,
+Google has found that a unified model serving system works for the vast
+majority of use cases, ranging <a data-primary="AI systems" data-secondary="model serving stack" data-startref="aisys_modsrvstk" data-type="indexterm" id="id2754"/>from small fraud detection and
+click-through rate models to the largest LLMs.<sup><a data-type="noteref" href="ch20.html#id2755" id="id2755-marker">6</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Model Creation" data-type="sect2"><div class="sect2" id="ch20_model_creation">
+<h2>Model Creation</h2>
+
+<p>Delivering <a data-primary="models" data-secondary="stages of creation" data-type="indexterm" id="mod_stgcreat"/><a data-primary="ML models" data-secondary="stages of creation" data-type="indexterm" id="mlmod_stgcreat"/>high-quality models for production
+serving involves several key stages.<sup><a data-type="noteref" href="ch20.html#id2756" id="id2756-marker">7</a></sup> First, a
+foundation of high-quality input data needs to be established. Robust
+data processing pipelines ingest streams of raw data; clean up
+inaccuracies, duplicates, and outliers; and format the data for model consumption. This is essential for both online and batch
+learning systems. Because an ML model is fundamentally defined by its
+training set, data is compiled into the system’s core logic.
+Consequently, any pipeline failure that introduces anomalies, bias, or
+stale information may result in regressions that lead to degraded user
+experiences, confident but incorrect outputs, or cascading logic
+failures in downstream agent workflows.</p>
+
+<p>Second, the model <a data-primary="models" data-secondary="training" data-type="indexterm" id="mod_trn"/><a data-primary="training" data-secondary="models" data-type="indexterm" id="trn_mod"/>is trained using this prepared data. The training
+process can range from fully automated pipelines for online machine
+learning models that continuously incorporate new data to interactive,
+experimentation-driven model training by engineers. Finally, newly
+trained models must be rigorously evaluated. This validation assesses
+not only predictive quality and performance but also other critical
+attributes, such as <a href="https://oreil.ly/N7n6S">fairness</a>, <a href="https://oreil.ly/OF43d">safety</a>, and resource efficiency.</p>
+
+<p>Model training is much less standardized than model serving, in part
+because the structure of the tasks is much more complex and in part
+because researchers are constantly experimenting with different
+approaches. That said, different products tend to use different types of
+frameworks or infrastructure for model training. The trigger for deep
+SRE engagement typically occurs when a model transitions from a
+researcher’s experimental sandbox into an automated, recurring
+production pipeline—the continuous training mentioned earlier. Where
+there is a commonly used automated system for data ingestion or model
+training, as is the case at Google in Ads, SRE is able to defend the
+SLOs of the end-to-end
+system (see <a data-type="xref" data-xrefstyle="select:nopage" href="#ch20_service_level_objectives_in_ai_systems">“Service Level Objectives in AI Systems”</a>). In these mature pipelines, a failure to generate a fresh model
+within a specified time frame is treated as a production outage. However,
+for the initial research phases or manually driven model training, SRE
+usually takes a more limited<a data-primary="models" data-secondary="stages of creation" data-startref="mod_stgcreat" data-type="indexterm" id="id2757"/><a data-primary="ML models" data-secondary="stages of creation" data-startref="mlmod_stgcreat" data-type="indexterm" id="id2758"/><a data-primary="models" data-secondary="training" data-startref="mod_trn" data-type="indexterm" id="id2759"/><a data-primary="training" data-secondary="models" data-startref="trn_mod" data-type="indexterm" id="id2760"/> advisory role, delivering on strategic
+efforts to make the work more efficient and cost-effective across a
+large number of products.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="How SRE Supports AI Workloads" data-type="sect1"><div class="sect1" id="ch20_how_sre_supports_ai_workloads">
+<h1>How SRE Supports AI Workloads</h1>
+
+<p>While the<a data-primary="AI (artificial intelligence)" data-secondary="SRE support for AI workloads" data-type="indexterm" id="id2761"/><a data-primary="AI systems" data-secondary="SRE support" data-type="indexterm" id="id2762"/> core mission of SRE remains unchanged, AI workloads introduce
+unique complexities compared to traditional software systems. The
+fast-paced nature of AI development, marked by constant iteration on
+models and infrastructure, demands a delicate balance between velocity
+and stability. Additionally, the nondeterministic nature of AI means
+that output quality
+itself becomes a primary measure of reliability.<sup><a data-type="noteref" href="ch20.html#id2763" id="id2763-marker">8</a></sup> This section explores
+how SRE principles are adapted to navigate these challenges across the
+entire ML lifecycle, from defining SLOs in probabilistic environments to
+managing the extreme capacity constraints of accelerator hardware.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Service Level Objectives in AI Systems" data-type="sect2"><div class="sect2" id="ch20_service_level_objectives_in_ai_systems">
+<h2>Service Level Objectives in AI Systems</h2>
+
+<p>SLOs are critical<a data-primary="AI (artificial intelligence)" data-secondary="service level objectives" data-type="indexterm" id="sre_aisyssup_slo"/><a data-primary="AI systems" data-secondary="SLOs (service level objectives)" data-type="indexterm" id="aisys_sresup_slo"/><a data-primary="SLOs (service level objectives)" data-secondary="AI systems" data-type="indexterm" id="slo_aisys"/> for managing the reliability of any system, and AI
+systems are no exception. However, the unique characteristics of AI
+workloads, such as their nondeterministic nature and multidimensional
+complexity, require a tailored layer-by-layer approach to consistently
+define and measure them.</p>
+
+<p>To simplify this complexity, it is helpful to categorize AI SLOs into
+four primary pillars before applying them across the stack:</p>
+
+<ul>
+<li>
+<p><em>Availability</em> extends beyond basic uptime. In ML, this includes the
+availability of specialized hardware, the reliability of the control
+plane orchestrating training jobs, and the active enforcement of
+security attestations.</p>
+</li>
+<li>
+<p><em>Throughput</em> is essential for long-running and resource-intensive
+workloads. The primary metric here is <em>ML goodput</em>, which measures the
+proportion of time allocated resources are effectively performing useful
+computation, accounting for disruptions and system overhead.</p>
+</li>
+<li>
+<p><em>Latency</em> is a traditional request/response metric that must be
+augmented by generation-specific metrics, such as task scheduling
+latency for offline workloads and time to first token (TTFT) for
+streaming generative models. Alternatively, for online training, where
+freshness matters, latency SLOs can focus on the staleness of the data.</p>
+</li>
+<li>
+<p><em>Quality</em> is the defining pillar for AI. Since models can return
+successfully generated but factually incorrect responses, SLIs must
+measure output correctness. This includes monitoring for prediction
+bias, validation against golden datasets, and the success rate of tool
+usage within agentic systems.</p>
+</li>
+</ul>
+
+<p>Training workloads are generally throughput-oriented and
+can endure episodes of unavailability. On the other hand, they require
+the underlying hardware, its runtime, and the workloads themselves to
+work in synergy to execute as efficiently as possible. A widely accepted
+concept to measure this effectiveness is <a data-primary="ML goodput" data-type="indexterm" id="id2764"/><a data-primary="SLOs (service level objectives)" data-secondary="ML goodput" data-type="indexterm" id="id2765"/>ML goodput, which is
+consistently used to define SLOs at this layer.<sup><a data-type="noteref" href="ch20.html#id2766" id="id2766-marker">9</a></sup> Likewise, the cluster management
+layer has SLOs centered on reliable job orchestration, as well as control plane
+availability and scheduling latency guarantees.</p>
+
+<p>For <a data-primary="online machine learning" data-secondary="data-quality SLOs" data-type="indexterm" id="oml_dqslo"/>online machine learning especially, where models ingest live data,
+input quality directly impacts model reliability. SLOs must be strictly
+enforced on upstream data producers, such as data ingestion pipelines,
+feature stores, or raw telemetry systems. If an upstream data source
+degrades, this failure state must propagate through the system’s control
+plane to pause downstream consumers, including model training jobs or
+inference servers, before the model is corrupted. To defend these data
+quality SLOs without overwhelming compute budgets, SREs use a tiered
+approach to automated evaluation comprising:</p>
+<dl>
+<dt>Dependency tracking</dt>
+<dd>
+<p>By analyzing data lineage, SREs map complex
+dependency trees. The system can automatically raise an alert and halt downstream ML processes if the freshness or volume of data in a critical upstream table drops below some threshold.</p>
+</dd>
+<dt>Statistical monitoring</dt>
+<dd>
+<p>To detect <em>prediction bias</em>—a drift between
+the model’s predicted output distribution and observed reality—we use
+statistical checks that continuously monitor the shape of incoming
+data and output distributions. These provide a cheap, real-time tripwire for
+model degradation.</p>
+</dd>
+<dt>AI-assisted evaluation</dt>
+<dd>
+<p>For nuanced quality analysis, systems employ
+AI mechanisms such as learning dynamic error thresholds from validation
+data or using secondary models to score outputs
+(model-as-a-judge).<sup><a data-type="noteref" href="ch20.html#id2767" id="id2767-marker">10</a></sup> Because these methods are computationally
+expensive, they are typically applied periodically or on a sampled
+subset of traffic, complementing the<a data-primary="online machine learning" data-secondary="data-quality SLOs" data-startref="oml_dqslo" data-type="indexterm" id="id2768"/> real-time statistical monitoring.</p>
+</dd>
+</dl>
+
+<p>Once a model clears these rigorous data and quality gates, it
+enters production serving. At this stage, the SLO paradigm shifts
+dramatically: we move from measuring the throughput and statistical
+correctness of training pipelines to evaluating the application’s immediate, real-time performance.</p>
+
+<p>Model serving workloads, which<a data-primary="model serving workloads, SLOs" data-type="indexterm" id="msw_slo"/><a data-primary="SLOs (service level objectives)" data-secondary="model-serving workloads" data-type="indexterm" id="slos_modsrvwrklds"/> often power real-time, user-facing
+applications, demand stringent SLOs focused on high availability and low
+latency. Unlike in training, even brief disruptions or delays can
+significantly degrade the user experience. At the hardware and cluster
+management layers, this translates into infrastructure-level SLOs focused
+on the health and responsiveness of the individual serving replicas (the
+backend model server tasks that make up the load-balanced pool), as well
+as low task scheduling latency. The most critical inference SLOs are
+defined at the inference platform level. A current example is Vertex AI
+Prediction, which serves models from a variety of frontier AI labs. These
+SLOs cover high prediction availability and low-latency targets. They
+typically measure platform overhead at various percentiles  while also encompassing reliable, swift model deployment and scaling capabilities, as well as
+highly available control plane APIs for management.</p>
+
+<p>The agentic and application layers, where the model outputs are consumed
+and combined with other business logic, also require SLOs that reflect
+the end-to-end user experience. Model serving–specific metrics such as
+time to first token (TTFT) are a crucial foundation to form SLOs around
+to ensure a fluid user interaction. On top of the usual availability and
+latency guarantees, ML-specific quality SLOs
+representing correctness, accuracy, and quality are required. Because AI agents
+frequently execute complex, multistep reasoning chains, a single
+hallucination early in the sequence can cascade and derail the entire
+workflow. To safeguard these workflows, SREs must track the success rate
+of tool usage within agentic systems—for instance, how reliably an agent
+formulates a valid search against a vector database, invokes an internal
+API to retrieve user state, or triggers a downstream mutation such as
+filing a ticket. Other critical quality indicators include the
+structural validity of response formats (e.g., ensuring a model returns
+parsable JSON) and the rate of workflow errors or divergences from the
+user’s intended task.</p>
+
+<p>While these metrics are not typically referred to using these terms in
+the literature, model evaluation scores themselves form a kind of SLI.
+Evaluations are defined to pass or fail relative to a threshold. In SRE
+terms, that minimum threshold is the SLO. Forming a model quality SLO is
+thus drawing a line using automated evaluation tooling at a particular
+score. SRE can then “defend the SLO” by troubleshooting and fixing
+these quality events when they occur.</p>
+
+<p>Finally, as AI systems are increasingly used in sensitive and regulated
+domains, SLOs must also be extended to cover security, privacy, and
+compliance guarantees. This encompasses the entire process flow from the
+throughput-oriented workloads of training up through the inference,
+agentic, and application layers. This is where evidence and attestation
+come into play. <em>Evidencing</em> is the process of disclosing the security and
+compliance posture to the customer, providing a transparent
+“declaration of state” that includes model lineage and measurements of
+the environment state. <em>Attestation</em> provides the cryptographic assurance
+that this evidence is actively enforced. By utilizing hardware roots of
+trust, attestation ensures that the model and software stack have not
+been tampered with since the evidence was generated. For some products,
+like Private AI Compute, attestation failures are equivalent to outages
+from an end user’s perspective.<sup><a data-type="noteref" href="ch20.html#id2769" id="id2769-marker">11</a></sup>
+In these situations, it is crucial to define SLOs for the attestation
+systems themselves. Such SLOs cover the freshness of the evidence, the
+latency of the attestation process, and the availability of the attested
+serving environment. For example, a client might refuse to send data to
+a system that cannot provide a valid attestation, which makes
+attestation availability<a data-primary="AI (artificial intelligence)" data-secondary="service level objectives" data-startref="sre_aisyssup_slo" data-type="indexterm" id="id2770"/><a data-primary="AI systems" data-secondary="SLOs (service level objectives)" data-startref="aisys_sresup_slo" data-type="indexterm" id="id2771"/><a data-primary="SLOs (service level objectives)" data-secondary="AI systems" data-startref="slo_aisys" data-type="indexterm" id="id2772"/><a data-primary="model serving workloads, SLOs" data-startref="msw_slo" data-type="indexterm" id="id2773"/><a data-primary="SLOs (service level objectives)" data-secondary="model-serving workloads" data-startref="slos_modsrvwrklds" data-type="indexterm" id="id2774"/> a key component of the overall service
+reliability.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="AI Reliability" data-type="sect2"><div class="sect2" id="ch20_ai_reliability">
+<h2>AI Reliability</h2>
+
+<p>AI reliability, <a data-primary="AI systems" data-secondary="reliability, measuring" data-type="indexterm" id="aisys_rel_measur"/>in its simplest terms, refers to the ability of an AI
+system to consistently perform its intended task while maintaining
+acceptable levels of accuracy, consistency, and dependability. An AI
+system is considered reliable when it delivers expected outcomes
+regardless of the operating conditions. Despite all the novelty brought
+by AI, the traditional SRE discipline still applies, meaning core
+practices like SLOs, monitoring and alerting, capacity planning, release
+and change management, automation, and incident response are
+all still required.</p>
+
+<p>That said, a significant difference with AI applications is that the
+responses are evaluated along a spectrum ranging from outright server errors, through the
+AI “choosing” to give up or return low-quality responses, to high-quality responses. While a server error should be a <code translate="no">500</code>, we see
+inconsistency in the error codes used for giving up on queries and
+degraded queries (especially when there are many layers to the serving
+stack). As a result, it’s possible to return responses that are
+successful at the API layer but don’t satisfy users because they
+don’t deliver the intended outcome.</p>
+
+<p>To systematically measure these degraded responses, we must look beyond
+traditional HTTP status codes. This requires instrumenting the serving
+layer to log when a system intentionally degrades a response (e.g., by routing the request to a smaller, less capable model during a capacity shortfall) or
+when a request hits a safety filter. At the application layer, we
+capture proxy metrics for quality by tracking explicit user feedback
+(such as downvotes) and implicit behavioral signals (such as immediate prompt
+rewrites or session abandonment). Finally, by routing a sample of these
+technically successful responses through asynchronous automated
+evaluations (such as structural validation or model-as-a-judge scoring),
+we can convert subjective degradation into a measurable SLI.</p>
+
+<p>One of the causes for these responses is related to probabilistic
+outputs or retraining cycles. The same input might generate different
+outputs, making traditional approaches relying upon exact outputs
+ineffective. This unpredictability makes it challenging to consistently
+measure performance and complicates reliability observability efforts.
+Instead, monitoring frameworks must accommodate acceptable ranges of
+outputs and focus on validating behavioral patterns.</p>
+
+<p>As indicated earlier, another common cause of poor responses is degradation to compensate for
+a capacity shortfall. This raises the question of whether these
+conditions should be surfaced differently. Often, when capacity is
+constrained, free users and requests that exceed available capacity can be routed to
+alternative models, which may lead to lower-quality results. SRE’s
+definition of reliability and our SLO definitions take capacity-related
+degradations into account so that they are visible through the stack, enabling the creation of an
+end-to-end SLO. During the engagement process, SREs align with
+product engineering leadership on the reliability objective. Once
+they’re on the same page, that objective cascades down the stack to
+define SLOs for the underlying infrastructure services. As always, these SLOs must be
+achievable and iterative. While the <a data-primary="AI systems" data-secondary="reliability, measuring" data-startref="aisys_rel_measur" data-type="indexterm" id="id2775"/>initial values may not match the
+ultimate product objective, they converge over time.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Practical Observability and Capacity Challenges" data-type="sect2"><div class="sect2" id="ch20_practical_observability_and_capacity_challenges">
+<h2>Practical Observability and Capacity Challenges</h2>
+
+<p>Although generative AI product features<a data-primary="AI systems" data-secondary="observability issues" data-type="indexterm" id="id2776"/><a data-primary="observability" data-secondary="AI systems" data-tertiary="challenges" data-type="indexterm" id="id2777"/><a data-primary="capacity planning" data-secondary="AI systems, challenges" data-type="indexterm" id="id2778"/><a data-primary="AI systems" data-secondary="capacity planning, challenges" data-type="indexterm" id="id2779"/> typically serve requests at a much lower rate
+than traditional features, the high cost of each request means SREs must
+apply the same attention to reliability here as they would to
+high-request-rate systems. This has implications for monitoring rules
+and observability practices that include thresholding features to limit
+noise or have assumptions around the uniform distribution of query
+cost. Because query size, latency, and computational cost can vary
+significantly from one request to the next, these dimensions must be
+tracked closely to prevent resource contention. Without this granular
+observability, a sudden influx of complex, token-heavy queries can
+easily saturate a backend, causing severe latency spikes, timeouts, or
+degraded response quality for all users sharing the service. This
+extreme variance requires creative solutions for efficient provisioning
+and fair capacity sharing across the user base.</p>
+
+<p>The current scarcity of accelerator resources forces a level of rigor in
+capacity planning that stands in sharp relief to traditional software
+products. For traditional systems, the combination of massive scale and
+sophisticated automation has made capacity planning a comparatively
+simpler, lower-friction process. In the AI context, however, expensive
+hardware means that standard reliability practices—such as 
+<span class="keep-together"><em>N</em> + 1</span>
+provisioning—must be scrutinized against their financial and opportunity
+costs. Simply put, accelerators are so costly compared to traditional
+compute infrastructure that most organizations simply cannot afford the
+same levels of spare capacity that they would for non-AI workloads.
+Furthermore, as these systems can serve degraded responses while
+remaining technically available, load <a data-primary="AI systems" data-secondary="observability issues" data-startref="aisys_obsrviss" data-type="indexterm" id="id2780"/><a data-primary="capacity management" data-secondary="AI systems" data-startref="capman_aisys_chlngs" data-tertiary="challenges" data-type="indexterm" id="id2781"/><a data-primary="AI systems" data-secondary="capacity planning, challenges" data-startref="aisys_cappln_chlg" data-type="indexterm" id="id2782"/>testing must be evolved to include
+quality thresholds.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Launching an AI Feature" data-type="sect2"><div class="sect2" id="ch20_launching_an_ai_feature">
+<h2>Launching an AI Feature</h2>
+
+<p>Those who’ve <a data-primary="AI systems" data-secondary="production-quality feature launch, best practices" data-type="indexterm" id="aisys_pqfc_bp"/><a data-primary="AI (artificial intelligence)" data-secondary="feature launch, best practices" data-type="indexterm" id="sre_aiftr_bp"/>tinkered at home or taken part in an AI hackathon will
+attest that building a rough version of Gmail’s “Help me write” or
+Meet’s “Take notes for me” using an existing model is not that
+difficult. You can make a functional prototype in a few days. However, turning
+that prototype into a production-ready feature with sufficient quality,
+predictability, reliability, and scalability, especially at Google’s scale,
+is a very different matter.</p>
+
+<p>A prototype or simple feature may use straightforward prompt engineering
+techniques on top of a large model to guide the generation to fit the
+target use case, but achieving production-grade quality requires more
+involved workflows that improve the model’s accuracy and performance. This is known as <em>hill climbing</em>, and it 
+<span class="keep-together">necessitates</span>
+high-quality training data and multiple iteration cycles. The following
+SRE best practices are essential for derisking AI feature launches and
+ensuring their 
+<span class="keep-together">reliability:</span></p>
+<dl>
+<dt>Phased rollouts and experimentation</dt>
+<dd>
+<p>Gradually roll out AI features,
+starting with small experiments. Use frameworks that support A/B testing
+to compare different model versions or configurations. This allows for
+careful monitoring of performance, quality, and resource impact before
+full-scale deployment.</p>
+</dd>
+<dt>Comprehensive monitoring</dt>
+<dd>
+<p>Implement monitoring that covers both system
+health (latency, error rates, resource utilization) and AI-specific
+metrics. This includes tracking model output quality, drift in data or
+predictions, and the frequency of fallback responses or errors.</p>
+</dd>
+<dt>Capacity management</dt>
+<dd>
+<p>AI features, especially those using large models,
+can have significant computational costs. Thorough load testing and
+capacity planning are critical to ensure smooth operation and cost
+efficiency, particularly for specialized hardware like GPUs or TPUs.</p>
+</dd>
+<dt>Rapid rollback mechanisms</dt>
+<dd>
+<p>Ensure that, if issues arise, there are well-tested
+procedures to quickly revert to a previous model version or to disable the
+feature. Model versioning and management systems are key
+enablers.</p>
+</dd>
+<dt>Continuous feedback loops</dt>
+<dd>
+<p>The launch is just the beginning. Establish
+pipelines for continuous evaluation and to feed user feedback and
+production data back into the hill-climbing process for ongoing
+improvement and adaptation.</p>
+</dd>
+</dl>
+
+<p>By integrating these iterative <a data-primary="AI systems" data-secondary="production-quality feature launch, best practices" data-startref="aisys_pqfc_bp" data-type="indexterm" id="id2783"/><a data-primary="AI (artificial intelligence)" data-secondary="feature launch, best practices" data-startref="sre_aiftr_bp" data-type="indexterm" id="id2784"/>development and evaluation cycles with
+robust SRE launch practices, teams can more reliably transition AI
+features from promising concepts to valuable and dependable production
+services.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="How SRE Qualifies New Architectures and Models" data-type="sect1"><div class="sect1" id="ch20_how_sre_qualifies_new_architectures_and_models">
+<h1>How SRE Qualifies New Architectures and Models</h1>
+
+<p>Qualifying ML models <a data-primary="ML models" data-secondary="qualifying for production" data-type="indexterm" id="id2785"/>for production introduces complexities beyond
+traditional software releases. While binary rollouts focus on code
+correctness and performance, ML models require additional scrutiny
+because of their intricate dependency on specific hardware, the
+often subtle nature of quality regressions, and their potential for
+wider impacts on system stability and user trust. These subtle
+regressions can be amplified by
+<a href="https://hyrumslaw.com">Hyrum’s law</a>, <a data-primary="Hyrum's law" data-secondary="qualifying ML models" data-type="indexterm" id="id2786"/>whereby a specific and
+undocumented behavior becomes crucial to correctness. The hybrid nature
+of SRE engagements supporting AI researchers creates a unique
+vulnerability to Hyrum’s law: while consumer SREs can often ignore the
+long tail of undocumented dependencies via statistical averages, some AI
+researchers may rely on those very behaviors for experimental integrity.
+Until AI-specific CI/CD processes mature to capture these implicit
+guarantees, velocity will remain in a natural, high-stakes tension with
+system stability.</p>
+
+<p>SREs play a crucial role in closing this gap by establishing robust
+qualification pipelines that ensure new models or versions are safe,
+reliable, efficient, and effective when deployed at scale. This involves
+a multifaceted approach, examining everything from hardware
+compatibility to the nuanced behavior of complex AI systems.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Product Lifecycle Integration" data-type="sect2"><div class="sect2" id="ch20_product_lifecycle_integration">
+<h2>Product Lifecycle Integration</h2>
+
+<p>Because accelerator hardware <a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="accelerator hardware" data-type="indexterm" id="id2787"/><a data-primary="accelerator hardware" data-secondary="qualifying for production" data-type="indexterm" id="id2788"/><a data-primary="hardware" data-secondary="accelerator" data-type="indexterm" id="hrdw_acc_qfp"/>evolves so rapidly, production environments
+frequently host multiple generations of hardware—or even entirely
+different accelerator platforms—that must operate simultaneously while
+sharing the same foundational software libraries. Collective SRE
+experience demonstrates that platform qualification for accelerators is
+a continuous process. This is necessary because of the rapid pace of
+change and low levels of CI/CD integration test coverage for
+dependencies at many levels in the stack. What worked well for a given
+ML model under a specific hardware accelerator may lead to latency
+and/or correctness regressions with a new generation of models or with a
+different PyTorch release, XLA compiler, or CUDA library. SRE drives this
+process with SLOs to ensure that hardware and the software platforms the
+hardware depends on (e.g., XLA) are reliable and ready for production
+workloads. This qualification process is deeply integrated into the
+product lifecycle and continues throughout the life of the architecture.
+SRE’s involvement begins early in the lifecycle of a new accelerator
+architecture, often late during the engineering validation and
+test (EVT) stage.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Common testing strategy from EVT forward" data-type="sect3"><div class="sect3" id="ch20_common_testing_strategy_from_evt_forward">
+<h3>Common testing strategy from EVT forward</h3>
+
+<p>The tests used across all phases of the product lifecycle from EVT
+forward are the same. They break down roughly into three classes that focus on answering the following questions: Is the output
+performant (latency and throughput)? Does the output make sense
+(correctness)? How does the output compare along various metrics
+(relative quality of the output)? The tests themselves scale according
+to the differences in the scale of the system under test. That is, if
+only a single chip is being tested, microbenchmarks are preferred. If
+it’s a larger system, a complete integration test is used.</p>
+
+<p>Validation naturally includes the shared platform that supports
+the models because of the deep vertical integration of the stack. This
+includes the frameworks like Pathways and compilers
+including XLA. SRE must ensure that these frameworks function correctly
+on the new hardware and that models compiled with TorchTPU or XLA
+produce both correct and performant results. This validation is critical
+for achieving hardware fungibility across different accelerator
+architectures, driving the core SRE goal of enabling seamless updates to
+maximize hardware utilization and efficiency.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Validation with first-party models" data-type="sect3"><div class="sect3" id="ch20_validation_with_first_party_models">
+<h3>Validation with first-party models</h3>
+
+<p>As the new accelerator matures and enters the pilot stage, SRE takes a
+leading role in acceptance testing. These acceptance tests leverage
+common testing strategies but use real production models to establish
+if a new chip is able to function as deployed. As the lifecycle
+approaches general availability (GA), testing expands to cover
+product-specific needs.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Continuous Hardware Qualification" data-type="sect2"><div class="sect2" id="ch20_continuous_hardware_qualification">
+<h2>Continuous Hardware Qualification</h2>
+
+<p>Qualifying a new <a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="continuous hardware qualification" data-type="indexterm" id="id2789"/><a data-primary="hardware" data-secondary="continuous hardware qualification" data-type="indexterm" id="id2790"/>hardware architecture is not a one-time event. The
+software stack that runs on it is constantly changing, with frequent
+updates to kernels, drivers, and ML frameworks. Each of these changes
+carries the risk of introducing regressions. These regressions can come
+from all parts of the stack, from the kernel and device drivers, to the
+XLA compiler, to the binaries and models. To mitigate this, SRE drives a
+continuous hardware qualification process that leverages the common
+testing strategy.</p>
+
+<p>The core of the common testing strategy is a comprehensive testing
+matrix that covers workload, architecture, and topology. The
+workloads tested are chosen to be representative of real user journeys
+across inference and training. The architectures correspond to
+the various accelerators available, as well as the CPU architecture.
+Finally, the topologies correspond to the available arrangements of chips.
+To manage the high cardinality of the problem, SRE uses statistics from
+production systems to identify the most broadly used architectures and
+topologies, and focuses testing on those.</p>
+
+<p>This continuous testing provides the data needed to confidently gate new
+software releases such as a kernel update or a new driver before they are
+rolled out to production. This unified strategy helps to catch
+incompatibilities or potential resource issues early and prevents
+regressions from reaching production.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What It Means for Accelerators to be SLO-Eligible" data-type="sect2"><div class="sect2" id="ch20_what_it_means_for_accelerators_to_be_slo_eligible">
+<h2>What It Means for Accelerators to be SLO-Eligible</h2>
+
+<p>SLOs are meaningful only<a data-primary="ML models" data-secondary="qualifying for production" data-tertiary="SLO-eligible accelerators" data-type="indexterm" id="id2791"/><a data-primary="accelerator hardware" data-secondary="SLO-eligible accelerators" data-type="indexterm" id="id2792"/><a data-primary="hardware" data-secondary="accelerator" data-startref="hrdw_acc_qfp" data-type="indexterm" id="id2793"/> when they can be defended. The term
+<em>SLO-eligible</em> refers to the <a data-primary="SLO-eligible accelerators" data-type="indexterm" id="id2794"/>criteria that must be met for the
+SLO to be defended. For example, prerelease hardware is not yet
+supported due to being under development, whereas obsolete hardware is
+no longer supported due to age, lack of parts, or prioritization.</p>
+
+<p class="pagebreak-before less_space">A new architecture is considered SLO-eligible only after it has proven
+its stability through this rigorous qualification process. As data from
+the continuous qualification tests becomes available, SREs and platform
+engineers work iteratively to resolve any discovered edge cases. An
+architecture is ready for an SLO when there is a stable stream of data
+from these tests, demonstrating that the architecture can consistently
+and reliably serve production traffic. This data-driven approach ensures
+that the SLOs are not just aspirational targets but are defensible and
+accurately reflect the user experience.</p>
+
+<p>The concept of SLO eligibility introduces a healthy tension between
+velocity and reliability. As product lifecycle processes mature, new
+platforms become SLO-eligible faster and existing platforms can remain
+SLO-eligible for longer.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Qualification of Candidate Models" data-type="sect2"><div class="sect2" id="ch20_qualification_of_candidate_models">
+<h2>Qualification of Candidate Models</h2>
+
+<p>Google’s model <a data-primary="ML models" data-secondary="qualifying candidate models" data-type="indexterm" id="id2795"/>inference platform gates all new model submissions using
+an automated validation process that performs a series of checks, as
+shown in <a data-type="xref" href="#ch20_fig02">Figure 20-2</a>. These checks include verifying the model’s
+structure, ensuring all operations are compatible with the target
+serving binaries and hardware, and estimating baseline resource
+requirements. By catching incompatibilities or potential resource issues
+early, we can ensure smoother model rollouts, more predictable
+performance, and seamless transitions as new hardware generations are
+introduced. This pre-qualification gatekeeping is crucial for
+maintaining the stability and reliability of the ML serving
+infrastructure.</p>
+
+<figure><div class="figure" id="ch20_fig02">
+<img alt="Diagram of an automated model lifecycle pipeline illustrating stages from development through testing, readiness checks, and deployment, emphasizing feedback and iteration for reliable model releases." src="assets/sre2_2002.png"/>
+<h6><span class="label">Figure 20-2. </span>Standardized, automated CI/CD flow for reliable model releases</h6>
+</div></figure>
+
+<p>Model weight rollouts are the first change surface that comes to mind.
+Configuration changes may be nearly as important as the model weights
+themselves, providing parameters, preambles, and prompt templates that
+tailor the model to the feature it implements. All of these assets
+should be pushed progressively, by means of automation, while scanning
+for regressions using canary analysis techniques.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Performance and quality" data-type="sect3"><div class="sect3" id="ch20_performance_and_quality">
+<h3>Performance and quality</h3>
+
+<p>Beyond fundamental <a data-primary="ML models" data-secondary="qualifying candidate models" data-tertiary="performance and quality testing" data-type="indexterm" id="id2796"/>infrastructure compatibility, rigorous testing for
+both performance and quality regressions is essential before an ML model
+can be considered production-ready. Performance regression testing
+focuses on ensuring the model meets the service’s operational
+requirements. This involves subjecting the model to continuous
+benchmarking and load tests to measure key metrics such as serving
+latency, query throughput, and hardware accelerator resource utilization, including accelerator duty cycle (busy time) and high-bandwidth memory (HBM) utilization. SREs work to define and enforce
+performance standards, ensuring that new model versions or changes in
+the serving stack do not introduce regressions that could jeopardize
+SLOs or lead to inefficient resource utilization. Automated alerts and
+blocking criteria in the rollout process are often based on these
+performance metrics.</p>
+
+<p>Equally critical is <a data-primary="quality regression testing, qualifying candidate models for production" data-type="indexterm" id="id2797"/>quality regression testing, which assesses the
+model’s effectiveness and reliability in performing its intended task.
+This goes beyond just raw performance to evaluate the actual output of
+the model. A suite of evaluations is typically employed, designed to
+measure the model’s efficacy against core use cases. These evaluations
+aim to detect any degradation or drift in prediction accuracy,
+precision, recall, and fairness. The process often involves running the
+candidate model against golden datasets and human-rated examples, or
+conducting A/B tests (live experiments) by performing statistical
+comparisons of its
+<a href="https://oreil.ly/EfaKl">vectorized</a>
+outputs to the current production model. Significant deviations in
+quality metrics can block a release, triggering further investigation
+into the model’s training data or underlying layers in the stack.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Model lifecycle" data-type="sect3"><div class="sect3" id="ch20_model_lifecycle">
+<h3>Model lifecycle</h3>
+
+<p>ML model qualification <a data-primary="ML models" data-secondary="qualifying" data-tertiary="across model lifecycle" data-type="indexterm" id="id2798"/>must be integrated across the entire model
+lifecycle (from development to deprecation) and all serving stack
+layers. This requires checks at the hardware, infrastructure, model
+serving inference, and application layers. Application-level evals are
+paramount because the true impact and correctness of a model can often
+only be assessed within the context of the product and business logic it
+influences. This involves simulating real user interactions and
+measuring the impact on the user journey trajectory and proximity to
+the expected result, not just raw model output quality.</p>
+
+<p>Given the complexity and multifaceted nature of these evaluations,
+automation and standardization are key to achieving reliable and
+efficient model lifecycle management. SREs champion the adoption of
+platforms and tools that aim to orchestrate and automate the end-to-end
+process of deploying and managing models. This includes versioning,
+qualification, and integration with safe, progressive rollout
+strategies such as canary analysis. By standardizing the qualification
+checks and automating their execution as part of a CI/CD pipeline for
+models, teams can reduce manual toil, minimize human error, and ensure
+that all models meet production readiness 
+<span class="keep-together">standards</span> before being
+exposed to users. This systematic approach enables continuous validation
+and allows for faster, more reliable updates.</p>
+
+<p>Unfortunately, some organizations push back on the structure and
+requirements of formal <a data-primary="lifecycle management, AI models" data-type="indexterm" id="id2799"/>lifecycle management for models, believing that
+process and infrastructure will slow experimentation, innovation, and launch velocity. While this can be true during the development and adoption phases of model lifecycle management tools, what we see in production is that these tools introduce effective controls that improve confidence in CI/CD and drive significant increases in research and launch velocity beyond what can be realized otherwise. Boundaries catch problems early and deliver
+actionable feedback to model developers immediately, rather than letting
+bugs sit latently in production.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI Workflow Evaluation" data-type="sect2"><div class="sect2" id="ch20_ai_workflow_evaluation">
+<h2>AI Workflow Evaluation</h2>
+
+<p>The advent of complex, agentic<a data-primary="ML models" data-secondary="qualifying" data-tertiary="evaluating complete workflow" data-type="indexterm" id="id2800"/> workflows—where multiple ML models,
+tools, or knowledge sources interact in sequence or in parallel to
+achieve a higher-level goal—introduces significant new qualification
+challenges. Unlike single-model systems, the behavior of an agentic
+system is determined not only by the quality of its individual
+components but also by the dynamics of their interactions. Emergent
+behaviors, cascading failures, or unpredictable outcomes can arise from
+the interplay between models, making traditional model-centric
+qualification methods insufficient. Qualifying these systems requires a
+more holistic approach, focusing on the end-to-end reliability and
+effectiveness of the entire workflow.</p>
+
+<p>SREs are <a data-primary="ML model workflow evaluation" data-type="indexterm" id="id2801"/>adapting and developing new practices to address the
+qualification needs of these sophisticated systems. Unlike standard
+model quality evaluation—which typically measures the safety or accuracy
+of a single, isolated output against a static dataset—qualifying an
+agent requires evaluating dynamic execution loops. This often involves
+designing scenario-based tests in which the entire agentic workflow is
+evaluated against realistic use cases and potential edge cases. Instead
+of just measuring model accuracy, these tests assess the success rate,
+robustness, and safety of overall task completion: for example,
+measuring whether an agent can correctly formulate a multistep plan and
+successfully resolve the user’s request without taking unauthorized or
+destructive actions. Sophisticated evaluation frameworks are needed to
+capture the nuances of these interactions, potentially involving
+simulations, human-in-the-loop evaluations, or comparisons against
+baseline behaviors. Ensuring the predictability, controllability, and
+safe operation of agentic systems requires a shift toward qualifying
+the system’s behavior as a whole, a new frontier for production AI
+reliability.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Utilization, Efficiency, and Capacity Planning" data-type="sect1"><div class="sect1" id="ch20_utilization_efficiency_and_capacity_planning">
+<h1>Utilization, Efficiency, and Capacity Planning</h1>
+
+<p>AI accelerators <a data-primary="accelerator hardware" data-secondary="capacity planning" data-type="indexterm" id="id2802"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-type="indexterm" id="id2803"/>are currently a highly sought-after and constrained
+compute resource. While traditional cluster management systems often
+make standard compute resources feel effectively unlimited, AI
+accelerators—such as GPUs and TPUs—operate under a different economic
+and physical reality. They are expensive, subject to supply chain
+volatility, and have rigorous power and cooling requirements.</p>
+
+<p>Given these constraints, capacity planning for AI is significantly more
+critical than for traditional products. The scarcity of resources forces
+a reevaluation of standard SRE practices; for example, the traditional
+<em>N</em> + 1 capacity provisioning model may be
+cost-prohibitive in an AI context, leading to the introduction of
+products without strict availability guarantees. Furthermore, estimating
+demand is fraught with difficulty. Determining the TPU capacity required
+per query per second (QPS) is challenging for new features, particularly
+when a single user query may fan out to trigger multiple models or
+safety checks.</p>
+
+<p>Delivery timelines for accelerators are uncertain, so their allocation
+to any particular use becomes a matter of business priority rather than
+a technical challenge. Running out means errors or unacceptable latency.
+There is also the complexity of keeping up with new hardware releases,
+which change the cost profile and lead to rebalancing against
+utilization goals.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Accelerator Utilization and the Loss Framework" data-type="sect2"><div class="sect2" id="ch20_accelerator_utilization_and_the_loss_framework">
+<h2>Accelerator Utilization and the Loss Framework</h2>
+
+<p>While the ultimate goal is <a data-primary="capacity planning" data-secondary="accelerator hardware" data-tertiary="utilization as metric for efficiency" data-type="indexterm" id="cappln_acchrdw_ume"/>business efficiency, this is often difficult
+to quantify directly. Instead, we use accelerator utilization as a proxy
+metric. Roughly defined as the duty cycle, this metric can be aggregated
+across all accelerators a product uses. As an example, the target
+metric may be measured at the 95th percentile over a week (7d95
+occupancy). However, relying solely on utilization can incentivize
+unproductive busy work. To counter this, we employ a loss analysis
+framework.</p>
+
+<p>In our capacity model, we begin with a theoretical baseline of 100%
+utilization. We then characterize any deviation from this baseline as a
+loss. By categorizing these losses, we can identify which are
+unavoidable and which can be mitigated through engineering investment.
+We generally categorize these into six primary losses, described in the following sections.</p>
+
+
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Max utilization loss" data-type="sect3"><div class="sect3" id="ch20_max_utilization_loss">
+<h3>Max utilization loss</h3>
+
+<p>Machine learning <a data-primary="metrics" data-secondary="business efficiency" data-type="indexterm" id="met_buseff"/>models cannot effectively be served at 100% utilization
+across all available hardware resources without incurring significant
+inference errors or latency spikes. The exact “safe” ceiling varies
+widely by model and configuration: real-time inference with strict
+latency SLOs might hit a queueing bottleneck at 50% utilization, whereas
+asynchronous batch processing can safely be pushed closer to 90%. This
+large variance is driven by a combination of operational trade-offs and
+physical limits: strict latency SLOs require smaller, less efficient
+batch sizes; autoregressive decoding in generative models is inherently
+bound by memory bandwidth rather than pure compute; and large models
+introduce unavoidable inter-chip communication and host-level I/O
+bottlenecks. The gap between this ceiling and 100% is the max
+utilization loss.</p>
+
+<p>The recommended solution to minimize the max utilization loss is to frequently load-test key models with
+representative traffic. Implementing a redline canary—a subset of
+production instances pushed to failure—helps identify the true breaking
+point. Ideally, automate this within the CI/CD process to detect
+regressions in new model releases.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Unrealized demand loss" data-type="sect3"><div class="sect3" id="ch20_unrealized_demand_loss">
+<h3>Unrealized demand loss</h3>
+
+<p>We typically provision model deployment based on forecasted demand.
+However, if a feature launch is delayed or user adoption ramps up slower
+than predicted, the result is “launch buffers” and overprovisioned
+capacity.</p>
+
+<p>Recommended solutions include:</p>
+<dl>
+<dt>Preemptible workloads</dt>
+<dd>
+<p>Use unlaunched or buffer capacity for
+valuable but interruptible work such as model training, evaluations, or
+batch processing.</p>
+</dd>
+<dt>Pooled capacity</dt>
+<dd>
+<p>Unlock unused capacity for use by other teams
+(mutual benefit) rather than hoarding it within a specific product silo.</p>
+</dd>
+<dt>Step-wise growth</dt>
+<dd>
+<p>Provision capacity in steps aligned with the actual
+launch ramp, rather than 100% up front.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Redundancy (N + 1) loss" data-type="sect3"><div class="sect3" id="ch20_redundancy_n_1_loss">
+<h3>Redundancy (N + 1) loss</h3>
+
+<p>To ensure reliability, SREs traditionally provision systems with <em>N</em> + 1
+redundancy, allowing the largest isolated failure domain to go down
+while still serving full demand. For massive AI workloads, this idle
+redundancy is exceptionally expensive.</p>
+
+<p class="pagebreak-before less_space">Recommended solutions include:</p>
+<dl>
+<dt>Smaller failure domains</dt>
+<dd>
+<p>Using a greater <em>N</em> reduces the percentage
+overhead of the +1. However, it also increases the risk of losing more
+than one failure domain.</p>
+</dd>
+<dt>Scope reduction</dt>
+<dd>
+<p>Limit the scope of the redundancy requirements to
+applicable workload criticality or user class.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Disaggregation imbalance loss" data-type="sect3"><div class="sect3" id="ch20_disaggregation_imbalance_loss">
+<h3>Disaggregation imbalance loss</h3>
+
+<p>In advanced model serving architectures such as disaggregated model
+serving, the prefill (prompt processing) and decode (token generation)
+phases are scaled independently. While this usually yields better
+performance than interleaved serving, improper balancing of these stages
+relative to the traffic mix leads to bottlenecks and stranded capacity.</p>
+
+<p>The recommended solution is to continuously monitor production bottlenecks and
+adjust the ratio of prefill to decode servers. Verify these ratios via
+load testing with representative traffic mixes.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Load-balancing loss" data-type="sect3"><div class="sect3" id="ch20_load_balancing_loss">
+<h3>Load-balancing loss</h3>
+
+<p>Even with sufficient aggregate capacity, deficient load balancing can
+lead to “hot spots” where some replicas are overwhelmed while others
+sit idle. This is particularly acute in AI inference, where request
+costs are highly nonuniform (varying significantly by prompt length and
+decoding steps). Additionally, generative AI serving relies heavily on
+key-value (KV) caches—memory structures that store conversational
+history or shared prompt prefixes to avoid recomputing tokens. This
+introduces a strict tension between routing for cache locality and
+routing for even compute distribution. Simple algorithms like
+Round Robin fail to account for this variance, forcing the fleet to
+overprovision to accommodate the hottest replicas.</p>
+
+<p>Recommended solutions include:</p>
+<dl>
+<dt>Advanced algorithms</dt>
+<dd>
+<p>Move away from Round Robin toward dynamic
+algorithms such as Least-Loaded or Peak Exponential Weighted Moving
+Average (EWMA) that account for current server load.</p>
+</dd>
+<dt>Cost-aware routing</dt>
+<dd>
+<p>Implement load balancers that inspect request
+characteristics (e.g., input token count) to predict cost and distribute
+heavy queries more intelligently.</p>
+</dd>
+<dt>Global traffic shaping</dt>
+<dd>
+<p>Use global load balancers to smooth out
+regional traffic imbalances, shifting load to underutilized regions when
+latency budgets allow.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Fragmentation loss" data-type="sect3"><div class="sect3" id="ch20_fragmentation_loss">
+<h3>Fragmentation loss</h3>
+
+<p>Every LLM has a minimum serving footprint. A single large instance is
+generally more efficient than several fragmented smaller ones. However,
+large foundation models often have a massive minimum footprint (e.g.,
+100 chips per cluster). If two products (say, Gmail and Chat) deploy
+the same model separately but neither fully utilizes it, the leftover
+capacity in each deployment is wasted.</p>
+
+<p>Recommended solutions include:</p>
+<dl>
+<dt>Model consolidation</dt>
+<dd>
+<p>Limit the number of unique model variants
+deployed in production.</p>
+</dd>
+<dt>Prompt engineering over fine-tuning</dt>
+<dd>
+<p>Encourage the use of system
+prompts to customize a single general model for multiple use cases,
+rather than deploying separate specialized models for every feature.</p>
+</dd>
+<dt>Multitenant serving</dt>
+<dd>
+<p>Explore sharing model deployments across
+different products to avoid fragmentation<a data-primary="accelerator hardware" data-secondary="capacity planning" data-type="indexterm" id="id2804"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-startref="cappln_acchrdw_ume" data-tertiary="utilization as metric for efficiency" data-type="indexterm" id="id2805"/><a data-primary="metrics" data-secondary="business efficiency" data-startref="met_buseff" data-type="indexterm" id="id2806"/> at the infrastructure level.</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Centralized Fleet Management to Enable Agility" data-type="sect2"><div class="sect2" id="ch20_centralized_fleet_management_to_enable_agility">
+<h2>Centralized Fleet Management to Enable Agility</h2>
+
+<p>Managing a large <a data-primary="accelerator hardware" data-secondary="centralized fleet management" data-type="indexterm" id="id2807"/><a data-primary="capacity planning" data-secondary="accelerator hardware" data-tertiary="centralized fleet management" data-type="indexterm" id="id2808"/>fleet of diverse accelerators distributed across
+various teams and product areas can lead to significant inefficiencies,
+including stranded resources and an inability to shift capacity to where
+it’s most needed. Implementing a centralized fleet management strategy
+allows for the creation of large, shared pools of accelerator capacity.
+Pooling resources enhances statistical multiplexing effects, smoothing
+out peak demands from individual users and improving overall fleet
+utilization.</p>
+
+<p>This shared model, often managed by a central function, enables more
+agile resource allocation, allowing capacity to be dynamically shifted
+to areas with the highest impact or most pressing needs. This approach
+breaks down silos and ensures that expensive hardware is not sitting
+idle in one part of the organization while another is starved of
+resources.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Accelerator Hardware Fungibility" data-type="sect2"><div class="sect2" id="ch20_accelerator_hardware_fungibility">
+<h2>Accelerator Hardware Fungibility</h2>
+
+<p>The AI hardware <a data-primary="accelerator hardware" data-secondary="fungibility" data-type="indexterm" id="acchrdw_fngblt"/><a data-primary="hardware" data-secondary="fungibility" data-type="indexterm" id="hdwr_fng"/>landscape is characterized by the rapid evolution of
+accelerator generations and diverse architectures. Tightly coupling ML
+workloads to specific hardware types and generations involves a trade-off
+between the time-consuming, largely manual work required to optimize
+for a given platform and the flexibility this approach grants in terms of
+capacity planning and scheduling.</p>
+
+<p>Hardware fungibility aims to abstract away the specifics of the
+underlying accelerator, allowing workloads to run seamlessly across
+different types (TPU versus GPU) and generations. This decoupling is
+crucial for:</p>
+<dl>
+<dt>Supply chain resilience</dt>
+<dd>
+<p>It reduces dependence on a single type of
+chip.</p>
+</dd>
+<dt>Cost optimization</dt>
+<dd>
+<p>It enables opportunistic scheduling on the most
+cost-effective hardware available. Accelerator flexibility also improves
+your negotiating position and reduces costs overall.</p>
+</dd>
+<dt>Improved schedulability</dt>
+<dd>
+<p>This increases the pool of available resources
+for any given job.</p>
+</dd>
+<dt>Simplified capacity planning</dt>
+<dd>
+<p>This allows planning based on aggregate
+compute needs rather than specific hardware.</p>
+</dd>
+</dl>
+
+<p>Achieving fungibility requires either software abstractions and compiler
+support, or a dedicated team to implement platform-specific,
+high-performance kernels for each target accelerator. Technologies like
+XLA play a vital role by compiling ML models to run efficiently across
+various hardware configurations. Platform-level initiatives to
+standardize datacenter infrastructure, power, and cooling also
+contribute to making hardware<a data-primary="accelerator hardware" data-secondary="fungibility" data-startref="acchrdw_fngblt" data-type="indexterm" id="id2809"/><a data-primary="hardware" data-secondary="fungibility" data-startref="hdwr_fng" data-type="indexterm" id="id2810"/> more interchangeable.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automating Capacity Planning" data-type="sect2"><div class="sect2" id="ch20_automating_capacity_planning">
+<h2>Automating Capacity Planning</h2>
+
+<p>Manual capacity <a data-primary="capacity planning" data-secondary="automating" data-type="indexterm" id="id2811"/><a data-primary="automation" data-secondary="capacity planning" data-type="indexterm" id="id2812"/>planning for LLMs can become untenable as the system
+scales up.</p>
+
+<p>A possible approach is to instrument the inference engine to report cost
+per query. Capacity automation then projects organic demand (the
+natural, gradual growth of existing traffic), and adds in planned
+inorganic launches (step-function increases driven by new features,
+model upgrades, or onboarding large tenants). The automation then
+proposes a capacity deployment plan based on these inputs. To estimate
+the expected inorganic growth from new features, we track the capacity
+usage of servers running small-percentage experiments for a feature
+and extrapolate the cost to a full deployment. This automation (<a data-type="xref" href="#ch20_fig03">Figure 20-3</a>) handles medium-term sizing (baseline capacity), while autoscaling
+manages short-term spikes.</p>
+
+<figure><div class="figure" id="ch20_fig03">
+<img alt="Diagram illustrating the flow of capacity planning, showing the interaction between organic and inorganic demand, order accelerators, allocation processes, and production endpoints." src="assets/sre2_2003.png"/>
+<h6><span class="label">Figure 20-3. </span>Automating capacity planning</h6>
+</div></figure>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scheduling Primitives" data-type="sect2"><div class="sect2" id="ch20_scheduling_primitives">
+<h2>Scheduling Primitives</h2>
+
+<p>Traditional <a data-primary="accelerator hardware" data-secondary="schedulers" data-type="indexterm" id="acchrdw_schd"/><a data-primary="ML workloads" data-secondary="schedulers, features" data-type="indexterm" id="mlwrkld_shdlr_ftrs"/><a data-primary="schedulers, ML workloads" data-type="indexterm" id="schdlrs_mlwrklds"/>schedulers designed for CPU-based workloads often lack the
+necessary primitives to efficiently manage ML accelerator resources,
+leading to poor bin packing and low utilization.<sup><a data-type="noteref" href="ch20.html#id2813" id="id2813-marker">12</a></sup> ML workloads
+have unique characteristics that necessitate specialized scheduling
+features. Some of the most relevant are:</p>
+<dl class="pagebreak-before less_space">
+<dt>Topology-aware scheduling</dt>
+<dd>
+<p>Many large-scale training jobs require a
+specific network topology between accelerator chips—for example, TPU slices
+connected via high-speed inter-chip interconnect (ICI) links. The
+scheduler must understand these topology constraints to place jobs on a
+set of machines that meet the necessary requirements.</p>
+</dd>
+<dt>Gang scheduling</dt>
+<dd>
+<p>For tightly coupled distributed training jobs, all
+tasks must be scheduled 
+<span class="keep-together">simultaneously.</span></p>
+</dd>
+<dt>Goodput-aware scheduling</dt>
+<dd>
+<p>The scheduler prioritizes jobs based on their progress
+and likelihood of completion, especially in environments with frequent
+preemptions and high workload contention.</p>
+</dd>
+<dt>Accelerator topology defragmentation</dt>
+<dd>
+<p>The scheduler actively manages job placement to keep large groups of contiguous accelerators
+available for large-model <a data-primary="ML workloads" data-secondary="schedulers, features" data-startref="mlwrkld_shdlr_ftrs" data-type="indexterm" id="id2814"/><a data-primary="schedulers, ML workloads" data-startref="schdlrs_mlwrklds" data-type="indexterm" id="id2815"/> <a data-primary="accelerator hardware" data-secondary="schedulers" data-startref="acchrdw_schd" data-type="indexterm" id="id2816"/>training and inference.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Job-Specific Optimizations" data-type="sect2"><div class="sect2" id="ch20_job_specific_optimizations">
+<h2>Job-Specific Optimizations</h2>
+
+<p>Beyond general fleet <a data-primary="ML workloads" data-secondary="optimization" data-type="indexterm" id="id2817"/><a data-primary="ML jobs, optimizing" data-type="indexterm" id="id2818"/>and scheduling efficiencies, significant gains can
+be realized by optimizing how individual ML jobs are structured and run.</p>
+
+<p>Bin packing multiple models from the same serving unit can dramatically
+improve accelerator utilization, particularly for inference workloads
+where individual models may not have enough traffic to fully saturate
+the hardware. This requires effective resource isolation between
+models,<sup><a data-type="noteref" href="ch20.html#id2819" id="id2819-marker">13</a></sup> intelligent bin packing of models within a server based on
+their resource footprints (HBM, compute), and the dynamic loading and
+unloading of models.</p>
+
+<p>ML accelerator fleets may run a mix of production-critical jobs and
+lower-priority workloads, for example running training and research jobs
+in the spare capacity left by occasional dips in serving demand.
+Effective preemption mechanisms are essential to ensure high-priority
+jobs can access resources when needed. For long-running training jobs,
+preemption must be paired with frequent and efficient checkpointing to
+minimize lost work. The ability to quickly save and restore state is
+crucial for maintaining high fleet productivity.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Energy Consumption and Sustainability" data-type="sect1"><div class="sect1" id="ch20_energy_consumption_and_sustainability">
+<h1>Energy Consumption and Sustainability</h1>
+
+<p>The energy<a data-primary="AI infrastructure, energy consumption considerations" data-type="indexterm" id="aiinf_eccons"/><a data-primary="energy consumption, AI infrastructure" data-type="indexterm" id="enrgcons_aiinfr"/> demands of AI infrastructure represent a real challenge to
+our industry. This is not a peripheral concern for SRE; it sits at the
+intersection of capacity planning, infrastructure design, and the
+physical limits of the electrical grid itself. Addressing it requires us
+to rethink long-standing assumptions about how we provision, operate,
+and optimize our datacenters. This challenge also presents an
+opportunity: by leveraging the inherent flexibility of AI workloads,
+SREs should include demand response capabilities in capacity plans to
+make the entire grid safer.<sup><a data-type="noteref" href="ch20.html#id2820" id="id2820-marker">14</a></sup> This section examines how the
+energy landscape has shifted, the techniques we use to manage power
+responsibly as a first-class resource constraint, and the safety
+mechanisms required to prevent failures when consumption outpaces
+capacity.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shifting Landscape" data-type="sect2"><div class="sect2" id="ch20_shifting_landscape">
+<h2>Shifting Landscape</h2>
+
+<p>Datacenter power consumption patterns have changed drastically to accommodate
+the increasing focus on ML workloads. While energy was previously
+plentiful relative to other system bottlenecks, it has now become a
+bottleneck itself. The reason for this is twofold: on a per-machine level, each machine contains more chips, and each chip draws more
+power. A typical ML machine has upwards of 3× higher power consumption
+than a CPU-only machine.</p>
+
+<p>ML machines have stringent colocation requirements. A classical CPU-only
+serving workload can make progress independently of the presence of
+other machines. The smallest unit of fungibility is one machine. An ML
+training workload, however, can only proceed when all of its required
+machines are present on the same network, or at least within very close
+proximity. Its smallest unit of fungibility is much larger, often on the
+order of thousands of machines. This typically means thousands of machines, all of which need to be located on the same electrical grid. Assuming a workload requires 1,000 machines, this means the minimally useful energy footprint is roughly 3,000 times higher (3× higher consumption × 1,000 machines) than that of a classical CPU workload. Datacenter designs grow larger to
+accommodate this increased energy need.</p>
+
+<p>Usage patterns also differ. While serving CPU workloads usually follows
+a daily peak-and-trough pattern, ML training workload usage is more like a
+massive square wave, with power fluctuations in the 10s of megawatts
+and near-instantaneous ramp speeds.<sup><a data-type="noteref" href="ch20.html#id2821" id="id2821-marker">15</a></sup>
+Sudden power consumption increases and decreases can have drastic impacts,
+such as reducing the lifespan of TPUs or GPUs due to constant thermal
+fluctuations and damaging rack and datacenter equipment. Outside the
+datacenter, the grid and utilities can be affected as well. Large energy
+consumers have long had interruptible power agreements in place
+with suppliers. Creating a demand response plan is thus
+a critical part of planning for large datacenters, the power grid, and
+energy generation in order to reduce costly infrastructure investment,
+alleviate transmission congestion, enhance operational reliability, and
+support decarbonization goals.<sup><a data-type="noteref" href="ch20.html#id2822" id="id2822-marker">16</a></sup> To learn more about Google’s <a data-primary="AI infrastructure, energy consumption considerations" data-startref="aiinf_eccons" data-type="indexterm" id="id2823"/>sustainability efforts
+in these and other areas, follow <a href="https://sustainability.google">Google Sustainability</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Power Oversubscription" data-type="sect2"><div class="sect2" id="ch20_power_oversubscription">
+<h2>Power Oversubscription</h2>
+
+<p>With energy emerging <a data-primary="AI infrastructure, energy consumption considerations" data-secondary="oversubscribing" data-type="indexterm" id="id2824"/>as a bottleneck across hardware and software
+systems, traditional optimization strategies must evolve. The general
+principle is to oversubscribe energy capacity in relation to physical
+machines.</p>
+
+<p>To better understand what this means in practice, let’s consider an
+analogy. Selling 105 tickets for a flight with only 100 seats is
+analogous to provisioning 105 machines when the available power capacity can only support 100. Passengers who do not show up due to unforeseen delays or
+last-minute emergencies are akin to underutilized machines, resulting
+in lower-than-expected power consumption.</p>
+
+<p>Some passengers are more flexible about their departure time, and are
+fine with taking a later flight. These
+are analogous to batch jobs that are flexible about when they are
+scheduled.</p>
+
+<p>What about failure cases? If all 105 passengers show up, 5 passengers
+will not have seats. They won’t be happy, and the airline will have to pay them compensation. However, this extra expense is offset by the
+additional ticket sales in normal operations, so the airline is willing to
+occasionally accept this outcome.</p>
+
+<p>In datacenters, it’s possible for all machines to experience simultaneous utilization spikes. In this case, some workloads may have to be
+forcibly shed to avoid exceeding the power rating of the power
+domain. This may result in a reduction of workload availability (while
+not necessarily violating SLOs), analogous to the airline needing to
+compensate passengers who don’t have seats.</p>
+
+<p>Continuous and accurate power monitoring, along with a latency-sensitive
+feedback loop for software-triggered power reduction, is required to act quickly and reduce power consumption before a circuit
+breaker trips.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SLOs" data-type="sect2"><div class="sect2" id="ch20_slos">
+<h2>SLOs</h2>
+
+<p>Unavailability due <a data-primary="AI infrastructure, energy consumption considerations, error budget for SLOs" data-type="indexterm" id="id2825"/>to power capacity fits into the error budget for the
+workload SLO, along with other types of disruptions. But unlike with other sources of disruptions, correlated simultaneous failures across many workloads is common in power failures. Services sensitive to these types
+of failures should provision redundantly across power domains
+(e.g., racks, rows, bus ducts).</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Optimization Principles" data-type="sect2"><div class="sect2" id="ch20_optimization_principles">
+<h2>Optimization Principles</h2>
+
+<p>The relationship <a data-primary="AI infrastructure, energy consumption considerations" data-secondary="power optimization" data-type="indexterm" id="id2826"/>between power consumption and machine utilization is
+not linear. This has significant implications for how we obtain the most
+performance per unit of power (<a data-type="xref" href="#ch20_fig04">Figure 20-4</a>).</p>
+
+<figure><div class="figure" id="ch20_fig04">
+<img alt="Graph showing the relationship between normalized GCU utilization and normalized power utilization, illustrating the non-linear increase in power consumption with machine utilization, and highlighting the median power utilization curve." src="assets/sre2_2004.png"/>
+<h6><span class="label">Figure 20-4. </span>Performance per unit of power</h6>
+</div></figure>
+
+<p>The Y-intercept is machine idle power (power utilization at 0% machine
+utilization). A machine idling at 0% utilization still consumes a
+nontrivial amount of power. The power consumption curve flattens at
+higher machine utilization. For example, increasing machine utilization
+from 75% to 80% only marginally increases power consumption, while increasing utilization from 30% to 35% causes a much larger increase. This means machines should run at as high a
+utilization as possible to make power consumption more efficient, maximizing FLOPS per watt. However, machine utilization is capped for performance reasons. Multitenancy, common in CPU-only workloads but
+less common in ML training, frequently results in machine isolation
+failures (e.g., kernel lock contention, CPU access contention, memory
+bandwidth saturation) between workloads, which only become evident at
+higher machine 
+<span class="keep-together">utilization.</span></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Safety Principles" data-type="sect2"><div class="sect2" id="ch20_safety_principles">
+<h2>Safety Principles</h2>
+
+<p>The main <a data-primary="AI infrastructure, energy consumption considerations" data-secondary="safety considerations" data-type="indexterm" id="aiinf_ecc_sftcons"/>safety principle in optimization is to build a system capable
+of detecting when consumption is greater than capacity and quickly
+shedding power before a physical circuit breaker trip results in an
+unnecessarily long recovery time.</p>
+
+<p>Power-related failures, whether due to excessive consumption (e.g., from
+oversubscription) or the failure of underlying infrastructure
+(e.g., a transformer going offline) are abrupt and ungraceful. Recovery
+from unclean machine shutdowns is lengthy and messy. Rebooting complex
+software systems with complex dependency chains also increases recovery
+time.</p>
+
+<p>There are three main ways to curtail energy consumption through
+controlling software workloads: these should be combined to balance
+power reduction ability, reaction time, recovery time, and performance
+impact. Reaction time is particularly important, as a typical circuit
+breaker can withstand an excess of power or current for only a <em>few
+seconds</em> before it trips and the whole domain instantly loses power. The options are:</p>
+<dl>
+<dt>Throttling</dt>
+<dd>
+<p>On ML machines, throttling accelerator compute (as
+opposed to host CPU or accelerator memory) is the most power-effective
+approach because it targets the most power-hungry part of the machine. This results in
+immediate power reduction (within milliseconds) and rapid power restoration
+once throttling ends. It allows granular power consumption reduction
+down to approximately machine idle power (power consumption at 0%
+machine utilization). However, the performance impact in relation to
+throttle depth is difficult to establish.</p>
+</dd>
+<dt>Task termination</dt>
+<dd>
+<p>With this approach, you assign workloads a priority ordering and successively
+terminate tasks (via the SIGKILL signal) within each priority band, checking whether power consumption has decreased below a safe threshold. If not, you move
+on to the next priority band. The loop of task termination and power consumption checks takes on the order of seconds to take effect. When all
+workloads on a machine have been removed, power consumption is reduced to machine
+idle power.</p>
+</dd>
+<dt>Machine shutdown</dt>
+<dd>
+<p>Shutting down a machine is the only way to remove
+the remaining idle power consumption. Since the machines must be shut
+down within seconds, care must be taken to verify that the shutdown is
+clean and the machines can be booted up without issue.</p>
+</dd>
+</dl>
+
+<p>The overall goals when managing energy consumption are to minimize
+performance loss per kW shed and to shed as little power as possible in
+order to reduce power consumption to safe levels.</p>
+
+<p>Upon detection of a power event, the demand response plan kicks
+in. First, throttling is employed to quickly reduce power consumption, minimizing
+unnecessary workload shedding during transient events such as sags or swells. If the power event persists for more than five seconds, the task
+termination sequence or machine shutdown procedure is initiated. The choice between task
+termination and machine shutdown depends on whether the
+datacenter has been provisioned <a data-primary="AI infrastructure, energy consumption considerations" data-secondary="safety considerations" data-startref="aiinf_ecc_sftcons" data-type="indexterm" id="id2827"/><a data-primary="energy consumption, AI infrastructure" data-startref="enrgcons_aiinfr" data-type="indexterm" id="id2828"/>to support machine idle power during a power shortage.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Security and Compliance" data-type="sect1"><div class="sect1" id="ch20_security_and_compliance">
+<h1>Security and Compliance</h1>
+
+<p>Google has long championed the <a href="https://saif.google">Secure AI Framework
+(SAIF)</a> to <a data-primary="Secure AI Framework (SAIF)" data-type="indexterm" id="id2829"/><a data-primary="SAIF (Secure AI Framework)" data-type="indexterm" id="id2830"/>encourage the right mindset regarding AI risks
+and ensure that systems are built and deployed responsibly. The integration of
+AI, and particularly LLMs and generative AI, into production systems
+introduces novel security challenges and amplifies existing ones. For SREs, understanding and mitigating these risks at scale using SAIF
+is crucial to building and operating reliable and secure AI services.
+This section explores the production threat landscape, platform
+capabilities for defense, and the evolving compliance requirements.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Threats and Challenges" data-type="sect2"><div class="sect2" id="ch20_threats_and_challenges">
+<h2>Threats and Challenges</h2>
+
+<p>In traditional <a data-primary="AI systems" data-secondary="security" data-tertiary="challenges" data-type="indexterm" id="aisys_sec_chlngs"/><a data-primary="security" data-secondary="AI system challenges" data-type="indexterm" id="sec_aisyschal"/>systems, code binaries are rarely the primary target of
+theft; user data is. In AI systems, the model itself—and the data used
+to train it—represents a massive capital investment and valuable
+intellectual property. ML assets can be a prime target for attackers,
+necessitating security controls to protect them throughout their
+lifecycle. This includes preventing direct model exfiltration and
+detecting unauthorized access.</p>
+
+<p>AI systems also introduce architectural patterns and dependencies that
+significantly expand the attack surface. Unlike traditional APIs with
+strictly typed inputs, AI APIs are often open-ended and flexible,
+designed to accept natural language and other unstructured inputs. Crucially, the
+architecture of these systems creates a fundamental vulnerability by
+blending control logic with user data. In this environment, the system
+prompt—which serves as the foundational configuration and 
+<span class="keep-together">operating</span>
+boundary for the model—is processed through the same channel as user
+input. This mixture of instructions and data makes it exceptionally
+difficult to prevent the model from treating a user’s malicious input as
+a legitimate override of its original system constraints. This
+flexibility makes these systems prone to prompt injection, where malicious inputs
+manipulate the model into overriding its system instructions or safety
+filters. Mitigating these types of risks requires a layer to check model
+inputs and outputs, such as Google Cloud Armor.<sup><a data-type="noteref" href="ch20.html#id2831" id="id2831-marker">17</a></sup></p>
+
+<p>Beyond the input layer, the composition of AI systems introduces other
+risks, 
+<span class="keep-together">including:</span></p>
+<dl>
+<dt>Supply chain vulnerabilities</dt>
+<dd>
+<p>AI systems rely heavily on a complex
+supply chain of pretrained models, open source datasets, and
+third-party frameworks. SREs must treat these external dependencies with
+the same scrutiny as binary imports, as compromised weights and poisoned
+datasets can introduce backdoors that are difficult to detect through
+existing processes.</p>
+</dd>
+<dt>Agentic risks</dt>
+<dd>
+<p>The shift toward agents that interact with external
+systems (via protocols 
+<span class="keep-together">like the</span> Model Context Protocol) creates new
+trust boundaries. When agents interact with other agents
+(agent-to-agent), the complexity of these trust relationships
+multiplies. Production owners should consider the blast radius of an
+
+<span class="keep-together">autonomous</span> agent that has permission to invoke tools or modify state in
+other systems. Consider <a data-type="xref" href="#ch20_fig05">Figure 20-5</a>, which illustrates our defense-in-depth approach for handling agentic and dynamic code execution risks.</p>
+</dd>
+<dt>Dynamic code execution</dt>
+<dd>
+<p>Perhaps most critical for production
+stability is the trend of systems that generate and execute code on the
+fly to perform tasks like data analysis. This effectively introduces
+remote code execution as a feature rather than a bug. Without rigorous
+sandboxing and resource constraints, this capability presents a
+significant risk to the entire underlying infrastructure.</p>
+</dd>
+</dl>
+
+<figure><div class="figure" id="ch20_fig05">
+<img alt="Diagram illustrating Google's layered AI agent security approach, emphasizing runtime policy enforcement, reasoning-based defenses, and testing for vulnerabilities." src="assets/sre2_2005.png"/>
+<h6><span class="label">Figure 20-5. </span>Google’s hybrid, defense-in-depth approach to AI agent security<sup><a data-type="noteref" href="ch20.html#id2832" id="id2832-marker">18</a></sup></h6>
+</div></figure>
+
+<p>These technical challenges exist within an unstable regulatory
+environment. AI regulation is immature and volatile, meaning compliance
+requirements can change at a moment’s notice. This uncertainty forces us
+to adopt a forward-looking design mindset. We cannot bake every
+compliance assumption deeply into the architecture; instead, we must
+build flexible systems that allow us to adapt security postures without
+requiring a complete rearchitecture<a data-primary="AI systems" data-secondary="security" data-startref="aisys_sec_chlngs" data-tertiary="challenges" data-type="indexterm" id="id2833"/><a data-primary="security" data-secondary="AI system challenges" data-startref="sec_aisyschal" data-type="indexterm" id="id2834"/> of the stack.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling Through the Platform" data-type="sect2"><div class="sect2" id="ch20_scaling_through_the_platform">
+<h2>Scaling Through the Platform</h2>
+
+<p>As the ultimate <a data-primary="AI systems" data-secondary="security" data-tertiary="policies and threat models" data-type="indexterm" id="aisys_sec_polthrtmod"/>owners of production systems, we are uniquely positioned
+to operationalize security and compliance requirements. To do so, we must
+collaborate closely with other engineering functions to develop the
+relevant policies and threat models, then leverage our extensive
+background in production platforms, monitoring, and automation to
+implement the resulting controls at scale, with reliability and
+sustainability in mind.</p>
+
+<p>The most effective way to achieve these goals is by driving convergence
+onto common AI infrastructure and platform services. Just as SRE
+champions common platforms to optimize for resource efficiency, this
+same centralization allows for the uniform application of security
+postures and compliance requirements. By embedding controls directly
+into the model serving platform, we can ensure that capabilities such as
+audit logging, access transparency, and other enforceable constraints
+are scalable across a large number of applications and use cases.</p>
+
+<p>An example is Google’s Private AI Compute offering, which ensures inference
+payloads are inaccessible to insiders and infrastructure operators. This
+is achieved through the seamless platform support of trusted execution
+environments, which isolate the workload all the way down to the
+hardware layer. This cryptographic isolation guarantees that neither the
+sensitive user data nor the valuable model IP is visible in memory
+during processing, mitigating the risk of data exfiltration by insiders
+or compromised infrastructure.</p>
+
+<p>However, mandating a centralized platform can introduce unaffordable
+friction and significantly reduce flexibility for individual teams
+engaged in fast-paced, frontier AI development. Balancing this trade-off
+is essential; locking down infrastructure too early can stifle the
+business velocity required to find product-market fit. It is therefore
+paramount to time the platformization of AI stack components carefully,
+accepting that during early exploratory stages, bespoke solutions might
+be the most practical <a data-primary="AI systems" data-secondary="security" data-startref="aisys_sec_polthrtmod" data-tertiary="policies and threat models" data-type="indexterm" id="id2835"/>path forward.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Enhanced Observability for AI Security" data-type="sect2"><div class="sect2" id="ch20_enhanced_observability_for_ai_security">
+<h2>Enhanced Observability for AI Security</h2>
+
+<p>Traditional <a data-primary="AI systems" data-secondary="security" data-tertiary="enhanced observability considerations" data-type="indexterm" id="id2836"/><a data-primary="observability" data-secondary="enhanced, AI system security" data-type="indexterm" id="id2837"/>observability is insufficient for the unique security and
+compliance challenges posed by AI systems. AI systems, especially those
+involving LLMs and agents, often function opaquely, making it hard to
+understand their behavior and detect unwanted activity. Observability
+enhancements are necessary to demystify these systems and ensure they
+operate securely. This means instrumenting not just the infrastructure
+but also the AI-specific components and abstractions. We need detailed
+logging of prompts and responses (with appropriate redaction of
+sensitive data), the inputs and outputs of any tools or APIs called by
+agents, and even a trace of the agent’s internal “reasoning” or
+decision-making process where possible.</p>
+
+<p>This specialized observability data is critical for several reasons. It
+enables the detection of potential prompt injection attempts by
+analyzing input patterns and unexpected deviations in AI behavior. It
+also allows for auditing the actions taken by autonomous agents, ensuring
+they align with expected permissions and user intent. This observability
+data may need to be consumed in real time for time-critical detection. In
+this case, fast mechanisms such as semantic drift checks using
+embeddings or heuristic and regex filters are preferred. For more
+comprehensive detection, we can take advantage of advanced techniques
+such as model-as-a-judge, where an advanced ML model is used to assess
+the AI workflow and determine whether it entails any risk, including but
+not limited to security.</p>
+
+<p>In the event of a security incident, this rich data is invaluable for
+forensics, helping us understand how an attack occurred and how to
+prevent future occurrences. Without this deep level of insight, securing
+and trusting complex AI systems becomes a near-impossible task.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch20_conclusion">
+<h1>Conclusion</h1>
+
+<p>The advent of AI and ML has affected software engineering profoundly, and
+SRE is no exception. The role of SRE has expanded from managing
+deterministic software to engineering for probabilistic AI workloads at
+higher velocity and with greater resource constraints than ever before.
+But SREs have always been engaged in this balancing act: resolving the
+inherent tension between the business-critical demand for rapid feature
+deployment and the pillars of operational reliability and efficiency.</p>
+
+<p>Even if conceptually the same, the shift to supporting AI has
+necessitated deep technical and operational adaptations across the SRE
+toolbelt. Reliability is no longer a binary measure; it now encompasses
+quality and nondeterministic outcomes informed by tailored SLOs and
+specialized latency metrics for serving.<sup><a data-type="noteref" href="ch20.html#id2838" id="id2838-marker">19</a></sup> Robust qualification pipelines are now business-critical to
+safely deploy and manage the frequent updates of models and
+configurations, as well as to defend against losses from unmaterialized demand
+and fragmentation.</p>
+
+<p>The practices discussed in this chapter represent the early days of SRE
+for AI. We recognize we are operating in a nascent and rapidly evolving
+domain, and as the underlying models and architectures continue their
+super-exponential progression, we expect our established practices to
+mature and new ones to emerge. We look forward to what comes next.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2730"><sup><a href="ch20.html#id2730-marker">1</a></sup> See Todd Underwood’s keynote address, <a href="https://oreil.ly/8vQt1">“SRE for ML: The First 10 Years and the Next 10”</a> at SREcon21.</p><p data-type="footnote" id="id2742"><sup><a href="ch20.html#id2742-marker">2</a></sup> We’ll discuss scheduling primitives in <a data-type="xref" href="#ch20_scheduling_primitives">“Scheduling Primitives”</a>.</p><p data-type="footnote" id="id2743"><sup><a href="ch20.html#id2743-marker">3</a></sup> Consider TorchTPU; see Claudio Basile et al., <a href="https://oreil.ly/rfCCg">“TorchTPU: Running PyTorch Natively on TPUs at Google Scale”</a>, Google for Developers blog, April 7, 2026.</p><p data-type="footnote" id="id2744"><sup><a href="ch20.html#id2744-marker">4</a></sup> Roy Frostig, Matthew James Johnson, and Chris Leary, <a href="https://oreil.ly/uMG89">“Compiling Machine Learning Programs via High-Level Tracing”</a>, SysML Conference, 2018.</p><p data-type="footnote" id="id2753"><sup><a href="ch20.html#id2753-marker">5</a></sup> Wenxin Zhang et al., <a href="https://oreil.ly/jCFp_">“Distributed Load Balancing with Workload-Dependent Service Rates”</a>, in <em>Proceedings of the 26th ACM Conference on Economics and Computation</em> (2025).</p><p data-type="footnote" id="id2755"><sup><a href="ch20.html#id2755-marker">6</a></sup> Christopher Olston et al., <a href="https://oreil.ly/t53PS">“TensorFlow-Serving: Flexible, High-Performance ML Serving”</a>, NIPS 2017 Workshop on ML Systems.</p><p data-type="footnote" id="id2756"><sup><a href="ch20.html#id2756-marker">7</a></sup> Distinct from production training, production serving is a technical term referring to models with a high expectation of responsiveness and serving interactive traffic.</p><p data-type="footnote" id="id2763"><sup><a href="ch20.html#id2763-marker">8</a></sup> For example, the identification of model quality (performance/correctness) as the most relevant SLI for ML was noted by Todd Underwood in his SREcon22 presentation, “SRE and ML: Why It Matters” Presentation at USENIX SREcon22 EMEA, Amsterdam, Netherlands, October 2022. <a class="bare" href="https://oreil.ly/9Qr2U"><em class="hyperlink">https://oreil.ly/9Qr2U</em></a></p><p data-type="footnote" id="id2766"><sup><a href="ch20.html#id2766-marker">9</a></sup> Arissa Wongpanich et al., <a href="https://oreil.ly/cDiLV">“Machine Learning Fleet Efficiency: Analyzing and Optimizing Large-Scale Google TPU Systems with ML Productivity Goodput”</a>, preprint, arXiv, April 20, 2025.</p><p data-type="footnote" id="id2767"><sup><a href="ch20.html#id2767-marker">10</a></sup> For additional information, see D. Sculley et al., <a href="https://oreil.ly/tJdkL">“Hidden Technical Debt in Machine Learning Systems”</a>, in <em>Proceedings of the 29th International Conference Neural Information Processing Systems (NIPS)</em>, 2015.</p><p data-type="footnote" id="id2769"><sup><a href="ch20.html#id2769-marker">11</a></sup> Google Platforms and Devices, Google DeepMind, and Google Cloud, <a href="https://oreil.ly/Ta64x">“Google Private AI Compute: Extending On-Device Privacy with the Power of the Cloud”</a> (2025).</p><p data-type="footnote" id="id2813"><sup><a href="ch20.html#id2813-marker">12</a></sup> Bin packing refers to the process of intelligently scheduling and placing multiple distinct workloads—such as individual ML models—onto a shared set of hardware resources (e.g., servers or accelerators) based on their specific compute and HBM footprints. The goal of bin packing is to maximize overall hardware utilization and minimize fragmented, wasted capacity.</p><p data-type="footnote" id="id2819"><sup><a href="ch20.html#id2819-marker">13</a></sup> While traditional isolation focuses on more standard resources (CPU, RAM, I/O, and network), AI serving environments introduce a more complex dimension of scarcity. Effective isolation must now account for <em>HBM</em> capacity and throughput, the <em>PCIe/interconnect bandwidth</em> used for constant weights and activations shuffling, and <em>accelerator core duty cycles</em> that operate independently of the host CPU. Failure to isolate these can lead to inter-model interference, where one model’s prefill phase starves another’s decode phase of memory bandwidth.</p><p data-type="footnote" id="id2820"><sup><a href="ch20.html#id2820-marker">14</a></sup> For more information around demand response capabilities, see Michael Terrell, <a href="https://oreil.ly/80COk">“A New Milestone for Smart, Affordable Electricity Growth”</a>, <em>News from Google</em>, March 19, 2026.</p><p data-type="footnote" id="id2821"><sup><a href="ch20.html#id2821-marker">15</a></sup> Houle Gan and Parthasarathy Ranganathan, <a href="https://oreil.ly/TeCki">“Balance of Power: A Full-Stack Approach to Power and Thermal Fluctuations in ML Infrastructure”</a>, Figure 5, <em>Google Cloud Blog</em>, February 12, 2025.</p><p data-type="footnote" id="id2822"><sup><a href="ch20.html#id2822-marker">16</a></sup> Xin Chen et al., <a href="https://oreil.ly/W-E2y">“Electricity Demand and Grid Impacts of AI Data Centers: Challenges and Prospects”</a>, preprint, arXiv, July 2, 2026.</p><p data-type="footnote" id="id2831"><sup><a href="ch20.html#id2831-marker">17</a></sup> For a codelab to get started with this quickly, see Abirami Sukumaran’s <a href="https://oreil.ly/RrUnS">“Building a Secure Agent System with Model Armor”</a>.</p><p data-type="footnote" id="id2832"><sup><a href="ch20.html#id2832-marker">18</a></sup> Santiago Díaz, Christoph Kern, and Kara Olive, <a href="https://oreil.ly/mypXe">“Google’s Approach for Secure AI Agents: An Introduction”</a> (2025).</p><p data-type="footnote" id="id2838"><sup><a href="ch20.html#id2838-marker">19</a></sup> For more about model quality assessment, consult D. Sculley et al., <a href="https://oreil.ly/tJdkL">“Hidden Technical Debt in Machine Learning Systems”</a>, in <em>Proceedings of the 29th International Conference Neural Information Processing Systems (NIPS)</em>, 2015, as well as Eric Breck et al., <a href="https://oreil.ly/8RVLB">“Data Validation for Machine Learning”</a>, in <em>Proceedings of the 2nd SysML Conference</em>, 2019.</p></div></div></section></body></html>

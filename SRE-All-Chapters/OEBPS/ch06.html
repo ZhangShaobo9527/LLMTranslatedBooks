@@ -1,0 +1,1839 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Organizational Structures for SRE</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 6. Organizational Structures for SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch06">
+<h1><span class="label">Chapter 6. </span>Organizational Structures for SRE</h1>
+
+
+<p class="byline">By Brian Kudzia, Christof Leng, Derek Remund, 
+<span class="keep-together">Mahesh Chellappa, Roman Seibel,</span> and Vartika Agarwal<br/>
+
+<span class="keep-together">with Carmela Quinito</span></p>
+
+<p>Site Reliability Engineering is not only a methodology, mindset,
+or role—fundamentally, it’s an organizational construct.
+Organizational structures that support this construct are important
+because:</p>
+
+<ul>
+<li>
+<p>Site Reliability Engineers do not exist in isolation. To thrive, they
+need a team around them, and those teams need to be embedded in a
+broader organizational context to be sustainable and mature.</p>
+</li>
+<li>
+<p>SRE is a specialization that is dedicated to building unique
+expertise in reliable systems. It is not a set of skills that every
+software engineer is expected to master at the same level as a full-time SRE.
+However, it does make sense for every software engineer to have a basic
+understanding of operations—the DevOps philosophy is complementary to
+SRE in that regard.<sup><a data-type="noteref" href="ch06.html#id1386" id="id1386-marker">1</a></sup></p>
+</li>
+</ul>
+
+<p>The design of an SRE organization needs to adapt to the requirements of
+the broader organizational context. That said, organizations can pick from
+and build upon a set of organizational building blocks and best
+practices for tracking maturity and performance to create their own
+successful SRE function.</p>
+
+<p>In this chapter, we explore the trade-offs of centralized versus decentralized SRE functions, the design and operation of SRE teams, and how to track the maturity of your SRE practice.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizational Structures That Support SRE" data-type="sect1"><div class="sect1" id="ch06_organizational_structures_that_support_sre">
+<h1>Organizational Structures That Support SRE</h1>
+
+<p>An SRE team’s practical success is heavily influenced by how lines of
+control and communication are laid out. Like most discussions of
+organizational structures, we begin this chapter by referencing Conway’s
+law:<sup><a data-type="noteref" href="ch06.html#id1387" id="id1387-marker">2</a></sup></p>
+<blockquote>Organizations which design systems (in the broad sense used here)
+are constrained to produce designs which are copies of the communication
+structures of these 
+<span class="keep-together">organizations.</span></blockquote>
+
+<p>Conway’s law recognizes that the social pathways between roles and teams
+are reflected in the products they produce and support. This scenario is
+certainly of concern during the initial design and implementation of a
+product, but it also can produce echoes long into its lifecycle. Standing up an SRE practice is a multiyear
+endeavor, and your decisions about organizational structure matter: once an approach has been
+established, it can be difficult to change direction, and you can’t expect reality to quickly realign.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Centralization Versus Decentralization" data-type="sect2"><div class="sect2" id="ch06_centralization_versus_decentralization">
+<h2>Centralization Versus Decentralization</h2>
+
+<p>As with nearly any<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-type="indexterm" id="orgs_cendecen"/><a data-primary="centralized organization" data-type="indexterm" id="cenorg"/><a data-primary="decentralized organization" data-type="indexterm" id="decenorg"/> function, you can organize SREs in a centralized or
+decentralized fashion. Many organizational decisions affect the way SREs
+deliver services, but deciding between centralization and
+decentralization is often one of the earliest made and one of the most
+impactful. Each approach has its own advantages and disadvantages, and
+inevitably most organizations’ SRE implementations fall somewhere on the
+continuum between centralization and decentralization, to provide a
+careful balance among those factors. For example, SRE at Google is a
+centralized organization but leverages a number of mechanisms to also
+gain advantages akin to a decentralized approach (see <a data-type="xref" href="#ch06_hybrid_approaches">“Hybrid Approaches”</a>).</p>
+
+<p>In a centralized model, SREs operate from a single-team hierarchy and
+are responsible for the reliability and operational health of a wide
+range of services and systems across the enterprise (or the
+particular subset of the enterprise in which SRE is being rolled out).
+They all report to the same leaders (e.g., the VP of SRE). In
+low-trust or high-control organizations (those that demand strict
+adherence to defined standards and processes with little latitude for
+uncontrolled innovation), a centralized model tends to be a natural
+starting point, because the higher-level leadership may not trust the
+individual suborganizations to align and ultimately deliver. If the
+impetus and will to create an SRE function are not sufficiently
+widespread, a central function may be the only viable way to get it off the
+ground initially. In this early model, it is common for the scope to
+cover a limited set of services, perhaps as a test or proof of concept.</p>
+
+<p>Decentralized models involve SRE teams operating with a high degree of
+independence, in alignment with the applications they support. Each team acts within its assigned product organization and may be fully
+funded and populated by that group. This approach naturally aligns them with their product development partners and can result in improved reliability of each team’s specific product. However, it
+can be difficult or even scary for low-trust or early-stage
+organizations to adopt. Leaders who have been charged with reliability
+improvement in such environments may be uncomfortable giving
+independent SRE teams the agency to define standards and build tools,
+and communication channels and organizational structures are often set
+up to discourage innovation, favoring tight centralized control. In a
+distributed model, the teams hiring and training SREs have a high degree
+of autonomy to change or even eliminate the role, while in a centralized
+model they may feel those occupying the role are inherently outsiders.
+What’s more, trust is bidirectional: low-trust organizations lack the top-down trust that enables decentralized teams to succeed, while those teams lack bottom-up trust in the broader organization and therefore prefer to act independently and retain as much local control as possible.</p>
+
+<p>Perhaps the key advantage of a centralized approach is the ability to
+concentrate expertise and maintain consistency. While exact technical
+skill sets may vary from SRE to SRE—often desirably so—mastery of SRE
+principles such as risk analysis, design thinking, reliability measurement,
+and blamelessness (see <a data-type="xref" href="ch04.html#ch04_blamelessness_and_blame_awareness">“Blamelessness and blame awareness”</a>) is critical to a well-functioning and sustainable SRE
+practice. Centralized teams can more easily ensure that all SREs are
+operating from this baseline, and as the state of the art evolves, they
+can promote consistency in approach across the group. A centralized
+approach also guards against fragmentation of perspectives; rather than
+several different teams each with its own ideas about how to build and
+run reliable systems, a (theoretically) unbiased perspective on
+reliability concerns can apply across product teams. This
+unified perspective then makes it easier to organize central efforts
+such as SRE onboarding and enablement, production health checks, and
+unified tooling.</p>
+
+<p>Decentralized models seek to accomplish the same goals, but with deeper
+integration and context and faster feedback loops. Organizationally
+colocating SREs with the developers and product professionals they
+support fosters a shared perspective of the service, often reflected in unified project backlogs and an increased sense of
+ownership. Reduced bottlenecks may improve iteration timelines, and
+the tight coupling of SREs with application teams can make them strong
+advocates for the technical and operational needs of the services under
+their purview. In a centralized model, there can be latency to iteration,
+both when SREs need to onboard to a service and when services have
+unique requirements that require <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen" data-type="indexterm" id="id1388"/><a data-primary="centralized organization" data-startref="cenorg" data-type="indexterm" id="id1389"/><a data-primary="decentralized organization" data-startref="decenorg" data-type="indexterm" id="id1390"/>special attention.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Context and expertise" data-type="sect3"><div class="sect3" id="ch06_context_and_expertise">
+<h3>Context and expertise</h3>
+
+<p>Building and running <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="colocation with supported services" data-type="indexterm" id="id1391"/>systems at scale is complex and context-dependent
+work. As the world of production becomes more platform-oriented, SREs
+may become increasingly focused on the things that make their services
+unique. Locating SREs more closely to the services they support makes
+that context easier to obtain and maintain, as they are immersed
+day-to-day in the reality of the lifecycles of those systems.</p>
+<div data-type="warning" epub:type="warning"><h6>Warning</h6>
+<p>SREs that are strongly centralized should take
+care to avoid a traditional “IT services” mindset, where interactions
+are transactional and the focus becomes simply maintaining a steady
+state rather than advancing the quality of the product.</p>
+</div>
+
+<p>Simultaneously, SREs must ensure they are increasing their impact by
+generalizing the solutions they create for their services, working
+across their community of practice so that improvements to areas such as
+observability, production readiness, and toil management benefit the
+full array of products. Ultimately, such solutions may become part of a
+standard production platform.</p>
+
+<p>The distribution of expertise among individuals can weigh heavily
+toward centralization in nascent SRE organizations. Simple numbers in
+terms of personnel and their skills may force the centralization of some
+reliability functions, but this can pay dividends as well. SREs need
+each other, and the more colocated they are organizationally, the less
+friction there tends to be for knowledge transfer, individual
+upskilling, and cross-pollination of approaches to problem solving, risk
+mitigation, and incident response. As the organization scales, the centralized function can continue to
+optimize by rebalancing teams as required while also seeding new teams
+with experienced SREs.</p>
+
+<p>A strong social culture of psychological safety and blamelessness
+(see <a data-type="xref" href="ch04.html#ch04_psychological_safety">“Psychological safety”</a>) coupled with an
+engineering culture dedicated to improving systems and unlocking
+velocity can counteract some of the negative pressures of
+centralization (discomfort with loss of local control, resistance to
+outside mandates, and so forth), and that culture may be easier to
+establish and maintain with a more centralized organization. Culture (see <a data-type="xref" href="ch04.html#ch04">Chapter 4</a>)
+is ultimately what teams fall back on
+during tough situations, and centralized SRE groups often have a depth
+of support that makes deviation from those tenets less likely and more
+quickly corrected.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Ownership" data-type="sect3"><div class="sect3" id="ch06_ownership">
+<h3>Ownership</h3>
+
+<p>In the best-case scenario, the <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="sense of ownership" data-type="indexterm" id="orgs_cendecen_ownrshp"/>high-context focus of a decentralized
+approach leads to a strong sense of ownership in SREs.
+SREs defend the reliability targets of their products, which
+can engender a sense of camaraderie with the product development team.
+This is not to say that centralized SREs don’t care about their
+services, but ownership is more natural when the scope is narrower and
+the partnership with developers is closer.</p>
+
+<p>When capturing the ownership gains of decentralization, be careful not
+to return to an old-school “us-versus-them” mentality. While SREs are
+dedicated to their individual services, those services are likely
+intertwined with others, and the entire service chain and product
+portfolio are important to the business. Cross-team events and
+exercises, unified onboarding and training, and a well-defined SRE role
+can all help keep the teams happy (<a data-type="xref" href="ch05.html#ch05">Chapter 5</a> covers <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen_ownrshp" data-tertiary="sense of ownership" data-type="indexterm" id="id1392"/>this in more detail).</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Career path" data-type="sect3"><div class="sect3" id="ch06_career_path">
+<h3>Career path</h3>
+
+<p>As technical <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="career path considerations" data-type="indexterm" id="id1393"/><a data-primary="career management" data-secondary="centralized SRE teams" data-type="indexterm" id="id1394"/>professionals move upward in their careers as individual
+contributors, they often tend to become more specialized. This tendency
+can lead to rewards initially, but ultimately may result in pigeonholing
+and stagnation of development. SREs are as prone to this stagnation as
+any other role, and clarity of career path can encourage them to focus more on doing great engineering than on managing their growth. Centralized teams make it easier to establish
+consistent pathways for growth, although if individuals do stagnate, fewer
+alternatives exist without leaving the company (see the
+discussion of internal mobility in <a data-type="xref" href="#ch06_collaboration">“Collaboration”</a>). Neither
+approach has a definitive advantage, but pay attention to aligning
+day-to-day work with the things that engineers find satisfying and
+growth-promoting.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Economies of scale" data-type="sect3"><div class="sect3" id="ch06_economies_of_scale">
+<h3>Economies of scale</h3>
+
+<p>Any transformation <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="cost-effectiveness" data-type="indexterm" id="id1395"/>effort inevitably must address questions of cost;
+indeed, many begin for the purpose of controlling cost of service. A
+naive examination of SRE may consider it a high-cost approach to
+providing a service, as it uses very skilled labor. But once economies
+of scale and improvements to reliability are taken into account, it can
+be a very cost-effective approach. Presuming you’ve chosen an SRE model,
+decisions about implementation then have further impacts on the
+economics of reliability.</p>
+
+<p>Engineering work is, of course, one of the primary costs of providing
+reliability. Centralized teams can more easily avoid duplication of
+effort by more directly controlling tool proliferation and process
+consistency, but they must take care not to stifle innovation or create
+organizational overhead. Often, the best ideas for new approaches come
+from individual services meeting their own needs, the results of which
+can then be generalized to other teams and services.</p>
+
+<p>Some personnel efficiencies may also exist with centralized groups, as
+roles such as program management can be shared, and fungibility of SREs may
+make it easier to shift effort between services as their needs change.
+However, the most efficient model on paper is not always the
+most efficient in practice, as an overfocus on efficiencies can lead to
+operational overload (see <a data-type="xref" href="ch01.html#ch01_situational_awareness">“Situational Awareness”</a>) and
+lower reliability across products. Toil <a data-primary="centralized organization" data-startref="cenorg" data-type="indexterm" id="id1396"/><a data-primary="decentralized organization" data-startref="decenorg" data-type="indexterm" id="id1397"/>management (see <a data-type="xref" href="ch13.html#ch13_effective_strategies_for_addressing_toil">“Effective Strategies for Addressing Toil”</a>) becomes ever more important in these cases.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Hybrid Approaches" data-type="sect2"><div class="sect2" id="ch06_hybrid_approaches">
+<h2>Hybrid Approaches</h2>
+
+<p class="fix_tracking">Even when a set point is carefully<a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-tertiary="hybrid approach" data-type="indexterm" id="orgs_cendecen_hybrid"/> chosen along the continuum between
+centralized and decentralized, drift will inevitably occur. This drift
+is desirable to a point, as smart teams will adjust their ways of
+working to be more efficient and productive. However, you should avoid
+extreme adjustments, which can result in “shadow
+SRE,” along the lines of ad hoc IT functions that often pop up in
+dysfunctional organizations.<sup><a data-type="noteref" href="ch06.html#id1398" id="id1398-marker">3</a></sup></p>
+
+<p>Several strategies exist for establishing a starting point as a happy
+middle ground to minimize drift. Some examples include:</p>
+<dl>
+<dt>Maintaining a purposeful community of practice</dt>
+<dd>
+<p>A strong community
+of practice (CoP) among practitioner SREs can provide many of the
+benefits of strong centralization, but it does require advocacy and
+resources to maintain. A CoP can provide
+continuing education, internal events, minimum practice standards, and
+similar coordinating efforts even in more decentralized settings. It’s usually led by a selection of practitioners and
+leaders, with a mandate to involve SREs and related roles at all levels.
+Contribution to the CoP should be encouraged as
+impactful work.</p>
+</dd>
+<dt>Establishing clear engagement models</dt>
+<dd>
+<p>Centralized SRE groups can
+provide more effective and higher-context support to their associated
+products through engagement models that
+define clear inputs, outputs, time frames, and other expectations (see <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>).
+Standardizing these models shortens the adoption cycle and leads to
+higher-quality delivery, as SREs and product teams have less negotiation
+to perform and can focus more on context and quality.</p>
+</dd>
+<dt>Building a strong SRE program management function</dt>
+<dd>
+<p>Technical program
+managers (TPMs) are important enough that Google has an SRE-specific TPM
+role. Much of SRE’s effectiveness depends on the feedback loops
+among SREs, product engineers, and product and business stakeholders,
+and maintaining the context and consistency of those interactions is
+core work for an SRE TPM. TPMs keep the machine turning and can iron out
+inefficiencies generated by your chosen level of (de)centralization.</p>
+</dd>
+</dl>
+
+<p class="less_space pagebreak-before">An example hybrid model might be established as follows:</p>
+
+<ul>
+<li>
+<p>A strong senior leader heads a centralized SRE group.</p>
+</li>
+<li>
+<p>The centralized group provides a variety of functions, including:</p>
+
+<ul>
+<li>
+<p>Time-limited reliability engagements of varying depth with
+application/
+<span class="keep-together">product</span> teams, such as reliability review, SLO construction,
+or postmortem 
+<span class="keep-together">facilitation</span> and follow-up</p>
+</li>
+<li>
+<p>Standardization of production readiness standards</p>
+</li>
+<li>
+<p>Engineering muscle to build tooling and generalize solutions
+innovated by application teams</p>
+</li>
+<li>
+<p>Leadership of the SRE community of practice, including ongoing
+enablement, as described previously</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Products with a combination of sufficient size, complexity,
+uniqueness, and/or importance have dedicated, permanent SRE teams
+aligned with their structures.</p>
+</li>
+<li>
+<p>SREs on dedicated teams are onboarded through the central team, and SRE
+culture is maintained through the CoP, standardized practices and role
+performance guidelines, and continuing enablement <a data-primary="organizations" data-secondary="centralized versus decentralized SRE implementation" data-startref="orgs_cendecen_hybrid" data-tertiary="hybrid approach" data-type="indexterm" id="id1399"/>and engineering
+exercises.</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Making SRE Transformation Work" data-type="sect2"><div class="sect2" id="ch06_making_sre_transformation_work">
+<h2>Making SRE Transformation Work</h2>
+
+<p>Much like <a data-primary="teams" data-secondary="reorganization risks" data-type="indexterm" id="id1400"/>residents of many cities seem to think they have the most
+variable weather, or the worst drivers, quite a few engineers will
+complain that their teams are reorganized more than any other.
+SRE-driven companies are not immune to this tendency. Reorgs come with
+downsides in opposition to their intended upsides, such as:</p>
+
+<ul>
+<li>
+<p>Trust and morale deficits, and even cultural damage</p>
+</li>
+<li>
+<p>Context losses with supported product teams</p>
+</li>
+<li>
+<p>Destruction of the webs of common practice among teams, particularly
+if less formalized</p>
+</li>
+<li>
+<p>Organizational memory that resists or routes around change</p>
+</li>
+<li>
+<p>Extra load during the trough of the
+<a href="https://oreil.ly/ieRlt">J-curve</a></p>
+</li>
+</ul>
+
+<p>Given the risks associated with change, core SRE strategies such as gradual
+rollout (in this case, of organization change) are critical. Whichever
+direction you are moving along the centralization continuum, consider
+identifying first-mover services or products that are critical enough to
+require SRE support and representative of typical strategy and
+architecture. As these teams adopt the new approach, focus on tight
+iterations and frequent feedback. The use of metrics, whether related to
+incidents, focused on software delivery (such as <a href="https://dora.dev">DORA</a>), or
+based on sentiment analysis, can support the continued rollout of your changes.</p>
+
+<p>In the interest of showing how organizations other than Google have
+implemented successful organizational structures for their SRE teams,
+the following case study provides a look at how Spotify approaches SRE.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Spotify’s Distributed Reliability Engagement Model" data-type="sect1"><div class="sect1" id="ch06_spotify_s_distributed_reliability_engagement_model">
+<h1>Spotify’s Distributed Reliability Engagement Model</h1>
+
+<p class="byline">By Laura “Morgy” Morgan and Oskar Arvidsson 
+<span class="keep-together">with John Stäck and Niklas Gustavsson</span></p>
+
+<p>Spotify <a data-primary="Spotify, distributed reliability engagement model" data-type="indexterm" id="spot_drem"/>provides a global, latency-sensitive consumer platform with a
+complex service ecosystem and continuously evolving client surfaces. In
+this environment, reliability is a first-order product concern alongside
+development velocity and cost efficiency. Spotify’s engagement model
+illustrates a stable alternative to a centralized SRE organization:
+<em>operational ownership remains primarily with the product and
+infrastructure teams that build and maintain systems</em>, while the
+organization invests in shared capabilities that keep that ownership
+sustainable at scale.</p>
+
+<p>This case study focuses on Spotify’s reliability engagement model. It
+describes how reliability work is initiated, supported, and scaled when
+responsibility stays distributed across teams, and what enabling
+mechanisms are required to make that approach durable.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reliability Ownership Without a Centralized SRE Organization" data-type="sect2"><div class="sect2" id="ch06_reliability_ownership_without_a_centralized_sre_organization">
+<h2>Reliability Ownership Without a Centralized SRE Organization</h2>
+
+<p>In many organizations, “SRE engagement” is synonymous with a central
+SRE team taking on a defined set of services (often including primary
+on-call). Spotify’s model is intentionally different and rooted in a
+simple operational principle: <em>the teams that own services also operate
+them</em>.</p>
+
+<p>In practice, this typically means that they manage their own on-call
+rotation, handbooks, alerts, and monitoring. They are expected to
+properly mitigate incidents as they happen as well as follow up after
+incidents. Historically, this was described as <em>Ops in Squads</em>,<sup><a data-type="noteref" href="ch06.html#id1401" id="id1401-marker">4</a></sup> where a squad (a small, cross-functional development team)
+operates the services it ships.</p>
+
+<p>Spotify keeps accountability close to where systems are built:</p>
+
+<ul>
+<li>
+<p>Product and infrastructure teams own the reliability of the services
+they build and operate.</p>
+</li>
+<li>
+<p>Reliability work is not automatically “pulled” into a central group;
+instead, the platform engineering team provides capabilities to teams
+through shared standards and tools so that reliability becomes a
+built-in part of the development cycle.</p>
+</li>
+<li>
+<p>A small, central function supports cross-team incidents in cases where
+coordination, rather than hands-on troubleshooting or mitigation,
+becomes the limiting factor. At Spotify this function is called IMOC; we’ll go into more detail on it in the next section.</p>
+</li>
+</ul>
+
+<p>This structure does not imply that every engineer is a reliability
+specialist or that teams operate in isolation. Rather, it assumes that
+reliability practices become part of normal engineering work, supported
+by organization-wide mechanisms that reduce variance and make “doing
+the right thing” the default.</p>
+
+<p>Coupling development and operations with ownership tightens the feedback
+loop between engineering choices and operational outcomes. When teams
+are on-call for what they build, operational costs are immediate and
+visible: noisy alerts, slow mitigations, or unclear failure modes
+translate directly into time spent by the people closest to the code.
+That feedback loop shapes both prioritization and design.</p>
+
+<p>In practice, this model reinforces several behaviors:</p>
+<dl>
+<dt>Shorter feedback cycles</dt>
+<dd>
+<p>Reliability issues surface quickly and can
+be addressed through normal development work rather than risking being
+deferred indefinitely.</p>
+</dd>
+<dt>Aligned incentives</dt>
+<dd>
+<p>Teams have incentives to invest early in
+observability, safe deployment mechanisms, and clearer operational
+interfaces.</p>
+</dd>
+<dt>Contextual trade-offs</dt>
+<dd>
+<p>Decisions about availability, latency,
+degradation, and cost are made in direct product context rather than in
+a centralized SRE team with less domain 
+<span class="keep-together">knowledge.</span></p>
+</dd>
+</dl>
+
+<p>This approach scales well for day-to-day operations and for incidents
+where a single owning team (or a small set of teams) has clear
+responsibility. However, at a larger scale, a distributed model needs
+additional structure for incidents that span boundaries or lack obvious
+ownership.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident Management as a Shared Capability" data-type="sect2"><div class="sect2" id="ch06_incident_management_as_a_shared_capability">
+<h2>Incident Management as a Shared Capability</h2>
+
+<p>Spotify’s incident response model resolves most incidents efficiently
+because the owning team typically has the context, access, and
+incentives needed to diagnose and mitigate issues. In the common case,
+adding a coordinator would slow response rather than help it.</p>
+
+<p>At Spotify’s scale, however, a smaller but critically important class of
+incidents exposes the limits of distributed ownership alone: incidents
+where ownership is ambiguous, where multiple teams must coordinate under
+time pressure, or where decisions cut across organizational boundaries.
+In these cases, the primary bottleneck is often <em>coordination, clarity,
+and decision making</em> rather than technical execution.</p>
+
+<p>To address this gap, Spotify maintains an <em>Incident Manager
+On-Call</em> (IMOC) rotation. This is a company wide on-call rotation scheduled to follow
+the sun and staffed by senior engineers with strong incident response
+experience. IMOC’s role is intentionally narrow in scope:</p>
+
+<ul>
+<li>
+<p>IMOC does <em>not</em> own services.</p>
+</li>
+<li>
+<p>IMOC does <em>not</em> routinely participate in incident response as a
+responder.</p>
+</li>
+<li>
+<p>IMOC does <em>not</em> take over diagnosis, mitigation, and remediation when
+engaged.</p>
+</li>
+</ul>
+
+<p>IMOC is engaged when coordination becomes the limiting factor, while
+owning teams retain responsibility for diagnosis, mitigation, and
+remediation. Any team can escalate an incident to IMOC, typically when
+one or more of the following conditions apply:</p>
+
+<ul>
+<li>
+<p>The incident spans multiple teams, ownership is unclear, or the
+incident is evolving across boundaries.</p>
+</li>
+<li>
+<p>The impact or duration requires sustained delegation, broader
+visibility, or escalation beyond the immediate responders.</p>
+</li>
+<li>
+<p>Cross-cutting decisions or escalations are required (for example, risk
+trade-offs, rerouting traffic, or engaging external parties).</p>
+</li>
+</ul>
+
+<p>From an engagement model perspective, IMOC functions as a <em>scalable
+capability</em>: it can be applied broadly without deep service-specific
+knowledge, and it is engaged dynamically based on incident
+characteristics rather than fixed service ownership. Its purpose is to
+reduce cognitive load on responders by coordinating communication,
+clarifying ownership, and enabling timely decisions—so teams with domain
+expertise can stay focused on mitigation.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling the Model" data-type="sect2"><div class="sect2" id="ch06_scaling_the_model">
+<h2>Scaling the Model</h2>
+
+<p>To sustain its core model of distributed ownership amid rapid growth,
+Spotify has prioritized reducing operational variance. As the
+ecosystem’s diversity grows, scaling distributed operations becomes
+increasingly nonlinear: coordination overhead and reliability work rise
+faster than the number of engineers, especially when each team maintains
+a unique stack and set of practices. A fundamental lesson learned is
+that scaling distributed operations is much easier when infrastructure,
+service design patterns (frameworks and libraries), and tooling are
+standardized. With strong standards, operational expectations and
+expertise transfer across the fleet. It’s as much about reducing
+variance as it is about adding staff.</p>
+
+<p>Spotify has made significant investments in shared platforms and
+standardization to make reliability improvements repeatable and
+systemic. It’s able to do this by investing in central bodies that
+drive specific efforts around reliability and operations.</p>
+
+<p>For example, the Platform Engineering organization focuses on:</p>
+<dl>
+<dt>Standardized stacks</dt>
+<dd>
+<p>Providing opinionated service frameworks,
+system design, and production service standards</p>
+</dd>
+<dt>Centralized platforms</dt>
+<dd>
+<p>Implementing company-wide platforms and
+practices for deployment, observability, and incident response</p>
+</dd>
+<dt>Automation</dt>
+<dd>
+<p>Utilizing platform teams to enforce baseline
+practices and enable large-scale automation</p>
+</dd>
+</dl>
+
+<p>Observability and metrics are part of that standardization. The platform
+provides a common observability toolchain and metrics foundation that
+teams get by default when they adopt the service framework: baseline
+dashboards, standard alerts, and consistent service-level signals come
+bundled via standard monitoring and alerting configurations. Teams can
+extend this with domain- and feature-specific indicators, while the
+platform provides rollups from services to teams so failures, blast
+radius, and impact can be understood consistently across the company.</p>
+
+<p>These initiatives lighten the cognitive load on individual teams and
+ensure a more uniform level of reliability by default. They also foster
+a
+<a href="https://oreil.ly/aBg8R"><em>fleet-first</em></a>
+<em>operational mindset</em>, where services are managed as a continuously
+evolving fleet rather than disparate systems. This approach supports
+frequent, automated changes, keeping the systems healthier and reducing
+the risks associated with less frequent, major migrations.</p>
+
+<p>While standardization has been an ongoing effort, it has accelerated
+recently. By utilizing mechanisms to ensure production software follows
+Spotify standards and moves both client and backend fleets to monorepos,
+Spotify is unlocking significant opportunities for central, platformed
+management. Crucially, this positions the company to better leverage
+automation and AI to offload tedious, toilsome duties that currently
+detract from core product and platform development.</p>
+
+<p>To sustain these initiatives over time, Spotify provides governance,
+guidance, and policy around these standards using bodies and functions
+that, while central, represent the wider engineering community. The
+Reliability Advisory Board, comprising senior engineering
+representatives from across Spotify, partners closely with Platform
+Engineering to ensure reliability standards and expectations are both
+well supported and consistently met. Complementing this, the Backend
+Advisory Board provides similar stewardship earlier in the lifecycle,
+guiding service design patterns and backend standards that underpin
+reliable operation at scale.</p>
+
+<p>Concurrently, operational ownership has shifted toward <em>Ops in Areas</em>,
+where an Area is typically a set of closely related squads (at Spotify,
+we call these Product Areas). An Area aligns incident response and
+coordination, which is better suited for larger systems where
+reliability concerns span multiple services and dependencies. As stacks
+become more homogeneous, operational work becomes easier to share,
+reinforcing the incentive for teams to converge further on common
+practices and platforms.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Trade-offs and Lessons" data-type="sect2"><div class="sect2" id="ch06_trade_offs_and_lessons">
+<h2>Trade-offs and Lessons</h2>
+
+<p>Centralized SRE organizations are a proven and effective
+engagement model. They can concentrate expertise, drive deep reliability
+improvements, and enforce strong production standards. Many
+organizations benefit from that approach, especially when tight control
+and consistency are paramount.</p>
+
+<p>Spotify’s model represents a slightly different equilibrium: both
+accountability and operational responsibility remain <em>within the product
+team</em>, while the organization invests centrally to enable that
+accountability at scale through standardization, shared platforms, and
+targeted incident coordination.</p>
+
+<p>There will always be trade-offs with either path, and for us those are
+sometimes very real:</p>
+
+<ul>
+<li>
+<p>Distributed ownership of reliability requires sustained investment in
+production standards, opinionated service patterns, and fleet-managed
+upgrades. Without standardization, autonomy can devolve into
+inconsistency and operational 
+<span class="keep-together">overload.</span></p>
+</li>
+<li>
+<p>Incident facilitation must remain carefully scoped to avoid turning
+escalation into an implicit handoff of accountability—for example, IMOC should
+not become the default escalation path for routine incidents. By
+maintaining a healthy, blameless culture around incidents, we are better
+able to engage with that scoping.</p>
+</li>
+<li>
+<p>Reliability expertise must be grown and shared through platforms,
+practices, and learning mechanisms, rather than assumed to live in a
+single specialized org.</p>
+</li>
+<li>
+<p>Accountability at scale depends on platform-provided observability
+defaults and higher-level insights, so teams can quickly connect service
+failures to user impact, and the organization can track reliability
+outcomes consistently and drive clear follow-up across the company.</p>
+</li>
+</ul>
+
+<p>Specialized product expertise allows us to solve complex challenges. To
+fill the gap in deep reliability engineering expertise, we foster a
+continuous learning culture by providing courses, detailed
+documentation, and structured training from day one. This investment in
+learning, technology, and infrastructure drives our operational
+excellence. We then leverage our Reliability Advisory Board to
+institutionalize and govern organization-wide best practices, setting
+standards and monitoring adherence. This ensures a unified,
+high-standard reliability approach across all operations.</p>
+
+<p>The broader takeaway is not that one engagement model is universally
+superior. The more durable lesson is that engagement models succeed when
+<em>ownership boundaries, interfaces, and shared capabilities</em> align with
+the organization’s scale and product needs. Reliability emerges less
+from org charts and more from how work is initiated, how decisions are
+made, and how the system is <a data-primary="Spotify, distributed reliability engagement model" data-startref="spot_drem" data-type="indexterm" id="id1402"/>made operable by default.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Team Design" data-type="sect1"><div class="sect1" id="ch06_team_design">
+<h1>Team Design</h1>
+
+<p>The SRE team is the <a data-primary="teams" data-secondary="charter documents" data-type="indexterm" id="id1403"/><a data-primary="charter documents" data-type="indexterm" id="id1404"/><a data-primary="documentation" data-secondary="team charters" data-type="indexterm" id="id1405"/>nucleus of the SRE organization. A singleton SRE is
+not sustainable. They are a single point of failure. They have no one to
+learn from or to exchange ideas with. They can’t take on bigger
+responsibilities, like multiperson projects or staffing an on-call
+rotation. If you don’t have the headcount to staff a small team, it is
+often better to establish a DevOps mindset within product development
+and make production expertise a shared responsibility.</p>
+
+<p>Healthy teams with a purposeful design are the foundation of SRE work.
+To achieve this, every SRE team needs a clear scope and mission, and the
+necessary resources to fulfill this mission (see <a data-type="xref" href="ch07.html#ch07_scoping_sre_engagements">“Scoping SRE Engagements”</a>). At Google,
+every SRE team is required to have a charter document approved by its
+leadership to ensure this clarity.</p>
+
+<p>The charter (see <a data-type="xref" href="app02.html#appb">Appendix B</a>) defines the mission
+statement of the team, along with its scope in terms of technology environment, the
+product development partners it works with, its offerings, and the
+services it’s working on. The scope should not be a collection of
+random items but should form an interconnected whole. Because SREs are
+outside the responsibility of any individual product development
+team, they can be very effective at building an end-to-end view of
+neighboring services and shared technologies, as well as identifying and
+addressing risks and opportunities that might otherwise be overlooked.</p>
+
+<p>The charter also defines what success looks like for the team. These
+success criteria should be defined as measurable outcomes that have a
+substantial positive impact on the users and the business. As discussed
+in <a data-type="xref" href="ch07.html#ch07_an_outcome_focused_approach">“An Outcome-Focused Approach”</a>, outcomes
+should have a timeline attached to them. Teams are expected to regularly
+review and update their charters over time. See <a data-type="xref" href="app03.html#appd">Appendix C</a> for a hypothetical charter example.</p>
+
+<p>The general rules for building successful teams apply to SRE teams as
+well. The research findings on team success and foundational qualities
+of successful teams <a href="https://oreil.ly/JTbR5">that Google has published on Project Aristotle</a>
+can be very helpful to build a healthy SRE organization. This research
+stresses the importance of psychological safety, which is especially
+relevant to SRE.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Team Roles" data-type="sect2"><div class="sect2" id="ch06_team_roles">
+<h2>Team Roles</h2>
+
+<p>There are a wide array <a data-primary="teams" data-secondary="roles" data-type="indexterm" id="id1406"/>of skill sets in SRE, ranging from systems
+engineering through software engineering and into organization and
+management. This diverse set of skills and backgrounds enables SRE teams
+to adapt to a wide range of technically and organizationally complex and
+challenging environments.</p>
+
+<p>Formally, an SRE team at Google includes the roles of manager, tech lead (TL), and technical program
+manager. The remaining team members are usually called individual
+contributors (ICs). Not every team staffs all three of those roles; some are more successful with only two of the three. Some people operate best when the roles have
+well-defined responsibilities, the major benefit of this being that they can
+make in-scope decisions quickly and safely. Others operate best in a
+more fluid environment, with shifting responsibilities depending on
+dynamic negotiation. It’s crucial to pick a level of formality that
+lets the individuals on the team thrive and fits the culture of the
+wider organization. Depending on the team and organization, that may be dictated from the top or self-organized by the team.</p>
+
+<p>Let’s consider each role in more detail:</p>
+
+<ul>
+<li>
+<p>The <em>manager</em> is both <a data-primary="managers" data-type="indexterm" id="id1407"/>a technical and organizational leader. They set the team’s strategy, encompassing
+development, culture, execution, performance management, stakeholder
+management, and alignment with an organization’s business objectives.
+The manager also handles staffing and organizes work assignments for
+team members.</p>
+</li>
+<li>
+<p>The <em>tech lead</em> is deeply <a data-primary="tech leads" data-type="indexterm" id="id1408"/>knowledgeable about the domain area and
+defines the technical vision. They are responsible for the technical
+direction of the team and the health of the services in scope. They coach
+and encourage good technical practices within the team and with product development partners, collaborating closely with those partners and the broader SRE community.</p>
+</li>
+<li>
+<p>The <em>technical program manager</em> acts as<a data-primary="technical program managers (TPMs)" data-type="indexterm" id="id1409"/><a data-primary="TPMs (technical program managers)" data-type="indexterm" id="id1410"/> a force multiplier and
+improves the quality and velocity of the team’s work. They handle
+program/project management, planning, process design, stakeholder
+management, and communication. The TPM often works at
+cross-functional boundaries and enables fast decision making and forward
+momentum. They are responsible for efficient delivery of programs that
+can span multiple organizations and locations. To ensure that the planning is founded in engineering reality, they should possess the technical judgment of an engineer.</p>
+</li>
+</ul>
+
+<p>All three roles work together to prioritize work and define the
+quarterly plan in team objectives and key results (OKRs) and operational work. The other engineers on
+the team are also encouraged and, depending on their seniority, expected to
+provide input to planning and team direction.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="On-Call Considerations" data-type="sect2"><div class="sect2" id="ch06_on_call_considerations">
+<h2>On-Call Considerations</h2>
+
+<p>An SRE team must balance <a data-primary="teams" data-secondary="on-call duties" data-type="indexterm" id="id1411"/><a data-primary="on-call requirement" data-type="indexterm" id="id1412"/>engineering projects and operational
+responsibilities. At Google, the guideline is that an SRE team’s time must be devoted to at least 50%
+engineering work such as coding, analysis, and design, and at most 50%
+operational work such as on-call duties, tickets, and maintenance. No more
+than 25% of an SRE’s time should be spent on on-call duties. These
+figures are thresholds, not targets. In general, we aim for a
+substantially lower fraction of operational work. The actual operational
+workload of a team depends on many factors, including maturity of the
+services, breadth of scope, and user growth rate.</p>
+
+<p>In our experience, the ops work thresholds can be best maintained when the SRE team has a certain minimum size. Many SRE teams at Google are split between two sites, separated by a
+time zone difference of six to nine hours. This setup enables a
+“follow-the-sun” on-call model, where SREs at each site are on-call during
+their day and evening, but not at night. Larger time zone
+differences make team collaboration even more difficult. In this two-site
+setup, a team should have at least six engineers per site. This setup
+works out to approximately two to three on-call weeks per quarter for each
+engineer (15–25% of their time), leaving enough uninterrupted time for project work
+while not risking them getting out of practice on incident response. In a
+single-site setup, where the engineers are also on-call at
+night, the team should have a minimum size of at least eight on-callers.
+Teams can (and often should) grow beyond these minimum sizes, but when a
+team reaches twice the minimum, it typically makes sense to split it
+into two teams to minimize the cognitive load on the engineers. Growing
+and splitting teams is much less disruptive than creating new teams from
+scratch.</p>
+
+<p>Ideally, the operational work can be fully handled by the current
+on-caller, representing about 15% of the team’s capacity (e.g., 1/8 or 2/12)
+based on these minimum team sizes—well below the 50% threshold.</p>
+
+<p>It is possible to have SRE teams with less than eight engineers, but in such scenarios a
+more conscious and disciplined approach to ops workload monitoring is
+required to ensure that the team stays below the 50% ops threshold that
+ensures the SREs have sufficient time for improvements through
+engineering work.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Collaboration" data-type="sect1"><div class="sect1" id="ch06_collaboration">
+<h1>Collaboration</h1>
+
+<p>SRE is an inherently <a data-primary="collaboration" data-type="indexterm" id="id1413"/>collaborative role. It spans technical domains and
+team boundaries, both across SRE teams and across the product
+development organizations. To be successful, SREs must master the
+skills of leading without authority and building consensus in loosely
+coupled groups—often for ideas and proposals that may look radical and
+disruptive.</p>
+
+<p>Aside from organizational boundaries, many SRE organizations and their
+product development partners are geographically dispersed. Collaborating effectively across time zones requires strong written communication skills and opportunities to travel. In-person interactions are deferrable but ultimately necessary for a high-quality relationship, to pay off the “relationship debt” (analogous to technical debt) that accrues over time. Modern online collaboration and videoconferencing tools can help keep the relationships alive in between, but we recommend meeting your most important partners and colleagues in person at least once per year. Otherwise, even if you’re a great writer, you risk becoming just an email address.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Product Development" data-type="sect2"><div class="sect2" id="ch06_product_development">
+<h2>Product Development</h2>
+
+<p>At Google, an SRE team <a data-primary="collaboration" data-secondary="product development" data-type="indexterm" id="colab_proddev"/><a data-primary="product development, collaboration" data-type="indexterm" id="proddev_colab"/><a data-primary="development" data-secondary="products, collaboration" data-type="indexterm" id="dev_prod_cloab"/>always has at least one product development partner. If a
+service is not actively developed, the team has limited opportunity for impact, and it is unlikely to be the best investment of SRE
+resources.<sup><a data-type="noteref" href="ch06.html#id1414" id="id1414-marker">5</a></sup> An SRE team is a software engineering team responsible
+for minimizing the need for ops, not taking over the role of the ops team. In practice,
+most SRE teams at Google partner with multiple—sometimes more than 10—product development teams. For more on interactions with product
+development, see <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>. While this setup is organizationally challenging, it
+enables Google SREs to build a broad view of the technical ecosystem,
+transfer ideas across teams, and optimize system health at a global
+level.</p>
+
+<p>On the operational side, Google SRE encourages shared product
+development and SRE on-call rotations. For example, product development
+teams can be on-call during their business hours with SRE as an
+escalation path, and SRE can be primary during off-hours with product
+development teams as the escalation path. This setup helps product
+development teams to get direct exposure to production, which enables them to
+design and build robust and manageable systems while still benefiting
+from SRE’s operational expertise and support during critical incidents.
+In cases where the primary on-call rotation is exclusively staffed with
+SREs, product development teams are generally expected to
+maintain a 24×7 on-call escalation path through a
+secondary rotation. While SREs can handle most incidents on their own,
+sometimes engineers with detailed knowledge about the latest code
+changes are crucial to quickly identify nonobvious triggers for an outage and their
+mitigations.</p>
+
+<p>On the project side, the SRE and product development teams at Google
+should engage in shared planning and prioritization. Ideally, this work has
+strong buy-in from the senior leadership of the product development
+partner organization and is closely tied to business outcomes. When
+an SRE team’s business value is not well understood, it risks becoming irrelevant to both the business and its development partners. SRE
+and product development teams should maintain a shared backlog and
+roadmap that both sides contribute to and execute. Generally, the team that is best
+positioned to deliver a particular piece of work efficiently and with
+high quality should own it.</p>
+
+<p>Close collaboration <a data-primary="collaboration" data-secondary="product development" data-startref="colab_proddev" data-type="indexterm" id="id1415"/><a data-primary="product development, collaboration" data-startref="proddev_colab" data-type="indexterm" id="id1416"/><a data-primary="development" data-secondary="products, collaboration" data-startref="dev_prod_cloab" data-type="indexterm" id="id1417"/>between engineers from
+product development teams and SRE helps build visibility, mutual
+understanding, and trust. The teams should meet regularly to keep
+information flowing in both directions. The most fundamental of
+these meetings is the production meeting. Other shared activities that focus on a
+longer-term perspective are quarterly business reviews, shared OKR
+planning, and roadmap planning.</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch06_production_meetings">
+<h1>Production Meetings</h1>
+<p>SRE teams at Google <a data-primary="teams" data-secondary="weekly meetings" data-type="indexterm" id="tms_wkmtgs"/><a data-primary="meetings, types" data-type="indexterm" id="mtgs_typ"/>have a weekly meeting with the whole team, typically
+called an ops review or production meeting, to discuss:</p>
+
+<ul>
+<li>
+<p>Significant incidents</p>
+</li>
+<li>
+<p>Upcoming changes</p>
+</li>
+<li>
+<p>Relevant project work</p>
+</li>
+<li>
+<p>SLI performance</p>
+</li>
+<li>
+<p>Bug triage status</p>
+</li>
+<li>
+<p>Bug SLO compliance</p>
+</li>
+</ul>
+
+<p>This meeting ensures visibility into all production-relevant topics
+across all services for every member of the team. Production meetings
+are the cornerstone of an SRE team’s work as a whole. They are not about
+individuals giving project updates; they are service-oriented and
+capture the health of production.</p>
+
+<p>When an SRE team works with only one or a small number of product
+development partners, inviting them (or at least representatives, such as
+their TLs) to the production meeting is a good practice. However, when a team has
+many product development partners, this scenario quickly becomes
+unwieldy. In this case, it should run separate production syncs with each of
+its product development partners in addition to its own production
+meeting. These syncs can take place weekly or fortnightly and do not require
+the whole team; delegates from the SRE and product development teams
+can relay the communication to the other team members.</p>
+
+<p>Production meetings tend to be highly structured rituals with a
+prepared template and agenda. This helps maintain discipline and avoids wasting time or overlooking relevant
+issues. The typical agenda consists of the following topics:</p>
+<dl>
+<dt>Outages and pages</dt>
+<dd>
+<p>Any incident that resulted in an on-call page should be
+discussed. Was the monitoring working as intended? Were the root causes
+identified and the problem fixed in such a way that the probability of
+recurrence is low? Noteworthy outages deserve a postmortem.</p>
+</dd>
+<dt>Postmortems</dt>
+<dd>
+<p>Have all relevant outages received a postmortem? Was it
+reviewed and action items executed? Many SRE organizations run separate,
+additional postmortem reviews with their product development partners to
+increase their visibility across team boundaries.</p>
+</dd>
+<dt>SLOs and service health</dt>
+<dd>
+<p>Are the service health numbers where they
+need to be? Are there worrying trends that require the team to take
+action?</p>
+</dd>
+<dt>Non-paging alerts and tickets</dt>
+<dd>
+<p>Are you staying on top of alerts and tickets, and are any changes needed? These operational tasks interrupt
+work and can often take up a significant amount of SRE time. Keep track
+of the workload and ensure that no backlog is building up. The
+production meeting is a great opportunity to identify alerts that should
+be eliminated because they are not actionable or relevant, or that should be promoted to paging events because they turn out to be too critical to be
+left in the ticket queue. If a relevant problem was detected manually,
+updating the monitoring to detect it automatically in the future may
+make sense.</p>
+</dd>
+<dt>Upcoming and in-flight production changes</dt>
+<dd>
+<p>Is the product
+development team planning any launches or service changes that may
+impact production? Are large increases or decreases in load expected? Is
+SRE working on any infrastructure changes that the on-callers should be
+aware of? The goal is not to stop changes but to raise awareness and
+ensure that they get executed safely. The visibility helps derisk
+potentially conflicting changes and enable faster fixes if a
+change has an unexpected effect or outcome.</p>
+</dd>
+</dl>
+
+<p>While the structure <a data-primary="teams" data-secondary="weekly meetings" data-startref="tms_wkmtgs" data-type="indexterm" id="id1418"/><a data-primary="meetings, types" data-startref="mtgs_typ" data-type="indexterm" id="id1419"/>outlined here helps facilitate collaboration during
+production meetings, the work doesn’t end there—there needs to be
+follow-up action. It’s best practice to write down action items and review their resolution in subsequent production
+meetings. See <a data-type="xref" href="app04.html#appc">Appendix D</a> for an example of the minutes from a production
+meeting.</p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE-Internal Collaboration" data-type="sect2"><div class="sect2" id="ch06_sre_internal_collaboration">
+<h2>SRE-Internal Collaboration</h2>
+
+<p class="fix_tracking">SRE at Google has a <a data-primary="collaboration" data-secondary="SRE-internal" data-type="indexterm" id="colab_sreint"/><a data-primary="teams" data-secondary="SRE-internal collaboration" data-type="indexterm" id="tms_sreintcolab"/>healthy culture of small teams empowered to solve
+problems quickly without getting bogged down by significant process or
+administrative overhead. And we want to keep it that way. The downside,
+however, is that this setup has sometimes resulted in a proliferation of
+overlapping and redundant solutions, leading to wasted time and effort.
+There is also an opportunity cost in failing to build a
+high-quality ecosystem overall. Training and ramp-up can be difficult,
+and the lack of standards limits the transferability of knowledge within
+SRE. To address these problems, SREs are encouraged to “look left and
+right” before building custom solutions.</p>
+
+<p>An SRE team works across many services and has good visibility into
+their common production needs. While many problems are highly
+service-specific, more often than not the same solution applies to a
+class of problems that many services share. This is even more
+true when you look across team boundaries. So, before an SRE team
+decides to build custom automation, it needs to investigate whether that
+problem is truly service-specific. If not, the next step is to research
+existing tooling that others have built and see if it can be applied to the
+problem. This step may involve contributing to the
+existing solution to make it reusable in more scenarios. In cases where
+no solution exists yet, the SRE team should keep reusability in mind.
+Sometimes these initially local solutions grow into an infrastructure
+product that becomes widely used across the company.</p>
+
+<p>When a team comes up with a novel solution, it should communicate that solution through the appropriate channels. Tech talks are an effective way to
+do so. Since an engineering site typically hosts SRE teams from
+multiple product areas, local tech talk series can create visibility
+far beyond the immediate organization. These talks can cover
+software tools, new methodologies, experience reports, processes, and
+collaboration models. Solutions that have shown value repeatedly in a
+broad set of scenarios can be canonicalized into training modules to
+educate new SREs or production-interested developers.</p>
+
+<p>More than ideas migrate across team boundaries. Personal <a data-primary="mobility of SREs, support for" data-type="indexterm" id="id1420"/>mobility is
+another important aspect of the SRE culture. Engineers moving freely
+from one SRE team to another, or from SRE to product development or vice
+versa, can disseminate important institutional knowledge and
+pollinate a widespread culture of reliability.</p>
+
+<p>Google SRE supports this mobility and culture exchange with a number of
+programs, such as:</p>
+<dl>
+<dt>Mission Control</dt>
+<dd>
+<p>Developers can join SRE from other teams for a
+six-month rotation.</p>
+</dd>
+<dt>SRE Exchange</dt>
+<dd>
+<p>SREs can join another SRE team for a week, learn how
+they work, and report what they learned back to their home team.</p>
+</dd>
+<dt>
+<span class="plain">N</span>+1 mentors</dt>
+<dd>
+<p>Mentoring for new SREs across team boundaries helps them
+gain a broader understanding of SRE and start building their networks
+inside the company.</p>
+</dd>
+</dl>
+
+<p>Managers cannot stop their engineers from transferring to another team—this setup is intentional. Engineers can <a data-primary="collaboration" data-secondary="SRE-internal" data-startref="colab_sreint" data-type="indexterm" id="id1421"/><a data-primary="teams" data-secondary="SRE-internal collaboration" data-startref="tms_sreintcolab" data-type="indexterm" id="id1422"/>transfer out of teams that are
+not a fit for them.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Maturity Matrices" data-type="sect1"><div class="sect1" id="ch06_maturity_matrices">
+<h1>Maturity Matrices</h1>
+
+<p>The amount<a data-primary="maturity matrices" data-type="indexterm" id="matmat"/><a data-primary="organizations" data-secondary="maturity matrices" data-type="indexterm" id="org_matmat"/> and nature of SRE involvement depends heavily on organizational maturity across several dimensions, including:</p>
+<dl>
+<dt>Operational processes</dt>
+<dd>
+<p>Activities and metrics used
+to maintain production health</p>
+</dd>
+<dt>Risk management</dt>
+<dd>
+<p>Evaluation, identification, and mitigation of
+production risks</p>
+</dd>
+<dt>Productivity</dt>
+<dd>
+<p>Impact of checks and balances on feature launches</p>
+</dd>
+<dt>Velocity</dt>
+<dd>
+<p>Rate at which new features and capabilities are
+delivered to production</p>
+</dd>
+<dt>System complexity</dt>
+<dd>
+<p>System architecture, paired with the dependency
+graph of a product or service</p>
+</dd>
+<dt>Product lifecycle</dt>
+<dd>
+<p>Stage in the lifecycle, from
+incubation to decline</p>
+</dd>
+<dt>Teams</dt>
+<dd>
+<p>Operating model, values, and team ethos</p>
+</dd>
+<dt>Leadership</dt>
+<dd>
+<p>Commitment of leadership to engage beyond siloed ownership<sup><a data-type="noteref" href="ch06.html#id1423" id="id1423-marker">6</a></sup></p>
+</dd>
+</dl>
+
+<p>The intention of the maturity matrix is not to provide a score or act as a
+checklist but to determine where an organization’s
+maturity lies on a continuum so that SRE involvement can be dialed in and out
+accordingly. Different services may be at different maturity levels at any given time.</p>
+
+<p class="pagebreak-before less_space">SREs have a unique perspective because they are exposed to a broader view
+than a product development organization. That unique vantage point often
+enables SRE teams to foresee reliability issues and risks earlier and more
+clearly. Since SREs are often scarce and in high demand, choosing the
+right SRE engagement model <a data-primary="engagement models" data-secondary="organizational maturity" data-type="indexterm" id="id1424"/>based on the maturity matrix yields the
+maximum returns. The engagement can range from foundational
+services provided by SRE (with or without shared maintenance) to full
+production support owned by SRE.</p>
+
+<p>An appropriate engagement model ensures a healthy SRE organization
+and reduces reliability risk for the services and systems it supports. The health of the SRE organization can be understood across three dimensions:</p>
+<dl>
+<dt>Organizational health</dt>
+<dd>
+<p>Purpose, staffing, and operating model</p>
+</dd>
+<dt>Operational health</dt>
+<dd>
+<p>Balance of engineering and operational work, and opportunities for automation</p>
+</dd>
+<dt>System health</dt>
+<dd>
+<p>Unresolved risks and reliability gaps in the systems</p>
+</dd>
+</dl>
+
+<p>These aspects reflect the level of risk to the production environment. To reduce this risk, it is critical to accurately assess organizational maturity and apply the appropriate engagement model. It is also important to develop a strategy for progressing toward the maturity level that yields the greatest return on investment for SRE engagement. The different levels, or phases of <a data-primary="organizational reliability, phases" data-type="indexterm" id="orgrel_phss"/>organizational reliability, can be arranged along a continuum, as follows:</p>
+
+<ul>
+<li>
+<p>Absent</p>
+</li>
+<li>
+<p>Reactive</p>
+</li>
+<li>
+<p>Proactive</p>
+</li>
+<li>
+<p>Strategic</p>
+</li>
+<li>
+<p>Visionary</p>
+</li>
+</ul>
+
+<p>These phases describe the organization’s overall mindset. Each one is associated with a certain set of attributes. An organization may operate at different levels of maturity across
+different attributes, depending on its focus and strengths.</p>
+
+<p>To better understand the continuum, let’s take a closer look at each of
+the phases.</p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Absent" data-type="sect2"><div class="sect2" id="ch06_absent">
+<h2>Absent</h2>
+
+<p>In this phase, product<a data-primary="absent phase, organizational reliability" data-type="indexterm" id="id1425"/> functionality is the main driver for the organization,
+with reliability being secondary. The following characteristics denote
+the absent phase:</p>
+
+<ul>
+<li>
+<p>Feature launch with high velocity is the key organizational metric and the focus for incentives.</p>
+</li>
+<li>
+<p>A majority of issues are found by users or testers. The organization
+is not aware of long-term reliability and availability risks.</p>
+</li>
+<li>
+<p>The organization recognizes those who work on feature or product
+launches through bonuses, public callouts, and promotions, but it does not
+reward efforts to reduce technical debt or improve production quality.</p>
+</li>
+</ul>
+
+<p>Having SRE involvement early in the lifecycle, even during the
+architecture phase (see <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>), could avoid reliability and
+scalability being treated as an afterthought and prevent an expensive rearchitecture
+or redesign in the future. Even a small investment in SRE at this stage can help ensure systems are built with the reliability, scalability, and operational capabilities needed to meet user expectations. As product adoption expands, it’s important to consider an increase in SRE engagement to
+maintain the production system while minimizing operational load and risk.</p>
+
+<p>SREs will typically prioritize their engagement with services that are business-critical or have high user impact. When a service enters a declining phase of its lifecycle, user adoption and the rate of new feature development typically decreases. This presents an opportunity to reduce SRE engagement and reallocate capacity to other priorities that are business-critical—a transition that is both expected and efficient.</p>
+
+<p>In other words, this phase could be an intentional choice for the
+organization in these scenarios:</p>
+
+<ul>
+<li>
+<p>The service is still in the incubation phase and not yet available to the
+public or customers.</p>
+</li>
+<li>
+<p>The service is in a declining phase, with maintenance work fully
+automated and feature velocity and churn at a minimum.</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reactive" data-type="sect2"><div class="sect2" id="ch06_reactive">
+<h2>Reactive</h2>
+
+<p>In the<a data-primary="reactive phase, organizational reliability" data-type="indexterm" id="reactph_orgrel"/> reactive phase, the SRE organization is focused on fixing recent
+outages with sporadic follow-through. Longer-term
+investments in fixing system issues are rare. Product development and SRE teams work
+independently. This phase is characterized by the following:</p>
+
+<ul>
+<li>
+<p>SREs write postmortems for outages and create action items for
+tactical fixes.</p>
+</li>
+<li>
+<p>Some metrics exist, but they are not comprehensive or monitored
+over time.</p>
+</li>
+<li>
+<p>Heroic efforts by a few individuals or teams maintain reasonable
+availability.</p>
+</li>
+<li>
+<p>Developer productivity is throttled due to temporary shifts in
+priority due to outages.</p>
+</li>
+<li>
+<p>Feature development may be frozen for short periods of time.</p>
+</li>
+</ul>
+
+<p>This phase is appropriate for products or projects in pre-launch or in a
+stable long-term maintenance phase. Due to the reactive mode of
+maintenance, SREs and product development teams have an increased
+operational load that can deter them from delivering engineering work.
+Since the SRE and product development teams operate in silos, the
+organizational health and accountability of individual teams are also
+impacted. Unmanaged risks and unknown deficiencies affect the health of
+systems. Identifying this phase and shifting the organization’s maturity
+into the next phase is critical to <a data-primary="reactive phase, organizational reliability" data-startref="reactph_orgrel" data-type="indexterm" id="id1426"/>restoring the health of the production
+system.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Proactive" data-type="sect2"><div class="sect2" id="ch06_proactive">
+<h2>Proactive</h2>
+
+<p>SRE has a well-defined <a data-primary="proactive phase, organizational reliability" data-type="indexterm" id="id1427"/>engagement with the product development
+organization in this phase. The teams work together seamlessly, with
+joint ownership of production health. Regular organizational processes
+identify and address potential risks. The following characteristics
+denote this phase:</p>
+
+<ul>
+<li>
+<p>The product development team and SRE team regularly review and
+prioritize risks, and the two functions work together as one unit.</p>
+</li>
+<li>
+<p>Teams proactively manage dependencies and review their reliability
+metrics, such as SLOs.</p>
+</li>
+<li>
+<p>Product development and SRE teams jointly own service reliability and may be on the
+same rotation for production support.</p>
+</li>
+<li>
+<p>The teams assess new designs for known risks and failure modes early
+on. Graceful degradation is a basic requirement (except where
+degradation cannot be applied, such as in policy-enforcing systems, where
+you can’t let some policies just fail open on load).</p>
+</li>
+<li>
+<p>Both SRE and product development organizations prioritize headcount
+and investment.</p>
+</li>
+<li>
+<p>The teams proactively look at the manual toil in the operational load
+and work together to automate and reduce toil.</p>
+</li>
+</ul>
+
+<p>Ideally, most products should be at least at this level—particularly if they have a
+large blast radius or are critical to the business. Once an organization’s maturity
+reaches this phase, it should invest in moving to the
+strategic phase. Taking this step will improve organizational health and morale, enabling a shift from tactical work toward more engineering-focused and
+innovative work.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Strategic" data-type="sect2"><div class="sect2" id="ch06_strategic">
+<h2>Strategic</h2>
+
+<p>Organizations <a data-primary="strategic phase, organizational reliability" data-type="indexterm" id="id1428"/>at this phase manage categories of risk via systemic changes
+to architectures, products, and processes. SRE engagement is similar to that in the proactive phase, but SREs engage early in product development to
+instill reliability principles right from the architecture and
+design stage. This phase is characterized by the following:</p>
+
+<ul>
+<li>
+<p>Mature processes are inherent and ingrained in how the organization
+designs, operates, and develops software.</p>
+</li>
+<li>
+<p>Complexity is addressed holistically through product architecture.
+Dependencies are constantly reduced or improved.</p>
+</li>
+<li>
+<p>New architectures and design rewrites are prioritized to improve the
+reliability and/or scalability of existing systems.</p>
+</li>
+<li>
+<p>SRE and product development teams can sustain reliability and
+developer velocity simultaneously.</p>
+</li>
+<li>
+<p>Both teams widely celebrate quality and stability milestones.</p>
+</li>
+</ul>
+
+<p>The strategic phase is appropriate for services and products that require very
+high availability to meet business-critical needs. SRE engagement is
+strategic in this phase, rather than tactical, as it is in the
+proactive phase. As mentioned previously, this setup increases organizational health and improves morale within the SRE team through the satisfaction of delivering meaningful
+engineering work. The production systems have minimal or well-controlled
+known risks. When toil is significantly reduced,
+SRE involvement can be scaled down and redirected toward engagements that
+provide a better return on investment.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Visionary" data-type="sect2"><div class="sect2" id="ch06_visionary">
+<h2>Visionary</h2>
+
+<p>An organization <a data-primary="visionary phase, organizational reliability" data-type="indexterm" id="visnph_orgrel"/>at this phase has reached the highest level of reliability and is
+able to drive best practices based on its experiences and broader reliability efforts within and outside the
+company—for example, by writing papers and sharing knowledge. At this point, SRE can shift its focus
+and move to other areas that need more attention. The following
+characteristics denote this phase:</p>
+
+<ul>
+<li>
+<p>Production health exists broadly across the organization. Production knowledge exists broadly across all engineers and teams.</p>
+</li>
+<li>
+<p>Systems are self-healing and can automatically recover from failures
+and maintain operations without human intervention.</p>
+</li>
+<li>
+<p>Architectural improvements positively impact productivity and release
+velocity due to reduction of maintenance work/toil.</p>
+</li>
+</ul>
+
+<p>Very few services or products are at this level, and those that are
+lead the industry.</p>
+
+<p>Driving the maturity metrics within your organization incurs significant costs. Reaching the strategic level can take four or more years and requires significant investment across the business. Without ongoing focus and sustained investment, it is very easy for
+an organization to regress.</p>
+
+<p>It is important to note that the optimal maturity level for an organization can
+vary over time, for different reasons. While most organizations will
+progress along the continuum as they mature, regression is possible (e.g., from proactive to reactive) if rigor is not maintained. Furthermore, the model is not strictly linear: there are scenarios where product usage and the blast radius are contained (e.g., when the product is nearing the end of its life) and where it may be reasonable for maturity to shift between levels. Maturity metrics are neither a
+prescriptive list of tasks nor a set of mandated principles. The key point is
+that these trade-offs are intentional, based<a data-primary="maturity matrices" data-startref="matmat" data-type="indexterm" id="id1429"/><a data-primary="organizations" data-secondary="maturity matrices" data-startref="org_matmat" data-type="indexterm" id="id1430"/><a data-primary="organizational reliability, phases" data-startref="orgrel_phss" data-type="indexterm" id="id1431"/> on an <a data-primary="visionary phase, organizational reliability" data-startref="visnph_orgrel" data-type="indexterm" id="id1432"/>organization’s context and journey.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Scorecards" data-type="sect1"><div class="sect1" id="ch06_scorecards">
+<h1>Scorecards</h1>
+
+<p>Scorecards are a <a data-primary="scorecards" data-secondary="KPIs" data-type="indexterm" id="id1433"/><a data-primary="KPIs (key performance indicators), scorecards" data-type="indexterm" id="kpi_scrcrd"/>popular mechanism to track an organization’s key
+performance indicators (KPIs) and progress within a maturity matrix in
+the form of dashboards. They can be useful when used with care but can
+backfire when used naively. The intention is to condense strategic
+production health into quantifiable metrics that are actionable. While
+they are neither categorically useful nor not useful, they’re often
+institutionally mandated.</p>
+
+<p>W. Edwards Deming wrote, “It is wrong to suppose that if you can’t measure it, you can’t manage it—a costly myth.”<sup><a data-type="noteref" href="ch06.html#id1434" id="id1434-marker">7</a></sup> Yet, measuring can make some
+things easier to manage. And there’s also the risk that if you don’t
+measure something, it tends to become worse.</p>
+
+<p>So, while measurement isn’t a prerequisite for management, a set of KPIs
+can help simplify a complex problem. They build alignment within the
+group on what is important and how to measure success. Agreed-upon
+objective metrics can reduce interpersonal conflict driven by subjective
+perception. If your SLOs are green, SRE and product development should
+not have to debate whether the service is healthy or not.</p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Why Do They Fall Short?" data-type="sect2"><div class="sect2" id="ch06_why_do_they_fall_short">
+<h2>Why Do They Fall Short?</h2>
+
+<p>However, scorecards <a data-primary="scorecards" data-secondary="KPIs" data-tertiary="risks of" data-type="indexterm" id="id1435"/>are not without risks. Good KPIs can be very hard to
+define—especially because modern production software systems are
+inherently complex and are often multiple levels removed from direct
+business outcomes like revenue or customer retention.</p>
+
+<p>Almost all KPIs are proxy metrics. They don’t measure the elusive
+business performance directly but rather something that is more easily
+measurable. In other
+words, KPIs correlate with business outcomes but are not the same; 100% alignment between those two does not exist.</p>
+
+<p>This mismatch can have negative consequences in both directions. First,
+leadership may “weaponize” the metrics to put pressure on the
+engineering teams. Teams that don’t have sufficiently good numbers may
+face consequences. Leaders may not be interested in
+understanding the situation the team is in, or why it was not in
+a position that allowed it to make the desired progress. “Managing by numbers” without empathy or deeper understanding
+undermines psychological safety and spreads fear instead of nurturing
+change. As Jeff Bezos once put it: “When the data and the anecdotes
+disagree, the anecdotes are usually right.”<sup><a data-type="noteref" href="ch06.html#id1436" id="id1436-marker">8</a></sup></p>
+
+<p>Second, teams that are not committed to the spirit of the scorecards may
+find opportunities to game the metrics. When you measure your CI/CD
+performance via deployment frequency, as the widely adopted
+<a href="https://oreil.ly/uLeaN">DORA
+metrics</a> suggest, a team may choose to deploy the same binary every hour
+instead of releasing new binaries more often. That doesn’t actually
+improve CI/CD performance, but it looks great on the scorecard.</p>
+
+<p><a href="https://oreil.ly/pwFdA">Goodhart’s law</a>, which states that “when a measure becomes a target, it
+ceases to be a good
+measure,” also
+applies to scorecards. When an organization treats them at face value
+without considering their inherent limitations and chooses to chase
+target numbers blindly, scorecards can do more harm than good.</p>
+
+<p>Finally, a scorecard is always a selection of KPIs. You cannot measure
+everything. The scorecard narrows the view, and things that are not
+being measured may get overlooked or even entirely forgotten over time.
+This “tunnel vision” can be quite risky, because long-term production
+health may deteriorate unnoticed. When problems eventually surface,
+the situation is often so bad that it takes tremendous effort and time
+to get back on track.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Why Are Scorecards Hard to Get Rid Of?" data-type="sect2"><div class="sect2" id="ch06_why_are_scorecards_hard_to_get_rid_of">
+<h2>Why Are Scorecards Hard to Get Rid Of?</h2>
+
+<p>While a <a data-primary="scorecards" data-secondary="advantages and limitations" data-type="indexterm" id="id1437"/>scorecard may not capture production health perfectly, it does
+provide objective facts. Discussing a number is much easier than discussing a sentiment. Scorecards can help reduce conflict and create traction
+for previously unmanageable production health improvement effort.</p>
+
+<p>Not all teams dislike them. The teams that have great numbers on the
+scorecard, for whatever reason, may be very proud. Often they have put
+in hard work to get there. Removing the scorecard without a reasonable
+replacement may disorient these teams. They might feel that their work
+is not recognized and that the organization lacks direction. This
+scenario can undermine morale and jeopardize future attempts at
+improving production health.</p>
+
+<p>Finally, long-term production health is complex. Most teams do not have
+the time or capacity to go very deep—they are focused on other priorities, such as dealing with the latest outage or writing code for a feature
+request. Scorecards make a highly abstract problem tangible. A tool with
+limits may be better than no tool at all.</p>
+
+<p>Often, acknowledging the limits of scorecards and leveraging what they
+are good at makes more sense than blindly chasing numbers. They can
+be useful when used with care.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: ProdEx—Google’s Production Excellence Program" data-type="sect2"><div class="sect2" id="ch06_case_study_prodex_google_s_production_excellence_program">
+<h2>Case Study: ProdEx—Google’s Production Excellence Program</h2>
+
+<p>Google SRE’s program <a data-primary="Google" data-secondary="ProdEx program" data-type="indexterm" id="id1438"/><a data-primary="ProdEx program" data-type="indexterm" id="id1439"/><a data-primary="scorecards" data-secondary="ProdEx program" data-type="indexterm" id="id1440"/>to assess production excellence, ProdEx,
+demonstrates a use of scorecards in a way that minimizes their risks.
+The ProdEx program was created in 2015, and it has conducted over 1,900
+reviews since. The tool that Google SRE built for ProdEx aggregates
+metrics from across production health domains in a central scorecard.
+These metrics include on-call workload, alerting quality, outages,
+postmortems, SLOs, data integrity, resource efficiency, bug hygiene, and
+OKR discipline. Teams supplement this data by referencing their relevant
+team processes and charter documents. The idea is to provide a
+comprehensive, high-level overview of an SRE team’s health and the state
+of the production services it is responsible for.</p>
+
+<p>Live reviews via videoconference are held every few quarters with each
+SRE team using the ProdEx scorecard. Psychological safety is a key
+element of these reviews. The reviewers are two very senior SREs—directors or principal engineers—who are from other parts of the organization and are not part of the leadership chain responsible for the team. This organizational distance reduces the pressure on the
+team to “show good numbers.” The focus is on accountability without
+shame and coaching instead of judgment.</p>
+
+<p class="pagebreak-before less_space">While ProdEx is highly data-driven, the reviewers are trained to take
+the team’s context into account and to use the review conversation to
+enrich the picture the data is painting. The
+scores and action items that are the outcome of the ProdEx reviews are manually defined by the reviewers to
+ensure a fair assessment.</p>
+
+<p class="fix_tracking">This combination of data and empathy has helped establish the ProdEx program  as a cornerstone of the Google SRE organization’s strategic
+situational awareness, with Ben Treynor Sloss describing it as “one of SRE leadership’s most
+important bits of telemetry about the health of SRE teams.”  At the same time, ProdEx remains popular with the vast
+majority of reviewed teams—not bad for what is essentially an audit
+program.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Effective Scorecard Use" data-type="sect2"><div class="sect2" id="ch06_effective_scorecard_use">
+<h2>Effective Scorecard Use</h2>
+
+<p>Any organization, <a data-primary="scorecards" data-secondary="use" data-type="indexterm" id="scrcrds_use"/>regardless of size, requires some governance and
+change management to effect transformation. These processes vary in
+terms of formality, consistency, and effectiveness, but they often
+include some type of health check, scorecard, or maturity model.</p>
+
+<p>Here we discuss some firms that worked with Google Cloud Consulting to
+establish and grow SRE practices. They provide implementation examples
+that you might find useful for your own scorecard usage. Each had a
+desire for some type of scorecard to measure SRE progress, and
+variations on the scorecard model helped each achieve its goals in a
+way compatible with its culture and starting point.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case study: Large financial services firm" data-type="sect3"><div class="sect3" id="case-study:-large-financial-services-firm">
+<h3>Case study: Large financial services firm</h3>
+
+<p>One of the primary barriers to wide, efficient SRE adoption in this firm
+was the existence of several verticals that had been in place since before
+its employees had computers on their desks. Any violation of these
+silos’ borders was an immediate alarm-raiser, and if governance of SRE
+transformation was to be done, each vertical wanted to own it
+for themselves.</p>
+
+<p>In this case, a focus on a <em>capabilities</em> model, rather <a data-primary="capabilities models" data-type="indexterm" id="id1441"/><a data-primary="adopting SRE" data-secondary="capabilities models" data-type="indexterm" id="id1442"/>than a
+<em>maturity</em> model, proved to be the answer. Capabilities can be technical
+(automated rollouts, pervasive tracing), organizational (shared,
+reallocatable headcount between dev and SRE), operational (clear and
+consistent postmortem processes), or cultural (consistently blameless
+culture). These capabilities also lie along a developmental pathway,
+with some strictly dependent on developing others first. The exact
+constellation of necessary capabilities varies by organization and even
+by product, based primarily on reliability targets but also on market
+specifics, organizational history, and a variety of other factors.</p>
+
+<p>By developing a baseline list of required capabilities to be adopted by
+all verticals, and then customized capabilities maps for each major
+product area within those verticals, we were able to incentivize
+verticals to adopt shared approaches to SRE, while still feeling like
+they had enough control and individualization to maintain their
+sovereignty. Scoring could then be done in terms of individual
+verticals’ and products’ advancement relative to their specific required
+capabilities, rather than on an arbitrary, linear, five-level maturity
+scale. This approach has encouraged individual services to iterate
+rapidly rather than spend their time on intra- and inter-vertical
+comparisons and finger-pointing.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case study: National retail chain" data-type="sect3"><div class="sect3" id="case-study:-national-retail-chain">
+<h3>Case study: National retail chain</h3>
+
+<p>In this case, a national retailer<a data-primary="adopting SRE" data-secondary="model services" data-type="indexterm" id="id1443"/> was focused on improving the
+reliability of its internal logistics applications. Careful and
+controlled development of SRE practices over nearly a decade had
+resulted in strong results on the consumer side, but the internal
+applications were still owned by legacy, infrastructure-focused
+teams. Much of the ongoing development was handled by a few people
+tweaking applications written years ago by long-departed contractors.</p>
+
+<p>In this case, the company was not simply looking to apply new SRE approaches to old
+applications; they also needed to modernize, and in some cases
+redevelop, the applications for which they wanted to stand up
+reliability practices. We proposed a tandem model tying application
+uplift to SRE practice development, creating shared fate and tight
+integration between the nascent development teams and the SRE
+organization.</p>
+
+<p>In the model we implemented, each service was compared to a template
+“model service,” in accordance with its criticality and usage level.
+This determined its current state relative to a baseline set of
+capabilities. For example, a “tier 1” service might require automated
+rollbacks and be deployed as a set of containers in the organization’s
+current production-standard Kubernetes environment, while a “tier 3”
+service might for the moment remain on legacy virtual machines.</p>
+
+<p>A shared backlog was then created for developers and SREs to address
+jointly. Primary scoring was done on the basis of accomplishment of
+backlog items relative to the whole, individualizing the process to the
+specific services’ needs. Rather than SREs being seen as an outside force
+coming in to fix an application, they were seen as partners,
+particularly because they arrived with engineering time available for
+addressing the backlog and driving <a data-primary="scorecards" data-secondary="use" data-startref="scrcrds_use" data-type="indexterm" id="id1444"/><a data-primary="KPIs (key performance indicators), scorecards" data-startref="kpi_scrcrd" data-type="indexterm" id="id1445"/>applications toward the required
+maturity.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch06_conclusion">
+<h1>Conclusion</h1>
+
+<p>Building a mature SRE function in any organization is a multiyear
+endeavor. A healthy SRE culture and a working organizational structure
+are inherently intertwined. Ideally, they support each other.</p>
+
+<p>While any successful SRE team has dedication to and expertise in
+reliability engineering—in addition to critical aspects of SRE culture, such as blamelessness—deep business understanding and collaboration are
+also important. No matter where you end up on the centralization
+spectrum, these tenets are essential to maximizing your SRE function’s
+impact and usefulness.</p>
+
+<p>As you implement these organizational structures, it is particularly important to keep an eye on the
+maturity and performance of SRE itself, the services it supports,
+and SRE engagements. This process can have both
+positive and negative consequences—if you measure the wrong aspects or the right aspects in the wrong way, it can hinder organizational development and
+alienate the engineers involved. Be conscious and critical about what
+you measure.</p>
+
+<p>Since the journey is long, keeping track of progress is crucial. A
+maturity model can help you understand where you are, as well as next steps. SREs love data to support their decision
+making, so clear success metrics can help guide the journey. However,
+always be aware that scorecards are only proxies. While they can do a
+lot of good, they can also derail SRE work when taken too
+literally as a statement that “team A is better than team B,” dividing
+“winners” and “losers.” Keeping psychological safety top of mind as the most
+important ingredient for a healthy SRE organization will pay dividends
+on this journey.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1386"><sup><a href="ch06.html#id1386-marker">1</a></sup> See Gene Kim et al., <em>The DevOps Handbook: How to Create World-Class Agility, Reliability, and Security in Technology Organizations</em> (IT Revolution, 2016).</p><p data-type="footnote" id="id1387"><sup><a href="ch06.html#id1387-marker">2</a></sup> Melvin Conway, <a href="https://oreil.ly/Kz5gP">“How Do Committees Invent?”</a>, <em>Datamation</em>, 14, no. 4 (1968): 28–31.</p><p data-type="footnote" id="id1398"><sup><a href="ch06.html#id1398-marker">3</a></sup> “Shadow SRE” is an analogy to <a href="https://oreil.ly/DZtk9">“shadow IT”</a>, a common term of art: ad hoc IT functions that spring up in dysfunctional organizations as individual branches of the organization try to solve for their needs in a non-coordinated fashion.</p><p data-type="footnote" id="id1401"><sup><a href="ch06.html#id1401-marker">4</a></sup> See <a class="orm:hideurl" href="https://www.oreilly.com/library/view/seeking-sre/9781491978856/ch07.html">Chapter 7 of <em>Seeking SRE</em></a>, curated and edited by David N. Blank-Edelman (O’Reilly, 2018).</p><p data-type="footnote" id="id1414"><sup><a href="ch06.html#id1414-marker">5</a></sup> If your team supports third-party or open source software, your setup will be different. There is still active development, but it happens outside your organization. Establishing communication channels and trust between the product development and SRE teams is equally valuable, but the approach needs to be tailored to the development model.</p><p data-type="footnote" id="id1423"><sup><a href="ch06.html#id1423-marker">6</a></sup> By “leadership,” we mean an individual or group who has influence over an organization and guides it toward a shared goal.</p><p data-type="footnote" id="id1434"><sup><a href="ch06.html#id1434-marker">7</a></sup> W. Edwards Deming, <em>The New Economics</em> (MIT Press, 1993), 35.</p><p data-type="footnote" id="id1436"><sup><a href="ch06.html#id1436-marker">8</a></sup> Roger Dooley, <a href="https://oreil.ly/vvAEt">“A Two-Minute Masterclass from Jeff Bezos - Five Powerful Insights”</a>, <em>Forbes</em>, December 9, 2024.</p></div></div></section></body></html>

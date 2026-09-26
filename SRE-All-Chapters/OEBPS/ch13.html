@@ -1,0 +1,1808 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Automation and Tooling</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 13. Automation and Tooling" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch13">
+<h1><span class="label">Chapter 13. </span>Automation and Tooling</h1>
+
+
+<p class="byline">By Alex Chiang, Bharath Modhipalli, Daniel Hobe, 
+<span class="keep-together">Joanna Wijntjes,</span> 
+<span class="keep-together">Michael Harris,</span> Michelle Brush, 
+<span class="keep-together">Robin Roth, and Trevor Mattson-Hamilton</span><br/>
+
+<span class="keep-together">with Carmela Quinito</span></p>
+
+<p class="fix_tracking">Automation is a key aspect of SRE. SREs should strive to engineer the systems they own rather than simply operate them. Many, if not all, operational tasks
+can be automated.</p>
+
+<p>Reasons to automate include:</p>
+<dl>
+<dt>Saving time during<a data-primary="automation" data-secondary="advantages" data-type="indexterm" id="aut_advntgs"/> normal operations</dt>
+<dd>
+<p>The main reason commonly given for automation is to save time.
+Productivity gurus can point out automatable aspects in practically any aspect of
+life and work. Any continuously running system comes with maintenance
+tasks. Daily or weekly tasks are very present to the engineers
+responsible for performing them, and it’s part of SRE culture to despise
+repetitive work and consider how to “automate yourself out of your
+current job.” While these types of tasks are likely the first that come to mind, the frequency
+or annoyance of a task should not be the sole motivating factor; consider also the three reasons that follow.</p>
+</dd>
+<dt>Saving time in emergencies</dt>
+<dd>
+<p>Automation can reduce the time it takes to detect, triage, mitigate, or
+resolve an incident. While the savings in terms of time might seem
+small, their business impact can be large. Ensuring that a full outage
+of a large online shop on Cyber Monday gets mitigated after 5 instead of
+15 minutes will likely be more important to the business than cutting an
+hour from a weekly release qualification process. Some tight SLOs are  defendable only through full automation. Automated systems can take action
+within seconds, whereas human operators typically need many minutes,
+depending on the complexity of the problem.</p>
+</dd>
+<dt>Consistency</dt>
+<dd>
+<p>Human operators can make mistakes or miss a step, particularly in high-stress situations. Automation improves consistency, making processes more predictable and repeatable while also facilitating monitoring. This consistency is particularly important during incidents, as emergency mitigations often come with elevated privileges and thus increased risk. The stress of dealing with a never-before-seen outage might cause an on-caller to make mistakes, while automation (even if it handles only a subset of the mitigation steps) will stoically move along.</p>
+</dd>
+<dt>Scalability</dt>
+<dd>
+<p>Once automated, processes can be scaled, either horizontally (e.g., updating 1,000 servers in parallel) or by integrating them into higher-level
+automation. Eventually, a collection of tools, automation, and opinionated configuration can evolve into a platform, with a central team maintaining capabilities that many downstream teams can use. With a larger user base, the return on investment for
+automation improves. For example, if automated monitoring of exceptions
+raised in production systems gains a feature to generate code fixes
+for common issues, all users of the
+platform will benefit.</p>
+</dd>
+</dl>
+
+<p>These reasons should all be <a data-primary="automation" data-secondary="advantages" data-startref="aut_advntgs" data-type="indexterm" id="id2016"/>weighed when considering what to automate. In <a data-type="xref" href="#ch13_when_to_automate_and_when_not_to">“When to Automate and When Not To”</a>, we’ll discuss how to
+decide on concrete projects.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Levels of Automation" data-type="sect1"><div class="sect1" id="ch13_levels_of_automation">
+<h1>Levels of Automation</h1>
+
+<p>Automation evolves and should <a data-primary="automation" data-secondary="levels" data-type="indexterm" id="aut_lev"/>always be driven by requirements. This
+evolution typically goes through the following levels:</p>
+<dl>
+<dt>No automation</dt>
+<dd>
+<p>A proof-of-concept <a data-primary="applications" data-secondary="automation" data-type="indexterm" id="id2017"/>application does not require
+automated database migrations, and it might even be fine to push updates
+manually. Similarly, for a <a data-primary="services" data-secondary="automation" data-type="indexterm" id="id2018"/>service at the end of its lifecycle, it’s
+likely not worth investing in automating service-specific processes.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Partial automation</dt>
+<dd>
+<p>As cases for automation are identified, they
+will be implemented progressively. Even partial automation can provide significant benefits, and it may be sufficient for
+infrequent procedures where fully automating the process would be difficult or infeasible. For example, per-customer customizations of a software
+product for its initial launch might best be partially automated. In
+this case, it’s reasonable to retain some manual steps, especially if that means
+shipping to the first clients a day earlier.</p>
+
+<p>There can be a risk of getting stuck at partial
+automation (see <a data-type="xref" href="#ch13_incremental_automation">“Incremental Automation”</a>), however, which can prevent the key benefits of consistency and
+scalability.</p>
+</dd>
+<dt>Full automation</dt>
+<dd>
+<p>Automating all steps lets you reap all the benefits
+and move on to either automating at a higher level or scaling the
+system or SRE engagement with these new capabilities. Full automation is the
+key to <em>sublinear scaling</em>, which <a data-primary="sublinear scaling" data-type="indexterm" id="id2019"/>here means increasing business impact faster than the human effort required.</p>
+
+<p>Full automation can take different forms:</p>
+<dl>
+<dt>Local automation</dt>
+<dd>
+<p>As a team builds <a data-primary="local automation" data-type="indexterm" id="id2020"/>automation, it often starts by automating the operational tasks associated with the services it owns. Only that team benefits from this automation.</p>
+</dd>
+<dt>Platform automation</dt>
+<dd>
+<p>Moving <a data-primary="platform automation" data-type="indexterm" id="id2021"/>automation to a shared platform owned
+by a central team or offered by an external provider removes the maintenance burden from local teams and allows the benefits of automation to scale.</p>
+</dd>
+<dt>Inherent system behavior</dt>
+<dd>
+<p>Some kinds of automation can be made
+redundant by making them inherent system behavior. For example, a job
+syncing data between two databases becomes unnecessary if the architecture is changed so that all components access a single source of truth.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+
+<p class="pagebreak-before less_space">If time savings are the only consideration, you can use the famous “Is It Worth the Time?” calculator from 
+<a class="orm:hideurl" href="https://xkcd.com/1205"><em>xkcd.com/1205</em></a>, shown in <a data-type="xref" href="#ch13_fig01">Figure 13-1</a>. In practice, however, SRE teams should also consider the consistency and scalability benefits discussed<a data-primary="automation" data-secondary="levels" data-startref="aut_lev" data-type="indexterm" id="id2022"/> earlier.</p>
+
+<figure><div class="figure" id="ch13_fig01">
+<img alt="A comic-style chart calculating the time it is worthwhile to spend automating tasks based on their frequency and duration saved, emphasizing efficient time management." src="assets/sre2_1301.png"/>
+<h6><span class="label">Figure 13-1. </span>The xkcd “Is It Worth the Time?” calculator</h6>
+</div></figure>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling Automation" data-type="sect1"><div class="sect1" id="ch13_scaling_automation">
+<h1>Scaling Automation</h1>
+
+<p>Identifying an <a data-primary="automation" data-secondary="scaling" data-type="indexterm" id="id2023"/><a data-primary="scaling" data-secondary="automation" data-type="indexterm" id="id2024"/>automatable flow often creates a strong impulse for
+engineers to streamline it, and they derive immediate satisfaction from
+implementing a quick, local solution. This can result in the development of numerous local tools that are far removed from the core business logic and known to only a small number of experts, with high maintenance costs. <a data-primary="automation" data-secondary="cost considerations" data-type="indexterm" id="id2025"/>If an issue can be solved at the platform level at only a marginally higher cost than with local automation, directly implementing the long-term solution will yield a greater return on investment. (For more details on this, see <a data-type="xref" href="#ch13_incremental_automation">“Incremental Automation”</a>.)</p>
+
+<p class="pagebreak-before less_space">Maintenance costs of local automation can be reduced by generalizing and
+sharing solutions. Even if only two teams share an automation solution and alternate feature
+development, the added attention in review and testing, as well as more
+frequent use, can make the difference between a brittle tool and a
+robust one.</p>
+
+<p>Larger organizations often establish central teams to develop shared automation and build platforms to make these capabilities available to everyone.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Example: Capacity Provisioning" data-type="sect2"><div class="sect2" id="ch13_example_capacity_provisioning">
+<h2>Example: Capacity Provisioning</h2>
+
+<p>SREs at Google are <a data-primary="automation" data-secondary="scaling" data-tertiary="capacity provisioning example" data-type="indexterm" id="auto_scl_capproex"/><a data-primary="scaling" data-secondary="automation" data-tertiary="capacity provisioning example" data-type="indexterm" id="scl_capproex"/>typically responsible for planning and provisioning
+the capacity of the services they own (see <a data-type="xref" href="ch15.html#ch15">Chapter 15</a>). This includes
+choosing locations and sizing strategies. The <a data-primary="automation lifecycle" data-type="indexterm" id="autlifcyc"/>automation lifecycle often includes these four phases:</p>
+<dl>
+<dt>1. Internal prototype</dt>
+<dd>
+<p>Services run in a single location with a
+hardcoded number of replicas.</p>
+</dd>
+<dt>2. Beta</dt>
+<dd>
+<p>Add location redundancy and enable horizontal scaling with
+automatic sizing.</p>
+</dd>
+<dt>3. GA</dt>
+<dd>
+<p>Run services in all relevant geographic locations, estimate
+inorganic growth at launch, preallocate capacity, and shift sizing from replica
+numbers to customer usage metrics.</p>
+</dd>
+<dt>4. Mature</dt>
+<dd>
+<p>Continuously optimize and automate placement and sizing to
+ensure redundancy while minimizing cost.</p>
+</dd>
+</dl>
+
+<p>As the requirements for capacity provisioning tooling are shared
+by many services, automation can benefit from being developed at the
+platform level.</p>
+
+<p>Google uses two layers of independent <a data-primary="automation" data-secondary="tools, sizing services" data-type="indexterm" id="aut_tolsz"/><a data-primary="tools" data-secondary="sizing services" data-type="indexterm" id="tols_szserv"/><a data-primary="services" data-secondary="sizing services, automation tools" data-type="indexterm" id="serv_autolsszserv"/>automation tools for sizing
+services on its internal platform:</p>
+
+<ul>
+<li>
+<p>At short timescales (minutes to hours), resource limits and replica
+counts are adjusted based on current usage (similar to horizontal and vertical Pod Autoscaling in Kubernetes).</p>
+</li>
+<li>
+<p>For longer timescales (days to months), demand forecasts are combined
+with expected inorganic demand from launches and matched with existing orderable supply to choose locations and propose sizing.</p>
+</li>
+</ul>
+
+<p class="pagebreak-before less_space">These automation tools are developed centrally and are part of Google’s
+production platform. As such, service owners can get the benefits with
+minimal effort, and organizations can apply improvements at scale. Given
+these opportunities, the lifecycle boils down to:</p>
+<dl>
+<dt>1. Internal prototype</dt>
+<dd>
+<p>Build on the platform. Don’t consider capacity
+planning; just use defaults.</p>
+</dd>
+<dt>2. Beta</dt>
+<dd>
+<p>The defaults are still good enough.</p>
+</dd>
+<dt>3. GA</dt>
+<dd>
+<p>Inorganic growth isn’t modeled in the defaults, but once an
+estimate for users or requests exists, central tooling can translate it
+into resource amounts.</p>
+</dd>
+<dt>4. Mature</dt>
+<dd>
+<p>Small to medium services can run on the defaults and rely on
+fully automated capacity planning. Large services will often tune their
+configuration to explicitly balance cost against latency or availability, adjust the speed of resizes, and validate changes. They will also integrate closely with long-term resource planning and<a data-primary="automation lifecycle" data-startref="autlifcyc" data-type="indexterm" id="id2026"/> ordering.</p>
+</dd>
+</dl>
+
+<p>In developing these <a data-primary="automation" data-secondary="tools, sizing services" data-startref="aut_tolsz" data-type="indexterm" id="id2027"/><a data-primary="tools" data-secondary="sizing services" data-startref="tols_szserv" data-type="indexterm" id="id2028"/><a data-primary="services" data-secondary="sizing services, automation tools" data-startref="serv_autolsszserv" data-type="indexterm" id="id2029"/>tools, it’s critical to choose the right abstraction
+layer. For automation to be generally useful, it needs to be abstract
+enough to reduce the complexity a human sees but still allow all
+necessary modifications. Most users won’t need to tune the demand
+time-series forecast, but they might want to choose whether to plan for mean,
+90%, or peak loads, depending on the service characteristics. Similarly, most users
+won’t care which location is selected, but they might need to configure location
+flexibility and colocation requirements with dependencies.</p>
+
+<p>The central automation of capacity planning ensures all of the benefits we discussed earlier:</p>
+<dl>
+<dt>Saving time during normal operations</dt>
+<dd>
+<p>Teams responsible for small and medium-sized services don’t have to think about capacity planning. They might get
+notifications or requests to verify changes, but they don’t have to decide
+which redundancy level to use or how to correctly forecast their demand.
+Even for large services, most relevant features exist and the team’s focus
+can be on configuration rather than writing automation.</p>
+</dd>
+<dt>Saving time in emergencies</dt>
+<dd>
+<p>At scale, rare cases become common, so
+tools for emergency capacity changes are available and integrated with
+continuous capacity planning.</p>
+</dd>
+<dt>Consistency</dt>
+<dd>
+<p>Automated capacity planning does not overlook locations
+or misinterpret graphs. Forecasts about resource consumption rely on
+consistent and predictable automation. Simulations and A/B tests become
+reliable predictions when they are built on top of consistent
+platform-level automation instead of changes to manual processes.</p>
+</dd>
+<dt>Scalability</dt>
+<dd>
+<p>Capacity planning at the platform level makes this
+automation available to all services. At scale, more features are worth
+implementing, from supporting new resource types to modeling
+dependencies between <a data-primary="automation" data-secondary="scaling" data-startref="auto_scl_capproex" data-tertiary="capacity provisioning example" data-type="indexterm" id="id2030"/><a data-primary="scaling" data-secondary="automation" data-startref="scl_capproex" data-tertiary="capacity provisioning example" data-type="indexterm" id="id2031"/>compute and storage or automating moves between
+locations.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Example: Incident Management" data-type="sect2"><div class="sect2" id="ch13_example_incident_management">
+<h2>Example: Incident Management</h2>
+
+<p>On-callers need <a data-primary="automation" data-secondary="scaling" data-tertiary="incident management example" data-type="indexterm" id="auto_scl_incman"/><a data-primary="scaling" data-secondary="automation" data-tertiary="incident management example" data-type="indexterm" id="scl_capincmanex"/><a data-primary="incident management" data-secondary="automation" data-type="indexterm" id="incmanlifec"/>to respond to incidents with a focus on managing them
+through all stages of the incident lifecycle (<a data-type="xref" href="#ch13_fig02">Figure 13-2</a>). Following
+this process ensures learnings are translated into system
+improvements intended to materially reduce the likelihood of the same
+type of incident <a data-primary="incidents" data-secondary="learning lifecycle" data-type="indexterm" id="id2032"/>recurring.</p>
+
+<figure><div class="figure" id="ch13_fig02">
+<img alt="Diagram illustrating the incident lifecycle stages: Detect, Triage, Mitigate, Resolve, Learn, and Remediate, emphasizing the feedback loop for system improvement." src="assets/sre2_1302.png"/>
+<h6><span class="label">Figure 13-2. </span>The incident learning feedback loop</h6>
+</div></figure>
+
+<p>Over the past decade, this experience has evolved for <a data-primary="on-call requirement" data-secondary="incident response" data-tertiary="IRM platform" data-type="indexterm" id="id2033"/><a data-primary="IRM (Incident Response Management) platform" data-type="indexterm" id="id2034"/><a data-primary="Incident Response Management (IRM) platform" data-type="indexterm" id="id2035"/>on-callers at
+Google: we’ve transitioned from using multiple focused tools to using a
+common Incident Response Management (IRM) platform.</p>
+
+<p>Our IRM platform supports the entire incident lifecycle, making it
+easier to automate more on-caller journeys with greater awareness of the
+state of incidents across the company. On-callers benefit from the platform’s
+guidance during stressful situations—they have to rely less on
+remembering training nuances, while automation helps simplify their
+actions. As a result, it’s easier to follow Google’s incident management
+processes (see <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>). Although effective
+human response remains a crucial skill, automation assists an on-caller
+focus by increasing repeatability, expediting processes, ensuring
+consistency, and improving visibility for stakeholders and customers
+across the organization.</p>
+
+<p class="pagebreak-before less_space">The following examples illustrate how platform support for extensibility
+enables automation integrated into incident management journeys:</p>
+<dl>
+<dt>Automating impact analysis and contextual insights</dt>
+<dd>
+<p>Alerts are
+enriched with correlating signals from all observability sources to flag
+customer impact, highlight anomalous patterns, and correlate related
+incidents in system dependencies based on the production knowledge
+graphs (see <a data-type="xref" href="ch19.html#ch19_observability_and_monitoring">“Observability and Monitoring”</a>). This data-driven awareness of the real-time situation, paired with relevant historical
+context, accelerates triage and reduces the time to effective
+mitigation.</p>
+</dd>
+<dt>Facilitating action</dt>
+<dd>
+<p>To enable effective response to incidents
+spanning multiple systems or requiring expertise from multiple teams,
+automation can auto-assign incident roles to assemble the core response
+team. Automation can also establish dedicated coordination artifacts
+(shared docs) and communication channels aligned with team and
+organizational best practices. Additionally, based on the nature of the
+alert, automation can suggest and trigger appropriate <em>automatic
+mitigation</em> actions (e.g., roll back, shift traffic), thus minimizing time to
+mitigation (see <a data-type="xref" href="ch09.html#ch09_from_investigation_to_automatic_mitigation">“From Investigation to Automatic Mitigation”</a>).</p>
+</dd>
+<dt>Streamlining communications</dt>
+<dd>
+<p>Automation supports status updates to
+leadership, support teams, and other stakeholders to ensure broad,
+consistent, and timely awareness of the incident’s impact and progress
+with fewer interruptions for the response team. Customer impact
+assessment automation aids
+<a href="https://oreil.ly/_Cb1y">emerging
+incident</a> detection to accelerate customer communications.</p>
+</dd>
+<dt>Enhancing learning</dt>
+<dd>
+<p>Automation captures key events—such as impact
+declarations, mitigation actions, and responder notes—during incidents
+to autopopulate the postmortem and guide the learning process. This
+aids postmortem authors in quickly moving beyond documenting what
+happened to analyzing and understanding the broader sociotechnical
+system (see <a data-type="xref" href="ch11.html#ch11_evolving_the_learning_from_incident_practices">“Evolving the Learning from Incident Practices”</a>). That way, on-callers can more quickly identify
+contributing causes and create effective action items that convert
+lessons learned into concrete preventative measures and system
+improvements.</p>
+</dd>
+</dl>
+
+<p>Each of these examples of targeted automation brings direct value to
+on-callers within their current focus without requiring additional
+context switching. Requirements and applications for your team may lead to automation
+showing up differently for you, just as it varies across teams at
+Google.</p>
+
+<p class="pagebreak-before less_space">By automating aspects of incident response, IRM fundamentally alters our
+work and our workflows and reduces the time spent on rote analysis,
+comms, and process. As a result, we’re able to focus on areas where
+human judgment, knowledge, and <a data-primary="automation" data-secondary="scaling" data-startref="auto_scl_incman" data-tertiary="incident management example" data-type="indexterm" id="id2036"/><a data-primary="scaling" data-secondary="automation" data-startref="scl_capincmanex" data-tertiary="incident management example" data-type="indexterm" id="id2037"/><a data-primary="incident management" data-secondary="automation" data-startref="incmanlifec" data-type="indexterm" id="id2038"/>collaboration are key.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="When to Automate and When Not To" data-type="sect1"><div class="sect1" id="ch13_when_to_automate_and_when_not_to">
+<h1>When to Automate and When Not To</h1>
+
+<p>The previous section<a data-primary="automation" data-secondary="pitfalls" data-type="indexterm" id="auto_pitf"/> covered why you should automate. To get a complete
+picture, however, you must also consider the pitfalls. While the SRE
+instinct is to automate everything, a disciplined approach is required
+to select the right tasks. Unchecked, automation can introduce new
+risks, mask underlying problems, and ultimately create more work than it
+saves. This section provides a framework for making deliberate,
+effective automation decisions.</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">
+<h1>The Ironies of Automation</h1>
+<p>Lisanne Bainbridge’s <a data-primary="Bainbridge, Lisanne" data-type="indexterm" id="id2039"/>paper “Ironies of
+Automation”<sup><a data-type="noteref" href="ch13.html#id2040" id="id2040-marker">1</a></sup> is critical to understanding how automation
+impacts organizations and systems. This seminal research paper looked at
+the impact that automating industrial processes had on the workers who
+originally performed the work.</p>
+
+<p>Bainbridge found that automating away work creates whole new
+classes of work that didn’t exist before the automation—notably, monitoring it and repairing it when it breaks. This new work
+is often harder than the original task that was automated.</p>
+
+<p>Additionally, when work is automated, lack of use can cause operators’ skills to atrophy. This makes system
+troubleshooting and incident response even more difficult.</p>
+
+<p>The ironies, therefore, are that automation can create new work, cause skill decay, and require organizations to train or hire people with higher-order skills to deal with failures and anomalies. This doesn’t mean you shouldn’t automate; it’s
+just an additional consideration when deciding whether to automate.</p>
+</div></aside>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Pitfalls" data-type="sect2"><div class="sect2" id="ch13_the_pitfalls">
+<h2>The Pitfalls</h2>
+
+<p>As mentioned previously, most operational tasks can be
+automated, but it’s important to be aware of the potential downsides. Before
+embarking on an automation project, consider these common traps:</p>
+<dl class="pagebreak-before less_space">
+<dt>Dangerous automation</dt>
+<dd>
+<p>Automating systems that control
+mission-critical functions without robust safety controls is a recipe
+for disaster. Bugs, flawed configurations, or unexpected data can trigger
+catastrophic failures that a human operator might have prevented. The
+more powerful the automation, the more sophisticated its safety mechanisms must be. These may include rate limiting, enforceable scope limits, “do no
+harm” checks, and circuit breakers that halt automation and escalate to
+a human when predefined safety thresholds are breached. For more on
+holistically analyzing a system to identify dangerous automation (among
+other issues), see <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>.</p>
+</dd>
+<dt>Deskilling operators</dt>
+<dd>
+<p>Automation is almost never complete, and automation that is
+complex but incomplete creates a paradox. It may handle 99% of cases,
+meaning human operators rarely need to intervene. However, when that rare
+edge case occurs, operators may have lost the skills and situational
+awareness required to intervene effectively. This phenomenon, described
+in the sidebar <a data-type="xref" href="#ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">“The Ironies of Automation”</a>, is a critical human factors
+consideration—the less a human does, the less they may be capable of
+doing when needed most.</p>
+</dd>
+<dt>Automation surprise</dt>
+<dd>
+<p>Automated systems do not always do what the
+operator expects them to do. Therefore, automation does not eliminate human work—rather, it
+shifts humans from an active role to a supervisory role. Without
+sufficient observability, automation can surprise the operator with its
+behavior and make resolving issues extremely difficult.</p>
+</dd>
+<dt>Automating over a broken foundation</dt>
+<dd>
+<p>Using automation as a bandage
+for a fundamentally broken system is a common trap. It can extend the
+lifespan of a flawed architecture by making it <em>seem</em> sustainable. While
+the automation may reduce operator toil, the system’s underlying
+limitations will eventually block larger business objectives, and the
+investment in automation will be lost when the system is inevitably
+replaced.</p>
+</dd>
+<dt>Automating a moving target</dt>
+<dd>
+<p>Automation delivers value over time.
+Automating a system with a short lifespan will likely yield a poor return on investment, as will automating a system with low process stability
+(i.e., one whose implementation or surrounding processes change frequently). The initial engineering cost
+and the ongoing maintenance required to keep the automation in sync with
+system changes can easily overwhelm the time saved. Furthermore, this
+constant change makes the automation brittle, increasing the risk that
+it will fail unexpectedly—often at the worst possible time.</p>
+</dd>
+<dt>Automating ambiguity</dt>
+<dd>
+<p>In general, automation excels at deterministic
+tasks. It fails when it must interpret ambiguous signals or make
+decisions that require nuanced human judgment. As discussed in <a data-type="xref" href="ch21.html#ch21">Chapter 21</a>, AI is continually pushing the boundary of how much
+ambiguity automation can handle, but recognizing the limits of the
+current state of the art is critical. Attempting to automate tasks beyond those limits will result in mistakes, with the toil required to correct them outweighing what was saved by the
+automation itself. This pitfall is deeply intertwined with the “ironies of automation” discussed in the earlier sidebar, as intervening in a misbehaving automated system is
+often more complex than performing <a data-primary="automation" data-secondary="pitfalls" data-startref="auto_pitf" data-type="indexterm" id="id2041"/>the original manual task.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A Framework for Decision-Making" data-type="sect2"><div class="sect2" id="ch13_framework_for_decision_making">
+<h2>A Framework for Decision-Making</h2>
+
+<p>Deciding <a data-primary="automation" data-secondary="framework for deciding when to" data-type="indexterm" id="autom_frmwrkdec"/>when to automate requires a balanced approach that goes beyond
+simple time-saving calculations (see <a data-type="xref" href="#ch13_fig01">Figure 13-1</a>). The following framework for making
+these decisions combines a quantitative analysis with a qualitative
+evaluation.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Quantifiables" data-type="sect3"><div class="sect3" id="ch13_quantifiables">
+<h3>Quantifiables</h3>
+
+<p>The foundation of any automation decision is a cost-benefit analysis.
+While the inputs often require estimation, this formula
+provides a clear starting point:</p>
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>C</mi><mi>o</mi><mi>s</mi><mi>t</mi><mi>s</mi><mo>=</mo><mi>c</mi><mi>o</mi><mi>s</mi><msub><mi>t</mi><mrow><mi>i</mi><mi>n</mi><mi>i</mi><mi>t</mi><mi>i</mi><mi>a</mi><mi>l</mi></mrow></msub><mo>+</mo><mi>c</mi><mi>o</mi><mi>s</mi><msub><mi>t</mi><mrow><mi>o</mi><mi>n</mi><mi>g</mi><mi>o</mi><mi>i</mi><mi>n</mi><mi>g</mi></mrow></msub><mo>×</mo><mi>s</mi><mi>y</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>m</mi><mtext> </mtext><mi>l</mi><mi>i</mi><mi>f</mi><mi>e</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>n</mi></mrow></math>
+</div>
+<div data-type="equation">
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>S</mi><mi>a</mi><mi>v</mi><mi>i</mi><mi>n</mi><mi>g</mi><mi>s</mi><mo>=</mo><mi>t</mi><mi>i</mi><mi>m</mi><msub><mi>e</mi><mrow><mi>t</mi><mi>a</mi><mi>s</mi><mi>k</mi></mrow></msub><mo>×</mo><mi>f</mi><mi>r</mi><mi>e</mi><mi>q</mi><mi>u</mi><mi>e</mi><mi>n</mi><mi>c</mi><mi>y</mi><mo>×</mo><mi>s</mi><mi>y</mi><mi>s</mi><mi>t</mi><mi>e</mi><mi>m</mi><mtext> </mtext><mi>l</mi><mi>i</mi><mi>f</mi><mi>e</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>n</mi></mrow></math>
+</div>
+
+<p>While savings exceeding costs is a great initial indicator for the
+viability of a project, engineers tend to underestimate both initial and
+ongoing costs—especially the effort needed to adapt automation to
+evolving systems—so you must take care when performing this estimation.
+Furthermore, a positive return on investment is not a green light; it is
+simply an input into the final decision-making process. Not only must
+you evaluate the nonquantifiables, as described in the next section, but
+you also must always weigh an automation project against other potential
+automation projects to ensure the team is tackling the highest-impact
+work first.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Nonquantifiables" data-type="sect3"><div class="sect3" id="ch13_non_quantifiables">
+<h3>Nonquantifiables</h3>
+
+<p>A purely quantitative analysis is rarely sufficient. Sound judgment is
+required to weigh factors that are difficult to model financially, such as:</p>
+<dl>
+<dt>Strategic value (speed and consistency)</dt>
+<dd>
+<p>Sometimes, automation that
+shows a net-negative return on paper is strategically essential.
+Consider applying security patches to a large fleet. The financial risk
+of a data breach from a slow or inconsistent rollout is immense, though
+difficult to quantify precisely. In these cases, speed and consistency
+are features in themselves, and automation is the only viable way to
+achieve them at scale.</p>
+</dd>
+<dt>Hidden costs (risk mitigation)</dt>
+<dd>
+<p>When considering automation, you
+must also price in the cost of mitigating its risks. A powerful system
+needs robust safety system mechanisms. The cost of designing, building, and
+maintaining these safeguards is a critical—and often overlooked—part of
+the total investment.</p>
+</dd>
+<dt>The ambiguity factor</dt>
+<dd>
+<p>If the automation relies on ambiguous signals,
+the quantitative model is likely flawed. You will
+overestimate the
+frequency with which the automation succeeds (and thus saves time) and
+underestimate the ongoing maintenance costs of handling its mistakes.<sup><a data-type="noteref" href="ch13.html#id2042" id="id2042-marker">2</a></sup></p>
+</dd>
+<dt>The annoyance factor</dt>
+<dd>
+<p>A purely quantitative analysis might miss the
+human cost of certain types of toil (for more on toil, see <a data-type="xref" href="#ch13_toil">“Toil”</a> and <a data-type="xref" href="#ch13_toil_when_to_and_when_not_to">“When to Toil and When Not To”</a>). A task that takes only five minutes but
+frequently wakes an on-caller in the middle of the night or causes
+continual context switching during the day has a disproportionately
+negative impact on morale, focus, and team health. Automating such tasks
+can provide significant relief, even if the total time saved seems small
+on paper.</p>
+</dd>
+</dl>
+
+<p>For more on evaluating<a data-primary="automation" data-secondary="framework for deciding when to" data-startref="autom_frmwrkdec" data-type="indexterm" id="id2043"/> the benefits of reliability and the factors that
+contribute to it, see <a data-type="xref" href="ch02.html#ch02">Chapter 2</a>.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automation Examples" data-type="sect2"><div class="sect2" id="ch13_automation_examples">
+<h2>Automation Examples</h2>
+
+<p>Combining the quantifiable and nonquantifiable elements requires
+experience and judgment. The following examples illustrate this process
+in practice.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automated hardware fault mitigation" data-type="sect3"><div class="sect3" id="ch13_automated_hardware_fault_mitigation">
+<h3>Automated hardware fault mitigation</h3>
+
+<p>Automating <a data-primary="automation" data-secondary="network hardware fault mitigation" data-type="indexterm" id="id2044"/><a data-primary="network hardware, automating fault mitigation" data-type="indexterm" id="id2045"/><a data-primary="mitigations" data-secondary="network hardware faults, automating" data-type="indexterm" id="id2046"/>network hardware fault mitigation demonstrates a blend of
+quantifiable and nonquantifiable analysis. In theory, human operators
+could react to alerts and apply configuration changes to route traffic
+around faulty components on the fly. On a small network, this might be
+feasible.</p>
+
+<p>The quantifiable savings of automation are clear (reduced operator time, avoidance of
+SLA credits). However, the dominant factors are nonquantifiable. First
+is speed. Every moment a fault goes unmitigated, customers may
+experience degraded performance or a complete outage, leading to lost
+revenue (partially quantifiable) and reputational damage
+(nonquantifiable). For Google’s services, the business case was
+overwhelmingly positive.</p>
+
+<p>However, automation <a data-primary="automation" data-secondary="pitfalls" data-type="indexterm" id="id2047"/>introduces its own significant risk: a faulty
+signal (e.g., a detection bug alerting on all hardware in the fleet)
+could cause the automation to route traffic away from healthy
+infrastructure. At scale, the automation could trigger an outage far
+larger than the one it was designed to prevent. Consequently, in our case a core
+part of the project was a sophisticated safety system that stops the
+automation and alerts a human if its actions exceed predefined safety
+thresholds (e.g., “do not drain more than X% of capacity in a
+region”). Over time, the number of overlapping checks has grown, making
+it difficult to reason about what operations will be permitted, and the
+system often unnecessarily prevents capacity from being repaired.
+Maintaining and debugging the checks represents a huge, ongoing cost
+that likely would have been overlooked in a superficial analysis.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automated regional rollout system" data-type="sect3"><div class="sect3" id="ch13_automated_regional_rollout_system">
+<h3>Automated regional rollout system</h3>
+
+<p><a data-primary="automation" data-secondary="regional rollout system" data-type="indexterm" id="id2048"/><a data-primary="regional rollout system, automating" data-type="indexterm" id="id2049"/>
+Over the past decade, Google has pushed to segregate systems into
+independently deployable regional copies to limit the blast radius of
+software and configuration rollouts. Initially, the available deployment
+automation was highly flexible but required teams to cobble together
+custom scripts to achieve regionalization. The significant up-front and
+ongoing maintenance costs meant that only teams managing the
+highest-risk services could justify the investment. For hundreds of
+other services, the cost of regionalization was simply too high.</p>
+
+<p>At the same time Google was pushing for much higher levels of
+reliability, a new, more opinionated framework for production
+deployments, which grew out of a grassroots effort, was gaining
+traction. This framework was <a data-primary="PoD (Production on Demand)" data-type="indexterm" id="id2050"/>called <em>Production on Demand</em> (Pod). The
+convergence of identifying the need for greater levels of 
+<span class="keep-together">automation</span> and
+consistency across services and the availability of Pod led to
+transformational changes in how services are deployed at Google.</p>
+
+<p>Standardizing deployment automation on a single platform enables
+that single platform to universally provide and maintain drop-in
+regionalization capabilities. Although this standardization push was costly for existing services, it
+was pursued as a strategic initiative. The goal of standardization
+wasn’t just to reduce toil; it was to <em>change the cost-benefit analysis
+for every service at Google</em>. By dramatically lowering the cost of
+regionalization, standardizing on Pod made it feasible for hundreds of
+low- and medium-risk services to adopt a more reliable posture. The
+aggregate reduction in reliability risk across the entire company was
+substantial, providing a clear strategic justification that transcended
+any single team’s budget.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automating restarts for a memory leak" data-type="sect3"><div class="sect3" id="ch13_automating_restarts_for_a_memory_leak">
+<h3>Automating restarts for a memory leak</h3>
+
+<p>A common antipattern <a data-primary="automation" data-secondary="antipatterns" data-type="indexterm" id="id2051"/><a data-primary="automation" data-secondary="restarts for memory leaks" data-type="indexterm" id="id2052"/>involves using automation to mask underlying
+systemic issues rather than fixing them. Consider a service with a known
+memory leak. As memory usage climbs, performance degrades until the
+process crashes. You can implement automation that proactively restarts
+the service when its memory usage crosses a certain threshold as a
+solution.</p>
+
+<p>This approach must be evaluated carefully. If the memory leak is rare
+and the cost to fix it is high (e.g., requiring months of engineering
+time), this automation might be a pragmatic, cost-effective solution.
+However, it becomes a dangerous antipattern when it masks
+frequent or escalating problems. If the leak requires restarts
+significantly more frequently than the normal rollout cadence—for
+example, if the restarts move from daily to hourly—the automation is
+simply creating technical debt and hiding the urgency of fixing the
+fundamental problem. The strategic approach is always to fix the
+underlying causes, but the tactical decision depends on the cost-benefit
+analysis.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Incremental Automation" data-type="sect1"><div class="sect1" id="ch13_incremental_automation">
+<h1>Incremental Automation</h1>
+
+<p>Automation is sometimes <a data-primary="automation" data-secondary="incremental implementation" data-type="indexterm" id="aut_incimp_bene"/>seen as the ultimate solution for
+improving efficiency and reducing toil. However, we caution against attempting to automate everything all at once. A more effective strategy
+involves a phased, incremental approach that not only streamlines
+processes but also builds trust, improves design, and fosters a culture
+of continuous improvement. This approach can be summarized by the
+philosophy of “see one, do one, automate one,” where a manual process
+is observed, executed, and then gradually transformed into a fully
+automated solution.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Toil to Automation: A Practical Framework" data-type="sect2"><div class="sect2" id="ch13_from_toil_to_automation_a_practical_framework">
+<h2>From Toil to Automation: A Practical Framework</h2>
+
+<p>A foundational step in this journey is the establishment of a structured
+review process. A regular production meeting (see the sidebar <a data-type="xref" href="ch06.html#ch06_production_meetings">“Production Meetings”</a>), where teams
+analyze recurring issues like bugs, pages, and other forms of toil, can
+provide a crucial feedback loop. By reviewing the pages and interrupts from the previous period (e.g., week, month, or quarter), teams can systematically identify the
+manual, repetitive tasks and pinpoint prime
+candidates for automation. This practice ensures that automation efforts
+are focused on the most significant pain points, rather than on trivial
+tasks. It’s also an opportunity to do some data collection that
+ensures you are accurately identifying the most impactful opportunities
+for improvement from among those tasks. Engineering availability
+is limited, so careful prioritization (as
+described in the next section) is vital.</p>
+
+<p>Once a candidate task is prioritized for improvement, the automation
+process begins. The first step is to perform the task manually. This initial phase
+can be an important learning experience, helping engineers gain a deep understanding of its nuances, edge cases, and
+failure modes. This “see one, do one” stage lays the groundwork for a
+robust solution. Hands-on knowledge then translates into scripting,
+where the manual steps are codified into a series of commands.
+Initially, these scripts might be rough and require manual review or a person to trigger the final action. Over time, they evolve into
+more sophisticated, integrated solutions, culminating in a fully automated process.</p>
+
+<p>There can be some resistance to testing some of these scenarios. For
+instance, if the goal is to drain a region in the event of a certain
+failure, people may not want to actually drain the region as a test of the
+automation—they rightfully worry about creating an outage as they work
+to address the automated mitigation for an outage. Another version of
+this apprehension shows up during DiRT testing (discussed in more depth in <a href="https://sre.google/sre-book/lessons-learned">Chapter 33 of the SRE Book</a>) when people choose
+modest, safe targets for their disaster testing because they don’t want
+to create an actual disaster. This route exchanges a short-term
+maybe-win for a long-term loss. The automation, and the people involved, need to
+be able to handle the mitigation (say, draining a region) confidently
+and consistently, and it’s important to gain this experience outside of a crisis. Do the
+necessary work to ensure that the test is as safe as possible, but don’t
+avoid running it because you’re worried about the outcome.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Prioritization: The Automation Snowball" data-type="sect2"><div class="sect2" id="ch13_prioritization_the_automation_snowball">
+<h2>Prioritization: The Automation Snowball</h2>
+
+<p>When it comes to prioritizing a set of automation projects, a common
+approach is to look for the highest ROI, or the biggest
+bottleneck. While logical, this prioritization often leads to tackling
+the largest, most complex projects first. If a team is already
+constrained by operational load, it may struggle to find the time to
+complete a large project, delaying any savings.</p>
+
+<p>An alternative strategy, often more effective at getting buy-in for automation work, is to gain
+traction by instead taking a fastest-first approach. Start by tackling quick wins to demonstrate value. Prioritize the automation projects that
+can be completed the fastest, even if their individual ROI is smaller.
+This approach delivers immediate value and, more importantly, buys back
+engineering time. This recovered time can be reinvested into the next
+automation project, creating an “automation snowball”—a positive
+feedback loop where capacity gains accelerate over time.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Benefits of an Incremental Approach" data-type="sect2"><div class="sect2" id="ch13_the_benefits_of_an_incremental_approach">
+<h2>The Benefits of an Incremental Approach</h2>
+
+<p>An incremental approach to automation offers numerous benefits. It delivers value sooner
+by tackling smaller, manageable pieces of the problem first. This reduces the risk of a large-scale project failing to meet its goals, as
+each small success builds momentum. It also reduces the risk of
+skew, ensuring that the final automated solution remains closely aligned
+with the actual problem. The iterative cycle of manual action,
+scripting, and refinement allows the team to test assumptions at each
+stage and adjust as needed, leading to a better design that accounts for
+real-world complexities.</p>
+
+<p>Perhaps most importantly, gradually introducing automation builds trust
+and adoption. People are naturally wary of new systems, especially
+those that take over critical tasks. By gradually introducing automation
+and proving its reliability at every step, teams can win over skeptics
+and build confidence. The ultimate goal is to have the automation be so
+reliable that it becomes the default, trusted method for the task.</p>
+
+<p>At Google, the benefit of an incremental approach was seen during a
+significant process migration from a version of software running on
+every switch in every datacenter to a new control system. The migration
+was slightly different from one region to the next and involved numerous steps, many of which were both repetitive and finicky—a good opportunity for automation because software would be more accurate than a human. During the early stages of the rollout, the automation would at times open a ticket for the on-caller with instructions on what to check and an action to complete.
+Marking that task as done restarted the automation. We
+iteratively added automation to cover many of these manual tasks, and by
+the time we entered the high-volume phase of the migration, very
+little manual work remained.</p>
+
+<p>In addition to having many opportunities to observe the benefits of
+incremental automation, we’ve also had several opportunities to see the risks
+introduced by automation that impacted many systems in many places at the
+same time, resulting in serious outages. A number of
+contributing factors made these outages possible, but one lesson stands out: make
+sure your defaults do not act on everything.</p>
+
+<p>We’ve encountered situations where a system was expecting several variables but received only a subset, or none at all. You might assume that your system will return an error, fail safely, or perhaps retry after determining that it hasn’t received all the expected inputs. Instead, in these outages, the system acted on the variables it had, ignoring the missing ones and producing a surprising result. Rather than taking no action, the default behavior was to act on everything, everywhere. So, as you build automation, or possibly direct your favorite AI agent to build it, ensure that the default behavior is a safe and appropriate failure mode. In particular, verify how the system behaves when an important variable, such as the<a data-primary="automation" data-secondary="incremental implementation" data-startref="aut_incimp_bene" data-type="indexterm" id="id2053"/> region, is left out.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Important Early Considerations" data-type="sect2"><div class="sect2" id="ch13_important_early_considerations">
+<h2>Important Early Considerations</h2>
+
+<p>The earliest versions <a data-primary="automation" data-secondary="initial considerations" data-type="indexterm" id="id2054"/>of your new automation will require additional safety mechanisms,
+monitoring, and supervision for best results. For instance, suppose you have a
+service that reacts to an alert and takes a certain action. A safe first step can consist of correctly and consistently identifying
+the scenario that you want to automate. Each time a situation arises
+where the automation would take action, it sends an alert to the
+engineering team members, who review it and check for false positives or
+false negatives. An incremental next step is to correctly identify the
+problem you want the automation to respond to and then suggest (but not
+do) the action, again notifying the engineering team, who can see if the
+problem was accurately discovered and if the suggested action was
+correct. Next, the automation can identify the problem, take the action it determines to be appropriate, and notify the engineering team so they can review the result. Operating in this manner
+has an additional benefit: even if only one or two engineers are building the new feature, everyone on the team will
+see these alerts and be able to follow along with the work in progress.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Final Stretch and Fostering Collaboration" data-type="sect2"><div class="sect2" id="ch13_the_final_stretch_and_fostering_collaboration">
+<h2>The Final Stretch and Fostering Collaboration</h2>
+
+<p>A common<a data-primary="automation" data-secondary="importance of complete automation" data-type="indexterm" id="id2055"/> pitfall is the tendency to stop when a task is 90% automated.
+While it may seem like a great achievement, a partially automated
+process can be more problematic than a fully manual one. It creates a
+state of confusion, where team members are unsure whether to trust the
+automation or revert to the old, manual way. The last 10% of an
+automation project is often the most challenging, because it’s usually
+the gnarly bit no one wanted to deal with, or the corner case that’s
+not well understood—but it’s also often where the most value is
+unlocked, transforming a good solution into a great one that truly saves
+time and reduces errors.</p>
+
+<p>Furthermore, partially automated systems can increase cognitive load.
+Operators must understand not only the underlying system but also the
+automation’s behavior, its limitations, and when it requires intervention.
+This situation can lead to the scenario
+discussed in the sidebar <a data-type="xref" href="#ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">“The Ironies of Automation”</a>, where the automation is complex enough to cause
+operator deskilling but not reliable enough to be trusted. You can mitigate the
+effect of this extra cognitive load by creating readable logs and visible dashboards with status pages. For instance, if your automation
+has successfully identified hardware that was blackholing traffic, and
+that part of the fabric has been drained, ensure that dashboards showing
+traffic for that fabric show the new status, ideally with a linkable
+event where the engineer can learn more.</p>
+
+<p>Finally, effective automation isn’t just a technical challenge; it can
+be a social one. If you are going to need contributions from neighboring
+teams, try to involve them in the goals of the project. They may not
+have cycles to contribute, but they can provide recommendations based on
+their own areas of expertise.</p>
+
+<p>It’s been our experience that great
+automation finds users and contributors. At Google, for example, many services had a requirement
+for automated testing of their database backup, and a variety
+of solutions were implemented, with different degrees of usefulness. Through a cross-team effort, from this mix of
+solutions, an efficient service for testing that backups were valid
+and mountable was written. As people discovered this service, they
+adopted it because it did a great job and reduced toil for their
+teams. There’s never been a mandate to adopt it; it just gets used
+because it works well.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Coevolution of Distributed Systems and Automation &#10;at Scale" data-type="sect1"><div class="sect1" id="ch13_co_evolution_of_distributed_systems_and_automation_at_scale">
+<h1>Coevolution of Distributed Systems and Automation 
+<span class="keep-together">at Scale</span></h1>
+
+<p>Traffic Director<a data-primary="Traffic Director, automation" data-type="indexterm" id="trficdir_auto"/><a data-primary="automation" data-secondary="Traffic Director" data-type="indexterm" id="autom_trfcdir"/> is a relatively modern<sup><a data-type="noteref" href="ch13.html#id2056" id="id2056-marker">3</a></sup> network infrastructure
+service that provides a fully managed and highly available control plane
+for Google Cloud’s load balancing products. The story of its operational
+evolution is a lesson in how architectural choices can result in
+surprising interactions with underlying automation platforms that are
+supposed to just work.</p>
+
+<p>Like many software projects, Traffic Director started life as a
+monolithic binary. The Traffic Director SRE team ran two separate
+instances of it, each to support a different tenant, which immediately
+required them to run separate copies of the rollout system, monitoring
+stacks, and probing. And like many software projects, the team
+had to scale it quickly, so they split its functionality into three
+separate binaries.</p>
+
+<p>Over time, other product teams at Google grew interested in adopting
+Traffic Director, and the Traffic Director SRE team was faced with the
+problem of replicating everything by an order of magnitude. The Traffic
+Director product development and SRE teams debated about
+how to balance the product demands against the operational complexity,
+with the heart of the argument revolving around whether they should
+adopt a multitenant architecture or a multi-single-tenant
+architecture.<sup><a data-type="noteref" href="ch13.html#id2057" id="id2057-marker">4</a></sup></p>
+
+<p>For a young service like Traffic Director, supporting multitenancy for
+tenants with different scaling and reliability requirements would have
+required the team to spend significant effort focusing on resilience and
+least-common-denominator features rather than maximizing product
+velocity—a critical consideration when building for Cloud customers.
+Multi-single-tenant seemed like a better fit for the business
+requirements but was anticipated to be operationally daunting.</p>
+
+<p>Enter Pod. Pod, or <a data-primary="PoD (Production on Demand)" data-secondary="Traffic Director" data-type="indexterm" id="pod_trafdir"/>Production on Demand, is Google’s internal
+production platform, which promises to deliver seamless integration with
+the internal Google ecosystem and provide improved automation,
+reliability, and operational efficiency through standard APIs and
+developer experience.<sup><a data-type="noteref" href="ch13.html#id2058" id="id2058-marker">5</a></sup> An engineer familiar with running one service on
+Pod should be able to easily run another service on Pod.</p>
+
+<p>Pod offered a potential solution for Traffic Director: a single source
+of truth for configuration that could spawn all of its
+multi-single-tenant binary deployments. This solution is the SRE holy
+grail: sublinear complexity for superlinear growth.</p>
+
+<p>And it worked! The Traffic Director SRE team consolidated <em>N</em> rollout
+systems, monitoring configs, and capacity configs down to one. Life was
+good for a few years. Until it wasn’t.</p>
+
+<p>Traffic Director continued to scale across multiple dimensions,
+including number of tenants supported, global and regional variants, and
+simply running in every new datacenter that Google built. All of these
+dimensions (and more) produced a massive cross-product in our single
+configuration, which made it the single largest configuration at
+Google.<sup><a data-type="noteref" href="ch13.html#id2059" id="id2059-marker">6</a></sup></p>
+
+<p>Simultaneously, the configuration itself was becoming unmanageable.
+Tenant-specific flags, all living in the same config and generated with
+snippets of code, immediately diverged. Sharding might have been enabled
+for one tenant, while caching was enabled for another. The inconsistency
+wasn’t just a matter of untidiness; it became a primary source of
+reliability risk, creating a combinatorial explosion of behaviors that
+was impossible to reason about.</p>
+
+<p>This debt came due in the form of cascading platform failures. Core
+automation, the very promise of Pod, began to break because it couldn’t
+handle our scale. The rollouts got so supremely wedged that we ran a
+two-month-old binary in production. The resulting postmortem had a
+section grimly titled “Blood and Toil” that described how engineers had to perform
+hundreds of manual operations to roll out a single weekly
+release.</p>
+
+<p>Eventually, the Pod team intervened with a “white glove” program, and
+the Traffic Director SRE team partnered with them for over 18 months in an
+expensive, resource-intensive effort to stabilize the service. The Pod
+team fixed scaling issues in multiple places throughout the
+platform.<sup><a data-type="noteref" href="ch13.html#id2060" id="id2060-marker">7</a></sup> The Traffic Director
+SRE team adopted advanced features of Pod, including breaking up
+the large rollouts into smaller ones, trading complexity for
+reliability, implementing special settings to reduce the size of the configuration
+cross-product, and in some cases turning off parts of the automation
+altogether.<sup><a data-type="noteref" href="ch13.html#id2061" id="id2061-marker">8</a></sup></p>
+
+<p>While these changes improved Traffic Director and Pod stability, they
+were bandages over underlying issues. The Traffic Director SRE team
+eventually concluded that Traffic Director needed to evolve to a
+multitenant architecture, given the scale and scope it now had and the
+improvements in operational sustainability this would bring. The team also
+recognized that it needed to continue evolving the automation platform itself, as its systems represent a set of ever-changing requirements.</p>
+
+<p>So what is the lesson here? Adopting a multi-single-tenant architecture
+was the correct choice at the time. It allowed the Traffic Director SRE
+team to maximize product velocity by decoupling tenant-specific features
+and improve reliability by isolating tenant blast radius. That
+architecture sufficed for over five years, which is several
+lifetimes in Cloud! But when the effort of maintaining the old
+architecture continued to increase, the team was able to realize it
+was time for a new design. It’s easy to think of revisiting
+architectural choices as negative, but as this example shows, framing
+these decisions around SRE principles of automation and toil is a
+powerful technique that enables you to pursue the right architecture at
+the right time and identify when it’s time for a change, ensuring
+efficiency and scalability throughout<a data-primary="Traffic Director, automation" data-startref="trficdir_auto" data-type="indexterm" id="id2062"/><a data-primary="automation" data-secondary="Traffic Director" data-startref="autom_trfcdir" data-type="indexterm" id="id2063"/><a data-primary="PoD (Production on Demand)" data-secondary="Traffic Director" data-startref="pod_trafdir" data-type="indexterm" id="id2064"/> the lifetime of a product.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Toil" data-type="sect1"><div class="sect1" id="ch13_toil">
+<h1>Toil</h1>
+
+<p>Addressing toil is vital <a data-primary="toil" data-type="indexterm" id="toiltwo"/>to sustaining a productive and happy team.
+Understanding what you are dealing with, and addressing it proactively,
+will prevent outages, accelerate development time, and ensure engineers’
+workloads are more sustainable, even in complex or high-pressure
+environments. Failing to address toil creates a rapidly accelerating
+spiral of depreciating return that can quickly lead to poor velocity,
+increasing strain on the team and, in the worst-case scenario, causing it to implode.</p>
+
+<p>So what is toil? Toil is manual, repetitive work that scales linearly
+with your service’s growth and provides limited return on investment.
+Engineers think of it as work that isn’t an important part of their goals for the quarter and that has no enduring value for the team or product. Common
+examples of toil include repeatedly rerunning a CI/CD pipeline because
+of a known flaky test, having to manually verify and restart a process
+that frequently crashes, or manually testing and validating a database
+backup process. A common entry point for toil is that it initially seems
+like a one-off: you have a new service, and to service the service from
+a new region you log in, allocate some memory or other resource, update,
+and log out. The entire process took just a few minutes and doesn’t need
+to happen again until you perform setup in another new region. But the
+number of regions grows, the service grows, the requirements of the
+service expand, and it becomes a source of toil that is not providing
+value to the team or the service itself.</p>
+
+<p>It’s also important to talk about what toil is not: it is not a
+catch-all term for work a person doesn’t like doing. Having to set up a new
+company-sanctioned security policy with reduced permissions may be
+finicky and tricky—but it’s important for security, will show up on
+goals for the service, and has long-term value. Proposing and developing
+a bug fix for a recent outage may be challenging, but that doesn’t make
+it toil. Adding integrated tests after an outage to prevent a problem
+from happening again may be difficult, but it isn’t toil. This is
+engineering work—it requires human judgment, provides enduring value,
+and is an investment in the <a data-primary="toil" data-startref="toiltwo" data-type="indexterm" id="id2065"/>future reliability of the service.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Why Toil Is a Problem" data-type="sect2"><div class="sect2" id="ch13_why_toil_is_a_problem">
+<h2>Why Toil Is a Problem</h2>
+
+<p>Toil wastes your time. You can <a data-primary="toil" data-secondary="cost" data-type="indexterm" id="id2066"/>lose an entire day fixing an
+uncooperative release, getting flaky tests to pass, or ensuring that
+new features are deployed safely. Toil consumes valuable engineering
+hours that could be spent on strategic, innovative work. Worse,
+engineers stuck fixing trivial problems may lose enthusiasm for work
+generally, or stop looking beyond the daily weeds to see the
+bigger-picture solutions they should be driving toward. This scenario
+leads directly to burnout and attrition, which further affects the
+team’s capacity, creating a vicious cycle. Toil hinders the growth of
+the service and the company—a team bogged down by toil can’t evolve its
+services or build new features.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Measuring Toil and Defining Success" data-type="sect2"><div class="sect2" id="ch13_measuring_toil_and_defining_success">
+<h2>Measuring Toil and Defining Success</h2>
+
+<p class="fix_tracking">To effectively address<a data-primary="toil" data-secondary="measuring" data-type="indexterm" id="id2067"/> toil,<sup><a data-type="noteref" href="ch13.html#id2068" id="id2068-marker">9</a></sup> you need to quantify it, which unfortunately takes time. Ensuring that time gets allocated for gathering relevant
+metrics is vital, as the results will help you get to the contributing
+factors of your toil problems. You have to quantify the problem to know
+if your tactics are working, and in some cases to decide whether it’s worth addressing at all. Numbers help you determine if you
+need to rewrite a tool or migrate to a new platform, or if the problem is
+not worth your attention.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Measuring Operational Workload" data-type="sect2"><div class="sect2" id="ch13_measuring_operational_workload">
+<h2>Measuring Operational Workload</h2>
+
+<p>Start by measuring <a data-primary="toil" data-secondary="measuring" data-tertiary="operational workload" data-type="indexterm" id="id2069"/>how much time your team spends on toil—track the
+time spent on specific tasks or survey the team. This baseline
+measurement is crucial because it lets you chart improvements over time
+and prove that your efforts are paying off. However you plan, account
+for the time when the SRE team is working on toil as well as new
+features, and track that number over time.</p>
+
+<p>Measure unactionable alerts. If <a data-primary="unactionable alerts, measuring" data-type="indexterm" id="id2070"/><a data-primary="alerts" data-secondary="unactionable, measuring" data-type="indexterm" id="id2071"/>you have alerts that are not often
+actionable, it’s probably because one in 20 identifies a critical outage. Everyone decides that catching that one outage is worth tolerating the
+other 19 alerts, but realistically, the alert needs to be improved so
+that the person receiving it has high confidence that it requires action. Review alert metrics regularly to determine what
+percentage were actionable and what percentage were noise, then track and improve
+that ratio over time.</p>
+
+<p>Some of the most critical services at Google have a very low pager load,
+following years of work and improvements to monitoring and automation.
+When these services do page the on-call, it is because there is a
+noteworthy problem that requires addressing. This means no time is lost to unnecessary investigation and ensures decisive engagement from
+on-callers, who can have high confidence that a page means a problem and
+every second counts.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What Success Looks Like" data-type="sect2"><div class="sect2" id="ch13_what_success_looks_like">
+<h2>What Success Looks Like</h2>
+
+<p>The goal isn’t to<a data-primary="toil" data-secondary="successful reduction" data-type="indexterm" id="id2072"/> eliminate toil
+entirely, but rather, like with an SLO, to establish a manageable target and stay within it (see
+<a data-type="xref" href="ch06.html#ch06_on_call_considerations">“On-Call Considerations”</a>).
+Success means reducing the amount of time spent on toil to a sustainable
+level that frees up engineers to work on more valuable projects.</p>
+
+<p>A foundational SRE principle is that teams should spend the majority of
+their time (more than 50%) on engineering work. The specific target
+should be tailored to the team’s context, but the trend should be
+maximizing engineering time. For example, a good goal might be to reduce
+toil from 50% of an engineer’s time to 30%. This shift significantly
+increases the capacity for high-impact work.</p>
+
+<p>Beyond the numbers, success feels like relief. It’s the transition from
+dreading an on-call shift to viewing it as a manageable responsibility.
+It’s the feeling of empowerment that comes from eliminating a recurring
+problem rather than just mitigating its symptoms. A successful toil
+reduction effort improves team morale, reduces burnout, and creates
+space for innovation.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Effective Strategies for Addressing Toil" data-type="sect2"><div class="sect2" id="ch13_effective_strategies_for_addressing_toil">
+<h2>Effective Strategies for Addressing Toil</h2>
+
+<p class="fix_tracking">Successfully reducing toil <a data-primary="toil" data-secondary="reduction strategies" data-type="indexterm" id="id2073"/>requires more than just automating immediate
+pain points; it demands a shift in how the team operates. The strategies
+described in this section enable a framework for moving from reactive to
+proactive toil reduction. This involves not only addressing
+technical debt but also fixing inefficient processes and aligning team
+incentives to prevent toil from taking root.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Identify issues early" data-type="sect3"><div class="sect3" id="ch13_identify_issues_early">
+<h3>Identify issues early</h3>
+
+<p>Whenever a new<a data-primary="toil" data-secondary="reduction strategies" data-tertiary="issue identification" data-type="indexterm" id="id2074"/> service is being developed, onboarded, or launched, work
+to identify and eliminate potential toil <em>before</em> it becomes a problem.
+One way is to establish a checklist so that the teams have a shared
+picture of expectations. Good questions to ask are: What does the
+monitoring and alerting look like for the service? How many pageable
+events were there in the last month? From there, you can map a path to
+actions: “Before launching this service, we should automate turning up
+the service in new locations,” or “The service should be deployed on
+this common framework to make supporting it similar to other services we
+are on-call for.”</p>
+
+<p>Once the service launches, pay careful attention to
+the pages and tickets—both the ones you get (Do they need to be tuned?
+Too sensitive? Not directly relevant?) and the ones you did not get but
+should have gotten (e.g., if your entire home page was gone, but you were only
+alerted that your rollout failed). By building automation and robust
+systems from the start, you can avoid a lot of future toil.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reward improvements" data-type="sect3"><div class="sect3" id="ch13_reward_improvements">
+<h3>Reward improvements</h3>
+
+<p>While fixing a <a data-primary="toil" data-secondary="reduction strategies" data-tertiary="rewarding improvements" data-type="indexterm" id="id2075"/>single ticket is helpful, the most impactful work is
+fixing an entire class of problems. Reward engineers for addressing the
+contributing factors of the recurring issues, not just for handling the
+individual incidents. For example, if a certain type of error causes
+frequent pages, it’s strategic to figure out how the problem arrived,
+look at where it was documented (or not documented), examine the code review
+process where appropriate, and proceed from there. Try to reward
+implementing solutions that are supported by a thorough understanding of
+what happens, as opposed to just trying to fix each instance as it
+occurs.</p>
+
+<p>At Google, this type of work is often rewarded by nominating the SRE for
+a peer bonus—a small monetary award given by any Googler to another
+colleague to recognize outstanding contributions—but more strategically,
+it is also recognized by our performance and promotion criteria and
+planning process. Work to fix an entire class of problems would be
+scoped as a project, with success being met with all the same rewards
+delivering a new feature would be.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Recognize the real problem" data-type="sect3"><div class="sect3" id="ch13_recognize_the_real_problem">
+<h3>Recognize the real problem</h3>
+
+<p>Sometimes the toil <a data-primary="toil" data-secondary="reduction strategies" data-tertiary="identifying problems" data-type="indexterm" id="id2076"/>isn’t a technical issue but a procedural one. If
+your team has a policy of writing a detailed document after every
+incident, but those documents aren’t leading to actionable changes, the
+toil might be the document itself.</p>
+
+<p>Another antipattern is a team acting as a relay—just reading notifications and forwarding problems to another team. A key principle for Google SREs is
+that pages or interrupts should be
+actionable by the on-caller. If the action is to page another team, that
+team should take the page directly.</p>
+
+<p>Analyze your processes with the same rigor with which you analyze your systems. If
+a process is not delivering value commensurate with its cost, eliminate
+or streamline it.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Set realistic long-term goals" data-type="sect3"><div class="sect3" id="ch13_set_realistic_long_term_goals">
+<h3>Set realistic long-term goals</h3>
+
+<p>Some toil problems <a data-primary="toil" data-secondary="reduction strategies" data-tertiary="long-term goals" data-type="indexterm" id="id2077"/>are too big to be solved quickly. A major
+architectural change or a new release framework can’t be built in an
+engineer’s spare time. For these issues, you need to establish a
+suitable long-term goal and dedicate the necessary resources to it.
+Acknowledge that a major solution requires a focused effort and schedule
+it as project work, with defined goals and targets.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What doesn’t work: Lessons and cautionary tales" data-type="sect3"><div class="sect3" id="ch13_what_doesn_t_work_lessons_and_cautionary_tales">
+<h3>What doesn’t work: Lessons and cautionary tales</h3>
+
+<p>The fact that we <a data-primary="toil" data-secondary="reduction strategies" data-tertiary="lessons learned" data-type="indexterm" id="toil_redstrat_leslrn"/>have written about this topic before and are writing
+about it again a decade later shows that the issue of toil by engineering teams is not a
+solved problem. Over time, we have found the previously mentioned
+suggestions to be effective. We’ve also tried the following
+strategies that have not worked well but seem to be easy traps to fall
+into:</p>
+<dl>
+<dt>“All hands on deck, it’s an emergency!”</dt>
+<dd>
+<p>Declaring toil an
+emergency doesn’t increase motivation—at least, not sustainably. In
+fact, it can add another layer of bureaucracy to an already frustrating
+situation, especially if it piles on urgency without headcount being allocated to
+actually address the problem. An emergency is an outage where a group of
+teams work together intensively to solve the problem quickly. Toil is
+almost never solved on that kind of timescale. Declaring an
+emergency for something that is going to stretch out for weeks, months,
+or more is a recipe for failure.</p>
+</dd>
+<dt>“Let’s have everyone add data to some spreadsheets.”</dt>
+<dd>
+<p>Creating a
+spreadsheet for every bad page or bug creates more work. Almost
+immediately, some people will start skipping the
+fill-out-the-spreadsheet step, and other people will probably step up and help.
+The resulting data will be too spotty to be useful, and the additional
+workload will be inequitable and distracting to what are likely some of your
+most diligent engineers. You’ve taken your toil and added a layer of
+toil frosting. Not good.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>“If I pretend it’s not there, it will go away” (also known as ignoring the problem).</dt>
+<dd>
+<p>Marking all toil as “obsolete” and hoping it
+won’t return is just wishful thinking. Declaring bug bankruptcy is like
+deleting everything from your inbox without adding a good spam filter.
+The underlying issues will eventually resurface, and you still don’t
+have a plan for fixing any of them.</p>
+</dd>
+<dt>Designating a “toil expert.”</dt>
+<dd>
+<p><a href="https://sre.google/sre-book/operational-overload">Chapter 30 in the
+SRE book</a> describes a special case where an embedded engineer with
+sufficient expertise can step in for a measured period of time to help a team that’s in trouble recover, explaining that this strategy can be effective because the team benefits from the outside perspective and
+decisive help. A common misapplication of this approach that we’ve
+observed to be problematic is to designate a single person on the team as
+the “toil expert,” sometimes even routing all toil-type bugs to their
+queue because that person “is so good at it.” This setup creates a
+single point of failure, leads to burnout for that individual, and
+prevents the rest of the team from understanding the underlying problems. If they’re shielded from the operational pain, they lose the context
+required to design better systems and prioritize toil reduction. Toil is
+a team problem, not a personal one.</p>
+</dd>
+<dt>“Someone else will take care of it.”</dt>
+<dd>
+<p>Outsourcing toil—creating a
+team whose job is to take care of the toilsome work, freeing you
+up to get back to project work—is a tempting strategy, but it often just
+postpones an eventual reckoning that may take the shape of a serious
+outage. If your toil is critical to your service’s functioning and you
+outsource the work to a team that is not on-call for the service, you’ll get
+paged for problems you now have no control over, and that team will be doing the work with little visibility into the expected outcomes.</p>
+</dd>
+<dt>“But toil is a great way to learn.”</dt>
+<dd>
+<p>This strategy is also known as “make it the new
+person’s problem.” New people joining your team deserve a healthy
+starter project; giving them your worst toil is more like hazing than
+onboarding and not a solid foundation for a healthy SRE team. While it’s true
+that new members can gain valuable insights by tackling some operational
+tasks, there’s a critical balance to be struck. Overloading newcomers
+with excessive or undocumented toil can be counterproductive, leading to
+burnout and preventing them from learning principles that are crucial for
+their long-term effectiveness. The goal should be to use toil as a
+teaching tool, not to treat new hires as a dumping <a data-primary="toil" data-secondary="reduction strategies" data-startref="toil_redstrat_leslrn" data-tertiary="lessons learned" data-type="indexterm" id="id2078"/>ground for undesirable work.</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="When to Toil and When Not To" data-type="sect1"><div class="sect1" id="ch13_toil_when_to_and_when_not_to">
+<h1>When to Toil and When Not To</h1>
+
+<p>SREs do toil. In fact, toil can be necessary in the short term to bring
+the system to a better state as fast as possible. Engineering projects
+and incident response both have operationally shaped work that is
+similar in execution to toil. What’s important is that the toil an SRE team
+takes on should be temporary and part of a broader plan to solve the problem that’s causing it or automate it away. Toil that is
+routine and has no end in sight should be eliminated.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="When to Toil" data-type="sect2"><div class="sect2" id="ch13_when_to_toil">
+<h2>When to Toil</h2>
+
+<p>Sometimes toil <a data-primary="toil" data-secondary="identifying true toil" data-type="indexterm" id="id2079"/>can refer to undesirable work, but whether something is
+toil depends more on the enduring value of the work and how repetitive it is.
+If it’s work that happens rarely, requires human judgment, and has a high
+return on investment, then it’s not really toil. For example,
+architectural migrations often require some level of operational work
+that feels like toil, but it’s really engineering work. We need to
+distinguish between work that is necessary but manual, and actual toil.</p>
+
+<p>That being said, sometimes repetitive work with limited long-term value
+is required as part of being an SRE. Incident response can involve toil.
+Ultimately, SREs are production experts who make use of their full
+toolbox of operational expertise and engineering acumen to solve
+problems. Here are some cases where toiling is 
+<span class="keep-together">necessary.</span></p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling to mitigate" data-type="sect3"><div class="sect3" id="ch13_toiling_to_mitigate">
+<h3>Toiling to mitigate</h3>
+
+<p>The most common <a data-primary="toil" data-secondary="incident mitigation" data-type="indexterm" id="id2080"/><a data-primary="incidents" data-secondary="mitigation as acceptable toil" data-type="indexterm" id="id2081"/><a data-primary="mitigations" data-secondary="as acceptable toil" data-secondary-sortas="acceptable toil" data-type="indexterm" id="id2082"/>example where toil is acceptable is when it’s for
+incident mitigation. As discussed in <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>,
+the goal of incident management is to understand the problem well enough to
+identify a generic mitigation that can be applied to get the system
+working again. For some situations, the generic mitigation takes the
+form of repeated manual interventions, and they can feel like toil. When
+this happens, SREs have three choices: fix the underlying
+system issues to resolve the incident, automate the generic mitigation
+so that it’s applied without human initiation, or continue to toil until
+one of the other options can be implemented. Toil in this situation is a
+viable answer for a handful of days, but if used longer, it becomes a
+time sink and increases the risk of human error.</p>
+
+<p>Google responders used toil for mitigation during an incident where they
+found that an issue was caused by a deadlock in one of the services.
+They suspected the deadlock was due to a recent change, but they needed more
+time to investigate. In parallel to the investigation efforts, the
+incident commander asked one of the SREs to monitor and manually restart
+the service’s jobs when it looked like they were deadlocked. Eventually,
+the team identified the problematic deployment and rolled it back. The
+initial toil was needed to mitigate the situation and buy time to
+investigate.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling to learn" data-type="sect3"><div class="sect3" id="ch13_toiling_to_learn">
+<h3>Toiling to learn</h3>
+
+<p>Many people learn <a data-primary="toil" data-secondary="as learning exercise" data-secondary-sortas="learning" data-type="indexterm" id="id2083"/><a data-primary="learning" data-secondary="toil as" data-type="indexterm" id="id2084"/>by doing. As such, performing operations manually for
+a short time is a great way for an SRE to better understand
+how the system works or to gain confidence in their ability to respond
+when automation fails. For SREs building automation, going through the process manually at least once helps them understand it. That said, when using toil
+to learn, people can easily fall into the trap of thinking that the path
+to automation is to automate exactly the steps they’ve performed manually. The
+goal is to design a system that eliminates the need for toil, not just to
+replace the manual steps with a script or command line tool.</p>
+
+<p>An SRE team at Google used toil for learning when it wanted to
+automate its database recovery and data reconciliation efforts. Before
+writing any code, the team went through a full end-to-end recovery
+exercise, tracking every command required to complete the recovery.
+However, rather than just automating the commands as executed, the team
+used the logged commands to identify sets of logical operations that
+would be useful as generic mitigations for other types of incidents:
+blocking reads and writes, restoring the database, reconciling state
+with downstream data stores, and reenabling reads and writes. These logical operations were then designed as standalone automations that
+could be run independently or combined to perform the full recovery
+process.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling to apply human judgment" data-type="sect3"><div class="sect3" id="ch13_toiling_to_apply_human_judgement">
+<h3>Toiling to apply human judgment</h3>
+
+<p>Some operational<a data-primary="toil" data-secondary="applying human judgment" data-type="indexterm" id="id2085"/> decisions are so critical that they require a
+“human in the loop” to verify them before proceeding. Requiring a
+human to push a button or review a step might be necessary to prevent
+rogue automation from causing catastrophic damage.</p>
+
+<p>In the database recovery and data reconciliation effort mentioned
+in the previous section, the team ultimately decided not to fully automate the recovery process
+because they wanted a person to make key decisions like when to initiate recovery. This decision turned out to be the right one, as shortly
+after the automation was created, a monitoring incident triggered every
+alert in the system. Had the team fully automated the recovery process,
+the monitoring glitch would have triggered the recovery automation,
+causing an unnecessary restore and resulting in recent user updates to the
+database being lost.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="When Not to Toil" data-type="sect2"><div class="sect2" id="ch13_when_not_to_toil">
+<h2>When Not to Toil</h2>
+
+<p>Although sometimes toiling is necessary or useful, SRE teams can find themselves doing it for the wrong reasons. These
+situations often look like they are temporary or part of a
+bigger plan, meeting the previously mentioned criteria of when to toil.
+However, in practice, they lead to the team absorbing more and more
+toil, without a clear end in sight. This section describes some warning signs to watch out for.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling to close product gaps" data-type="sect3"><div class="sect3" id="ch13_toiling_to_close_product_gaps">
+<h3>Toiling to close product gaps</h3>
+
+<p>The tools SREs create<a data-primary="toil" data-secondary="closing product gaps" data-type="indexterm" id="id2086"/> to mitigate incidents and manage systems
+are powerful. It can be tempting to use those tools to work around
+gaps in product design by creating whole features (or fixing poorly
+designed ones) through operational work. However, SREs should not
+perform heroics to compensate for product gaps that make human toil a
+load-bearing and unscalable part of product behavior. Whether it’s a
+missing feature or a design flaw, the engineering team needs to work quickly to close
+the gap rather than tolerating toil.</p>
+
+<p>To illustrate toiling to close product gaps, consider a team defining a
+reservation feature. The team assumed customers would have no reason to
+cancel or change a reservation once the reservation period had started, so it didn’t implement a way for customers to modify or delete
+reservations already in progress. However, within weeks of the feature’s release, the
+team received numerous requests from customers to do exactly that. To fill
+the product gap, engineers had to manually modify the reservation
+metadata. This type of toil should be avoided as much as possible, and where needed, it should be conducted by the team that owns the feature to
+maintain the incentive to close the gap.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling that scales with the system" data-type="sect3"><div class="sect3" id="ch13_toiling_that_scales_with_the_system">
+<h3>Toiling that scales with the system</h3>
+
+<p>SRE teams should always <a data-primary="toil" data-secondary="scaling" data-type="indexterm" id="id2087"/>be wary of toil that grows faster than the team.
+Toil that scales per machine, per customer, or even per feature can
+quickly overwhelm a small SRE team. When SREs run into this type of
+toil, they have a few options:</p>
+
+<ul>
+<li>
+<p>Eliminate or minimize the toil via automation or changes to system
+design, processes, or new features. This may require first analyzing what
+is driving the toil and fixing or removing those factors. As an example, if the toil scales per user, the system may need a
+mechanism to slow user onboarding, like an invitation-based approach.</p>
+</li>
+<li>
+<p>Stop doing the toil completely if it’s not necessary. Toil is
+sometimes added because it has some imagined benefit, such as increased safety
+or tighter control. However, if evidence shows the benefit is not there,
+the toil is ineffective and should be stopped.</p>
+</li>
+<li>
+<p>Identify a more suitable team that can scale effectively with the
+toil. This might be the development team, the support team, professional
+services, or someone else. The key is that if the toil is <em>necessary</em> and SRE can’t
+keep up with it, there needs to be another owner.</p>
+</li>
+</ul>
+
+<p>Moving the work might seem like a false solution, but it’s
+sometimes necessary. Companies hire SREs to be reliability experts and
+engineers. If toil grows to the point that it starves out the
+engineering work, it’s time to come up with another plan. This plan
+might be finding a team that can grow to keep up with the work, or
+finding one that can do the engineering work to eliminate the toil.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Toiling to limit production access" data-type="sect3"><div class="sect3" id="ch13_toiling_to_limit_production_access">
+<h3>Toiling to limit production access</h3>
+
+<p>Occasionally, SRE teams will <a data-primary="toil" data-secondary="limiting production access" data-type="indexterm" id="id2088"/>take on toil because the work requires
+using a tool or permissions that are too dangerous to open up to a
+broader set of people. However, overpowered tools and broad permissions
+are dangerous no matter who wields them. Unfortunately, teams have many
+incentives to create powerful tools that can do too much. These tools are then considered “unsafe” for non-SREs. This scenario is an antipattern
+and should be avoided.</p>
+
+<p>A better approach is to create sets of tools, each with only one
+responsibility and limited access. This approach reduces the security
+and reliability risk of operations. In particular, toil involving
+customer data or root access should be avoided wherever possible; even if most operators work in good faith, open access to these presents a
+significant security and reliability risk. Every operation should follow
+the principle of least privilege.</p>
+
+<p>When tooling and the underlying services are designed well, with clear
+responsibilities and limited access permissions, the work also becomes
+easier to automate.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Human Factors in Automation" data-type="sect1"><div class="sect1" id="ch13_human_factors_in_automation">
+<h1>Human Factors in Automation</h1>
+
+<p>The automation you <a data-primary="automation" data-secondary="human-centered design" data-type="indexterm" id="auto_humcentdesgn"/>create is part of a sociotechnical system that
+includes people, software, hardware, and processes.
+When a process is only partially automated, the automation and the
+operators form a team. Like in any team, there is a division of labor: the automation performs the parts best suited for computers, and the
+humans do the work that requires human judgment. For this setup to
+work effectively, human factors such as skills, limitations, biases, and
+behaviors must be considered.</p>
+
+<p>Since humans are part of partially or incrementally automated systems,
+it is important to take a human-centered design approach when
+automating, understanding the capabilities and limitations of the operators to improve
+the user experience.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="User Interface" data-type="sect2"><div class="sect2" id="ch13_user_interface">
+<h2>User Interface</h2>
+
+<p>Usability is a reliability <a data-primary="user interface (UI), automated systems" data-type="indexterm" id="id2089"/>concern in partially automated systems. When
+outages are attributed to “operator error,” it is almost always the
+case that the tools or automation had poorly defined user interfaces.
+Common pitfalls are bad default values, cryptic identifiers, ambiguous
+flag names, and confusing error messages. Taking the time to make sure
+that the automation is easy to understand and operate is essential for
+reliability. For critical systems, automation should go through some
+form of user experience testing.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability" data-type="sect2"><div class="sect2" id="ch13_observability">
+<h2>Observability</h2>
+
+<p>Automation, like any software, requires <a data-primary="observability" data-secondary="automation" data-type="indexterm" id="id2090"/>some level of observability. The
+operators should have the information they need to understand the status
+of the work, both at a high level and a low level, in case the automation
+breaks and troubleshooting is needed. Attention to good error messaging,
+metrics, and logging is key.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Speed of Operations" data-type="sect2"><div class="sect2" id="ch13_speed_of_operations">
+<h2>Speed of Operations</h2>
+
+<p>One significant limitation <a data-primary="operations" data-secondary="speed of, automation considerations" data-type="indexterm" id="id2091"/>of humans is that they work much, much more
+slowly than computers. Thus, a key consideration in human-centered design
+is whether the speed of the automation will overload the human
+operators. For example, a common pattern is to have automation offload
+difficult decisions to a manual queue worked by a human operator. If
+something changes to cause a significant increase in the rate of
+decisions routed to the queue, the operators may not be able to keep up.</p>
+
+<p>Human slowness can also hide race conditions in complex processes. When
+automation speeds up one part of the process, it often reveals
+challenges in another part. Processes and systems may need to be
+redesigned to work safely again.</p>
+
+<p>Google encountered this challenge when it took an iterative approach in
+automating the process by which new cloud regions are brought up. As
+more and more parts of the process were automated, automation that had worked previously started failing due to hidden assumptions about the order
+and timing of the steps in the automation. As a result, the process had to be
+redesigned.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Team Implications" data-type="sect2"><div class="sect2" id="ch13_team_implications">
+<h2>Team Implications</h2>
+
+<p class="fix_tracking">When building automation, SREs <a data-primary="teams" data-secondary="effects of automation on team composition" data-type="indexterm" id="id2092"/>need to consider the team’s skill levels,
+experience, and other relevant factors. Automation that introduces a new technology—whether a new data serialization format for configuration or a new authorization system—requires every team member to learn it. In general, automation that requires extensive training and onboarding is ill-suited to a team that is temporary or has high turnover.</p>
+
+<p class="fix_tracking">Just as automation may force processes and systems to
+change, it can lead to changes in the makeup of your team and how it
+interacts. As mentioned in the sidebar <a data-type="xref" href="#ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">“The Ironies of Automation”</a>, automation
+creates new work in the form of monitoring and repairing it,
+so the team must include people with those skills. As automation makes systems more complex, teams may also find that they need clear escalation paths so less experienced engineers can easily <a data-primary="automation" data-secondary="human-centered design" data-startref="auto_humcentdesgn" data-type="indexterm" id="id2093"/>loop in those with more expertise.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch13_conclusion">
+<h1>Conclusion</h1>
+
+<p class="fix_tracking">In contrast to the first edition, where the chapters on toil and automation focused more on defining the central concepts and guiding philosophies, here we have tried to provide a set of pragmatic considerations to apply while
+examining your own specific situation. We introduced the nuances that
+emerge once you incorporate a cost-benefit analysis, including
+second-order effects such as deskilling and introducing new classes of
+work. The hallmark of an effective SRE team focused on delivering
+business value is that it knows <em>what</em> tools to reach for <em>and when</em>, to
+best support the business. Thriving in ambiguity is a key cultural value
+at Google, and even seemingly simple questions such as “Should we
+automate this?” can lead you down surprising paths.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2040"><sup><a href="ch13.html#id2040-marker">1</a></sup> Lisanne Bainbridge, <a href="https://oreil.ly/5VSuj">“Ironies of Automation”</a>, <em>Automatica</em> 19, no. 6 (1983): 775–79.</p><p data-type="footnote" id="id2042"><sup><a href="ch13.html#id2042-marker">2</a></sup> There is a mathematical trade-off between false positives and true positives whenever a static threshold is established (which is typical in automation). Therefore, in the face of ambiguous signals, there is a mathematically required increase in manual intervention and system tuning (and thus maintenance). Maintenance costs are rarely properly accounted for in cost-benefit analysis, so any factor that increases maintenance costs will almost always increase hidden costs that were already not properly accounted for. For more information, see Sachidanandam Sakthivel, <a href="https://oreil.ly/inhe_">“A Critical Review of Cost-Benefit Analysis for Business Software Investments”</a>, <em>American Journal of Business</em> 38, no. 4 (2023): 229–47.</p><p data-type="footnote" id="id2056"><sup><a href="ch13.html#id2056-marker">3</a></sup> In comparison to GFE (2005), GSLB (2008), and Maglev (2009), discussed in <a href="https://sre.google/workbook/managing-load">Chapter 11 of <em>The Site Reliability Workbook</em></a>, which are old enough to drive a car and vote in some jurisdictions.</p><p data-type="footnote" id="id2057"><sup><a href="ch13.html#id2057-marker">4</a></sup> For more on multi-single-tenant architecture, see  Jennifer Mace, <a href="https://oreil.ly/GhGO7">“Multi-Single-Tenant Architectures in Cloud”</a>, O’Reilly Content, January 7, 2020.</p><p data-type="footnote" id="id2058"><sup><a href="ch13.html#id2058-marker">5</a></sup> Not to be confused with Kubernetes pods. Google is a big place, and naming collisions are unfortunately common. Sorry!</p><p data-type="footnote" id="id2059"><sup><a href="ch13.html#id2059-marker">6</a></sup> This feat is difficult to accomplish.</p><p data-type="footnote" id="id2060"><sup><a href="ch13.html#id2060-marker">7</a></sup> A notable example is that the size of our inputs broke our Mixed Integer Programming capacity solver.</p><p data-type="footnote" id="id2061"><sup><a href="ch13.html#id2061-marker">8</a></sup> For example, Autocap is a tool that is supposed to do automated capacity management, and to this day we have not managed to make it successfully work for us in this context.</p><p data-type="footnote" id="id2068"><sup><a href="ch13.html#id2068-marker">9</a></sup> For an in-depth discussion of toil, see <a href="https://sre.google/sre-book/eliminating-toil">Chapter 5 in the first edition of this book</a> and <a href="https://sre.google/workbook/eliminating-toil">Chapter 6 in <em>The Site Reliability Workbook</em></a>.</p></div></div></section></body></html>

@@ -1,0 +1,840 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Introduction: 
+Modeling What We Do and Why</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 1. Introduction: &#10;Modeling What We Do and Why" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch01">
+<h1><span class="label">Chapter 1. </span>Introduction: 
+<span class="keep-together">Modeling What We Do and Why</span></h1>
+
+
+<p class="byline">
+<span class="keep-together">By Christof Leng</span><br/>
+
+<span class="keep-together">with Carmela Quinito</span></p>
+
+<p>No matter how feature-rich a software product is, it is ultimately
+useless to the user if it is down, unusably slow, or inaccurate. To
+solve this fundamental problem and ensure businesses can reliably
+deliver their services, Site Reliability Engineering (SRE) has evolved
+into a broad industry movement. But what exactly is SRE?</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>The term SRE can be used to describe the field as a whole (Site
+Reliability Engineering), the individual doing the job (Site Reliability
+Engineer), and the team that individual is part of (the SRE team).
+Please keep this context in mind as you read the book. While most of the
+time in this chapter SRE refers to the field, there are cases where we
+are talking about individuals and teams.</p>
+</div>
+
+<p>At first
+glance, the name may seem a bit odd, but each word has a deeper meaning—and together, they give a pretty good high-level description of
+what SRE is about:</p>
+<dl>
+<dt>Site: The why</dt>
+<dd>
+<p>The first word in the name may be the most confusing one. It is much
+easier to understand when you know the origins of SRE. When the SRE function was
+established at Google in 2003, its mission was straightforward: “Keep
+the site (<em>google.com</em>) up.” Today, of course, the role of SRE teams across the
+industry is much more nuanced. But the core value remains: a
+direct connection to business impact. Enabling users to use the
+company’s products and services is why SRE exists. The dedication to the
+user is at the very core of SRE (see <a data-type="xref" href="ch04.html#ch04">Chapter 4</a>
+for more details).</p>
+</dd>
+<dt>Reliability: The what</dt>
+<dd>
+<p>SRE has a very specific role in the development and operation of
+software products: reliability.<sup><a data-type="noteref" href="ch01.html#id997" id="id997-marker">1</a></sup> This very clear
+focus is a key strength. It enables SREs to develop unique expertise and
+drive improvements that generalist software engineers could not deliver
+with the same quality or efficiency. Reliability is the purpose of SRE.</p>
+</dd>
+<dt>Engineering: The how</dt>
+<dd>
+<p>Engineering is the approach that SRE takes to deliver reliability for
+the business. It’s not heroics, superpowers, or dark magic. It’s using
+the software engineering mindset to solve reliability problems. This may
+sound like a technicality, but it’s what makes SRE game-changing.
+Engineering enables SRE work to be repeatable, scalable, efficient,
+and transferable. It is a core principle.</p>
+</dd>
+</dl>
+
+<p>Reminding ourselves of the meaning of SRE helps us determine if a given
+project is SRE work:</p>
+
+<ul>
+<li>
+<p>Does it align with the business goals?</p>
+</li>
+<li>
+<p>Does it improve reliability?</p>
+</li>
+<li>
+<p>Does it take an engineering approach?</p>
+</li>
+</ul>
+
+<p>You can use these values as a north star on your SRE journey.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Is a Dedicated Voice for Reliability" data-type="sect1"><div class="sect1" id="ch01_sre_is_a_dedicated_voice_for_reliability">
+<h1>SRE Is a Dedicated Voice for Reliability</h1>
+
+<p>It’s important to note that SRE is not just a set of skills. It is a
+specific role. It’s hard to be a part-time SRE while handling completely
+unrelated work.<sup><a data-type="noteref" href="ch01.html#id998" id="id998-marker">2</a></sup> SRE’s strength is
+bundling the expertise for reliable production systems in a specific
+function. This specialization requires dedicated time and the support of
+a community of experts. If SRE work is not your primary job
+responsibility, it’s hard to consistently make time for it. It’s
+always at risk of dropping below the cutoff line of your priorities.
+Additionally, not having a team of SREs around you makes it much harder
+to build a community in which to learn and grow your SRE skills.</p>
+
+<p>SRE is a <em>specialized role</em> to solve problems where the knowledge
+of a generalist software engineer would typically be insufficient. SRE
+expertise is both deep and broad. The role is specialized because it
+focuses on a specific aspect of software engineering: production systems
+and their reliability. SRE expertise is deep because SREs can focus
+on the intricacies of complex production systems. They get more practice
+troubleshooting and designing production systems than a generalist
+software engineer does. SRE expertise is also broad because SREs
+tend to be responsible for many more systems than a typical product
+developer. This puts them in a position to be able to see
+across system boundaries, equipping them to solve
+end-to-end user experience problems that transcend those
+boundaries. They can also transfer experience gained from one system to
+another and thus drive horizontal improvements across the system landscape.</p>
+
+<p>SRE is a <em>dedicated voice</em> for reliability. Just as reliability
+is at the core of the term SRE, it’s also at the core of the ethos
+behind the role. Reliability isn’t just one of many things SREs have to
+juggle; it’s their mission. This dedication is important, because
+reliability is a long-term investment that can easily be overridden by
+short-term needs, like the next big launch. Always having a voice at the
+table that seeks to balance these investments and that keeps working on
+reliability in the background helps keep the software ecosystem
+healthy.</p>
+
+<p>Consciously investing in reliability is important for the business,
+because reliability is one of the most essential features of any
+software product. Nonfunctional requirements like availability,
+response times, scalability, efficiency, etc. are easily overlooked, but
+research shows that this can be costly to businesses large and
+small.<sup><a data-type="noteref" href="ch01.html#id999" id="id999-marker">3</a></sup>
+The attention is almost always on the functional requirements, such as
+what features the software has to offer. However, when your product is
+down or unusably slow, it doesn’t matter to the user what functionality
+the software would offer if it worked. Similarly, a luxurious car with
+many niceties may be wonderful, but only if it runs. If it’s undrivable most of the time, most people would probably prefer a more basic car that
+just works. See <a data-type="xref" href="ch02.html#ch02">Chapter 2</a> for more
+on the value of reliability.</p>
+
+<p>SRE is an inherently <em>collaborative function</em> that seeks to bridge the
+organizational <a data-primary="collaboration" data-type="indexterm" id="id1000"/>gap between development and operations. Therefore, SRE
+must never be antagonistic to its product development partners. It’s
+important that SREs function as enablers rather than gatekeepers.
+Operating and maintaining a reliable production environment helps
+developer productivity. It’s a virtuous cycle: healthy development
+practices enable healthy production systems. See Chapters <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch06.html#ch06">6</a> and <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch07.html#ch07">7</a> to explore
+how SREs and product developers collaborate.</p>
+
+<p>Creating a dedicated SRE function, let alone funding entire SRE teams,
+is resource-intensive. Not every organization, particularly a small
+company, is in the position to do so. However, it’s still possible to
+benefit from leveraging SRE methods. The<a data-primary="cultural principles" data-type="indexterm" id="id1001"/> 
+<span class="keep-together">cultural</span> principles of SRE
+techniques like service level objectives (SLOs), incident management,
+postmortems, and risk management can—and should—be applied outside of
+SRE. It is sometimes harder to establish and maintain them without the
+specialization and dedication of an explicit SRE function, but the
+DevOps movement is proof that it is very much possible. As long as the
+software ecosystem is not too complex, a generalist software engineer
+can maintain the necessary operational knowledge and understanding of
+SRE best practices to keep things running 
+<span class="keep-together">efficiently.</span></p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="A Software Engineering Approach to Operations" data-type="sect1"><div class="sect1" id="ch01_a_software_engineering_approach_to_operations">
+<h1>A Software Engineering Approach to Operations</h1>
+
+<p>SRE<a data-primary="software engineering, approach to operations" data-type="indexterm" id="sftwreng_aprops"/><a data-primary="operations" data-secondary="SRE approach" data-type="indexterm" id="ops_sreappch"/> owes much to the software engineering
+mindset. The phrase “SRE is what happens when you treat operations as a
+software problem” is probably the clearest way to meaningfully
+understand the field. SREs seek an algorithmic understanding of
+production problems and aim to solve them through the design,
+implementation, and modification of software and processes. This approach
+has three important advantages over a traditional model of operations.</p>
+
+<p>The first advantage is gaining a <em>fundamental understanding</em> of production
+systems and operational processes, which enables SREs to get to the bottom of
+things. SRE attempts to make production health objectively measurable
+through mechanisms such as SLOs and observability. It aims to define
+operational processes like incident management from first principles. It
+seeks to provide a clear analysis of problems through processes such as
+blameless postmortems and risk management methods such as STPA and CAST
+(see <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>). This rigor makes success repeatable
+and transferable while preserving the necessary flexibility and holistic
+view that highly mechanical IT operations processes may not have.</p>
+
+<p>The second advantage of the software engineering mindset is the tendency
+toward <em>automation</em> (see <a data-type="xref" href="ch13.html#ch13">Chapter 13</a>).
+Software encodes a task in a form that can<a data-primary="automation" data-secondary="software engineering mindset" data-type="indexterm" id="id1002"/> be executed by a computer.
+Automating operational tasks has two advantages:</p>
+<dl>
+<dt>Efficiency</dt>
+<dd>
+<p>The <a data-primary="efficiency, software engineering" data-type="indexterm" id="id1003"/>intuitive advantage. An automated task requires little
+or no human involvement to complete, freeing up time for other
+engineering work. Given that most software systems continually grow in
+complexity and scale, efficiency enables the SRE team to keep up
+with the workload. A core SRE principle states that you should work on
+automating yourself out of your current job, because otherwise you won’t
+have the capacity for taking on additional opportunities and the work
+they require.</p>
+</dd>
+</dl>
+<dl class="less_space pagebreak-before">
+<dt>Consistency</dt>
+<dd>
+<p>The less <a data-primary="consistency, software engineering mindset" data-type="indexterm" id="id1004"/>obvious advantage. Code formalizes the execution
+of a task. There is no room for human error or accidental variation. Automation avoids small inconsistencies and issues
+sneaking into production. It can also drive simplification of production
+systems, although often the most complex tasks remain. While humans are
+good at improvising, handling edge cases is much more difficult in
+automation. Automation creates an incentive to simplify processes so
+that there are fewer edge cases.</p>
+</dd>
+</dl>
+
+<p>Finally, the software engineering mindset promotes the <em>integration of
+development and operations</em>. SREs bridge the gap between product
+development and operations, because they speak the same language as the
+coders. They understand what software is capable of and what it isn’t
+capable of. They understand the software design and development process.
+They can provide an effective feedback loop from production back into
+the development process and translate the issues and concepts for the
+product developers.</p>
+
+<p>To be fully effective, every SRE should be able to write code, even if
+it’s as simple as a monitoring config. Not every SRE needs to be
+a full-blown software engineer. SREs also need  solid understanding of production systems, including operating systems,
+operational tooling, computer networks, databases, and distributed
+systems. Ideally, an SRE has a mix of software <a data-primary="software engineering, approach to operations" data-startref="sftwreng_aprops" data-type="indexterm" id="id1005"/><a data-primary="operations" data-secondary="SRE approach" data-startref="ops_sreappch" data-type="indexterm" id="id1006"/>engineering and system
+engineering skills. See <a data-type="xref" href="ch05.html#ch05">Chapter 5</a> for more details.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Do SREs Do?" data-type="sect1"><div class="sect1" id="ch01_what_do_sres_do">
+<h1>What Do SREs Do?</h1>
+
+<p>The methods and concepts of SRE are constantly evolving. This is
+intentional and stems from a culture of continuous improvement and
+learning inherent to the field (see <a data-type="xref" href="ch04.html#ch04">Chapter 4</a>).
+Still, it is helpful to provide a snapshot of the scope and practices
+that define SRE. One of the earliest attempts to do this was the
+hierarchy of service <a data-primary="Dickerson, Mikey" data-type="indexterm" id="id1007"/>reliability
+<a href="https://sre.google/sre-book/part-III-practices">defined by Mikey
+Dickerson in 2013</a> (see <a data-type="xref" href="#ch01_fig01">Figure 1-1</a>). It is inspired by Maslow’s
+hierarchy of needs.<sup><a data-type="noteref" href="ch01.html#id1008" id="id1008-marker">4</a></sup></p>
+
+<figure><div class="figure" id="ch01_fig01">
+<img alt="Diagram illustrating Dickerson's hierarchy of service reliability, starting with Monitoring as the base layer and culminating with Product at the top." src="assets/sre2_0101.png"/>
+<h6><span class="label">Figure 1-1. </span>Dickerson’s hierarchy of service reliability</h6>
+</div></figure>
+
+<p>Dickerson’s<a data-primary="Dickerson’s hierarchy of service reliability" data-type="indexterm" id="dichosr"/> hierarchy includes the following layers:</p>
+<dl>
+<dt>Monitoring</dt>
+<dd>
+<p>The base <a data-primary="monitoring" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1009"/>layer. If you don’t know whether the service is
+working or not, you cannot target your work effectively.</p>
+</dd>
+<dt>Incident response</dt>
+<dd>
+<p>The <a data-primary="incident response" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1010"/>goal of incident response is to stop the bleeding, because your users expect your service to work.</p>
+</dd>
+<dt>Postmortem/root cause analysis</dt>
+<dd>
+<p>It’s <a data-primary="postmortems" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1011"/><a data-primary="RCA (root cause analysis)" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1012"/>important to review what
+happened during an incident to learn from the event and prevent
+recurrence.</p>
+</dd>
+<dt>Testing and release procedures</dt>
+<dd>
+<p>Lessons<a data-primary="testing" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1013"/><a data-primary="release procedures, Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1014"/> learned should be captured in code and processes to actively prevent future outages.</p>
+</dd>
+<dt>Capacity planning</dt>
+<dd>
+<p>Plan <a data-primary="capacity planning" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1015"/>for demand outpacing capacity and traffic
+spikes by making the service efficient and robust against externally
+triggered outages.</p>
+</dd>
+<dt>Development</dt>
+<dd>
+<p>Improve <a data-primary="development" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1016"/>the service’s infrastructure through software.
+This includes automation scripts, backup and restore systems, and data
+processing pipelines, among many other solutions.</p>
+</dd>
+<dt>Product</dt>
+<dd>
+<p>The <a data-primary="products, Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1017"/>top layer of the pyramid. The goal is to design and
+implement systems that deliver a reliable user experience from
+day zero.</p>
+</dd>
+</dl>
+
+<p>The Dickerson hierarchy makes a lot of sense, because the lower layers
+are force multipliers for the higher layers. Without monitoring, you
+won’t even know if your system is up, and your incident response will be
+random and slow. Without postmortems, you will have a hard time
+prioritizing the most critical <a data-primary="Dickerson’s hierarchy of service reliability" data-startref="dichosr" data-type="indexterm" id="id1018"/>development work.</p>
+
+<p>However, the hierarchy no longer captures the full breadth of production
+health today. Some topics like capacity planning are very prominent
+while other, equally important topics like data integrity get lumped
+under the development layer. Additionally, the lower three (and visually
+biggest) layers can be perceived as mainly reactive and operational,
+whereas the proactive engineering approach plays a smaller role.</p>
+
+<p>Today, the focus <a data-primary="hierarchy of production health" data-type="indexterm" id="hierprodhlth"/>of production health has shifted more toward design
+and preparedness instead of crisis management. IT operations function as
+a sociotechnical system whose health is defined not only by what you
+do but also by how you do it. Organizational culture is implicit within
+Dickerson’s hierarchy, but this is a fundamental factor for success.
+Given these limitations, we propose a revised hierarchy of production
+health, shown in <a data-type="xref" href="#ch01_fig02">Figure 1-2</a>.</p>
+
+<figure><div class="figure" id="ch01_fig02">
+<img alt="Diagram illustrating a modern hierarchy of production health with layers from sociotechnical foundations at the base to emergent reliability at the top." src="assets/sre2_0102.png"/>
+<h6><span class="label">Figure 1-2. </span>A modern hierarchy of production health</h6>
+</div></figure>
+
+<p class="less_space pagebreak-before">The layers of the revised hierarchy, from most basic to most advanced,
+are as follows:</p>
+<dl>
+<dt>Sociotechnical foundations</dt>
+<dd>
+<p>A working <a data-primary="sociotechnical foundations, production health" data-type="indexterm" id="soctech_prodhlth"/>organizational culture, based
+upon psychological safety and continuous improvement, is essential for
+production health. It is a key enabler for all layers above it.</p>
+</dd>
+<dt>Situational awareness</dt>
+<dd>
+<p>Monitoring <a data-primary="situational awareness" data-secondary="hierarchy of production health" data-type="indexterm" id="id1019"/>is only one of many tools in the
+SRE’s toolbox to guide their actions. Observability provides a much
+broader view into production systems. Awareness of operational
+workload and business goal alignment are important, too.</p>
+</dd>
+<dt>Continuous preparedness</dt>
+<dd>
+<p>Incident<a data-primary="continuous preparedness" data-secondary="hierarchy of production health" data-type="indexterm" id="id1020"/> management and postmortems are
+part of a bigger effort to minimize the impact of outages and prevent
+similar outages in the future, or even whole classes of similar
+problems. Training and documentation are other tools for making emergency
+preparedness more proactive.</p>
+</dd>
+<dt>Infrastructure design</dt>
+<dd>
+<p>Engineering the <a data-primary="infrastructure design" data-secondary="hierarchy of production health" data-type="indexterm" id="id1021"/>environment the service
+operates in is a powerful tool to improve production health.
+Infrastructure is a broad field that includes release procedures
+(continuous integration and deployment), testing, data integrity, capacity planning, automation, and
+much more.</p>
+</dd>
+<dt>Resilient products</dt>
+<dd>
+<p>Production <a data-primary="resilient products" data-secondary="hierarchy of production health" data-type="indexterm" id="id1022"/>health starts at the very beginning
+of the software development lifecycle, during requirements gathering and
+design. Delivery of resilient, working products is the fundamental goal
+of production health.</p>
+</dd>
+<dt>Emergent reliability</dt>
+<dd>
+<p>The ultimate<a data-primary="emergent reliability" data-secondary="hierarchy of production health" data-type="indexterm" id="id1023"/> aim is to make production
+health inherent to all infrastructure, development, processes, and
+culture. Software then becomes reliable by default, and the
+effort spent on the lower layers is greatly reduced.</p>
+</dd>
+</dl>
+
+<p>The following sections <a data-primary="hierarchy of production health" data-startref="hierprodhlth" data-type="indexterm" id="id1024"/>discuss each layer in more detail, and
+many chapters of this book explore the specific topics that make up these layers.</p>
+<div data-type="warning" epub:type="warning"><h6>Warning</h6>
+<p>It is important to note that you don’t need to fully complete a layer
+before moving on to the next. In fact, you will probably never be
+completely done with any of the layers. However, reaching a certain
+level of maturity at a lower layer will make progress in the higher
+layers substantially easier to achieve. Try making your pyramid broader
+and taller in parallel, but avoid an inverted pyramid. It is likely that
+you’re wasting energy when you don’t have sufficient foundations.</p>
+</div>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Sociotechnical Foundations" data-type="sect2"><div class="sect2" id="ch01_sociotechnical_foundations">
+<h2>Sociotechnical Foundations</h2>
+
+<p>A quote commonly (mis)attributed to <a data-primary="Drucker, Peter" data-type="indexterm" id="id1025"/>Peter Drucker is that “culture eats
+strategy for breakfast.”<sup><a data-type="noteref" href="ch01.html#id1026" id="id1026-marker">5</a></sup>
+No matter how brilliant your strategic initiative, it will most
+likely fail if <a data-primary="production health" data-secondary="sociotechnical foundations" data-type="indexterm" id="prodhlth_soctecfnd"/><a data-primary="production health" data-seealso="hierarchy of production health" data-type="indexterm" id="id1027"/><a data-primary="hierarchy of production health" data-seealso="production health" data-type="indexterm" id="id1028"/>it is at odds with your organization’s <a data-primary="culture" data-secondary="importance for production health" data-type="indexterm" id="id1029"/><a data-primary="organizational culture" data-seealso="culture" data-type="indexterm" id="id1030"/>culture. The
+shared norms, core values, and behavioral patterns of the organization
+are an enormous background force that is hard to work against. Changing
+culture may seem like a daunting task, but it is doable when you focus
+on actions and behavioral patterns. Start small by improving processes
+opportunistically, as behavior shapes culture over time.</p>
+
+<p>The most important <a data-primary="cultural tenets, production health" data-type="indexterm" id="id1031"/>cultural tenets for production health are
+psychological safety, <a data-primary="psychological safety" data-type="indexterm" id="id1032"/>blamelessness, and <a data-primary="trust" data-type="indexterm" id="id1033"/>trust. If engineers are afraid
+to speak up, fear retaliation when flagging problems, or expect blame
+games, they will be reluctant to take risks and take on production
+problems. Trust is essential for cross-functional collaboration
+between operations and development and cross-organizational
+collaboration between teams responsible for different systems that depend
+on each other. For more information about psychological safety and
+effective teams, check out Google’s
+<a href="https://oreil.ly/1An6x">Project
+Aristotle</a>.</p>
+
+<p>A shared culture of continuous improvement and learning is essential to
+keep the momentum going and make change sustainable. When a team
+does not believe that things need to improve and that everyone is willing to
+do their part, any change will require a lot of effort, and the team may
+ignore or even actively push back against it. A focus on the user helps
+rally the team behind necessary changes. A culture of excellence
+helps continuously push the boundaries and challenge the status quo.
+Short feedback loops, similar to what is common in Agile
+development,<sup><a data-type="noteref" href="ch01.html#id1034" id="id1034-marker">6</a></sup> make
+improvements timely and keep the organizational overhead manageable.</p>
+
+<p>Employees also need to feel empowered and encouraged to take action.
+Organizational silos and a lack of a shared feeling of responsibility
+impede attempts to bridge the gap between development and operations.
+Production experts need to feel seen in the development process, and
+product developers should not feel that the operations team is always
+getting in the way. It is important to align incentives and reward
+employees for taking action to improve production health.</p>
+
+<p>While here we describe the ideal state of organizational culture, we
+also acknowledge that perfect can be the enemy of good. The important
+aspect is to acknowledge the value of this foundation and work to
+continuously improve it over time. Read more about how
+culture enables SRE’s success in <a data-type="xref" href="ch04.html#ch04">Chapter 4</a>.</p>
+
+<p class="pagebreak-before less_space">An SRE function can play a crucial role in shaping the organizational
+culture around IT operations. SREs serve as custodians of reliability
+culture in the broader organization and evangelize reliability
+principles among their partners. However, SRE never aims for absolute
+reliability at all costs. The SRE mission is to help product developers
+deliver better products to users. Better means both reliable and
+feature-rich. SRE can scale its impact by helping product developers
+gain a deeper understanding of production systems. For example, gradual rollouts allow for deploying risky changes with little negative
+impact, while gaining confidence in the system. “Teaching to fish instead of
+providing fish” creates a production health culture far beyond the
+direct sphere of the SRE team. See <a data-type="xref" href="ch07.html#ch07">Chapter 7</a> for more details on the collaboration between SRE and product
+development.</p>
+
+<p>Getting started is <a data-primary="sociotechnical foundations, production health" data-startref="soctech_prodhlth" data-type="indexterm" id="id1035"/><a data-primary="production health" data-secondary="sociotechnical foundations" data-startref="prodhlth_soctecfnd" data-type="indexterm" id="id1036"/>often the hardest part. For practical tips on how to
+begin your SRE journey and chart your own unique path through
+the production health hierarchy, check out the advice in <a data-type="xref" href="ch04.html#ch04_practical_considerations">“Practical Considerations”</a>. In addition, the <em>Enterprise Roadmap to SRE</em> report<sup><a data-type="noteref" href="ch01.html#id1037" id="id1037-marker">7</a></sup> dives deeper into the specific challenges engineers face when
+adopting SRE in their organization.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Situational Awareness" data-type="sect2"><div class="sect2" id="ch01_situational_awareness">
+<h2>Situational Awareness</h2>
+
+<p>You can <a data-primary="situational awareness" data-secondary="production health" data-type="indexterm" id="sitawr_prodhlth"/><a data-primary="production health" data-secondary="situational awareness" data-type="indexterm" id="prodhlth_sitawr"/>improve production health only when you understand what is
+actually broken. Without clear information, actions will be random and
+ineffective. Guessing what needs to be improved leads to premature
+optimization, which leads to unnecessary complexity. When you don’t
+have visibility into production health and don’t get automatically notified of
+issues, you will be caught off guard and doomed to reactive
+firefighting. Ideally, you should become aware of production issues
+before your users notice them.</p>
+
+<p>Many foundational SRE methods aim to improve situational awareness.
+Observability <a data-primary="observability" data-secondary="importance to production health" data-type="indexterm" id="id1038"/>provides monitoring of relevant production metrics, logs
+of system activity, and traces of execution paths through systems. These
+are essential for troubleshooting production issues and determining the
+factors that contribute to outages. See <a data-type="xref" href="ch09.html#ch09">Chapter 9</a> for more information. SLOs <a data-primary="SLOs (service level objectives)" data-secondary="production health" data-type="indexterm" id="id1039"/>are a powerful mechanism for
+transforming user happiness from an abstract value into something
+measurable in your production systems. They are discussed in <a data-type="xref" href="ch08.html#ch08">Chapter 8</a>, but it’s worth mentioning
+alerting and dashboards here. Alerting notifies you automatically of SLO violations
+and other critical metric changes. Dashboards let you
+slice and dice the data to gain a deeper understanding of the situation.</p>
+
+<p>Aside from keeping an eye on the health of systems, you also need to
+keep track of toil. Toil <a data-primary="toil" data-type="indexterm" id="id1040"/>is the kind of work tied to running a
+production service that tends to be manual, repetitive, automatable,
+tactical, and devoid of enduring value, and it scales linearly as a service
+grows. Operational overload<a data-primary="operational overload" data-type="indexterm" id="id1041"/> can trigger a chain reaction that undermines
+production health and is bad for the team that is being overloaded. To
+ensure enough time for engineering work, Google SRE sets a threshold of
+no more than 50% operational work, though in practice we aim for much
+lower, as it’s a threshold and not a target. Operational overload can take
+many forms. The most obvious are on-call (pager alerts) and on-duty
+(processing system tickets), but manual release management, maintenance,
+and service turn-up or migration can also cause substantial toil. Getting an exact number for time spent on toil is practically impossible, but
+having at least some metrics—such as number of outages, ticket throughput, and a coarse approximation of maintenance work—is important
+for situational awareness. Otherwise, there is a significant risk that
+threats to team health will not be detected in time.</p>
+
+<p>However, keeping systems healthy and ensuring that the team is not
+overloaded are not the only concerns. Situational awareness also means having a clear understanding of business priorities, which
+requires close collaboration between SRE and its partners in product
+development and product management. Common tools are shared objectives
+and key results (OKRs), a healthy cadence of sync meetings, and shared
+projects. SLOs also can help align stakeholders on which reliability
+levels the business needs. Additionally, measuring feature velocity
+helps clarify whether SRE is an enabler for developer productivity. If
+the SRE team does not understand the business priorities and act
+accordingly, it may quickly become sidelined, making it irrelevant
+to the business.</p>
+
+<p>Overall, situational <a data-primary="situational awareness" data-secondary="production health" data-startref="sitawr_prodhlth" data-type="indexterm" id="id1042"/><a data-primary="production health" data-secondary="situational awareness" data-startref="prodhlth_sitawr" data-type="indexterm" id="id1043"/>awareness is a foundation that informs what actions
+are the most important and useful. Investing in situational awareness
+can be existential. Without it, the team—or the product it is
+supporting—is at substantial risk of complete failure.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Continuous Preparedness" data-type="sect2"><div class="sect2" id="ch01_continuous_preparedness">
+<h2>Continuous Preparedness</h2>
+
+<p>Minimizing the <a data-primary="continuous preparedness" data-secondary="production health" data-type="indexterm" id="conprep_prodhlth"/><a data-primary="production health" data-secondary="continuous preparedness" data-type="indexterm" id="prodhlth_conprep"/>impact of incidents on user happiness is at the core of
+the SRE mission. The impact can be reduced along three dimensions: the
+length, frequency, and scope of the incident. The length of an incident
+can be minimized through quick detection (see <a data-type="xref" href="#ch01_situational_awareness">“Situational Awareness”</a>) and quick mitigation. For the latter, a fast and effective
+incident management strategy is key. Preparedness means that the on-call
+engineers are properly trained (see <a data-type="xref" href="ch05.html#ch05">Chapter 5</a>) and there are clear processes and roles (see
+<a data-type="xref" href="ch10.html#ch10">Chapter 10</a>). A well-prepared incident
+response <a data-primary="incident response" data-type="indexterm" id="id1044"/>can dramatically reduce the duration of the impact on users.</p>
+
+<p>However, the SRE work does not stop there. The
+real work begins with understanding the reasons for the outage and
+identifying contributing factors. Writing a postmortem and defining
+actions to improve the service help prevent recurrence of the same
+type of outage (see <a data-type="xref" href="ch11.html#ch11">Chapter 11</a>). A well-coordinated
+follow-up to incidents reduces the frequency of future outages.
+Additionally, it can lead to changes in system design, like
+introducing additional failure domains or supporting the graceful
+degradation of nonessential features, that also reduce the scope of an
+outage. If only a subset of the user base is affected by an outage or
+only a subset of the functionality becomes unavailable, then user impact
+is smaller.</p>
+
+<p>Finally, proactive risk management <a data-primary="risk management" data-type="indexterm" id="id1045"/>enables engineering to identify and
+control risks in the application. A systematic analysis of the
+control flows can uncover corner cases that break the
+application. STPA and CAST are methodologies that enable SREs to uncover
+such faults in the application logic. See <a data-type="xref" href="ch12.html#ch12">Chapter 12</a> for more
+details.</p>
+
+<p>Continuous preparedness is a great illustration of how SRE combines
+operations and engineering. Being on-call is not the purpose of SRE. It
+is a means to an end that enables SRE to improve the long-term
+reliability of the service. SRE’s operational work informs
+engineering and design work, amplifying SRE’s impact. It becomes a
+continuous element in the <a data-primary="continuous preparedness" data-secondary="production health" data-startref="conprep_prodhlth" data-type="indexterm" id="id1046"/><a data-primary="production health" data-secondary="continuous preparedness" data-startref="prodhlth_conprep" data-type="indexterm" id="id1047"/>software development lifecycle. That is why
+continuous preparedness is an important layer in the hierarchy.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure Design" data-type="sect2"><div class="sect2" id="ch01_infrastructure_design">
+<h2>Infrastructure Design</h2>
+
+<p>The layers below <a data-primary="infrastructure design" data-secondary="production health" data-type="indexterm" id="infrdsgn_prodhlth"/><a data-primary="production health" data-secondary="infrastructure design" data-type="indexterm" id="prodhlth_infrdsgn"/>infrastructure design enable SRE teams to understand
+what is wrong and apply mitigation strategies. The real virtuous cycle
+starts when this understanding is turned into engineering efforts. The
+best starting point is to improve the infrastructure of the service.
+Modern production environments are complex ecosystems in themselves (see
+<a data-type="xref" href="ch03.html#ch03">Chapter 3</a>). The production environment of a service may
+include infrastructure like Kubernetes for container orchestration and
+many other components that enable the service to run reliably,
+efficiently, and scalably.</p>
+
+<p>A well-designed infrastructure is key to
+making a service operable. The opportunities to improve the
+infrastructure through engineering are numerous, but we’ve found the
+following to be the most important:</p>
+<dl>
+<dt>Release management</dt>
+<dd>
+<p>Changes <a data-primary="release management, infrastructure improvements" data-type="indexterm" id="id1048"/>are often named as the number one reason
+for outages. A robust release mechanism can minimize this risk. Using
+modern continuous integration/continuous deployment (CI/CD) practices and
+incremental rollouts that start with a small fraction of the service’s
+capacity and validate the release before continuing the rollout reduces
+the toil of rollouts and helps detect faults before a full-scale
+outage occurs. Trunk-based development reduces the complexity of release
+management. Many small releases not only improve feature velocity but
+make each release less risky.</p>
+</dd>
+<dt>Config management</dt>
+<dd>
+<p>Config <a data-primary="configuration" data-secondary="management, infrastructure improvements" data-type="indexterm" id="id1049"/>changes can cause outages as easily as
+binary releases. Version control and code reviews for configuration data
+(so-called GitOps<sup><a data-type="noteref" href="ch01.html#id1050" id="id1050-marker">8</a></sup>) ensure
+that configuration data benefits from the same mechanisms that are
+commonly used for application code. Feature flags that can enable and
+disable new feature code help decouple feature development from
+the rollout.</p>
+</dd>
+<dt>Data management</dt>
+<dd>
+<p>The <a data-primary="data management" data-secondary="infrastructure improvements" data-type="indexterm" id="id1051"/>irrecoverable loss or corruption of user data
+can result in immense reputational damage and financial loss, or even be
+fatal for products. Monitoring data integrity problems and being able to
+restore data from backups are essential for any service that deals with
+valuable user data. See <a data-type="xref" href="ch16.html#ch16">Chapter 16</a> for details.</p>
+</dd>
+<dt>Capacity management</dt>
+<dd>
+<p>As a <a data-primary="capacity management" data-secondary="infrastructure improvements" data-type="indexterm" id="id1052"/>service scales, the management of machine
+resources becomes important. Sufficient capacity is a prerequisite for
+running reliably. Just-enough capacity is critical for running
+efficiently. For bigger services, capacity management often requires
+planning ahead. Additional infrastructure helps make the best use of
+the available resources: load balancing minimizes hotspots, throttling
+reduces the impact of heavy users, denial-of-service (DoS) protection
+defends against attacks that aim to overload the service. See
+<a data-type="xref" href="ch15.html#ch15">Chapter 15</a> for details.</p>
+</dd>
+<dt>Production testing</dt>
+<dd>
+<p>Testing <a data-primary="production testing" data-secondary="infrastructure improvements" data-type="indexterm" id="id1053"/><a data-primary="production testing" data-type="indexterm" id="id1054"/>mechanisms enable the system operators
+to discover issues before the users do. In addition to classic unit and
+integration tests, tests in production in the form of probers or
+fault-injection testing (known as chaos engineering<sup><a data-type="noteref" href="ch01.html#id1055" id="id1055-marker">9</a></sup>) can find problems in the service systematically.
+Load testing helps inform capacity planning about the scalability
+limits of the service. See <a data-type="xref" href="ch14.html#ch14">Chapter 14</a>
+for details.</p>
+</dd>
+<dt>Observability</dt>
+<dd>
+<p>Strictly <a data-primary="observability" data-secondary="infrastructure improvements" data-type="indexterm" id="id1056"/>speaking, observability is already covered
+in the situational awareness layer. However, it is worth mentioning that
+the observability tooling is part of the infrastructure and should
+receive the same design attention and engineering as the other topics
+discussed here.</p>
+</dd>
+</dl>
+
+<p>Ideally, infrastructure design goes hand in hand with the design of the
+application itself. While it is possible to retrofit better
+infrastructure to an existing service, shifting the infrastructure left
+in the <a data-primary="software development" data-secondary="infrastructure design" data-type="indexterm" id="id1057"/>software development lifecycle leads to better outcomes, fewer complications, and less firefighting later.</p>
+
+<p>Infrastructure benefits immensely from <a data-primary="automation" data-secondary="benefits to infrastructure" data-type="indexterm" id="id1058"/>automation. Traditional
+operations require significant human toil due to the lack of automation. Aside
+from the cost of labor, this blocks other benefits. For example, if
+every release requires a day of work, it is impractical to do daily releases.
+Additionally, automation is much more consistent than manual operations,
+which helps avoid human errors that lead to outages.</p>
+
+<p>Sometimes it makes sense to evolve simple automation scripts to actual
+production tools. This is especially the case when the same automation is applicable
+across many services. See <a data-type="xref" href="ch13.html#ch13">Chapter 13</a> for more details.</p>
+
+<p>Good infrastructure <a data-primary="infrastructure design" data-secondary="production health" data-startref="infrdsgn_prodhlth" data-type="indexterm" id="id1059"/><a data-primary="production health" data-secondary="infrastructure design" data-startref="prodhlth_infrdsgn" data-type="indexterm" id="id1060"/>design simplifies the ecosystem instead of adding
+complexity. It standardizes the infrastructure across services.
+Well-designed infrastructure should not be a burden for developers and
+operators; instead, it should help accelerate their work and make the service
+more robust.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Resilient Products" data-type="sect2"><div class="sect2" id="ch01_resilient_products">
+<h2>Resilient Products</h2>
+
+<p>Great infrastructure <a data-primary="resilient products" data-secondary="production health" data-type="indexterm" id="id1061"/><a data-primary="production health" data-secondary="resilient products" data-type="indexterm" id="id1062"/>can be a huge advantage, but it has limits. Some
+hurdles can only be overcome in the application code itself. When a
+service already has a decent infrastructure, redesigning aspects of the
+application code or architecture can achieve transformational
+improvements.</p>
+
+<p>A service that is designed to be inherently resilient can achieve much
+higher levels of availability, performance, scalability, and efficiency.
+However, this goal requires close collaboration between the SREs, the
+application developers, and the service’s architects. Sometimes the
+necessary changes can be done incrementally, and sometimes it is better
+to engage early in the design of a new service or a major revamp of the
+application. Either way, the specific improvements and designs are
+typically highly application-specific.</p>
+
+<p>One opportunity is to reduce the blast radius of service disruptions in
+terms of users impacted, downtime, and functionality lost. Splitting the
+service into multiple independent failure domains reduces the risk of
+global outages. When only a single cloud region is down, only the users
+of that region are affected by the outage. Horizontal scaling across
+many servers can mask the impact of individual servers failing through
+automated failover. Graceful degradation, where noncritical features are disabled instead of the service failing
+completely, is another useful technique. For example, when the profile picture service in a social
+media application is broken, pages could still load, just without the
+profile pictures.</p>
+
+<p>Another opportunity is the simplification of the service. Complexity in
+terms of architecture, technical debt, and dependencies (even worse:
+circular dependencies) not only increases the risk of outages but
+also makes it harder to debug and mitigate them. Unnecessary dependencies
+on upstream services are especially prone to increasing the complexity
+and risk to the service.</p>
+
+<p>See <a data-type="xref" href="ch17.html#ch17">Chapter 17</a> for an in-depth discussion of
+resilience principles.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Emergent Reliability" data-type="sect2"><div class="sect2" id="ch01_emergent_reliability">
+<h2>Emergent Reliability</h2>
+
+<p>Good coverage of <a data-primary="emergent reliability" data-secondary="production infrastructure" data-type="indexterm" id="id1063"/><a data-primary="infrastructure" data-secondary="emergent reliability" data-type="indexterm" id="id1064"/><a data-primary="production infrastructure" data-secondary="emergent reliability" data-type="indexterm" id="id1065"/>the layers up to and including resilient products
+yields highly reliable products and smooth operations. However, these outcomes
+require continued conscious effort. When focus and discipline wane, the
+situation will likely deteriorate. The ultimate goal is to establish an
+ecosystem that is reliable by default.</p>
+
+<p>In some cases this goal can be achieved on a technical level. Production
+platforms that make it easy to design, build, and operate reliable
+software without custom solutions reduce the burden on engineering
+teams. If the platform makes a certain class of failures impossible,
+developers no longer need to worry about it. A well-designed production
+infrastructure can enforce many best practices (see <a data-type="xref" href="ch18.html#ch18">Chapter 18</a>).</p>
+
+<p>When it is not possible to completely eliminate a failure class, it is often possible to at least monitor that the systems comply with best practices. For example, it may not always be possible to
+enforce incremental rollouts, but a global update may be identifiable
+from the production logs. Typically, teams do not violate best practices
+intentionally. They either don’t know about them or don’t realize that
+they aren’t compliant.</p>
+
+<p>Another important angle is to empower product developers to do the right
+thing. SREs cannot be everywhere all the time. It is much more powerful
+to educate developers than to actively drive all of the reliability
+work. As the saying goes, “Give a man a fish and you feed him for a
+day. Teach a man to fish and you feed him for a lifetime.” There will
+always be situations where a production expert is needed, but developers
+can solve many day-to-day challenges themselves. A basic understanding
+of production systems is as much part of a modern software engineer’s
+responsibilities as fundamental knowledge of testing, security, and user
+experience.</p>
+
+<p>Emergent reliability cannot be efficiently achieved in the scope of a
+single service or product in isolation. Rather, it often requires organizational
+transformation and collaboration to establish the culture,
+infrastructure, education, and best practices that enable reliability to
+flow effortlessly across the organization’s full product portfolio. For
+example, such a transformation could include establishing a
+platform engineering team, defining and enforcing
+organization-wide production policies, or setting up organization-wide
+training programs.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI and SRE" data-type="sect2"><div class="sect2" id="ch01_ai_and_sre">
+<h2>AI and SRE</h2>
+
+<p>Artificial intelligence (AI) and <a data-primary="production health" data-secondary="AI considerations" data-type="indexterm" id="id1066"/><a data-primary="AI (artificial intelligence)" data-secondary="production health" data-type="indexterm" id="id1067"/><a data-primary="artificial intelligence" data-see="AI" data-type="indexterm" id="id1068"/>machine learning (ML) are notably
+absent from the production health hierarchy. This isn’t because they’re
+not important. They are already fundamentally changing the production
+landscape and how systems are 
+<span class="keep-together">operated.</span> However, these are cross-cutting
+concerns that touch upon almost every aspect of production health.</p>
+
+<p>On the one hand, large-scale AI systems pose new challenges and pitfalls for software
+operations, from deployment complexity to new
+hardware paradigms that complicate capacity management, novel
+infrastructure building blocks, and new approaches to observability.
+<a data-type="xref" href="ch20.html#ch20">Chapter 20</a> provides more information on how SRE can help
+make AI applications successful and reliable.</p>
+
+<p>On the other hand, AI also changes how we operate software. AI excels
+at navigating complex datasets and answering highly ambiguous
+questions—key skills in modern
+software ecosystems. It can help make sense of complex production
+data, enabling engineers to get to the bottom of nasty production outages more quickly, and it
+can help automate complicated tasks where traditional tools were
+not applicable. The full potential of AI-powered production systems will
+only become clear in the coming years. See Chapters <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch19.html#ch19">19</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch21.html#ch21">21</a>, and <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch23.html#ch23">23</a> for further
+discussion of how SRE will evolve.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch01_conclusion">
+<h1>Conclusion</h1>
+
+<p>SRE offers a principled and systematic approach to operations. By
+applying SRE practices, organizations can deliver more reliable software
+products and run operations more smoothly and efficiently. However, each
+SRE journey is different. The needs of every organization are unique, and
+so are the solutions to those needs.</p>
+
+<p>It’s important to remember that SRE is not a static set of rules and
+procedures. It is a mindset and philosophy that is adapted to
+ever-changing environments. A resilient culture enables resilient
+operations. By following the core principles of SRE, IT operations can
+be turned from a cost center into an opportunity to elevate the
+business.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id997"><sup><a href="ch01.html#id997-marker">1</a></sup> Reliability in this context means that the software will perform its intended function without failures with a high probability. The exact probability needed depends on the intended usage of a given software product.</p><p data-type="footnote" id="id998"><sup><a href="ch01.html#id998-marker">2</a></sup> But you can leverage many SRE best practices and the overall SRE philosophy even if you’re not a full-time SRE. The DevOps <a data-primary="DevOps" data-type="indexterm" id="id1069"/>mindset encourages breaking down silos between development and operations and can have a large impact on software reliability. SRE best practices are helpful in such generalist setups. However, the full potential of SRE is best unlocked through a dedicated function. For more on how SRE relates to DevOps, see <a href="https://sre.google/workbook/how-sre-relates">Chapter 1 of <em>The Site Reliability Workbook</em></a>.</p><p data-type="footnote" id="id999"><sup><a href="ch01.html#id999-marker">3</a></sup> Mark Stevens, <a href="https://oreil.ly/r3Epe"><em>The Cost of IT Downtime for Small Businesses in the U.S.</em></a> (Corporate Technologies, 2026).</p><p data-type="footnote" id="id1008"><sup><a href="ch01.html#id1008-marker">4</a></sup> According to <a href="https://oreil.ly/RpvbV">Wikipedia</a>, “Maslow’s hierarchy of needs is <a data-primary="Maslow’s hierarchy of needs" data-type="indexterm" id="id1070"/>a conceptualization of the needs (or goals) that motivate human behaviour, which was proposed by the American psychologist Abraham Maslow.” Maslow’s hierarchy starts with a base layer of physiological needs such as air and food and builds up to psychological needs such as self-actualization.</p><p data-type="footnote" id="id1026"><sup><a href="ch01.html#id1026-marker">5</a></sup> For more on the misattribution, see <a href="https://oreil.ly/iRShZ">this 2025 Medium article</a> by Dean Foust.</p><p data-type="footnote" id="id1034"><sup><a href="ch01.html#id1034-marker">6</a></sup> For more on the business value of Agile development, see Nicole Forsgren, Jez Humble, and Gene Kim’s <em>Accelerate: The Science of Lean Software and DevOps</em> (IT Revolution, 2018).</p><p data-type="footnote" id="id1037"><sup><a href="ch01.html#id1037-marker">7</a></sup> James Brookbank and Steve McGhee, <a href="https://sre.google/resources/practices-and-processes/enterprise-roadmap-to-sre"><em>Enterprise Roadmap to SRE</em></a> (O’Reilly, 2022).</p><p data-type="footnote" id="id1050"><sup><a href="ch01.html#id1050-marker">8</a></sup> See Alexis Richardson, <a href="https://oreil.ly/YxloN">“GitOps—Operations by Pull Request”</a>, Weaveworks Blog, September 28, 2018.</p><p data-type="footnote" id="id1055"><sup><a href="ch01.html#id1055-marker">9</a></sup> See Casey Rosenthal and Nora Jones, <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/chaos-engineering/9781492043850/"><em>Chaos Engineering: System Resiliency in
+Practice</em></a> (O’Reilly, 2020).</p></div></div></section></body></html>

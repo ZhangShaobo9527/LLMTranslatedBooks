@@ -1,0 +1,246 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Future of SRE</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 23. Future of SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch23">
+<h1><span class="label">Chapter 23. </span>Future of SRE</h1>
+
+
+<p class="byline">By Matt Zelesko</p>
+
+<p>Throughout this book, we’ve explored a number of transitions.
+Transitions are nothing new—Google specifically, and the technology
+industry generally, have embraced and thrived through many of them. Frequently, the ultimate outcome looked very different from
+what we thought it would at the outset. With this in mind, we look
+into the future of SRE with a sense of humility. It’s not
+possible to fully predict what will come, but we can make an
+informed guess about what’s not likely to change about the SRE practice
+and what we suspect definitely will.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Won’t Change" data-type="sect1"><div class="sect1" id="ch23_what_won_t_change">
+<h1>What Won’t Change</h1>
+
+<p>First, reliability <a data-primary="future of SRE" data-type="indexterm" id="id2953"/>remains as important as ever. In fact, the importance
+of reliability is <em>increasing</em> as the world becomes ever more reliant
+on technology. The products and
+infrastructure provided by Google and other innovative organizations are becoming increasingly critical to the daily lives of billions of
+users and to organizations globally. This means that
+our infrastructure is becoming <em>societal infrastructure</em> to governments,
+nongovernmental organizations, companies, and people around the world.
+We don’t take this responsibility lightly—it is central to our culture
+and our intention that “Google just works.” If we project forward, it
+is reasonable to assume that this global reliance will continue to increase (and
+perhaps dramatically), yet expectations will remain the same. As
+complexity grows, our approaches to reliability will change, but our
+mission will not.</p>
+
+<p>Second, we fully expect that humans will remain involved in the practice
+of SRE and the broader work of delivering reliable systems and products. As AI capabilities expand at pace, we view stewardship of our
+production systems as a collaboration between humans and AI. At present,
+our human SREs continue to perform most production changes, often with
+an AI companion. We expect that over time, the division of work between
+humans and AI will shift, with AI taking on more of the
+investigation, detection, mitigation, and post-incident response. At the same time, our most complex
+problems are often novel, don’t follow previously understood patterns,
+and are best solved by humans. We expect that will be the case for the
+foreseeable future. As this book has shown, many aspects of
+SRE go beyond production management and incident response, and
+human judgment continues to be essential there as well.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Is Transforming" data-type="sect1"><div class="sect1" id="ch23_what_is_transforming">
+<h1>What Is Transforming</h1>
+
+<p>Transitions involve transformations of many kinds, from process to
+platform to culture. We are hitting a major inflection point in SRE, and
+we need to rethink how we scale production while also striving to keep
+things simple. From abstracting away complexity to embracing agentic
+workflows, we are focused on making reliability the easy and default
+choice for our teams.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shift Left Turns Into Shift Down" data-type="sect2"><div class="sect2" id="ch23_shift_left_turns_into_shift_down">
+<h2>Shift Left Turns Into Shift Down</h2>
+
+<p>The desire
+to “shift left” elements<a data-primary="shift left" data-type="indexterm" id="id2954"/> of the product lifecycle has generated considerable discussion and led to many valuable outcomes. Shifting left
+ensures that domains such as quality, reliability, and security are
+addressed earlier in the product lifecycle, where issues can be resolved
+faster and at lower cost. That said, shifting left can also add
+considerable complexity and cognitive load to software development teams, which must now be experts not only in software development but also in
+quality, reliability, and security. This quickly becomes intractable
+even at small scale, and more so at the scale of large software
+companies.</p>
+
+<p>This is why we have<a data-primary="shift down" data-type="indexterm" id="id2955"/> invested in platforms that allow us to “shift
+down” rather than “shift left” (see <a data-type="xref" href="ch18.html#ch18_platform_engineering">“Platform Engineering”</a> and
+Richard Seroter’s blog post on
+<a href="https://oreil.ly/_vByy">shifting
+down</a>). Shifting down focuses on offloading these infrastructure and
+operational burdens onto the underlying platform. Instead of requiring
+developers to be full-stack experts who manage everything from
+Kubernetes configurations to network policies, organizations are
+encouraged to build or use platforms that abstract these complexities
+away, allowing developers to focus primarily on writing application code.</p>
+
+<p>At its core, this strategy leverages managed services and opinionated
+frameworks that have best practices baked in by default. Converging
+on common runtime frameworks and platforms for rollouts, observability,
+and capacity management means the platform can handle the heavy
+lifting of scaling, availability, and compliance. By treating
+platforms as internal products that support engineers rather than
+new concepts they must master, we foster a more sustainable and
+innovative engineering culture while also making compliance with our
+production principles the easy choice (see <a data-type="xref" href="ch17.html#ch17_google_s_principles_for_reliability_and_resilience">“Google’s Principles for Reliability and Resilience”</a>).</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk as a Leading Indicator of Reliability" data-type="sect2"><div class="sect2" id="ch23_risk_as_a_leading_indicator_of_reliability">
+<h2>Risk as a Leading Indicator of Reliability</h2>
+
+<p>Traditionally, SRE has focused <a data-primary="risk management" data-secondary="identifying risks" data-type="indexterm" id="id2956"/>on availability as a key reliability
+indicator, forming the basis for many SLIs and SLOs. This hasn’t always
+been the best approach, because availability is a trailing indicator of
+reliability: it is impacted when something goes wrong and the system is
+not available. However, the availability of a system is a manifestation
+of the inherent risk in the system and its dependencies. If we can
+identify that risk, we can start to understand the <em>leading</em>
+indicators of reliability rather than relying on the trailing ones.</p>
+
+<p>Identifying risks can be done in a number of ways. For example, in the
+spirit of the continuous improvement culture of SRE, every incident—and every near miss—contains lessons that can alert us to risks in our systems. A good
+postmortem does not just identify the action items required to detect,
+mitigate, and prevent similar incidents in the future. A good postmortem should
+also include a catalog of the risks discovered.</p>
+
+<p>There are also
+proactive ways to identify risk. <a data-type="xref" href="ch12.html#ch12">Chapter 12</a> discusses STPA as a
+means for identifying systemic risks, and we expect
+application of this and similar methods to increase in the future. AI has the potential to identify risk
+through inspection of both design and architecture documents and source
+code, and we are seeing encouraging early results from this approach.</p>
+
+<p>Once risks have been identified, they need to be cataloged and stored. We
+created a taxonomy, inspired by the
+<a href="https://oreil.ly/5-86j">Software Engineering Institute’s taxonomy-based risk identification and approach</a>, to classify them. Once we have a
+common classification scheme and a repository of risks, we can begin the process of
+systematically reducing them. The taxonomy is valuable in this
+context because it allows us to map impactful incidents to common categories, revealing recurring patterns and opportunities for improvement. For example, an analysis of this sort led us to
+conclude that many incidents were due to improper responses to overload, which encouraged us to build overload protections into our core RPC
+systems. This response to a widespread systemic risk made all
+Google systems better by default.</p>
+
+<p>While identification and mitigation of common risks are largely manual processes today, AI will greatly accelerate both of them in the future.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Evolving the Practice of SRE with AI" data-type="sect2"><div class="sect2" id="ch23_evolving_the_practice_of_sre_with_ai">
+<h2>Evolving the Practice of SRE with AI</h2>
+
+<p>It is difficult to overstate <a data-primary="AI (artificial intelligence)" data-secondary="SRE evolution" data-type="indexterm" id="ai_sreevolv"/>the impact that AI is already having on the
+practice of SRE. <a data-type="xref" href="ch21.html#ch21">Chapter 21</a> discussed some of the ways we are employing AI to elevate our practice across the hierarchy
+of production health. No other development is likely to have more impact than the
+introduction of AI agents into our production environments and the shift
+to agentic production.</p>
+
+<p>Over the last year, we have witnessed a profound transition from dialog-based
+interactions with LLMs to agents. Agentic workflows have already transformed
+the software development process, and they will transform production
+management just as quickly. We are transitioning from a human-centric to a
+human-supervised model. It’s not inconceivable that
+orders of magnitude more code will be created, resulting in orders
+of magnitude more production changes. To scale tools and processes to
+this new reality, we need to rethink everything, with agents at the
+center.</p>
+
+<p>All this change marks an inflection point for SRE. To channel
+Marshall Goldsmith, “What got us here won’t get us
+there.”<sup><a data-type="noteref" href="ch23.html#id2957" id="id2957-marker">1</a></sup> What will? Well, to start:</p>
+<dl>
+<dt>New solutions for release volume and velocity</dt>
+<dd>
+<p>In the face of
+dramatic increases in the volume of code being produced, a key question
+emerges: how will we get all that code into production? If we adhere to
+our current release processes and velocity, the number of changes in each
+release will explode, increasing the risk of each release and making it more difficult to identify root causes and perform rollbacks. We must develop new, massively
+pipelined ways to release many smaller changes, which is a challenge at
+Google’s scale.</p>
+</dd>
+<dt>Larger service landscape</dt>
+<dd>
+<p>Agentic software development promises not
+just that dramatically more code will be produced, but also that dramatically more
+systems will populate the overall service landscape. As the number of
+systems grows, so does the complexity of dependency management. AI also makes creating new tools far easier, meaning many teams will build
+tools to address their specific use cases. The resulting proliferation and
+potential for duplication will present a significant obstacle to SRE’s goal of standardization. Innovation in dependency
+management, tool tracking, and standardization will be required to manage this increased complexity.</p>
+</dd>
+<dt>From specialist to generalist</dt>
+<dd>
+<p>While an SRE superpower is to see
+across product and systems boundaries when solving issues or
+architecting reliability, SREs remain specialized in certain domains.
+Specialization is required due to the scale and complexity of some of
+the domains, especially at the lower layers of our infrastructure. As we
+shift to agentic production, SREs will have less direct knowledge of the
+systems being deployed, but their more general understanding of the principles of reliability will enable them to direct agents toward those
+goals.</p>
+</dd>
+</dl>
+
+<p class="pagebreak-before less_space">SRE has a long history of innovation to change the practice of
+reliability engineering. In fact, the first edition of this book made it
+clear that a key responsibility for an SRE is to “automate themselves
+out of a job”—to apply technology and automation to eliminate manual
+and repetitive parts of our work. In a world where AI has the potential
+to transform the employment landscape across many industries, this mantra
+has broader implications.</p>
+
+<p>We choose to take a view of the future that is based on abundance. As
+Demis Hassabis, CEO of Google DeepMind, recently stated: “Assuming we
+steward AGI safely and responsibly into the world, and we are trying to
+play our part in that, then we should enter an era of radical abundance.
+It would bring incredible productivity and prosperity for society and,
+perhaps for the first time in human history, we wouldn’t view things in
+the world as zero-sum.”<sup><a data-type="noteref" href="ch23.html#id2958" id="id2958-marker">2</a></sup></p>
+
+<p>So while it is important to consider the impact AI might have on SRE, and
+on society more generally, we choose to lean into a future of abundance.
+Rather than SREs automating themselves out of jobs, we believe that we
+will be automating ourselves <em>into</em> jobs. The SRE role will look
+different in the future, much as the role today looks different than it
+did when the first edition of this book came out. Still, many of the traits of a great SRE remain the same: strong
+curiosity, broad technical expertise, and great judgment. The future
+will include less toil, less on-call, and more autonomy. But what is
+really exciting is that the future of SRE will allow us to spend much more time on what SRE does best: reliability <a data-primary="AI (artificial intelligence)" data-secondary="SRE evolution" data-startref="ai_sreevolv" data-type="indexterm" id="id2959"/>engineering at scale, enabling
+reliability by default, ensuring that our systems “just work.”</p>
+</div></section>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2957"><sup><a href="ch23.html#id2957-marker">1</a></sup> Marshall Goldsmith and Mark Reiter, <em>What Got You Here Won’t Get You There: How Successful People Become Even More Successful</em> (Hachette Books, 2007).</p><p data-type="footnote" id="id2958"><sup><a href="ch23.html#id2958-marker">2</a></sup> Steve Rose, <a href="https://oreil.ly/GvLpf">“Demis Hassabis on Our AI Future: ‘It’ll Be 10 Times Bigger than the Industrial Revolution—and Maybe 10 Times Faster’”</a>, <em>The Guardian</em> (2025).</p></div></div></section></body></html>

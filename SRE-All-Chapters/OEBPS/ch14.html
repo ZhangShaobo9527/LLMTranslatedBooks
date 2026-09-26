@@ -1,0 +1,2911 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Testing</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 14. Testing" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch14">
+<h1><span class="label">Chapter 14. </span>Testing</h1>
+
+
+<p class="byline">By Aman Shaikh, Elliot Williams, Forrest Seiwald, 
+<span class="keep-together">Joanna Wijntjes,</span> Joon Lee, Niall Richard Murphy, Nicholas Crespi, 
+<span class="keep-together">Thomas C. Hubschman,</span> 
+<span class="keep-together">and Yuri Grinshteyn</span><br/>
+
+<span class="keep-together">with Alex Perry, Max Luebbe, and Carmela Quinito</span></p>
+
+<p>In 1882, Benjamin Brewster<a data-primary="Brewster, Benjamin" data-type="indexterm" id="id2094"/> wrote in a Yale student magazine: “In theory,
+theory and practice are the same; in practice, they are not.” This is
+as good a one-sentence summary of why testing exists as there is. It is
+also a clue about why testing is more important than ever in today’s era
+of massive distributed systems, complex production environments, and
+rapidly expanding deployment of AI-authored or AI-related software, none
+of which would be possible without it.</p>
+
+<p>You’ve probably mostly encountered testing in the context of the
+software development lifecycle (SDLC), where it’s the phase before
+deployment and, as a result, before the new software gets put in front
+of users. This traditional role of <a data-primary="testing" data-secondary="traditional role" data-type="indexterm" id="id2095"/>testing is <em>probably</em> still the most
+common way it’s used today, though that’s changing fast. Conventionally,
+there’s some kind of procedure, sometimes manual, sometimes automatic,
+and often it’s a gating procedure: you have to pass the tests before
+software gets deployed. The tests are understood to provide some
+assurance that the software works, and there’s some evidence to
+suggest that the sooner you catch an error, the “cheaper” it is to fix, and
+the better for customers.<sup><a data-type="noteref" href="ch14.html#id2096" id="id2096-marker">1</a></sup> Similarly, it’s understood that having fixed the error, the tests
+pass, the software is released (or escapes) into
+production, and everyone can relax. Well, needless to say, it’s more
+complicated than that.</p>
+
+<p>The reason we opened this chapter with Brewster’s quote is because one key idea underlying testing doesn’t really receive enough
+attention, and it provides a useful framework for understanding testing as a
+whole: <em>testing is a substitute for a fully accurate world
+model</em>. If we had a fully accurate simulation of the world where we just
+had to set it up and let it run to establish whether or
+not the software was safe, testing would be superfluous. As a result,
+testing can be thought of as the process by which you establish the degree to which
+your model of the world—primarily mental, but also systemic—is
+inaccurate. Obviously, whether or not the software has bugs is part of
+that world model, but for the larger software systems we’re working with
+today, the assumptions that your software makes are part of how your
+software breaks.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Testing Basics" data-type="sect1"><div class="sect1" id="ch14_testing_basics">
+<h1>Testing Basics</h1>
+
+<p>Testing is obviously<a data-primary="testing" data-secondary="test types" data-type="indexterm" id="id2097"/> a very broad field of activity, and we can’t treat
+it exhaustively here, for many reasons. There are, however, certain
+basics it makes sense to cover.</p>
+
+<p>First, nomenclature. There are different types of testing; not all of
+them enjoy a firm definition, and they sometimes overlap, but it’s
+useful to be able to distinguish them regardless. <a data-type="xref" href="#ch14_table_01">Table 14-1</a> outlines the
+types we will talk about. There are, of course, <em>many</em> others.</p>
+<table id="ch14_table_01">
+<caption><span class="label">Table 14-1. </span>Basic test types</caption>
+<thead>
+<tr>
+<th>Test type</th>
+<th>Domain</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>Unit tests</p></td>
+<td><p>Functions in the same codebase</p></td>
+<td><p>Test your assumptions about how your own functions work, within function scope.</p></td>
+</tr>
+<tr>
+<td><p>Integration tests</p></td>
+<td><p>Across a codebase</p></td>
+<td><p>Test the mutual interactions between classes or long execution chains that might have been written by different organizations (with different models of the world).</p></td>
+</tr>
+<tr>
+<td><p>System tests</p></td>
+<td><p>Across other software systems</p></td>
+<td><p>Test the complexity of multiple interacting software systems.</p></td>
+</tr>
+<tr>
+<td><p>Fault injection, resilience testing, and chaos engineering</p></td>
+<td><p>Across subcomponents or external dependencies</p></td>
+<td><p>Test how a system responds to failure of a component, subcomponent, assumption, etc.</p></td>
+</tr>
+<tr>
+<td><p>Production tests</p></td>
+<td><p>Production (runtime tests)</p></td>
+<td><p>Test how a system responds to actual problems in production at runtime. A more general case of the previous table entry.</p></td>
+</tr>
+<tr>
+<td><p>Agentic testing</p></td>
+<td><p>Software authoring agents</p></td>
+<td><p>Improve and guide agentic software development.</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>Some test types apply closer to the code level, and some
+apply at the system or environment level. While SRE encounters both
+ends of the spectrum, we usually concern ourselves with testing toward
+the system/environment end. Another dimension is how close to production
+the testing takes place. Many
+organizations today use a staging or <a data-primary="testing" data-secondary="environment for" data-type="indexterm" id="tstng_env"/><a data-primary="environments" data-secondary="testing" data-type="indexterm" id="env_tst"/>quality assurance (QA) environment for testing, to
+prevent failures from affecting real users. All of the test
+types described in <a data-type="xref" href="#ch14_table_01">Table 14-1</a> <em>can</em> take place in staging/QA environments or similar, though
+fault injection is more usefully done in production itself.</p>
+
+<p class="fix_tracking">That said, there is a hugely important movement that advocates for
+testing in production (TiP)<a data-primary="testing in production (TiP)" data-type="indexterm" id="id2098"/><a data-primary="TiP (testing in production)" data-type="indexterm" id="id2099"/> instead,
+acknowledging that if most of these testing approaches are, in some sense, proxies for the real world, and sometimes they are ineffective proxies, the best way to get closer to the real world is to test in production. According to this view, one just
+pushes to production directly, but in a specifically controlled way, so
+the damage to users is limited<a data-primary="testing" data-secondary="environment for" data-startref="tstng_env" data-type="indexterm" id="id2100"/><a data-primary="environments" data-secondary="testing" data-startref="env_tst" data-type="indexterm" id="id2101"/> and you get good feedback on what your
+push resulted in.</p>
+
+<p>We’ll cover all this in more detail later, but we wanted to note up front
+that testing is a phase of the SDLC that SRE, or production engineering
+more broadly, is deeply involved in. We might not be doing test-driven
+development (TDD) for feature development (though some of us are), but
+we’re often found writing tests, running tests,
+worrying about and fixing gaps in test coverage, thinking about how
+to run a staging environment effectively, and in general using testing
+as one of our most powerful techniques for protecting users. We also use
+tests to develop a broader understanding of the types of failure that a
+system can undergo, which provides a sense of the system’s
+resilience. By analogy with another TDD, this is test-driven deployment!</p>
+
+<p>The rest of this chapter describes how Google SRE thinks about testing
+and aims to help inform your own approach to testing.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Models of Testing" data-type="sect2"><div class="sect2" id="ch14_models_of_testing">
+<h2>Models of Testing</h2>
+
+<p>It can be useful to start your <a data-primary="testing" data-secondary="models, hierarchy of tests" data-type="indexterm" id="tst_mod_hiertst"/><a data-primary="hierarchy of tests" data-type="indexterm" id="hiertst"/><a data-primary="models" data-secondary="hierarchy of tests" data-type="indexterm" id="mods_hiertsts"/>testing journey with a simplified mental
+model (<a data-type="xref" href="#ch14_fig01">Figure 14-1</a>). In this “testing pyramid” framework, traditional software testing
+begins with unit tests. Testing of more complex functionality is then
+layered on top in stages. In that sense, this model represents the
+spectrum of testing from function-local to system-wide, and we introduce
+complexity gradually.</p>
+
+<figure><div class="figure" id="ch14_fig01">
+<img alt="A hierarchical diagram representing the spectrum of software testing from unit tests at the base to fault injection at the top, illustrating the gradual introduction of complexity." src="assets/sre2_1401.png"/>
+<h6><span class="label">Figure 14-1. </span>The hierarchy of tests</h6>
+</div></figure>
+
+<p>Though this model is a useful conceptual guide, it has important weaknesses.
+In particular, the hierarchy is a hierarchy of <em>dependency</em>, not of
+<em>value</em>, and is silent on TiP versus other methods. More modern models,
+such as the
+<a href="https://oreil.ly/5CMpq">“testing trophy”</a>, tend to place greater value on integration testing than unit testing and
+emphasize TiP, with canary testing being a particularly important practice. Additionally, resilience testing, though it has unique
+characteristics, could also be understood as a system test. Finally,
+although unit tests usually dominate in number, wall-clock
+time and general resource usage usually go further up the
+hierarchy. In that sense, surface area is<a data-primary="testing" data-secondary="models, hierarchy of tests" data-startref="tst_mod_hiertst" data-type="indexterm" id="id2102"/><a data-primary="hierarchy of tests" data-startref="hiertst" data-type="indexterm" id="id2103"/><a data-primary="models" data-secondary="hierarchy of tests" data-startref="mods_hiertsts" data-type="indexterm" id="id2104"/> an inverse proxy for
+complexity.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Test Types Defined" data-type="sect2"><div class="sect2" id="ch14_test_types_defined">
+<h2>Test Types Defined</h2>
+
+<p>This section expands on <a data-primary="tests" data-secondary="types" data-type="indexterm" id="tsts_typs"/>some of the terms we’ve introduced, to ensure a common understanding for the discussions that follow. While every aspect of testing is important, in this chapter we will focus on those most
+particularly relevant to SRE. This means we’ll
+breeze past topics that could fill entire books in their own right; we
+hope the rationale for doing so is clear.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Unit tests" data-type="sect3"><div class="sect3" id="ch14_unit_tests">
+<h3>Unit tests</h3>
+
+<p>The smallest <a data-primary="unit tests" data-type="indexterm" id="id2105"/>and simplest form of software testing is a unit test. It
+assesses a separable unit of software, such as a class or function,
+independent of anything larger that contains it. These tests are very simple,
+numerous, and ideally very fast to run, so you can run them quickly
+after every change made.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Integration tests" data-type="sect3"><div class="sect3" id="ch14_integration_tests">
+<h3>Integration tests</h3>
+
+<p>Software components <a data-primary="integration tests" data-type="indexterm" id="id2106"/>assembled into larger components are themselves
+tested for verification. This can cover a very wide range of behavior,
+from a class hierarchy, to multiple cooperating hierarchies, and even interactions with
+external dependencies. At this stage, tests often need to
+integrate with complex components such as stateful databases. Rather than
+bring in a full external system, it’s common to use <em>dependency
+injection</em>, performed with tools such as <a href="https://dagger.dev">Dagger</a>, and replace external calls with lightweight mocks with
+precisely specified (and limited) behavior.</p>
+
+<p>Integration tests provide a lot of value with less complexity than
+system-level tests, but they’re more complex than unit
+tests.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="System tests" data-type="sect3"><div class="sect3" id="ch14_system_tests">
+<h3>System tests</h3>
+
+<p>A system test is a <a data-primary="system tests, types" data-type="indexterm" id="systst_typ"/>large-scale test that brings together everything belonging
+to a specific component, such as a server that has already passed integration tests,
+and verifies its end-to-end functionality. Subtypes include:</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Smoke tests" data-type="sect4"><div class="sect4" id="ch14_smoke_tests">
+<h4>Smoke tests</h4>
+
+<p>Smoke tests <a data-primary="smoke tests" data-type="indexterm" id="id2107"/>verify the simplest “happy path” end-to-end
+operation of a system. For example, can the user log in? Does the main
+page render? The name derives from hardware testing, where the simplest
+test is of course to turn it on and see if the
+<a href="https://oreil.ly/nP5Iv">magic smoke</a> escapes. A smoke test isn’t intended to be comprehensive, just a quick pass/fail. If it
+fails, it gives you a smaller set of call chains or systems to
+investigate. These tests are often used to test critical user journeys
+(CUJs), discussed in <a data-type="xref" href="ch08.html#ch08">Chapter 8</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Performance tests" data-type="sect4"><div class="sect4" id="ch14_performance_tests">
+<h4>Performance tests</h4>
+
+<p>Once basic correctness <a data-primary="performance tests" data-type="indexterm" id="id2108"/>is established, a common next step is to verify
+that the performance of the system stays within acceptable limits over
+its lifecycle. Software changes, software dependencies change, and
+resource requirements change, so a system needs to be tested to make
+sure incremental degradation has not been introduced. It’s very common
+to lose a few milliseconds here and there with every release, so something that took 50 ms to respond at the start of the year might take 250 ms by the end of the year.</p>
+
+<p>Performance testing (and, indeed, other types of testing) can also
+happen at the unit test level rather than the system test level, but
+we won’t go into that here.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Regression tests" data-type="sect4"><div class="sect4" id="ch14_regression_tests">
+<h4>Regression tests</h4>
+
+<p>Regression tests<a data-primary="regression tests" data-type="indexterm" id="id2109"/> aim to prevent bugs from sneaking back
+into the codebase. This requires keeping a record of previously
+encountered bugs and writing tests for them. It’s often done
+in business domains, where the nature of the problem leads developers to fall into common traps—for example, the order in
+which discounts are applied in <a data-primary="system tests, types" data-startref="systst_typ" data-type="indexterm" id="id2110"/>ecommerce (10% versus $10).</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Resilience tests" data-type="sect3"><div class="sect3" id="ch14_fault_injection_tests">
+<h3>Resilience tests</h3>
+
+<p>Resilience tests <a data-primary="fault injection testing" data-type="indexterm" id="id2111"/><a data-primary="resilience testing" data-type="indexterm" id="id2112"/>directly simulate failures in infrastructure or
+code. These tests are designed to validate that a system can withstand
+losses of compute, network, storage, and other critical requirements
+like data dependencies. Sometimes described as chaos
+engineering, they test the holistic operation of the
+system, generally in a production environment. Fault injection tests are a type of resilience test.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Production tests" data-type="sect3"><div class="sect3" id="ch14_production_tests">
+<h3>Production tests</h3>
+
+<p>“Production testing” doesn’t <a data-primary="production tests" data-type="indexterm" id="prodtst"/>mean running your unit tests in production
+(though you might well be physically or logically able to). It means
+testing some aspect of your software in the production environment. In
+general, other forms of testing assume or benefit strongly from <a href="https://oreil.ly/0qst5">hermetic
+testing</a>, meaning they are deliberately sealed off from the
+actual runtime environment and customers. There are trade-offs to this approach, but the main advantage is that a completely reproducible testing
+environment produces deterministic outcomes, which helps with debugging.
+Production testing is deliberately the opposite. Rather than testing an idealized flow with carefully controlled inputs and outputs, you’re testing something much closer to—if not identical to—the full complexity of serving.</p>
+
+<p>Production tests interact with a live production system, as opposed to a
+system in a hermetic testing environment. Many techniques could fall
+under this umbrella (notably, live chaos engineering), but the default is probably something closer to
+black-box monitoring (discussed in
+<a href="https://sre.google/sre-book/monitoring-distributed-systems">Chapter 6 of the first edition of this book</a>). Production tests are essential to running a
+reliable production service, and because they live and run in production  (unlike, say, unit tests), they
+are generally of special concern to SREs.</p>
+
+<p>Canary tests <a data-primary="production tests" data-startref="prodtst" data-type="indexterm" id="id2113"/>are a very important type of production test and
+probably the most common. We discuss
+them in more detail in <a data-type="xref" href="#ch14_advanced_testing">“Advanced Testing”</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Other kinds of tests" data-type="sect3"><div class="sect3" id="ch14_other_kinds">
+<h3>Other kinds of tests</h3>
+
+<p>We mentioned earlier that there are a large number of other test types that we
+won’t cover in detail. We’ll briefly introduce a few of them here
+so you’re familiar with the terms.</p>
+
+<p><em>Fuzzing</em> involves supplying <a data-primary="fuzzing" data-type="indexterm" id="id2114"/>deliberately malformed or random input to a system to check that the system handles input safely. This type of testing should generally not be performed
+in production for systems that process personal identifiable information,
+since mixing test data with PII complicates any situation immensely. Google
+makes its fuzz testing platform, <a href="https://oreil.ly/1IRCu">OSS-Fuzz</a>, publicly available, if
+you want to learn more.</p>
+
+<p><em>Property testing</em> is closely <a data-primary="property testing" data-type="indexterm" id="id2115"/>related to the formal methods we talk about
+later (see <a data-type="xref" href="#ch14_formal_methods">“Formal Methods”</a>). Instead of specifying expected outputs for individual inputs, you specify general properties that should hold for
+all inputs, and the testing framework generates lots of cases to verify them. For example, rather than a unit test checking that the list <code translate="no">[3, 1, 2]</code> is sorted into <code translate="no">[1, 2, 3]</code>, you might specify that the output is sorted and is a permutation of the input.</p>
+
+<p><em>Mutation testing</em> deliberately <a data-primary="maturation testing" data-type="indexterm" id="id2116"/>mutates small portions of the code (e.g., replacing <code translate="no">==</code> with
+<code translate="no">!=</code>) to check that the test cases detect the resulting faults.</p>
+
+<p>Various approaches for testing the correctness of
+language-specific properties such as memory safety, concurrency, and runtime isolation
+also exist, including deadlock detection and static analysis. However, a growing set of developers are attempting to avoid these problems entirely by
+using languages with built-in features that make it impossible for
+errors to even happen, echoing Yaron Minsky’s mantra to
+<a href="https://oreil.ly/RF__u">“make
+illegal states unrepresentable”</a>. A systems-level example of the same
+trend is Peter Sperl’s
+<a href="https://oreil.ly/oPP4k">“Caching
+Entire Systems Without Invalidation”</a>, which divides
+components into stateful and stateless or read-only, reducing the size of the testing surface and making reasoning <a data-primary="tests" data-secondary="types" data-startref="tsts_typs" data-type="indexterm" id="id2117"/>about the overall system
+easier.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Getting Started with Testing" data-type="sect2"><div class="sect2" id="ch14_getting_started_with_testing">
+<h2>Getting Started with Testing</h2>
+
+<p>If you’re trying to understand how to begin testing, or begin
+testing in a specific way you haven’t before, this section is for
+you. If you want to dig deeper, <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/software-engineering-at/9781492082781/"><em>Software
+Engineering at Google</em></a> by <a data-primary="Wright, Hyrum" data-type="indexterm" id="id2118"/>Hyrum Wright, <a data-primary="Winters, Titus" data-type="indexterm" id="id2119"/>Titus Winters, and <a data-primary="Manshreck, Tom" data-type="indexterm" id="id2120"/>Tom Manshreck (O’Reilly, 2020) provides a comprehensive discussion about
+how we do testing. You can also check out <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/how-google-tests/9780132851572/"><em>How Google Tests Software</em></a> by <a data-primary="Whittaker, James A." data-type="indexterm" id="id2121"/>James A. Whittaker, <a data-primary="Arbon, Jason" data-type="indexterm" id="id2122"/>Jason Arbon, and <a data-primary="Carollo, Jeff" data-type="indexterm" id="id2123"/>Jeff Carollo (Addison-Wesley Professional, 2012), although it’s substantially older.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Test infrastructure and best practices" data-type="sect3"><div class="sect3" id="ch14_test_infrastructure_and_best_practices">
+<h3>Test infrastructure and best practices</h3>
+
+<p>Testing infrastructure <a data-primary="testing" data-secondary="infrastructure" data-type="indexterm" id="id2124"/><a data-primary="infrastructure" data-secondary="tests" data-type="indexterm" id="id2125"/>is necessary for anything more complicated than
+pure unit tests, and of course requires versioned source code control.
+Once source control is in place, best practice suggests that a
+continuous build system is a good next step—you can build the software
+and run tests every time code is submitted.</p>
+
+<p>There are many <a data-primary="testing" data-secondary="best practices" data-type="indexterm" id="id2126"/>advantages to doing this in a centralized—or at least
+easily reproducible—way. Among other things, it facilitates treating
+test failures as a first-order concern. At Google, our development
+practice of
+<a href="https://oreil.ly/DnZ-l">working
+at head with a monorepo</a> means it’s optimal to notify engineers when
+something is broken and make fixing it a priority; other environments
+probably have different constraints. We do strongly recommend taking
+failing tests seriously, for a large number of reasons (good software
+engineering discipline of course being one of them), but from a
+production point of view, a quick and clean rebuild is often required
+during a production incident, a security problem, or similar. Being able
+to build and ship to production quickly is a worthwhile capability.</p>
+
+<p>Another best practice is to run most tests in a hermetic
+environment to ensure that tests can be executed both
+with a stable set of dependencies and without risk of side effects.<sup><a data-type="noteref" href="ch14.html#id2127" id="id2127-marker">2</a></sup> A
+truly hermetic environment would involve making no network calls, having
+fully deterministic inputs (and generally deterministic outputs, but
+that’s not always guaranteed), a controlled set of dependencies, and so
+on. Not every test can be run like this, or should be—for example, tests
+against actual production state—but it’s a useful technique for
+minimizing frustration and confusion when you are debugging and improving reproducibility.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Configuration basics" data-type="sect3"><div class="sect3" id="ch14_configuration_basics">
+<h3>Configuration basics</h3>
+
+<p class="fix_tracking">You may already be an experienced <a data-primary="configuration" data-secondary="testing considerations" data-type="indexterm" id="conf_tstcons"/><a data-primary="testing" data-secondary="configuration considerations" data-type="indexterm" id="tst_configcons"/>practitioner of
+<a href="https://oreil.ly/_MEjt">config as code</a>, the <a data-primary="config as code" data-type="indexterm" id="id2128"/>approach that configuration warrants the same treatment as code—but
+it bears repeating that configuration is every bit as dangerous as code
+when it comes to contributing to outages, and in certain contexts, more so.
+One example is creating or altering production 
+<span class="keep-together">environments,</span> where a
+single misstep can wipe out an entire environment. Code
+often has <code translate="no">if</code> statements gating dangerous or new code paths, whereas a
+quick <code translate="no">terraform apply</code> can apply infrastructure changes immediately. Many configuration-related outages at Google
+have been described in public SRE-related materials, including
+the <a href="https://sre.google/workbook/postmortem-culture">satellite disk
+erasure</a> outage, the
+<a href="https://oreil.ly/Dy4Vm">entire
+web-as-malware</a> problem, and the
+<a href="https://oreil.ly/RxW8o">2020 OAuth outage</a>,
+the <a href="https://oreil.ly/qDnk6">2021
+networking outage</a>, to give just a few examples.</p>
+
+<p>Having established that configuration requires at least as much care as
+code, we introduce the four invariants of configuration, which we call
+the <a data-primary="VOIS framework (configuration principles)" data-type="indexterm" id="id2129"/>VOIS framework:</p>
+<dl>
+<dt>Versioned</dt>
+<dd>
+<p>Configuration must be <a data-primary="versioned configuration" data-type="indexterm" id="id2130"/>versioned and source-controlled. It
+should be possible to identify a particular version and move back and
+forth between versions fluidly.</p>
+</dd>
+<dt>Observable</dt>
+<dd>
+<p>Configuration must be <a data-primary="observability" data-secondary="configuration" data-type="indexterm" id="id2131"/>observable. It should be possible
+to know what version is running in a given environment or context,
+ideally without inspecting the text of the configuration.</p>
+</dd>
+<dt>Independent</dt>
+<dd>
+<p>Configuration must be capable of changing
+independently of code. Configuration and code should be separable, and
+different versions of each should be testable against each other.</p>
+</dd>
+<dt>Safe</dt>
+<dd>
+<p>Safe defaults must be explicit. The default version of the
+configuration should be known to be safe (though perhaps only with
+a particular binary version).</p>
+</dd>
+</dl>
+
+<p class="fix_tracking">Together, these principles both enable behaviors that any steward
+of a production system would want and prevent behaviors they wouldn’t. Specifically, if you <em>can’t</em> version configuration, you are going
+to be continually confused about what is running and why, and you will
+inevitably be forced to improvise a configuration at the worst possible
+time. If you can’t observe configuration, you can’t do the simplest step
+of establishing whether a specific trigger of a bad condition is
+in production, and can only update production as a whole. This is
+usually a recipe for further outages. If you can’t change configuration
+independently of binaries, you can’t test subsets of behavior, soft
+launch new features, and so on. And if you don’t have safe defaults, you
+can’t do a safe, cheap thing (à la
+<a href="https://oreil.ly/F334I">generic
+mitigations</a>) when you’re under serious cognitive or time pressure—and
+that is a really useful capability to have.</p>
+
+<p class="pagebreak-before less_space">Though it’s rare these days to be starting <em>completely</em> from nothing,
+even if you are, there are many widely available ways to get the benefits
+of a versioned, observable, independent, and safe system. Anything based
+on <a href="https://oreil.ly/YC3qr">GitOps</a> and minimally using
+CI/CD and version control will give you the first two attributes, though
+you will have to use an observability tool to make the configuration
+observable without textual inspection. The third and fourth attributes are more a
+matter of internal discipline. Your software needs to be written to
+treat configuration sensibly and react in a measured fashion if things
+ the code expects are not present—for example, if backends are unreachable
+due to an old version of the config inadvertently being used to launch the
+binary. Keeping the head (or some other nominated branch) safe in both
+binary and configuration also means<a data-primary="testing" data-secondary="configuration considerations" data-startref="tst_configcons" data-type="indexterm" id="id2132"/><a data-primary="configuration" data-secondary="testing considerations" data-startref="conf_tstcons" data-type="indexterm" id="id2133"/> it’s quick to restore service.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Configuration tests" data-type="sect4"><div class="sect4" id="ch14_configuration_tests">
+<h4>Configuration tests</h4>
+
+<p>All that being said, you <a data-primary="testing" data-secondary="configuration tests" data-type="indexterm" id="id2134"/><a data-primary="configuration" data-secondary="tests" data-type="indexterm" id="id2135"/>may be thinking about how and what to
+test, independently of the principles of configuration. Similar to
+the model hierarchy at the start of this chapter, there is a rough
+hierarchy of testing that can be applied to configuration as well:</p>
+
+<ul>
+<li>
+<p><em>Syntax testing</em> is generally <a data-primary="syntax testing" data-type="indexterm" id="id2136"/>quick, relatively cheap, and
+especially valuable in emergency situations, when syntactic correctness
+is not uppermost in your mind. Most formats have some kind of
+existing validation tool, such as <em>yamllint</em>, <em>jsonlint,</em> and many others.
+A nuance here is where that check is done. If it runs entirely pre-merge,
+it’ll catch the bulk of situations; however, it might not catch
+emergency changes, since the pre-merge check is often skipped in those
+situations. One possible approach is to have an emergency push tool that
+provides minimal interference with the act of pushing but still enforces
+useful things like syntax checking, logging, and so on.</p>
+</li>
+<li>
+<p><em>Semantic testing</em> is more <a data-primary="semantic testing" data-type="indexterm" id="id2137"/>complicated, and therefore costly, than
+syntax testing, but it is valuable precisely because it catches
+things syntax-only checks won’t. We’ve found it useful to check boundary
+conditions: What has been set to zero that wasn’t previously? Is
+something now 300× what it was? Are new services or ports exposed? Some
+of this can be hard to achieve with existing configuration methods,
+particularly those with a long inheritance or processing chain. This
+has led to the practice of expressing policy in a “neutral” language
+and then reifying it into whatever specific language is required by
+the managed systems. One system we’ve seen used for this purpose is Open Policy Agent, though there are many homegrown examples as well—arguably Terraform serves a similar impulse.</p>
+</li>
+<li>
+<p><em>Dynamic testing</em> is akin <a data-primary="dynamic testing" data-type="indexterm" id="id2138"/>to integration or system testing. Here, we
+are pulling the wider dependency stack into the test. Unfortunately, the
+solutions are more of a patchwork. Some tools support, say, the
+equivalent of <code translate="no">--dry-run</code>, where the configuration is parsed and every
+step taken except making it live, but plenty don’t. If your tool doesn’t
+support this, one approach is to construct a hermetic environment in which
+to launch the tool with the new configuration and exercise a few
+end-to-end probes (doing the equivalent of <code translate="no">GET</code> / or <code translate="no">SELECT 1+1</code>).
+For these tests to provide more value than an isolated run of, for example,
+ <code translate="no">terraform plan -detailed-exitcode</code>, the wider system should play
+a role. Performing them in a staging environment—essentially the
+opposite of hermetic testing—is another feasible approach. Many organizations test directly in production instead, to avoid the maintenance cost of separate test environments.</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Configuration drift" data-type="sect4"><div class="sect4" id="ch14_configuration_drift">
+<h4>Configuration drift</h4>
+
+<p>One significant<a data-primary="configuration" data-secondary="drift" data-type="indexterm" id="id2139"/> danger in fast-moving production environments is
+configuration drift. This is what happens when the production state is
+different from the committed state. It’s a significant danger because it
+violates the Safe component of the VOIS framework—in other
+words, because we have a disjunction between what’s live and what’s
+stored, we no longer know with certainty which state is correct. It’s
+distinctly possible that what is in production now is not in fact safe;
+you just haven’t found that out yet. (It’s also possible that what’s
+been committed is not safe; you just haven’t found that out yet.)</p>
+
+<p>There are many possibilities for how to handle this. One starting point,
+which could work well for smaller teams that are solely focused on
+executing to a narrow (often shipping-related) goal, or for teams where
+coordination is very expensive, is to defer the moment of separation of
+configuration and code and bundle them together for some period. Although
+we don’t recommend this—for the reasons outlined previously as well as the technical debt it incurs—it is a genuine way of preventing production
+drift. If you have more capabilities in-house, another approach is to
+alert when differences between production and committed state emerge, though
+most working environments will at some stage accrete the configuration
+equivalent of flaky tests, which we view as a risky situation to develop
+studied ignorance of.</p>
+
+<p>One thing that can be both a hindrance and a help
+is the state of your tooling. If you have immature or poor observability
+tooling, implementing even the simplest detection mechanism (e.g.,
+<code translate="no">--dry-run</code>-style command-line flags implemented via CI/CD, pre-merge
+tests, Terraform plans, and so on) gives you <em>some</em> observability as
+opposed to none. Finally, at the upper range of capability, you can have
+an automatic reconciliation system that pushes updates rather than
+alerting on differences. Google’s configuration management system is
+sufficiently complex that this is a net win, despite the usual problems
+of pushing broken state directly to production globally. Many
+GitOps-style systems can handle the act of pushing—e.g., ArgoCD—but to bring the conversation back to testing, ensuring that the change is safe generally depends on pre-merge rather than post-merge testing.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What to prioritize" data-type="sect3"><div class="sect3" id="ch14_what_to_prioritize">
+<h3>What to prioritize</h3>
+
+<p>SREs don’t often<a data-primary="testing" data-secondary="prioritization considerations" data-type="indexterm" id="tst_prior"/> get to help from the very beginning. How should we
+prioritize our ideas about what’s best to test when there’s code
+already, whether it’s a prototype or in production? Here are a few
+questions to consider:</p>
+
+<ul>
+<li>
+<p>Can you stack-rank portions of the codebase or components of the
+system you’re testing by any measure of importance?</p>
+</li>
+<li>
+<p>Are particular functions or classes mission-critical?
+For example, code that involves billing is usually required to work, and
+such code is also often cleanly separable from the rest of the
+system.</p>
+</li>
+<li>
+<p>Which APIs are other teams integrating against?</p>
+</li>
+<li>
+<p>Which APIs are you integrating against?</p>
+</li>
+</ul>
+
+<p>Rather than spending a lot of time trying to decide what to test, it’s
+generally better to just get going. Almost any kind of non-unit test
+will end up testing various system interactions, so it’s often possible to get bang for your buck more quickly <a data-primary="testing" data-secondary="prioritization considerations" data-startref="tst_prior" data-type="indexterm" id="id2140"/>than you might expect.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Testing by exception" data-type="sect3"><div class="sect3" id="ch14_testing_by_exception">
+<h3>Testing by exception</h3>
+
+<p>One way <a data-primary="testing" data-secondary="regression test suite" data-type="indexterm" id="id2141"/>to establish a strong testing culture<sup><a data-type="noteref" href="ch14.html#id2142" id="id2142-marker">3</a></sup> is
+to create a test case for every reported bug whose fix can be verified
+through testing. With this approach, each new test will initially fail because the bug hasn’t yet been
+fixed. Once the bug is fixed, the test passes, and you’re on the
+road to developing a comprehensive regression test suite.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Monitoring pre-production" data-type="sect3"><div class="sect3" id="ch14_monitoring_pre_production">
+<h3>Monitoring pre-production</h3>
+
+<p>Passing a test <a data-primary="tests" data-secondary="creating from monitoring alerts" data-type="indexterm" id="id2143"/>or a series of tests doesn’t necessarily prove everything
+works, but a test that fails does prove that not everything works.</p>
+
+<p>A monitoring system can uncover bugs, but only as quickly as the
+reporting pipeline can react. Another way to think of testing is as monitoring, but for pre-production. To get started with figuring
+out what tests to create, look at the set of conditions that your
+monitoring looks for and attempt to translate them into tests
+(typically integration or system-level tests). This is less about
+looking for the test equivalent of zero requests per second, and more
+about simulating the conditions that give rise to the alert.</p>
+
+<p>For example, if your monitoring watches for some first- or third-party
+API’s error rates rising above some threshold, a useful integration test
+would mock that same API and artificially respond at that rate in
+order to demonstrate that the system will still respond reasonably. If it
+doesn’t, well, you’ve just seen one of the benefits of moving testing
+earlier. The other is that if that test is in place <em>and</em> the alert
+fires, you can get a head start on a hypothesis by investigating what
+the test does.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Advanced Testing" data-type="sect1"><div class="sect1" id="ch14_advanced_testing">
+<h1>Advanced Testing</h1>
+
+<p>The following sections discuss types of testing beyond the basics. Many
+of these are more complex, more demanding, or otherwise more difficult
+to do than a simple unit test (and in some cases, than complex system-level
+tests), but they provide reliability confidence about things for which the
+simplest kinds of tests are simply not useful. In particular, we cover
+an increasingly important subtype of TiP called
+canarying, but we also touch on Google’s approach to disaster recovery,
+fault injection or resilience testing, client-focused testing, and the
+formal methods that are increasing in importance and
+applicability. We also briefly touch on agentic testing, very much an
+emerging discipline but potentially hugely important in a universe
+where AI software development can build unreliably (in both senses).</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Canaries" data-type="sect2"><div class="sect2" id="ch14_canaries">
+<h2>Canaries</h2>
+
+<p>The term canary <a data-primary="canary testing" data-type="indexterm" id="cantst"/><a data-primary="testing" data-secondary="canary tests" data-type="indexterm" id="tsts_canars"/>comes from the phrase “canary in a coal mine” and
+refers to the historical practice of using a live bird to detect toxic gases before
+they poisoned the humans working underground. A canary needs effort (and oxygen) to sing; if it stopped
+singing, the miners would leave quickly, taking the bird with them.</p>
+
+<p class="fix_tracking">In a canary test, a subset of servers is upgraded to a new
+version or configuration and then left in <em>incubation</em>—a period during which
+they are exposed to production traffic but undergo detailed monitoring.
+Should no unexpected variances occur, the rollout continues and the rest
+of the servers are upgraded progressively.<sup><a data-type="noteref" href="ch14.html#id2144" id="id2144-marker">4</a></sup>
+Should anything go awry, the modified servers can be quickly reverted to
+a known good state. Google calls this incubation period “baking the
+binary.” A canary test can also be understood as low-bar user rejection
+testing, or a controlled experiment akin to A/B testing, as it is a
+production test that looks for consistency between versions (rather than
+within a version).</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Where canaries are particularly valuable" data-type="sect3"><div class="sect3" id="ch14_where_canaries_are_particularly_valuable">
+<h3>Where canaries are particularly valuable</h3>
+
+<p>Since canarying is testing in <a data-primary="production testing" data-secondary="canary tests" data-type="indexterm" id="prodtst_canrtst"/>production, it provides different insights than hermetic tests, which<a data-primary="hermetic tests" data-type="indexterm" id="id2145"/> are mostly focused on the
+post-code-change period. Whereas unit, integration, and system tests
+confirm that a specific property applies across a certain set of software, a
+canary test relies on the fact that running in production is a
+probabilistic exposure of your software to conditions you may not have
+accounted for in your model. Some of those conditions are software dependencies, but the most important ones are those associated
+with user behavior, for which no effective hermetic substitute is
+possible. This is particularly true for anything involving user-facing
+machine learning, since user behavior can both be influenced by and influence the model; canary testing is especially vital
+in those cases.</p>
+
+<p>While production configuration is commonly kept in a source
+control repository, it is often stored separately from the developer’s
+source code. As a result, software testing infrastructure often has no visibility into the production configuration. Even if the two are located in the same
+repository, changes for configuration management are made in branches or
+a segregated directory tree that test automation usually ignores. This means that if a canary environment exists, it is effectively the first
+integration test between the two, and it is both a higher risk and an
+excellent place to <a data-primary="production testing" data-secondary="canary tests" data-startref="prodtst_canrtst" data-type="indexterm" id="id2146"/>test from.</p>
+
+<p>In <a href="https://sre.google/sre-book/testing-reliability">Chapter 17 of the first edition of this book</a>, you’ll find a mathematical treatment
+of canary testing that
+you might find useful to consult. Additional detail is also provided in
+<a href="https://sre.google/workbook/canarying-releases">Chapter
+16 of <em>The Site Reliability Workbook</em></a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Canary analysis" data-type="sect3"><div class="sect3" id="ch14_canary_analysis_software">
+<h3>Canary analysis</h3>
+
+<p>Canarying aims to reduce the number of bad rollouts by
+programmatically analyzing changes in production. It is not a monitoring
+tool; rather, you can think of it as an A/B comparison tool that compares two
+populations and detects regressions in specific metrics.</p>
+
+<p>Canarying is a continual process: all requests and tasks processed
+are fed into an evaluation mechanism that runs statistical tests on the
+aggregated data. In that sense, every request is an input into a later
+evaluation of whether the new version appears to be no worse than the
+status quo.</p>
+
+<p class="fix_tracking">Google’s system provides out-of-the-box default testing functionality and
+looks for common problems such as crashing or RPC errors. These defaults
+cover the most common risks and improve rollout safety with minimal cost to the user and throughput.<sup><a data-type="noteref" href="ch14.html#id2147" id="id2147-marker">5</a></sup> We integrate this functionality with
+other tools, like our rollout software, so we cover as many of the
+standard software release processes as possible. Additionally, SREs and
+developers augment the default analysis <a data-primary="testing" data-secondary="canary tests" data-startref="tsts_canars" data-type="indexterm" id="id2148"/><a data-primary="canary testing" data-startref="cantst" data-type="indexterm" id="id2149"/>to evaluate service-specific
+behaviors.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Testing for Emergency Rollouts" data-type="sect2"><div class="sect2" id="ch14_testing_for_emergency_rollouts">
+<h2>Testing for Emergency Rollouts</h2>
+
+<p>Historically, the industry has sometimes resisted testing because it was seen <a data-primary="testing" data-secondary="overcoming resistance" data-type="indexterm" id="tsts_ovrcmgrst"/>as placing an inflexible process between
+development teams and changes in production.<sup><a data-type="noteref" href="ch14.html#id2150" id="id2150-marker">6</a></sup> There are many ways
+to address this, a common option being a kind of “break-glass”
+mechanism that bypasses release testing so you can get new builds out to
+production more quickly (this is often done for outage mitigation).</p>
+
+<p>Of course, the downside of such workarounds is that the mistakes that
+sometimes happen as a result of moving fast may not become apparent until they affect real users and are detected by production monitoring. For example, in large codebases <a href="https://oreil.ly/S1F8m">a fix
+for a problem can sometimes introduce another problem</a>, which
+<a href="https://oreil.ly/ipWhX">sometimes requires
+another rapidly pushed fix</a>, and so on. One way of coping with this, if
+your testing infrastructure supports it, is to just leave the tests
+running, associate the early push event with the pending testing event,
+and back-annotate the push with any broken tests as soon as possible.
+This way, a flawed manual push can be quickly followed by another,
+hopefully less flawed, manual push. If you find yourself doing a lot of
+manual pushes, you could consider having the break-glass mechanism
+automatically perform some relevant subset of release tests so you
+don’t get into an endless cycle of <a data-primary="testing" data-secondary="overcoming resistance" data-startref="tsts_ovrcmgrst" data-type="indexterm" id="id2151"/>untested manual pushes provoking
+untested manual pushes.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Disaster Recovery and Resilience" data-type="sect2"><div class="sect2" id="ch14_disaster_recovery_and_resilience">
+<h2>Disaster Recovery and Resilience</h2>
+
+<p>Much of the rest of the chapter is devoted to relatively small-scale
+testing, in either a pre-merge software context (i.e., unit tests) or
+a post-merge production context (i.e., canaries). But one very
+important category of testing is neither of those things: disaster
+recovery.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Introduction to DiRT" data-type="sect3"><div class="sect3" id="ch14_introduction_to_dirt">
+<h3>Introduction to DiRT</h3>
+
+<p>Google’s DiRT program, which
+<a href="https://oreil.ly/IXB0K">Kripa Krishnan wrote about in <em>ACM Queue</em>
+in 2012</a>, is a business continuity, risk management, and disaster
+recovery program <a data-primary="DiRT (Disaster Resilience Testing)" data-type="indexterm" id="dirtovrvw"/><a data-primary="testing" data-secondary="DiRT (Disaster Resilience Testing)" data-type="indexterm" id="tstng_dirt"/>distinguished by its strong focus on practical actions
+and verification in production. Many other business continuity and
+disaster recovery (BC/DR) programs<a data-primary="business continuity and disaster recovery (BC/DR) programs" data-type="indexterm" id="id2152"/><a data-primary="BC/DR (business continuity and disaster recovery) programs" data-type="indexterm" id="id2153"/> focus, not unreasonably, on
+itemizing, measuring, and aggregating risks, in itself a difficult job
+with substantial compliance-related as well as organizational value. DiRT
+does that as well but couples it with a relentless focus on verification.</p>
+
+<p class="pagebreak-before less_space">In the early period, DiRT was a yearly event scoped to a week, which was
+probably the right size for a company-wide event testing critical
+business continuity. It didn’t always happen on the same week, and the
+actual week selected was not widely known in advance. This was intentional, to
+preserve some small aspect of the element of surprise likely to
+accompany a real disaster event.</p>
+
+<p>The program had both a top-down and a bottom-up component. In the early
+period, the top-down component had overarching themes that attempted to
+investigate specific capabilities. A given team would mix top-down
+priorities with its own bottom-up specifics to produce a plan for what
+tests would be run. The tests themselves would range across the spectrum
+from mostly theoretical (“what would you do if…”) to highly practical
+(“tear down production deployment in datacenter X and re-create it in
+datacenter Y with no downtime”). Usually, the team was divided according
+to some natural boundary, like time zone or the systems it was responsible
+for, and each “side” would proctor tests for the other. The test
+results were collated and used to drive priorities on both a team
+level and an overall company level. Often, a top-down theme test
+would end up uncovering something unexpected, so it wasn’t always
+predictable what the post-DiRT priorities would be.</p>
+
+<p>Overall, the program did a good job of rooting out and at least partially addressing the kinds
+of accumulated dependencies that can sink the practical ability to run a
+company after a major disaster: systems that were entangled and
+failure-correlated and shouldn’t have been, restoration plans that were
+not implementable, and core workflows relying on single engineers’
+workstations in Mountain View, CA. After a few years in operation, DiRT’s
+impact broadened. As a measure of success, Google was able to run itself
+successfully for a week from Dublin, with Mountain View being almost
+completely absent from continuity decision-making. (As the company grew
+significantly later on, however, that became much harder to do.)</p>
+
+<p>Simplifying considerably, DiRT did three things that made disaster
+recovery and resilience testing<a data-primary="resilience testing" data-type="indexterm" id="id2154"/> tractable and relevant:</p>
+<ol>
+<li>
+<p>It treated it not just as an exercise in compliance but as an activity that
+ resulted in inherently better systems, both technical
+and organizational.</p>
+</li>
+<li>
+<p>It connected to per-team priorities, rather than being driven entirely from the top down.</p>
+</li>
+<li>
+<p>It motivated people
+with broad-based internal marketing and a message that continually
+emphasized the value of reliability.</p>
+</li>
+
+</ol>
+
+<p>Eventually, DiRT migrated away from big-bang-style events held once a year and
+toward a continual program, but it is still a core part of how Google
+works. Lessons from the program continue to influence how Google
+ensures it grows without diluting key aspects of reliability. It also
+influences how Google Cloud thinks of reliability for its customers and
+the infrastructure they depend on.</p>
+
+<p>If you were interested in putting a toe in the water of large-scale
+disaster recovery testing, you could do worse than start off with a
+program containing similar elements: top-down <em>and</em> bottom-up, end teams
+doing a mix of exercises but definitely including “live fire”
+somewhere, and internal<a data-primary="DiRT (Disaster Resilience Testing)" data-startref="dirtovrvw" data-type="indexterm" id="id2155"/><a data-primary="testing" data-secondary="DiRT (Disaster Resilience Testing)" data-startref="tstng_dirt" data-type="indexterm" id="id2156"/> marketing emphasizing the value of the
+achievement.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Modeling service-level tests" data-type="sect3"><div class="sect3" id="ch14_modelling_service_level_tests">
+<h3>Modeling service-level tests</h3>
+
+<p>One of the things DiRT gave us was a framework for understanding how and
+what to test at the level of entire services or systems, rather than,
+say, unit tests.</p>
+
+<p>It can be challenging to figure out where to start in such
+circumstances. <a data-type="xref" href="#ch14_table_03">Table 14-2</a>, which we use to <a data-primary="DiRT (Disaster Resilience Testing)" data-secondary="service-level resilience testing" data-type="indexterm" id="dirt_serlevres"/><a data-primary="service-level resistance testing" data-type="indexterm" id="servlvltst"/><a data-primary="testing" data-secondary="service-level resilience" data-type="indexterm" id="tstng_servlvlresil"/>test service-level resilience
+and model test categorization, may be a useful list for inspiration. It
+outlines the various dimensions of reliability involved in running a
+system and illustrates some concrete tests you could perform to verify
+that particular dimension. (For a more in-depth treatment of resilience
+engineering in general, see <a data-type="xref" href="ch17.html#ch17">Chapter 17</a>.)</p>
+<table class="white1" id="ch14_table_03">
+  <caption><span class="label">Table 14-2. </span>Service-level resilience tests</caption>
+  <thead>
+    <tr>
+      <th>Dimension</th>
+      <th>Subdimension</th>
+      <th>Test description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Capacity and stability resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>Capacity and stability resilience</strong></td>
+      <td>Capacity changes</td>
+      <td>Tests how the system responds to loss of serving nodes, cold starts, and emergency resizes/turnups</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Overload/load shedding</td>
+      <td class="stripe1">Tests the load-shedding mechanisms under stress</td>
+    </tr>
+
+    <!-- Data resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>Data resilience</strong></td>
+      <td>Backup and restore</td>
+      <td>Verifies the ability to recover data from backups</td>
+    </tr>
+    <tr>
+      <td>Data corruption identification and recovery</td>
+      <td>Tests the processes for identifying and recovering lost or corrupted data</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Replication/consistency testing</td>
+      <td class="stripe1">Verifies that data replication across regions/zones works correctly and meets consistency requirements</td>
+    </tr>
+
+    <!-- Infrastructure resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="4"><strong>Infrastructure resilience</strong></td>
+      <td>Network degradation</td>
+      <td>Simulates degraded network conditions (high latency, jitter, packet loss, DNS issues) between components or regions</td>
+    </tr>
+    <tr>
+      <td>Network isolation/partitioning</td>
+      <td>Simulates network isolation between zones or regions, or within a zone.</td>
+    </tr>
+    <tr>
+      <td>DC outages/cooling/access</td>
+      <td>Performs drills related to the testing of physical datacenters, including cooling, access, and power</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Hardware depletion</td>
+      <td class="stripe1">Simulates scenarios where critical physical resources (CPU, RAM, disk I/O, disk space, available hardware) are not available to maintain the production systems (e.g., a pandemic or embargo)</td>
+    </tr>
+
+    <!-- Dependency resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="4"><strong>Dependency resilience</strong></td>
+      <td>Third-party vendor dependencies</td>
+      <td>Tests resilience to failures or performance degradation of external APIs, SaaS providers, or vendor services, including testing of timeouts, retries, and circuit breakers</td>
+    </tr>
+    <tr>
+      <td>Dependency failure</td>
+      <td>Verifies the system’s behavior when noncritical dependencies fail (or that the system fails/degrades nicely when required dependencies fail)</td>
+    </tr>
+    <tr>
+      <td>Degraded dependencies</td>
+      <td>Tests that the system can meet its performance goals even when the servers and systems it depends on are experiencing degraded performance and/or operating at their SLO threshold</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Run at SLO to validate client performance</td>
+      <td class="stripe1">Tests that when our system is performing very close to defined SLOs, the client systems consuming its services can also achieve their performance targets</td>
+    </tr>
+
+    <!-- Failure handling and recovery -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>Failure handling and recovery</strong></td>
+      <td>System SPOF/failover</td>
+      <td>Simulates failures of components identified as potential “single points of failure” to confirm mitigation strategies (redundancy, failover) work</td>
+    </tr>
+    <tr>
+      <td>Rollback</td>
+      <td>Tests the ability to safely and quickly revert application binaries and configurations or infrastructure changes to a previous known-good state</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Error and invalid data tolerance</td>
+      <td class="stripe1">Tests the system’s ability to handle injected errors, bad data, or fuzz tests</td>
+    </tr>
+
+    <!-- Operational resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>Operational resilience</strong></td>
+      <td>Incident management drills</td>
+      <td>Simulates incidents to test the team’s response process, communication, escalation paths, and use of tools</td>
+    </tr>
+    <tr>
+      <td>System-specific emergency operations</td>
+      <td>Tests specific procedures for handling known system-level emergencies</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Playbook execution and validation</td>
+      <td class="stripe1">Tests the clarity, accuracy, and effectiveness of documented operational procedures</td>
+    </tr>
+
+    <!-- Configuration and change resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>Configuration and change resilience</strong></td>
+      <td>Emergency config changes</td>
+      <td>Tests the process (approval, execution, validation, rollback) for making configuration changes</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Release and change management</td>
+      <td class="stripe1">Tests processes around canary releases and feature flag rollouts, and the ability to detect and quickly react to issues introduced by changes</td>
+    </tr>
+
+    <!-- Business continuity -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>Business continuity</strong></td>
+      <td>Business processes</td>
+      <td>Tests the impact of system failures on critical business processes and the ability to continue operations</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Team resilience/staff SPOF</td>
+      <td class="stripe1">Tests the resilience to the absence of key personnel (cross-training, on-call rotation testing)</td>
+    </tr>
+
+    <!-- Observability and tooling resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>Observability and tooling resilience</strong></td>
+      <td>Broken tooling</td>
+      <td>Tests operational capability when primary monitoring, alerting, deployment, or management tools are unavailable</td>
+    </tr>
+    <tr>
+      <td class="stripe1">Monitoring and alerting</td>
+      <td class="stripe1">Verifies that the appropriate alerts are fired and that appropriate data points are being monitored</td>
+    </tr>
+
+    <!-- Security resilience -->
+    <tr>
+      <td class="stripe1 white1"><strong>Security resilience</strong></td>
+      <td class="stripe1">Malicious outage</td>
+      <td class="stripe1">Tests risks regarding malicious knowledgeable parties</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>A frequent takeaway whenever DiRT tests have been run is that not
+enough monitoring is in place to discover the consequent problems—which means the “Monitoring and alerting” section of “Observability and
+tooling resilience” has almost always been a fruitful source of
+investigations. Other notable tests in the past have included disabling
+the internal incident management system, including during a period
+when access to it was arguably more important than ever. Googlers adapted to this 
+<span class="keep-together">surprisingly</span> well. By contrast, a test that disabled the internal
+document rendering and update service was only able to run for a few
+hours before it had to be restored. Most people probably would have expected the opposite, so once again DiRT delivered valuable lessons at a relatively low cost.</p>
+
+<p><a data-type="xref" href="#ch14_table_03">Table 14-2</a> can be read together with
+<a href="https://sre.google/sre-book/service-best-practices">Appendix B from the first edition of this book</a>
+to help brainstorm ideas for testing. It’s almost certain that with this type of testing,
+you will discover something that you didn’t already know. The question
+is how to manage the risks, scale the program, <a data-primary="DiRT (Disaster Resilience Testing)" data-secondary="service-level resilience testing" data-startref="dirt_serlevres" data-type="indexterm" id="id2157"/><a data-primary="service-level resistance testing" data-startref="servlvltst" data-type="indexterm" id="id2158"/><a data-primary="testing" data-secondary="service-level resilience" data-startref="tstng_servlvlresil" data-type="indexterm" id="id2159"/>and devise a structured way of responding to those lessons.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Client-Focused Change Supervision" data-type="sect1"><div class="sect1" id="ch14_client_focused_change_supervision">
+<h1>Client-Focused Change Supervision</h1>
+
+<p>One of the issues we <a data-primary="client-focused change supervision" data-type="indexterm" id="id2160"/><a data-primary="testing" data-secondary="client-focused change supervision" data-type="indexterm" id="id2161"/>encounter in distributed systems at Google is when
+a binary or config rollout causes dependent services in the call chain
+to experience regressions. This class of issues is not easily caught in
+traditional canary analysis–based rollout supervision, as the regression
+is evident only in upstream or downstream services.</p>
+
+<p>To enable canary analysis across the stack, we’ve built a system called client-focused change supervision. This section describes how it works.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="An Example Rollout" data-type="sect2"><div class="sect2" id="ch14_example_bad_rollout">
+<h2>An Example Rollout</h2>
+
+<p>Consider a <a data-primary="client-focused change supervision" data-secondary="rollout example" data-type="indexterm" id="cfcs_rolotex"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="rollout example" data-type="indexterm" id="tst_cfcs_roex"/><a data-primary="canary testing" data-secondary="rollout example" data-type="indexterm" id="cantst_rolutex"/>simple service composed of a frontend and a backend
+job, where a bad binary version (222) is being canaried on a backend job
+task, as seen in <a data-type="xref" href="#ch14_fig02">Figure 14-2</a>.</p>
+
+<figure><div class="figure" id="ch14_fig02">
+<img alt="Diagram showing a service with one frontend connecting to two backend tasks, where task 0 runs a canaried bad binary version 222 and task 1 runs version 111." src="assets/sre2_1402.png"/>
+<h6><span class="label">Figure 14-2. </span>An example of a service with a bad version on the backend</h6>
+</div></figure>
+
+<p>Currently, the backend is midway through a rollout (from version 111 to
+version 222), but the frontend hasn’t been updated to handle the new
+data.</p>
+
+<p class="pagebreak-before less_space">The first time a user makes a request to the frontend, the request gets
+routed to version 222. The frontend fails to understand the data and
+returns an error to the user, so they try again. This time they get routed to
+version 111, and everything works as expected. <a data-type="xref" href="#ch14_fig03">Figure 14-3</a> shows this
+flow.</p>
+
+<figure><div class="figure" id="ch14_fig03">
+<img alt="Diagram illustrating the flow of requests from a frontend to two backend tasks with different binary versions, showing successful and failed routes." src="assets/sre2_1403.png"/>
+<h6><span class="label">Figure 14-3. </span>The request flow using client-focused change supervision</h6>
+</div></figure>
+
+<p>The frontend already has metrics for RPC error counts, as shown in <a data-type="xref" href="#ch14_table_04">Table 14-3</a>.</p>
+<table id="ch14_table_04">
+<caption><span class="label">Table 14-3. </span>RPC metric counts for the example frontend</caption>
+<thead>
+<tr>
+<th>Metric name</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><code translate="no">/rpc/count</code></p></td>
+<td><p><code translate="no">2</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/error_count</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+</tbody>
+</table>
+
+<p>The backend service is returning successfully, so it doesn’t see any
+issue with continuing the rollout. The frontend is reporting errors
+in its metrics, but those errors are not correlated with any recent changes to the frontend service. Ironically, if the backend is following best practices with a
+gradually expanding rollout, the initial error rate is also likely to
+be very low across the overall request population. As a result, the problem may not be detected until the rollout has progressed much
+further, increasing both the impact and the time to detection and
+remediation.</p>
+
+<p class="pagebreak-before less_space">Now imagine if the metrics also reported the version of the backend each request passed through, as shown in <a data-type="xref" href="#ch14_table_05">Table 14-4</a>.</p>
+<table id="ch14_table_05">
+<caption><span class="label">Table 14-4. </span>RPC metric counts with backend versions</caption>
+<thead>
+<tr>
+<th>Metric Name</th>
+<th>Service</th>
+<th>Binary Version</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><code translate="no">/rpc/attributed_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">111</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_error_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">111</code></p></td>
+<td><p><code translate="no">0</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">222</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_error_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">222</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+</tbody>
+</table>
+
+<p>Now the problem will be detected quickly, as the error rate for
+version 222 is high. Debugging is also easier, as the
+clear separation between versions allows for quick identification of
+where the issue is.</p>
+
+<p>Adding version metadata to the RPC response is all that’s needed in this case. But what happens when there are multiple server hops
+before the problem surfaces, or when the frontend is not the only
+consumer of the backend? And how do you do all of this without having to
+reinvent the wheel each time? Client-focused change supervision allows you to meet these challenges <a data-primary="client-focused change supervision" data-secondary="rollout example" data-startref="cfcs_rolotex" data-type="indexterm" id="id2162"/><a data-primary="testing" data-secondary="client-focused change supervision" data-startref="tst_cfcs_roex" data-tertiary="rollout example" data-type="indexterm" id="id2163"/><a data-primary="canary testing" data-secondary="rollout example" data-startref="cantst_rolutex" data-type="indexterm" id="id2164"/>in a scalable
+way.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="ch14_implementation">
+<h2>Implementation</h2>
+
+<p>Depending on the scope of services you wish to cover, the implementation
+of client-focused change supervision may be more or less complex. This
+section explains how version metadata can be attributed to <a data-primary="RPCs (Remote Procedure Calls)" data-secondary="exporting version metadata" data-type="indexterm" id="rpc_resp_expvrsmetdat"/>RPC responses
+and exported by clients.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The simple approach" data-type="sect3"><div class="sect3" id="ch14_the_simple_approach">
+<h3>The simple approach</h3>
+
+<p>The first step<a data-primary="client-focused change supervision" data-secondary="implementation" data-type="indexterm" id="id2165"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="implementation" data-type="indexterm" id="id2166"/> is to surface version information (covering both binaries and consumed data or configuration) alongside the RPC
+response. The easiest but least generic way to accomplish this
+would be to change all the interfaces (RPC requests and responses) to
+explicitly include the metadata in the message body. This is a
+pretty heavy lift, as it requires updating all the interface definitions, but it can work. A more
+scalable and generic approach would be to rely on side-channel metadata
+(e.g., gRPC metadata<sup><a data-type="noteref" href="ch14.html#id2167" id="id2167-marker">7</a></sup>) to pass
+version metadata along with the response. This is actually quite straightforward
+and requires few, if any, changes to clients or servers. It’s the approach we took.</p>
+
+<p>The server-side change is straightforward: have all jobs add version metadata
+to RPC responses. On the client side, track the outbound RPCs and extract the version
+metadata from the responses. For every outbound request, record the
+information and increment the relevant metrics.</p>
+
+<p>To make sure this setup was usable across Google, we implemented both
+the server- and client-side modifications as RPC interceptors. Similar approaches
+are possible if you can intercept the traffic or control it via Envoy or
+equivalent software. Now any service can include these interceptors and
+immediately export metrics that can be used to gate rollouts.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Handling multiple hops" data-type="sect3"><div class="sect3" id="ch14_handling_multiple_hops">
+<h3>Handling multiple hops</h3>
+
+<p>At Google, it’s rare<a data-primary="client-focused change supervision" data-secondary="tracking through multiple hops" data-type="indexterm" id="id2168"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="tracking through multiple hops" data-type="indexterm" id="id2169"/> that a service is as simple as a single frontend and
+backend. Often, the service that is actually failing is several hops away from the change surface, and we need a way to ensure the
+metadata is propagated to wherever it needs to be. There are a few different
+approaches to solving this problem.</p>
+
+<p>The first option is simple: for each inbound RPC, track the associated
+outbound RPCs it generates. You’ll need a way to track what outbound
+RPCs correlate to an inbound RPC and append their attributed metadata
+alongside the server’s. This approach allows you to track the versions
+of every dependency a request passed through before returning to the
+client. Be careful when using this method, however, as each hop causes the
+response extension to grow.</p>
+
+<p>You can extend this solution by adding a time-to-live (TTL) field. Each
+server now decides for itself how far up the stack metadata should be
+propagated. Every time an outbound RPC completes, the server decrements the
+TTL of each version in the response extension by one. When the TTL
+reaches zero, prune the metadata. This solution is often good enough, though it
+does require manually configuring each server.</p>
+
+<p>A more robust approach is to implement logical groupings of services. By
+attaching metadata to each request identifying what service the server belongs to, you can ensure that version metadata is retained until it leaves the service and reaches clients. Once
+again, this solution requires some configuration and knowledge of your
+servers, but with fewer magic numbers.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Attribution metrics" data-type="sect3"><div class="sect3" id="ch14_attribution_metrics">
+<h3>Attribution metrics</h3>
+
+<p>Consider which metrics you want to measure. Google’s approach to this
+process is generalized, so the focus is on globally useful data such as
+RPC error rate and latency. These metrics are offered out of the box.</p>
+
+<p>Part of the usefulness of the interceptor approach is that it’s extensible. While we have focused on generally applicable metrics,
+it’s reasonably straightforward to extend the<a data-primary="RPCs (Remote Procedure Calls)" data-secondary="exporting version metadata" data-startref="rpc_resp_expvrsmetdat" data-type="indexterm" id="id2170"/> interceptor to export custom
+metrics based on this data.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Using This Data" data-type="sect2"><div class="sect2" id="ch14_using_this_data">
+<h2>Using This Data</h2>
+
+<p>After implementing <a data-primary="client-focused change supervision" data-secondary="metrics discoverability" data-type="indexterm" id="id2171"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="metrics discoverability" data-type="indexterm" id="id2172"/>client-focused change supervision, your clients are
+now exporting the metrics you want to use for canarying your services. The
+next challenge is discoverability: how do you ensure that the backend server’s rollout can find and use the relevant metrics?</p>
+
+<p>The naive solution is to configure all known clients manually.
+This works in small environments but becomes cumbersome to
+maintain when services have many dependents (as ours
+tend to) or when there is not a strict process for configuring new dependents
+(e.g., client registration).</p>
+
+<p>In these cases, we need a solution that reduces the human maintenance
+burden. Ideally, a system would be in place to discover
+these metrics automatically and include them in the canary rollout
+config.</p>
+
+<p>Our solution leveraged the fact that we collect all our metric data in
+Monarch,<sup><a data-type="noteref" href="ch14.html#id2173" id="id2173-marker">8</a></sup> Google’s monitoring time-series database, and that  these metrics by nature include what service they came from. We run
+a daily pipeline that generates the appropriate server–client mappings, which can then be automatically used to generate checks for canary analysis.
+Similar setups can be built with publicly available monitoring
+systems such as Prometheus. More advanced techniques might involve, for
+example, using OpenTelemetry data to construct the call graph hop by hop on
+demand.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Challenges with This Approach" data-type="sect2"><div class="sect2" id="ch14_challenges_with_this_approach">
+<h2>Challenges with This Approach</h2>
+
+<p>We’ve determined that, <a data-primary="client-focused change supervision" data-secondary="challenges" data-type="indexterm" id="id2174"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="challenges" data-type="indexterm" id="id2175"/>for Google, client-focused change supervision’s
+reliability benefits outweigh its added costs. However, it’s important to
+remember that it does have a cost. You are adding metadata to every RPC
+request, which may be minor overhead or a major addition.
+You’re also adding an interceptor that runs for every request, which can be quite expensive if you’re not careful.</p>
+
+<p>Finally, you will be creating metrics with potentially very high
+cardinality
+(i.e., a large
+number of unique combinations of metric labels). In some of our services, we frequently exceed 5,000 unique
+entries per metric. This is not unexpected, because we’re tracking all downstream services and their versions in each attributed metric.  As the cardinality increases, so do the memory
+requirements for storing these metrics, as well as the time and processing power
+spent collecting them. You can mitigate this by being judicious in your
+selection of metric labels and by monitoring cardinality
+as your service grows.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Benefits Realized by Google" data-type="sect2"><div class="sect2" id="ch14_benefits_realized_by_google">
+<h2>Benefits Realized by Google</h2>
+
+<p>It used to be<a data-primary="client-focused change supervision" data-secondary="benefits" data-type="indexterm" id="id2176"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="benefits" data-type="indexterm" id="id2177"/> that rollout failures taking out dependent or depending services would only get attention in a postmortem. Now, we have a dashboard to track releases successfully
+blocked by change supervision. One of the places we’ve had success
+is our content safety platform.</p>
+
+<p>That system serves many clients with many different needs, and definitions of success vary wildly across teams. Instead of alerting
+every client to every release, we’ve allowed them to define their own
+attributed metrics and integrated them into the canarying process for
+our releases. Now when a change accidentally affects the client’s
+integration, we can block the release before it spreads too far.</p>
+
+<p>Recently, we caught a rollout in one of our backend services that would
+have caused one of our client integrations to mark 99% of that client’s
+content as violative, up from 1%. With a combination of change supervision and canary
+analysis, we were able to block the rollout before it affected
+many users.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Fault Injection Testing" data-type="sect1"><div class="sect1" id="ch14_fault_injection_testing">
+<h1>Fault Injection Testing</h1>
+
+<p>If our systems <a data-primary="fault injection testing" data-type="indexterm" id="id2178"/><a data-primary="testing" data-secondary="fault injection" data-type="indexterm" id="id2179"/>must occasionally fail—and as far as we know, they
+must, and do—then one of the best things we can do about that fact is
+take those lessons and improve the situation for the systems and
+people involved. <a data-type="xref" href="ch11.html#ch11">Chapter 11</a> talks about this in
+great detail, and it is a key aspect of SRE practice.</p>
+
+<p>A well-developed post-incident review process takes key lessons from
+incidents, does some preventative work based on their key contributing
+factors, and, as a result, increases the resilience of the
+systems and the capability of the staff. In fact, in some notional
+idealized world, if we did nothing but this over time, we would remove
+the underlying contributing factors behind an increasing number of
+outages and asymptotically approach perfect reliability.</p>
+
+<p>In practice, most systems are changing too fast for this type of review to be
+practical, and it also has the disadvantage of being primarily reactive;
+even though one of the outputs is preventative work, the preventative
+work generally happens after we discover something bad about our systems
+that we didn’t know about beforehand. Fault injection—also known as
+chaos engineering or resilience engineering, among other names—is a way to attempt to be proactive about this. By deliberately
+subjecting our systems to faults in a controlled way, we can explore the
+failure space in advance and help our systems get better without
+waiting for production to tell us how.<sup><a data-type="noteref" href="ch14.html#id2180" id="id2180-marker">9</a></sup></p>
+
+<p>One way of testing improvements and testing our systems more broadly
+involves subjecting the systems to faults—that is, problems in
+underlying infrastructure or dependencies—and observing their
+behavior.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Limits of Traditional Testing" data-type="sect2"><div class="sect2" id="ch14_limits_of_traditional_testing">
+<h2>Limits of Traditional Testing</h2>
+
+<p>Production systems <a data-primary="testing" data-secondary="traditional, limitations" data-type="indexterm" id="id2181"/>have seemingly endless failure points. They operate
+on distributed infrastructure, rely on myriad external services, and
+are subject to an endless array of potential disruptions: network
+latencies, server outages, disk failures, corrupted data,
+misconfigurations, hotspotting, queries of death, and other assorted
+cascading failures. Traditional tests aren’t designed to proactively
+expose how a system reacts when these unexpected faults occur. They
+might tell you if your system works when everything is fine, but they
+don’t tell you how resilient it is when problems arise. This gap leaves
+critical vulnerabilities undiscovered until a real incident occurs,
+leading to costly downtime and potential loss of reputation.</p>
+
+<p>SREs are tasked with testing a system’s ability to withstand external outages and ensuring its ongoing health—because
+even in carefully designed systems, failure is always a possibility, and
+in sufficiently large or complex systems, it’s an eventual certainty. Fault injection testing is an
+important element of testing that production readiness.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Why Fault Injection?" data-type="sect2"><div class="sect2" id="ch14_why_fault_injection">
+<h2>Why Fault Injection?</h2>
+
+<p>Fault injection<a data-primary="fault injection testing" data-secondary="usefulness" data-type="indexterm" id="id2182"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="usefulness" data-type="indexterm" id="id2183"/> testing is a deliberate attempt to break things in a
+safe, controlled way, to learn lessons in advance of an actual outage and
+make the system more resilient. Instead of waiting for an incident to
+reveal a weakness, fault injection testing allows us to simulate various
+failure scenarios—from network blackouts and high latency to resource
+exhaustion and process crashes—and then analyze how the system
+responds.</p>
+
+<p>It’s particularly useful to SRE teams because it can
+help them find hidden problems missed by traditional testing, such as race
+conditions, and validate that
+recovery works as intended. For instance, many Google services benefit from a
+generic spellcheck service that assists users in writing well-formed
+text. This should be an optional soft dependency to client services; if
+the spellcheck service drops offline, documents should still be saved
+and read successfully without spellcheck results. The owning SRE team made sure that the spellcheck service stayed a soft dependency by writing a test that ran nightly, inserting errors and high latency in RPCs to the service. It verified that the timeouts and errors were handled properly (in this case, ensuring the document was saved within latency constraints without spellchecking). Everything was reverted when the test finished so we didn’t accumulate detritus every night.</p>
+
+<p>In this way, testing via automatic fault injection verifies that consumers of the service successfully operate in both ordinary and
+fault-injected situations.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Getting Started with Fault Injection Testing" data-type="sect2"><div class="sect2" id="ch14_getting_started_with_fault_injection_testing">
+<h2>Getting Started with Fault Injection Testing</h2>
+
+<p>When planning fault<a data-primary="fault injection testing" data-secondary="test design" data-type="indexterm" id="fit_tstdsgn"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="test design" data-type="indexterm" id="tst_fltinj_desgn"/> injection testing for your service, one useful way
+to start is to use the “workflow X is resilient to fault Y as measured
+by Z” approach, where:</p>
+
+<ul>
+<li>
+<p>X is the user journey, process, or interaction whose reliability you
+are looking to test.</p>
+</li>
+<li>
+<p>Y is the specific fault you are going to introduce—for example,
+network packet loss, database latency, or an infrastructure outage.</p>
+</li>
+<li>
+<p>Z is the measure of reliability you will use—for example, user-facing
+error rate, latency, or data freshness.</p>
+</li>
+</ul>
+
+<p>This approach provides you with specific areas to consider and questions
+to answer as you build your test plan. Consider the specific aspects of
+reliability you want to evaluate—that is, what experience your users
+should have if and when a fault occurs in production. Ideally, they will
+not notice at all, but your system may not yet be sufficiently resilient
+to achieve that goal. Choose your target carefully, focusing on a single noncritical component with known dependencies.
+Then inject errors or latency, and monitor the results. If you’re looking to build experience, you could start your
+testing in a staging or development environment, but given the hugely
+increased value of testing in production, you should plan on moving there. This will enable you to identify issues that
+affect actual users. Of course, when testing in production, always
+prioritize safety and implement safeguards to minimize risk.</p>
+
+<p>When designing your tests, you can get ideas from previous outages or
+incidents. For instance, if you had an outage where your service did not
+correctly handle a database connection loss, and you have remedied that
+with new redundancy, you can build a test to see if the improvement
+solves the problem in the way you anticipated. Other
+common options for faults are network outages, resource exhaustion, and
+service dependency degradation. You don’t need fancy
+tools to get started. Even shell scripts to manually stop a service or
+block network traffic can be immensely useful in the beginning.  Over time, invest in automation and
+tooling, but if you’re just starting out, reducing network capacity
+while monitoring the performance of the system can be sufficient.</p>
+
+<p>Plan your test carefully. Document what you want to test, what you want
+to accomplish, how you will conduct the test, how you will monitor the results, and how you will know if
+the test is successful. It’s also important to include a detailed plan
+for backing out of your test. While a skilled engineer should write the
+plan, anyone on the team should be able to easily execute the rollback
+to a steady state—you don’t want to struggle to return your service to
+a healthy state! If you’re doing this in staging as opposed to
+production, service restoration can be looser, but our experience is
+that testing everything in staging first adds a lot of overhead and
+complicates restoration protocols. It’s generally best kept for getting started,
+as described earlier, or for really key or dangerous tests. Finally,
+ensure thorough review: get your plan and any scripts you intend to run
+against your service peer-reviewed, including by owners of your
+downstream dependencies and business stakeholders, as appropriate.</p>
+
+<p>When you’re ready, run your test and document the results. Especially when you’re just
+getting started, there may not be a lot to see, and often the test
+won’t work the way you expect. If your service has a low queries-per-second (QPS) rate,
+injecting a fault may not have much impact, and if you’re running the test
+in a staging environment rather than production, you may not have
+enough traffic to get an interesting result. Treat the first few tests as information gathering for your next try. Once you’ve run a series of
+tests and have the results, get together with your team and figure out
+next steps. If your test goes badly—i.e., if it causes an outage or
+doesn’t do what you expect—don’t sweep the results under a convenient
+carpet.<sup><a data-type="noteref" href="ch14.html#id2184" id="id2184-marker">10</a></sup> Instead, broadcast them along with the improvements you’ve
+identified and, where appropriate, the designs for the architectural
+changes that will be made to address the issues. Send a periodic report
+showing all the tests run, the results, and<a data-primary="fault injection testing" data-secondary="test design" data-startref="fit_tstdsgn" data-type="indexterm" id="id2185"/><a data-primary="testing" data-secondary="fault injection" data-startref="tst_fltinj_desgn" data-tertiary="test design" data-type="indexterm" id="id2186"/> the improvements, and
+congratulate your team.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Testing Infrastructure" data-type="sect2"><div class="sect2" id="ch14_testing_infrastructure">
+<h2>Testing Infrastructure</h2>
+
+<p>One way to adequately <a data-primary="fault injection testing" data-secondary="infrastructure testing" data-type="indexterm" id="id2187"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="infrastructure testing" data-type="indexterm" id="id2188"/>test environmental isolation, and thereby verify
+that each environment can work independently, is through <a data-primary="network segmentation, fault injection testing" data-type="indexterm" id="id2189"/>network
+segmentation. Network segmentation is a catch-all term to describe
+network disruptions that negatively impact a service; one example would
+be a fiber cut that results in a service in London being unable to reach
+a database in Dublin.</p>
+
+<p>There are many ways to isolate network segments and many tools that help.
+Whichever you choose, make sure, before starting, that you can always
+revert your changes. (This might require, for example, tools that will
+revert packet filtration after some guaranteed period of time has
+elapsed, in case the filtration is a little too zealous.) One generally available fault
+injection option that doesn’t require access to
+special tools is adding a highly restrictive firewall rule that will
+allow only a small amount of traffic to reach the target.</p>
+
+<p>Another flavor of fault injection testing that can tell you how your
+system is performing is <a data-primary="resource exhaustion, fault injection testing" data-type="indexterm" id="id2190"/>resource exhaustion: how your service
+behaves when there is a shortage of a critical resource. Start by
+identifying the target, possibly by identifying the part of the service
+that interacts with a hard drive, such as a database write function. Then
+inject the fault, either by using a tool for that purpose or by writing
+a script that intercepts the call, causes it to fail, and returns an
+error. A healthy service should not crash under these circumstances; an
+error message that correctly indicates the problem (e.g., “disk full”) should appear, the end user should get a
+“database-level write failed” message, and monitoring should indicate
+the impending SLO violation at a suitable level of urgency.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Testing Dependencies" data-type="sect2"><div class="sect2" id="ch14_testing_dependencies">
+<h2>Testing Dependencies</h2>
+
+<p class="fix_tracking">Outages may be caused <a data-primary="fault injection testing" data-secondary="service dependencies testing" data-type="indexterm" id="id2191"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="service dependencies" data-type="indexterm" id="id2192"/>by the service itself (e.g., if a bug made it to
+production), but they can also be caused by the service’s dependencies. Your service may have good regional or datacenter
+isolation, but if you have dependencies that don’t, and one of them has
+a global outage, is your service ready to gracefully handle the error?
+You can approach this kind of testing as you do testing in your own
+service, by identifying the potential issues and designing tests to
+mimic the failure conditions under safe circumstances. Since you have
+access to your service but potentially not to services it depends on, a
+good option is to do some core-level fault injection,<sup><a data-type="noteref" href="ch14.html#id2193" id="id2193-marker">11</a></sup> basically modifying your service to
+introduce a failure point. This might involve creating a mock object
+for the dependency that returns an error or timeout. Another option is
+to return a predefined error response, like a <code translate="no">504</code>, to simulate a
+dependency timing out.</p>
+
+<p>If this testing reveals that the broken dependency prevents the core service from meeting its SLO, you’ll need to implement an appropriate mitigation (see <a data-type="xref" href="ch17.html#ch17">Chapter 17</a> for more on this topic). Solutions vary depending on the
+services in question, but one common example would be serving image placeholders if a
+storage backend is unavailable. Note that in some scenarios mitigation is impractical, extremely costly, or simply not possible. In these cases, a detailed discussion between
+SREs, product engineers, and business stakeholders is required to figure out the
+right thing to do.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Modeling Large-Scale Outages" data-type="sect2"><div class="sect2" id="ch14_modelling_large_scale_outages">
+<h2>Modeling Large-Scale Outages</h2>
+
+<p>Google SREs often use an internal tool,<sup><a data-type="noteref" href="ch14.html#id2194" id="id2194-marker">12</a></sup>
+Catzilla, for small-scale <a data-primary="fault-tolerance simulation, large-scale" data-type="indexterm" id="id2195"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-type="indexterm" id="id2196"/><a data-primary="datacenters, large-scale fault-tolerance scenarios" data-type="indexterm" id="id2197"/>fault-tolerance scenarios. Catzilla
+injects RPC errors and delays into service dependencies by
+taking a set of target services that support fault injection and
+instructing them to return RPC errors or simulate delayed RPC calls.</p>
+
+<p>In the case of large-scale events like a datacenter outage simulation,
+however, using Catzilla is insufficient—it’s too difficult to
+identify all the services in a datacenter, and missing even one service may
+invalidate the test scenario.</p>
+
+<p>To perform higher-fidelity, larger-scale disaster simulations than
+Catzilla allows, we use a special system daemon that manages network configurations to
+drop network packets for certain destinations. All machines in specific datacenters have this daemon, so we can reliably simulate an entire datacenter being offline. We can also perform the simulation on a per-service level, affecting only specifically targeted services rather than all services present in the datacenter. This technique can be used to derisk a “full” network disconnect, by testing and fixing
+individual services first, or to address observed impact by disconnecting only services where issues were found, allowing much faster and
+cheaper iteration.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal Methods" data-type="sect1"><div class="sect1" id="ch14_formal_methods">
+<h1>Formal Methods</h1>
+
+<p>Formal testing methods <a data-primary="testing" data-secondary="formal methods" data-type="indexterm" id="id2198"/><a data-primary="formal testing methods" data-type="indexterm" id="id2199"/>are a collection of mathematically rigorous
+techniques and tools used for the specification, development, analysis,
+and verification of software and hardware systems. The core principle of
+formal methods is the use of mathematics and logic to model system
+behavior, moving beyond the inherent imprecision of natural language
+descriptions and diagrams. Unlike traditional testing, which typically
+examines only a finite subset of a system’s possible behaviors and
+struggles to reproduce unanticipated edge cases, formal methods provide
+a means to symbolically analyze the entire state space of a design. This
+ability lets you establish various important properties that can be
+proven to be true for all possible inputs and under all conditions,
+providing a mathematical safety net for critical systems.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Using Formal Methods" data-type="sect2"><div class="sect2" id="ch14_using_formal_methods">
+<h2>Using Formal Methods</h2>
+
+<p>One way of<a data-primary="testing" data-secondary="formal methods" data-tertiary="TLA+" data-type="indexterm" id="tst_frmthd"/><a data-primary="formal testing methods" data-secondary="TLA+" data-type="indexterm" id="frmthd"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-tertiary="formal testing methods" data-type="indexterm" id="tst_lsfts_frmthd"/><a data-primary="TLA+" data-type="indexterm" id="tlapls"/> understanding what you can do with these methods is to look
+at an example. Suppose we’re looking at two processes attempting
+to obtain a mutex—a well-known distributed systems primitive  that provides mutually exclusive access to a resource. In our initial approach, we
+decide that each process will do this by checking if the other
+process’s flag is free, and if so setting its own flag and acquiring the
+resource.</p>
+
+<p>To assess this approach for <a data-primary="tools" data-secondary="TLA+" data-type="indexterm" id="tol_tlaplus"/>correctness, we can use a formal methods
+tool called TLA+.<sup><a data-type="noteref" href="ch14.html#id2200" id="id2200-marker">13</a></sup> TLA+ is founded on simple mathematics
+(primarily
+<a href="https://oreil.ly/Lcpwl">Zermelo–Fraenkel
+set theory</a>) and a specialized logic known as the <a data-primary="Temporal Logic of Actions (TLA)" data-type="indexterm" id="id2201"/><a data-primary="TLA (Temporal Logic of Actions)" data-type="indexterm" id="id2202"/>Temporal Logic of
+Actions (TLA). A TLA+ specification defines a system as a state machine.
+It consists of a formula describing the set of valid initial states and
+a next-state relation that specifies all possible atomic steps
+(transitions) the system can take. A behavior, or execution, of the
+system is an infinite sequence of states that starts in an initial state
+and where each consecutive pair of states is related by the next-state
+relation. Temporal logic operators, such as <code translate="no">[]</code> (always) and <code translate="no">&lt;&gt;</code>
+(eventually), are used to specify properties that must hold over all
+possible behaviors.</p>
+
+<p>This is our attempt to implement the core approach in TLA+ specification form:</p>
+
+<pre data-code-language="coq" data-type="programlisting" translate="no"><code class="o">----</code> <code class="n">MODULE</code> <code class="n">NaiveMutex</code> <code class="o">----</code>
+  <code class="n">EXTENDS</code> <code class="n">Integers</code>
+  <code class="n">VARIABLES</code> <code class="n">processState</code><code class="o">,</code> <code class="n">flag</code>
+  <code class="n">vars</code> <code class="o">==</code> <code class="o">&lt;&lt;</code><code class="n">processState</code><code class="o">,</code> <code class="n">flag</code><code class="o">&gt;&gt;</code>
+  <code class="n">Processes</code> <code class="o">==</code> <code class="o">{</code><code class="mi">0</code><code class="o">,</code> <code class="mi">1</code><code class="o">}</code>
+  <code class="n">Other</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code> <code class="mi">1</code> <code class="o">-</code> <code class="n">i</code>
+  <code class="n">Init</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code> <code class="o">=</code> <code class="o">[</code><code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code> <code class="o">|-&gt;</code> <code class="s2">"idle"</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">flag</code> <code class="o">=</code> <code class="o">[</code><code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code> <code class="o">|-&gt;</code> <code class="n">FALSE</code><code class="o">]</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">1</code><code class="o">:</code> <code class="n">check</code> <code class="k">if</code> <code class="n">the</code> <code class="n">other</code> <code class="n">process's</code> <code class="n">flag</code> <code class="k">is</code> <code class="n">free</code>
+  <code class="kn">Check</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"idle"</code>
+      <code class="o">/\</code> <code class="n">flag</code><code class="o">[</code><code class="n">Other</code><code class="o">(</code><code class="n">i</code><code class="o">)]</code> <code class="o">=</code> <code class="n">FALSE</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"set"</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">UNCHANGED</code> <code class="o">&lt;&lt;</code><code class="n">flag</code><code class="o">&gt;&gt;</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">2</code><code class="o">:</code> <code class="k">set</code> <code class="n">our</code> <code class="n">own</code> <code class="n">flag</code>
+  <code class="kt">Set</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"set"</code>
+      <code class="o">/\</code> <code class="n">flag'</code> <code class="o">=</code> <code class="o">[</code><code class="n">flag</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="n">TRUE</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code><code class="o">]</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">3</code><code class="o">:</code> <code class="n">leave</code> <code class="n">critical</code> <code class="n">section</code>
+  <code class="n">Exit</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code>
+      <code class="o">/\</code> <code class="n">flag'</code> <code class="o">=</code> <code class="o">[</code><code class="n">flag</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="n">FALSE</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"idle"</code><code class="o">]</code>
+  <code class="n">Next</code> <code class="o">==</code>
+      <code class="bp">\</code><code class="n">E</code> <code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code><code class="o">:</code> <code class="kn">Check</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">\/</code> <code class="kt">Set</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">\/</code> <code class="n">Exit</code><code class="o">(</code><code class="n">i</code><code class="o">)</code>
+  <code class="n">Spec</code> <code class="o">==</code> <code class="n">Init</code> <code class="o">/\</code> <code class="bp">[]</code><code class="o">[</code><code class="n">Next</code><code class="o">]_</code><code class="n">vars</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">INVARIANT</code><code class="o">:</code> <code class="n">at</code> <code class="n">most</code> <code class="n">one</code> <code class="n">process</code> <code class="k">in</code> <code class="n">the</code> <code class="n">critical</code> <code class="n">section</code>
+  <code class="n">MutualExclusion</code> <code class="o">==</code>
+      <code class="o">~(</code><code class="n">processState</code><code class="o">[</code><code class="mi">0</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code> <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="mi">1</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code><code class="o">)</code>
+<code class="o">====</code></pre>
+
+<p class="pagebreak-before less_space">Here is a human-readable restatement of this specification:</p>
+
+<ul>
+<li>
+<p>We start off in the <code translate="no">Init</code> state with two processes (0, 1). The process states are represented in the <code translate="no">processState</code> and <code translate="no">flag</code> variables. They are both <code translate="no">"idle"</code>, and neither of them wants to acquire the mutex—each has its <code translate="no">flag</code> variable set to <code translate="no">FALSE</code>.</p>
+</li>
+<li>
+<p>Rules for how things can change are:</p>
+
+<ul>
+<li>
+<p>When a process is in the <code translate="no">"idle"</code> state, it checks that the other
+process’s <code translate="no">flag</code> is <code translate="no">FALSE</code> and, if so, moves to the <code translate="no">"set"</code> state.</p>
+</li>
+<li>
+<p>When a process is in the <code translate="no">"set"</code> state, it sets its own <code translate="no">flag</code> to
+<code translate="no">TRUE</code>, then enters the critical section (<code translate="no">"cs"</code>) state.</p>
+</li>
+<li>
+<p>When a process is in the <code translate="no">"cs"</code> state, it resets its flag and
+goes back to <code translate="no">"idle"</code>.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Every step of the simulation involves some process taking some action
+(defined as <code translate="no">Next</code>), and we always start in <code translate="no">Init</code> and then loop
+around on <code translate="no">Next</code>.</p>
+</li>
+<li>
+<p>The key line is the <code translate="no">MutualExclusion</code> invariant—we never want both
+processes to be in the critical section at the same time. It’s
+possible to specify quite sophisticated constraints here, but we’ll keep it
+simple for now.</p>
+</li>
+</ul>
+
+<p>We won’t outline TLA+ syntax here—online resources are probably best
+for that—but the following Python code produces similar output and provides a
+taste of what the TLA+ is doing:</p>
+
+<pre data-code-language="python" data-type="programlisting" translate="no"><code class="kn">import</code> <code class="nn">random</code>
+
+<code class="k">class</code> <code class="nc">NaiveMutex</code><code class="p">:</code>
+    <code class="k">def</code> <code class="fm">__init__</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code> <code class="o">=</code> <code class="p">{</code><code class="mi">0</code><code class="p">,</code> <code class="mi">1</code><code class="p">}</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">processState</code> <code class="o">=</code> <code class="p">{</code><code class="n">i</code><code class="p">:</code> <code class="s2">"idle"</code> <code class="k">for</code> <code class="n">i</code> <code class="ow">in</code> <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">}</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">flag</code> <code class="o">=</code> <code class="p">{</code><code class="n">i</code><code class="p">:</code> <code class="kc">False</code> <code class="k">for</code> <code class="n">i</code> <code class="ow">in</code> <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">}</code>
+
+    <code class="k">def</code> <code class="nf">other</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">return</code> <code class="mi">1</code> <code class="o">-</code> <code class="n">i</code>
+
+    <code class="c1"># Step 1: Check</code>
+    <code class="k">def</code> <code class="nf">check</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"idle"</code> <code class="ow">and</code> <code class="ow">not</code> <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="bp">self</code><code class="o">.</code><code class="n">other</code><code class="p">(</code><code class="n">i</code><code class="p">)]:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"set"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># Step 2: Set</code>
+    <code class="k">def</code> <code class="nf">set_flag</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"set"</code><code class="p">:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="kc">True</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"cs"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># Step 3: Exit</code>
+    <code class="k">def</code> <code class="nf">exit</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code><code class="p">:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="kc">False</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"idle"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># One nondeterministic step (like Next)</code>
+    <code class="k">def</code> <code class="nf">step</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="n">i</code> <code class="o">=</code> <code class="n">random</code><code class="o">.</code><code class="n">choice</code><code class="p">(</code><code class="nb">list</code><code class="p">(</code><code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">))</code>
+        <code class="n">actions</code> <code class="o">=</code> <code class="p">[</code><code class="bp">self</code><code class="o">.</code><code class="n">check</code><code class="p">,</code> <code class="bp">self</code><code class="o">.</code><code class="n">set_flag</code><code class="p">,</code> <code class="bp">self</code><code class="o">.</code><code class="n">exit</code><code class="p">]</code>
+        <code class="n">random</code><code class="o">.</code><code class="n">shuffle</code><code class="p">(</code><code class="n">actions</code><code class="p">)</code>
+
+        <code class="k">for</code> <code class="n">action</code> <code class="ow">in</code> <code class="n">actions</code><code class="p">:</code>
+            <code class="k">if</code> <code class="n">action</code><code class="p">(</code><code class="n">i</code><code class="p">):</code>
+                <code class="k">return</code> <code class="p">(</code><code class="n">i</code><code class="p">,</code> <code class="n">action</code><code class="o">.</code><code class="vm">__name__</code><code class="p">)</code>
+        <code class="k">return</code> <code class="kc">None</code>
+
+    <code class="c1"># Invariant: Mutual exclusion</code>
+    <code class="k">def</code> <code class="nf">mutual_exclusion_holds</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="k">return</code> <code class="ow">not</code> <code class="p">(</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code> <code class="ow">and</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code>
+        <code class="p">)</code>
+
+<code class="n">m</code> <code class="o">=</code> <code class="n">NaiveMutex</code><code class="p">()</code>
+
+<code class="k">for</code> <code class="n">step</code> <code class="ow">in</code> <code class="nb">range</code><code class="p">(</code><code class="mi">50</code><code class="p">):</code>
+    <code class="n">action</code> <code class="o">=</code> <code class="n">m</code><code class="o">.</code><code class="n">step</code><code class="p">()</code>
+    <code class="nb">print</code><code class="p">(</code><code class="n">step</code><code class="p">,</code> <code class="n">action</code><code class="p">,</code> <code class="n">m</code><code class="o">.</code><code class="n">processState</code><code class="p">,</code> <code class="n">m</code><code class="o">.</code><code class="n">flag</code><code class="p">)</code>
+
+    <code class="k">if</code> <code class="ow">not</code> <code class="n">m</code><code class="o">.</code><code class="n">mutual_exclusion_holds</code><code class="p">():</code>
+        <code class="nb">print</code><code class="p">(</code><code class="s2">"Violation!"</code><code class="p">)</code>
+        <code class="k">break</code></pre>
+
+<p>Given this description of how the system operates, the <a data-primary="TLC model checker" data-type="indexterm" id="id2203"/>TLC model checker—which is part of the TLA+ toolchain—can verify expected invariants.
+This is a useful and practical technique for writing down how you expect
+your system to work and seeing how it actually works. When an invariant
+is violated, TLC stops its state exploration and provides the sequence
+of states the system went through at the time of violation. This trace
+allows you to determine why the invariant was violated and fix the
+problems with the spec by (for example) updating variables, transition
+definitions, etc.</p>
+
+<p class="pagebreak-before less_space">In this case, when we run the TLC checker, it informs us that the
+invariant is violated and prints out the set of steps that led to the invariant violation:</p>
+<pre translate="no">Error: Invariant MutualExclusion is violated.
+Error: The behavior up to this point is:
+State 1: &lt;Initial predicate&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "idle" @@ 1 :&gt; "idle")
+State 2: &lt;Check line 12, col 7 to line 15, col 21 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "set" @@ 1 :&gt; "idle")
+State 3: &lt;Check line 12, col 7 to line 15, col 21 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "set" @@ 1 :&gt; "set")
+State 4: &lt;Set line 18, col 7 to line 20, col 38 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; TRUE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "cs" @@ 1 :&gt; "set")
+State 5: &lt;Set line 18, col 7 to line 20, col 38 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; TRUE @@ 1 :&gt; TRUE)
+/\ pc = (0 :&gt; "cs" @@ 1 :&gt; "cs")
+13 states generated, 9 distinct states found, 1 states left on queue.
+The depth of the complete state graph search is 5.
+The average outdegree of the complete state graph is 1
+(minimum is 0, the maximum 2 and the 95th percentile is 2).</pre>
+
+<p>The first line is the most important one: our expected invariant is
+wrong. TLC has shown us that our proposed design has a race condition
+because of its nonatomic check-and-set behavior. It describes what happens as follows: in state 1, both processes start out as <code translate="no">'idle'</code>, not
+wanting the lock. In state 2, process 0 checks that process 1’s flag is
+<code translate="no">FALSE</code> and moves to <code translate="no">"set"</code>. Then, process 1 does the same thing in state 3.
+In state 4, process 0 moves into the critical section and sets its flag.
+Finally, in state 5, both of the processes are in the critical section
+and both flags are set, at which point the invariant is violated.</p>
+
+<p>Creating representative TLA+ specifications for existing software is
+difficult, but generative AI tools can help,
+meaning that it is now becoming practical to formally verify even large
+software systems. Starting a complex greenfield software project with
+formal guardrails like this is a huge help for reliability and can flow
+naturally from the kind of <a data-primary="testing" data-secondary="formal methods" data-startref="tst_frmthd" data-tertiary="TLA+" data-type="indexterm" id="id2204"/><a data-primary="formal testing methods" data-secondary="TLA+" data-startref="frmthd" data-type="indexterm" id="id2205"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-startref="tst_lsfts_frmthd" data-tertiary="formal testing methods" data-type="indexterm" id="id2206"/><a data-primary="TLA+" data-startref="tlapls" data-type="indexterm" id="id2207"/><a data-primary="tools" data-secondary="TLA+" data-startref="tol_tlaplus" data-type="indexterm" id="id2208"/>whiteboard session you often have at the
+beginning of a project.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Two Classes of Formal Verifiers" data-type="sect2"><div class="sect2" id="ch14_two_classes_of_formal_verifiers">
+<h2>Two Classes of Formal Verifiers</h2>
+
+<p>A variety of formal verification tools exist, each with its own
+strengths and limitations. At a high level, these verifiers can be
+grouped into two classes: model checkers and theorem provers.
+Understanding their complementary strengths and weaknesses is key to
+selecting the right approach for a given problem.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Model checking" data-type="sect3"><div class="sect3" id="ch14_model_checking">
+<h3>Model checking</h3>
+
+<p>As we saw in <a data-type="xref" href="#ch14_using_formal_methods">“Using Formal Methods”</a>, model checking is an automated, algorithmic technique
+that works <a data-primary="verifiers" data-seealso="testing" data-type="indexterm" id="id2209"/><a data-primary="verifiers" data-secondary="model checking" data-type="indexterm" id="id2210"/><a data-primary="model checking verifiers" data-type="indexterm" id="id2211"/>by exhaustively exploring the state space of a system model.
+TLA+’s TLC is an example of a model checker. These
+verifiers describe a system using a finite state model and one or more
+properties expressed in a temporal logic such as linear temporal logic
+(LTL) or computation tree logic (CTL).</p>
+
+<p>The greatest strength of model
+checking lies in its <a data-primary="automation" data-secondary="model checking" data-type="indexterm" id="id2212"/>automation: once the model and properties are
+defined, the verification process is typically a “push-button” affair.
+The primary output when a property fails is a counterexample, a
+specific execution trace that demonstrates the problem with the model,
+which is invaluable for debugging. Model-checking’s
+greatest weakness is the state space explosion problem—the number of
+states in a model typically grows exponentially with the number of
+variables and concurrent components, which can quickly overwhelm the
+available resources of the checker. This weakness fundamentally
+limits model checking to “small” models of the system under test,
+but it is typically enough to validate core or important algorithmic
+aspects of how the systems run.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Theorem proving" data-type="sect3"><div class="sect3" id="ch14_theorem_proving">
+<h3>Theorem proving</h3>
+
+<p>Theorem <a data-primary="verifiers" data-secondary="theorem proving" data-type="indexterm" id="ver_tp"/><a data-primary="theorem proving verifiers" data-type="indexterm" id="tpv"/>proving, in contrast, is a deductive and typically interactive
+process. It involves representing the system and its properties using a
+highly expressive formal logic, such as higher-order logic (HOL) or the
+Calculus of Inductive Constructions (CIC). You then guide the theorem
+prover to construct a formal, mathematical proof that the system’s
+specification implies the desired properties. Because it relies on
+mathematical proof techniques such as induction, theorem proving is not
+limited by the size of the state space and can be used to verify systems
+with infinite states (e.g., systems with unbounded data structures or
+parameters). The logic used is also far more expressive, capable of
+representing complex mathematical concepts. The trade-off is a
+significant loss of automation. Constructing proofs requires substantial
+human effort and deep expertise in logic and the specific theorem prover
+being used, although AI assistance has the potential to make this process considerably less labor-intensive.</p>
+
+<p>Here’s an example specification that shows how the native mutex we looked at earlier can be checked using the theorem-proving system <a href="https://oreil.ly/-a9o3">Rocq</a>:</p>
+<pre translate="no">(* ========================= *)
+(* 1. Processes and States   *)
+(* ========================= *)
+
+Inductive Proc : Type :=
+| P0
+| P1.
+
+Definition other (p : Proc) : Proc :=
+  match p with
+  | P0 =&gt; P1
+  | P1 =&gt; P0
+  end.
+
+Inductive PC : Type :=
+| Idle
+| Want
+| CS.
+
+Record State : Type := {
+  processState : Proc -&gt; PC;
+  flag : Proc -&gt; bool
+}.
+
+(* ========================= *)
+(* 2. Initial State          *)
+(* ========================= *)
+
+Definition init : State :=
+  {|
+    processState := fun _ =&gt; Idle;
+    flag := fun _ =&gt; false
+  |}.
+
+(* ========================= *)
+(* 3. Functional Update      *)
+(* ========================= *)
+
+Definition update_proc
+  {A : Type}
+  (f : Proc -&gt; A)
+  (p : Proc)
+  (v : A)
+  : Proc -&gt; A :=
+  fun q =&gt;
+    match q, p with
+    | P0, P0 =&gt; v
+    | P1, P1 =&gt; v
+    | _, _ =&gt; f q
+    end.
+
+(* ========================= *)
+(* 4. Actions / Transitions  *)
+(* ========================= *)
+
+Definition Check (i : Proc) (s s' : State) : Prop :=
+  processState s i = Idle /\
+  flag s (other i) = false /\
+  processState s' =
+    update_proc (processState s) i Want /\
+  flag s' = flag s.
+
+Definition SetFlag (i : Proc) (s s' : State) : Prop :=
+  processState s i = Want /\
+  flag s' =
+    update_proc (flag s) i true /\
+  processState s' =
+    update_proc (processState s) i CS.
+
+Definition Exit (i : Proc) (s s' : State) : Prop :=
+  processState s i = CS /\
+  flag s' =
+    update_proc (flag s) i false /\
+  processState s' =
+    update_proc (processState s) i Idle.
+
+(* ========================= *)
+(* 5. Next-State Relation    *)
+(* ========================= *)
+
+Definition Next (s s' : State) : Prop :=
+  (exists i, Check i s s') \/
+  (exists i, SetFlag i s s') \/
+  (exists i, Exit i s s').
+
+(* ========================= *)
+(* 6. Mutual Exclusion       *)
+(* ========================= *)
+
+Definition MutualExclusion (s : State) : Prop :=
+  ~ (
+    processState s P0 = CS /\
+    processState s P1 = CS
+  ).
+
+Definition bad_state : State :=
+  {|
+    processState :=
+      fun p =&gt;
+        match p with
+        | P0 =&gt; CS
+        | P1 =&gt; CS
+        end;
+
+    flag := fun _ =&gt; true
+  |}.
+
+(* ========================= *)
+(* 7. Example Theorem        *)
+(* ========================= *)
+
+Theorem bad_state_violates :
+  ~ MutualExclusion bad_state.
+Proof.
+  unfold MutualExclusion.
+  simpl.
+  intro H.
+  apply H.
+  split; reflexivity.
+Qed.
+
+Print bad_state.
+Check bad_state_violates</pre>
+
+<p>The properties to be verified are stated as theorems, and you
+write the proof, while Rocq checks each step. As a result, you
+don’t see the output that you see with TLC, where you have given the
+system some description of how it works and are effectively exploring
+the possibilities of the moves allowed by the state machine and seeing
+if the invariants are violated. Instead, you are constructing a proof
+that the state machine is operating according to expectations, and if
+you can’t prove it, Rocq complains. What follows is the output of the
+Rocq theorem checker on the previous example:</p>
+<pre translate="no">% rocq compile ./badmutex.v
+bad_state =
+{|
+  processState := fun p : Proc =&gt; match p with
+                                  | P0 | _ =&gt; CS
+                                  end;
+  flag := fun _ : Proc =&gt; true
+|}
+     : State
+bad_state_violates
+     : ~ MutualExclusion bad_state
+%</pre>
+
+<p>As you can see, it tells us
+that the <code translate="no">MutualExclusion</code> proof is violated by <code translate="no">bad_state</code>. This is
+a much more complicated piece of work, but <a data-primary="verifiers" data-secondary="theorem proving" data-startref="ver_tp" data-type="indexterm" id="id2213"/><a data-primary="theorem proving verifiers" data-startref="tpv" data-type="indexterm" id="id2214"/>it is
+correspondingly more powerful.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Comparing the Two Approaches" data-type="sect2"><div class="sect2" id="ch14_comparing_the_two_classes">
+<h2>Comparing the Two Approaches</h2>
+
+<p><a data-type="xref" href="#ch14_table_06">Table 14-5</a> provides <a data-primary="verifiers" data-secondary="model checking compared to theorem proving" data-type="indexterm" id="id2215"/><a data-primary="theorem proving verifiers" data-secondary="compared to model checking" data-type="indexterm" id="id2216"/><a data-primary="model checking verifiers" data-secondary="compared to theorem proving" data-type="indexterm" id="id2217"/>a concise comparison of these two paradigms.</p>
+<table id="ch14_table_06">
+<caption><span class="label">Table 14-5. </span>Model checking versus theorem proving</caption>
+<thead>
+<tr>
+<th>Characteristic</th>
+<th>Model checking</th>
+<th>Theorem proving</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>Degree of automation</p></td>
+<td><p>Fully automatic</p></td>
+<td><p>Interactive, user-guided</p></td>
+</tr>
+<tr>
+<td><p>State space handling</p></td>
+<td><p>Finite state; suffers from state space explosion</p></td>
+<td><p>Infinite state; uses mathematical induction</p></td>
+</tr>
+<tr>
+<td><p>Expressiveness of properties</p></td>
+<td><p>Propositional temporal logics (e.g., LTL, CTL)</p></td>
+<td><p>Higher-order logic, dependent type theory</p></td>
+</tr>
+<tr>
+<td><p>User expertise required</p></td>
+<td><p>Lower; accessible to engineers</p></td>
+<td><p>Higher</p></td>
+</tr>
+<tr>
+<td><p>Primary result of property violation</p></td>
+<td><p>Concrete counterexample (for debugging)</p></td>
+<td><p>Failed proof attempt (can be ambiguous)</p></td>
+</tr>
+<tr>
+<td><p>Primary result of success</p></td>
+<td><p>Confirmation that property holds for the model</p></td>
+<td><p>Reusable mathematical proof of correctness</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>While the theoretical distinction between model checking and theorem
+proving is clear, the practical reality is that modern verification
+tools are increasingly hybrid systems that blur these lines. This
+convergence is driven by the complementary nature of the two approaches:
+the weaknesses of one are the strengths of the other, resulting in a
+powerful synergy where the automation of model checking is combined with
+the expressive power of theorem proving. For example, modern interactive
+theorem provers like <a href="https://isabelle.in.tum.de">Isabelle</a> and
+<a href="https://pvs.csl.sri.com">PVS</a> incorporate powerful automated reasoning
+tools called decision procedures and tactics. Conversely, traditional
+model checkers like TLA+ incorporate some form of theorem proving, like
+<a href="https://oreil.ly/sH2YJ">TLAPS</a>.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal methods for testing" data-type="sect3"><div class="sect3" id="ch14_formal_methods_for_testing">
+<h3>Formal methods for testing</h3>
+
+<p>A formal specification provides an objective and machine-readable
+description of a system’s required behavior. This description resolves
+the <a href="https://oreil.ly/_2SYd">oracle problem</a> in
+testing, <a data-primary="oracle problem in testing" data-type="indexterm" id="id2218"/><a data-primary="testing" data-secondary="oracle problem" data-type="indexterm" id="id2219"/>where it can be difficult to determine if the output of a test
+is correct or not. With a formal model, the expected outcome for any
+given input can be precisely determined.</p>
+
+<p>This synergy has given rise to the field of <a data-primary="model-based testing (MBT)" data-type="indexterm" id="id2220"/><a data-primary="MBT (model-based testing)" data-type="indexterm" id="id2221"/>model-based testing (MBT).
+In MBT, test cases are not written manually but are algorithmically
+generated from a formal model of the system.<sup><a data-type="noteref" href="ch14.html#id2222" id="id2222-marker">14</a></sup> As a result, you
+can automatically create large test suites that systematically cover
+various aspects of the system’s behavior, based on criteria such as state
+coverage, transition coverage, or data flow coverage. This automated
+generation <a href="https://oreil.ly/7KnYi">can significantly improve
+testing efficiency and coverage</a> compared to manual test design.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Use of Formal Methods at Google" data-type="sect2"><div class="sect2" id="ch14_use_of_formal_methods_at_google">
+<h2>Use of Formal Methods at Google</h2>
+
+<p>While the traditional <a data-primary="testing" data-secondary="formal methods" data-tertiary="at Google" data-tertiary-sortas="Google" data-type="indexterm" id="tst_fmthd_google"/><a data-primary="formal testing methods" data-secondary="at Google" data-secondary-sortas="Google" data-type="indexterm" id="ftmthds_google"/>academic application of formal methods is often
+characterized by an all-or-nothing approach suitable only for
+safety-critical domains such as avionics, we use a more pragmatic and
+highly scalable approach to formal verification. This approach does not
+seek to prove properties about the entirety of Google’s infrastructure,
+products, and services, since doing so is computationally and
+
+<span class="keep-together">practically</span> 
+<span class="keep-together">infeasible.</span> Rather, we apply formal methods to specific
+subcomponents. In this way, though the full purity of the formal methods
+approach is somewhat diluted, we obtain a much stronger guarantee of
+behavior than testing of any other kind, including testing in production, can provide.</p>
+
+<p>In this section, we describe some examples of how we have leveraged
+formal 
+<span class="keep-together">methods.</span></p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Verifying behavior of network switches using P4-BAR" data-type="sect3"><div class="sect3" id="ch14_verifying_behavior_of_network_switches_using_p4_bar">
+<h3>Verifying behavior of network switches using P4-BAR</h3>
+
+<p>Google uses <a href="https://oreil.ly/Sy8zf">P4</a>,
+a domain-specific<a data-primary="verifiers" data-secondary="verifying network switches, P4-Bar" data-type="indexterm" id="id2223"/><a data-primary="P4-BAR (P4-Based Automated Reasoning), verifying network switches" data-type="indexterm" id="id2224"/> networking language, as a way to automatically verify
+the behavior of software-defined networking (SDN) switches. This
+machine-readable specification language is part of the P4-Based Automated
+Reasoning (P4-BAR) framework.<sup><a data-type="noteref" href="ch14.html#id2225" id="id2225-marker">15</a></sup> Using P4-BAR
+allows us to meet the challenge of balancing feature velocity and
+reliability in network switches.</p>
+
+<p>The process underlying P4-BAR involves three key steps:</p>
+<dl>
+<dt>Modeling</dt>
+<dd><p>Use of P4 as a specification language to model the desired
+switch forwarding API and its intended behavior</p>
+</dd>
+<dt>Model-based test input generation</dt>
+<dd>
+<p>Use of symbolic execution and
+fuzzing of a P4 program to automatically generate a comprehensive set of
+test inputs for the switches</p>
+</dd>
+<dt>Differential testing against a simulation</dt>
+<dd>
+<p>Running generated test
+inputs on an actual switch and comparing the switch’s output against a
+simulation of the P4 program</p>
+</dd>
+
+</dl>
+
+<p>Treating the P4 program as the specification makes P4-BAR very
+effective at finding bugs and ensuring the switch behaves as expected.
+Since 2020, we have found over 300 unique forwarding bugs as a result,
+thereby helping to improve both reliability and feature velocity.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal verification in hardware design" data-type="sect3"><div class="sect3" id="ch14_formal_verification_in_hardware_design">
+<h3>Formal verification in hardware design</h3>
+
+<p>Google uses formal <a data-primary="verification" data-secondary="custom hardware design" data-type="indexterm" id="id2226"/>analysis techniques in the design of its custom
+hardware, such as Tensor Processing Units (TPUs). By applying formal verification methods early in the
+design cycle, engineering teams can ensure that hardware implementations
+comply with their architectural and microarchitectural specifications.
+This 
+<span class="keep-together">proactive</span> approach helps identify critical issues like protocol
+violations, deadlocks, and other corner-case functional violations before
+they reach the physical 
+<span class="keep-together">implementation</span> stage, ensuring a high degree of
+reliability and performance in Google’s 
+<span class="keep-together">infrastructure.</span></p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Fiat Cryptography and BoringSSL" data-type="sect3"><div class="sect3" id="ch14_fiat_cryptography_and_boringssl">
+<h3>Fiat Cryptography and BoringSSL</h3>
+
+<p><a href="https://oreil.ly/Ifaq8">BoringSSL</a>,
+an open source fork of OpenSSL that Google <a data-primary="verifiers" data-secondary="Fiat Cryptography" data-type="indexterm" id="id2227"/><a data-primary="Fiat Cryptography" data-type="indexterm" id="id2228"/><a data-primary="BoringSSL" data-type="indexterm" id="id2229"/>created to meet its internal
+needs, secures the majority of connections in the Google Chrome browser
+and on Android. BoringSSL includes cryptographic code that has been
+formally verified, meaning that it has been mathematically proven to be
+free of implementation vulnerabilities. This code was developed using
+<a href="https://oreil.ly/UaH4K">Fiat
+Cryptography</a>, a system developed by MIT researchers that automates
+the generation of highly optimized and secure cryptographic code, which
+is traditionally written by hand. The manual approach is not only
+labor-intensive but also prone to introducing subtle bugs and
+performance issues, especially when adapting code for different hardware
+architectures. Fiat Cryptography addresses this by creating a system
+that can automatically produce code for complex algorithms, such as
+those used in elliptical curve cryptography (ECC), that matches the
+performance of the best handwritten code.</p>
+
+<p>Fiat Cryptography’s use of formal methods guarantees the correctness of
+the code it generates. The system (one of several based on formal methods to produce secure cryptographic code) doesn’t just write code; it
+simultaneously proves that the code is mathematically correct,
+effectively eliminating a major source of security 
+<span class="keep-together">vulnerabilities.</span></p>
+
+<p>This approach represents a significant advancement in building secure
+systems. By automating not only the construction of the code but also
+the proof of its correctness, researchers have taken a process that
+previously existed only in the minds of a few experts and made it
+systematic and verifiable. The adoption of this verified cryptography in
+major software projects like BoringSSL signals a broader industry shift
+toward using formally verified software for critical infrastructure,
+reducing the risks posed by insecure code and making the web safer for
+everyone.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Analysis of C++ code via Tricorder, Clang-Tidy, and Clang Static Analyzer" data-type="sect3"><div class="sect3" id="ch14_analysis_of_c_code_via_tricorder_clangtidy_and_clang_static_analyzer">
+<h3>Analysis of C++ code via Tricorder, Clang-Tidy, and Clang Static Analyzer</h3>
+
+<p><a href="https://oreil.ly/-OnAf">Tricorder</a>
+is an internal static <a data-primary="Tricorder" data-type="indexterm" id="id2230"/><a data-primary="verifiers" data-secondary="Tricorder" data-type="indexterm" id="id2231"/>analysis platform that automatically runs a wide
+array of analyzers on code within Google’s source code repository. It
+integrates with the developer workflow, most notably by displaying
+findings directly during code reviews, as well as in the integrated development environment (IDE) and our
+code search tool. The primary goal of Tricorder is to improve code
+quality by catching potential bugs, style issues, and deviations from
+best practices early in the development cycle. It executes hundreds of
+different analyzers, ranging from simple linters to more in-depth code
+analysis tools, and can be configured per project.</p>
+
+<p class="pagebreak-before less_space"><a href="https://oreil.ly/ym_c3">Clang-Tidy</a> is an <a data-primary="Clang-Tidy" data-type="indexterm" id="id2232"/><a data-primary="verifiers" data-secondary="Clang-Tidy" data-type="indexterm" id="id2233"/>open source,
+Clang-based C++ “linter” tool designed to diagnose and fix typical
+programming errors. It covers style violations, interface misuse, and
+bugs detectable through static analysis. Clang-Tidy works by analyzing
+the abstract syntax tree (AST), allowing its checks to be much more
+precise than those of regex-based linters. Its findings, including suggested
+fixes, are displayed during the code review stage through the Tricorder
+pipeline. Projects can customize the set of Clang-Tidy checks run on
+their codebase.</p>
+
+<p>The <a href="https://clang-analyzer.llvm.org">Clang Static Analyzer</a> is a tool
+integrated with the Clang <a data-primary="Clang Static Analyzer" data-type="indexterm" id="id2234"/><a data-primary="verifiers" data-secondary="Clang Static Analyzer" data-type="indexterm" id="id2235"/>project that performs more in-depth,
+path-sensitive analysis to find deeper bugs in C++ code. Unlike typical
+linters or many Clang-Tidy checks that focus on local patterns, the Clang
+Static Analyzer explores program execution paths to identify issues such as
+null pointer dereferences, use-after-free errors, and other logical errors. Its
+results are also often presented as Clang-Tidy warnings and thus surface
+within Tricorder. The tool employs formal methods to achieve this deeper
+analysis. Specifically, it uses symbolic execution to explore program
+paths, treating input values as symbols rather than concrete values.
+This allows it to reason about many possible inputs at once. It also
+uses abstract interpretation, a theory of sound approximation of program
+semantics, to model the state of the program and check for invariants or
+violations. By simulating execution paths and tracking constraints on
+symbolic values, the analyzer can uncover bugs that are not apparent
+from just looking at the code structure locally.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Agentic Testing" data-type="sect2"><div class="sect2" id="ch14_agentic_testing">
+<h2>Agentic Testing</h2>
+
+<p>We should <a data-primary="testing" data-secondary="agentic" data-type="indexterm" id="tstg_agntc"/><a data-primary="agentic testing" data-type="indexterm" id="agnttstng"/><a data-primary="AI agents" data-secondary="agentic testing" data-type="indexterm" id="aignt_agntst"/>briefly mention the emerging field of agentic software
+development and what role testing could play. Because the details are
+likely to change, we’ll keep this coverage brief. Agentic software development involves using AI agents (at the time of writing,
+typically LLMs) to write software. There is a wide spectrum of ways this
+can be done, from personally validating each agent-generated change in
+an interactive loop to orchestrating a fleet of agents given only the loosest definition of a business goal, with the agents themselves
+coordinating the research needed to determine the goal and its corresponding implementation.</p>
+
+<p>Given how quickly things are changing, it is hard to write
+recommendations that are likely to remain relevant beyond the day they are written,
+never mind over the medium or long term. But many of the
+problems that agentic development is currently wrestling with are precisely what
+testing is designed to address: establishing acceptable and unacceptable boundaries of
+behavior and providing clear signals when things go wrong. As a result, we
+think testing will continue to be an extremely useful way to manage
+risk, compare world models, and prevent problems in agentic software development, as well as safely extend brownfield codebases.</p>
+
+<p class="pagebreak-before less_space">One key aspect of testing in the world of <a data-primary="evals, model testing" data-type="indexterm" id="id2236"/>models is the use of <em>evals</em>, short for <em>evaluations</em>. A very rough analogy to the
+classical world of deterministic software would be that evals are like a
+wide array of unit and integration tests. A key difference, however, is
+that unit tests are small and are designed to test extremely narrow
+pieces of functionality. Evals are usually much larger, and not all of them
+have objectively correct answers that can be checked automatically via
+software. In fact, some evals <em>require</em> human oversight. However, the
+basic idea is generally the same: successful evals gate further progress. (There is an important exception for the kind of evals that
+require users to interact directly with the software, à la
+testing-in-production, where the question of “does it work?” is settled
+by the user response.)</p>
+
+<p>Our instinct as SREs, particularly in a universe of potentially
+uncontrolled software development, is to practice a tiered testing
+approach that looks something like this:</p>
+
+<ul>
+<li>
+<p>Level 1: Classic software authoring</p>
+</li>
+<li>
+<p>Level 2: Agents generating code, data, content, etc.</p>
+</li>
+<li>
+<p>Level 3: Agentic tool use</p>
+</li>
+</ul>
+
+<p>We’ll briefly walk through each of the levels here, along with test types and
+guidelines. Given the relatively immature state of the field, there is a
+lot of detail in these descriptions that may not apply to you, or for
+which reusable solutions are not yet available—this implies a lot of
+special-case software, not necessarily a great contributor to
+reliability. However, testing may help to provide some boundaries on
+risk in this case.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="“Classic” software authoring (level 1)" data-type="sect3"><div class="sect3" id="ch14_classic_software_authoring_level_1">
+<h3>“Classic” software authoring (level 1)</h3>
+
+<p>Level 1 of agentic testing <a data-primary="testing" data-secondary="agentic" data-tertiary="software authoring level" data-type="indexterm" id="tstg_agntc_sftath"/><a data-primary="agentic testing" data-secondary="software authoring level" data-type="indexterm" id="agnttstng_sftath"/>is standard testing, but from the perspective of ensuring that software and configuration are as safe as is practical.
+For agentic software, it’s particularly useful to have some kind of formal
+verification of the core algorithm, control loop, and so on; this ensures
+that if the agent changes the software in a way that breaks the core algorithm, it is
+immediately noticed and reverted (the proof or other verification
+method will fail, providing a clear signal that both agents and testing software
+can react to easily). As a result, whatever the core loop is
+should not be brittle against the semi-random mutations that extended
+agentic development is likely to produce.</p>
+
+<p>Testing at this level might involve:</p>
+<dl>
+<dt>Software</dt>
+<dd>
+<p>Type checking, unit testing, fuzzing, integration
+testing, etc.</p>
+</dd>
+<dt>Configuration</dt>
+<dd>
+<p>Schema testing, syntactic validation, etc.</p>
+</dd>
+<dt>Data</dt>
+<dd>
+<p>Schema testing, provenance tracing, etc.</p>
+</dd>
+<dt>Formal methods</dt>
+<dd>
+<p>E.g., TLA+, model checking, theorem proving, and static
+analysis</p>
+</dd>
+</dl>
+
+<p>More effort will probably be spent on<a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_sftath" data-tertiary="software authoring level" data-type="indexterm" id="id2237"/><a data-primary="agentic testing" data-secondary="software authoring level" data-startref="agnttstng_sftath" data-type="indexterm" id="id2238"/> data considerations in this context than in non-ML systems.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Agents generating code, data, content, etc. (level 2)" data-type="sect3"><div class="sect3" id="ch14_agents_generating_code_data_content_etc_level_2">
+<h3>Agents generating code, data, content, etc. (level 2)</h3>
+
+<p>This is the first step in <a data-primary="testing" data-secondary="agentic" data-tertiary="code generator level" data-type="indexterm" id="tstg_agntc_cdgen"/><a data-primary="agentic testing" data-secondary="code generator level" data-type="indexterm" id="agnttstng_cdgen"/>introducing agents as code generators. At this
+stage, prompts and models emerge as separate artifacts.</p>
+
+<p>It’s (still) possible to perform deterministic testing of model output by keeping the temperature, prompts, source data, and so on stable, and testing the resulting output. Most other testing is probabilistic—for example, content testing against rubrics (did it mention all the things that should be
+mentioned, and none of the things that shouldn’t?), profanity or extreme
+emotion detection, PII detection, and so on.</p>
+
+<p>Sometimes we use LLMs to evaluate the output of other LLMs. In that
+case, we should use multiple LLMs to reduce the risk of inappropriate agreement—that is, situations where the agents end up agreeing with each other for
+reasons other than it being correct to do so. We also need to
+continually check the quality of what’s been produced, especially in
+production, since much of this applies to pre-production.</p>
+
+<p>At this stage, now that we have agents doing things, we should start to
+track the cost incurred, and their latency and reliability. This might
+superficially seem like a meta-concern, but it is actually critically
+important, particularly if token consumption from a remote provider is a
+key part of how your agents operate today.</p>
+
+<p>An emerging danger at this point is drift: reality and the LLM
+environment, data, prompts, and so on may gradually drift apart. A closely related danger is that different models can have
+a distinct propensity to respond in particular ways (e.g., sycophancy)
+that systematically change their output, quite apart from any
+other randomness in the process.</p>
+
+<p>As for types and guidelines for level 2 agentic testing, consider the
+following:</p>
+<dl>
+<dt>Prompts</dt>
+<dd>
+<p>Prompt tracking (version-controlled), length, forbidden or
+mandatory clauses. Check whether prompt changes cause quality regressions on
+the golden evaluation set.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Models</dt>
+<dd>
+<p>Model tracking (version-controlled), version (insofar as this can be assured, if you’re not the model owner), temperature, and seed.
+Small-scope deterministic testing. Use Cohen’s kappa, a statistical
+measure of agreement between raters, to keep judges aligned.</p>
+</dd>
+<dt>Observability</dt>
+<dd>
+<p>Detect model response version versus model request
+version. Track model versions. Familiarize yourself with
+<a href="https://oreil.ly/RGlik">the OpenTelemetry
+GenAI guidelines</a>; make sure that any OpenTelemetry attributes are
+correct.</p>
+</dd>
+<dt>Security</dt>
+<dd>
+<p>PII leakage, screened via an array of techniques from
+regular expressions to ML models recognizing common formats—usually, hybrid
+systems produce the best results.</p>
+</dd>
+<dt>Cost, latency, etc.</dt>
+<dd>
+<p>Budget model—daily and/or per-request budgets.
+Decide whether to fail open or fail closed, and test enforcement. Similarly, a
+latency budget and associated policy could involve failing over to
+another (e.g., local) model—testing failover is essential.</p>
+</dd>
+<dt>Drift</dt>
+<dd>
+<p>Run golden evals frequently to catch both drift
+and propensity changes (strong model versioning is needed here).</p>
+</dd>
+<dt>Quality monitoring</dt>
+<dd>
+<p>Run against evals but also
+monitor production. Consider SLIs for success/failure on quality assessments,
+and even for <a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_cdgen" data-tertiary="code generator level" data-type="indexterm" id="id2239"/><a data-primary="agentic testing" data-secondary="code generator level" data-startref="agnttstng_cdgen" data-type="indexterm" id="id2240"/>burn-rate alerts.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Agentic tool use (level 3)" data-type="sect3"><div class="sect3" id="ch14_agentic_tool_use_level_3">
+<h3>Agentic tool use (level 3)</h3>
+
+<p>Level 3 represents the<a data-primary="testing" data-secondary="agentic" data-tertiary="agentic tool use level" data-type="indexterm" id="tstg_agntc_agntol"/><a data-primary="agentic testing" data-secondary="agentic tool use" data-type="indexterm" id="agnttstng_agntol"/> first level of indirection—agents using tools to do work (and those tools might themselves generate
+software). As a result, tool use itself needs to be specified,
+guarded, tracked, and monitored. Just as tools that humans might
+use should be subjected to testing, fault injection, etc., these tools
+should be too.</p>
+
+<p>Here, the internal agent state starts to matter more because of its relationship with tool use, so testing whether the agent
+will make progress (also known as <em>trajectory</em>) is relevant, as well as
+tracking how much it’s costing to do so. It also becomes important to consider
+how an agent will terminate, testing the circumstances under which
+it should do so, as well as its ability to supply a graceful incomplete
+answer.</p>
+
+<p class="pagebreak-before less_space">Security, which is always and everywhere important, takes on a new focus
+here because tool use makes certain aspects of what’s called the
+<a href="https://oreil.ly/xZ4UF"><em>lethal
+trifecta</em></a>—access to private data, untrusted content, and external
+communication—potentially much easier.</p>
+
+<p>Testing at this level typically falls into the following categories:</p>
+<dl>
+<dt>Tools</dt>
+<dd>
+<p>Tool specification tracking and tests. Whether tool
+specification changes cause quality regressions on the golden evaluation
+set. Detection of naming collisions and tool description overlap, argument testing, fault injection for tools, behavior under
+overload (e.g., HTTP <code translate="no">429</code> responses), behavior under malformed tool
+responses.</p>
+</dd>
+<dt>Trajectory</dt>
+<dd>
+<p>Trajectory budget. Replaying old scenarios against a
+static environment while measuring repetition, number of steps taken, and
+token consumption rates. Graceful degradation at threshold behavior.</p>
+</dd>
+<dt>Termination</dt>
+<dd>
+<p>By analogy with trajectory, setting a policy for agent
+termination, escalation (if possible) to humans, and graceful
+degradation.</p>
+</dd>
+<dt>Security</dt>
+<dd>
+<p>Lethal trifecta concerns. Generate capability set from
+configuration, compare with trifecta. Enforcement by simplest possible
+measures (non-AI if possible). Tool invocation policy layer,
+wrapper checking, prompt injection or adversarial input checking.</p>
+</dd>
+</dl>
+
+<p>The core idea here is that each level of testing requires the previous
+one. Failures at level <em>N</em>+1 are, in general, difficult to detect using the
+approaches of level <em>N</em>. For example, excessive sycophancy in a new
+model is hard to detect with classic unit tests, and a regression in a tool
+that ends up changing the runtime security of a model’s
+capabilities is hard to detect with evals. Both are
+dangerous, regardless of how easy <a data-primary="testing" data-secondary="formal methods" data-startref="tst_fmthd_google" data-tertiary="at Google" data-tertiary-sortas="Google" data-type="indexterm" id="id2241"/><a data-primary="formal testing methods" data-secondary="at Google" data-secondary-sortas="Google" data-startref="ftmthds_google" data-type="indexterm" id="id2242"/><a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_agntol" data-tertiary="agentic tool use level" data-type="indexterm" id="id2243"/><a data-primary="agentic testing" data-secondary="agentic tool use" data-startref="agnttstng_agntol" data-type="indexterm" id="id2244"/><a data-primary="AI agents" data-secondary="agentic testing" data-startref="aignt_agntst" data-type="indexterm" id="id2245"/>they are to spot.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch14_conclusion">
+<h1>Conclusion</h1>
+
+<p>Testing is a critical part of building and operating resilient and
+reliable software systems. In this chapter, we’ve discussed how SREs at
+Google think about testing, starting with foundational concepts. At
+scale, testing becomes increasingly complex, requiring a sophisticated,
+tiered approach. Understanding the trade-offs in terms of
+investment in safety and velocity involves understanding the ways they
+are not in tension as well as the ways they are, and judiciously selecting the
+right approach for the situation, acknowledging that both may
+change.</p>
+
+<p>The advent of generative AI is not going to make testing less important.
+We are going to see a lot more software in the future, and regardless of what
+generates the software, it still needs to be tested. In fact, at the
+time of writing, it seems likely that agent-generated code may need
+testing in excess of general industry levels. Formal methods can play a
+useful supporting role here.</p>
+
+<p>Testing in production is an approach that’s growing in importance, and
+as we ship more code into production for which no human has built a
+mental model, testing against reality in a controlled fashion has a good
+shot of becoming our primary testing method. It is, in some ways, the
+ultimate test. There are still plenty of ways to scale up testing prior
+to a full production test: simple programs can be fuzzed; errors or
+latency can be induced between running binaries; faults can be injected
+into an individual dependency. Having built confidence in the operation
+of the system as a whole, we can then go on to tackle the much larger
+scale of simulating the disappearance of a network link, or even an
+entire datacenter.</p>
+
+<p>Regardless of the scale you start at, or the scale you end up at,
+testing is an absolutely fundamental part of the SRE toolkit when it
+comes to building reliable systems and minimizing the uncertainty
+incurred by continuous change.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2096"><sup><a href="ch14.html#id2096-marker">1</a></sup> It turns out there’s a surprising amount of nuance around this adage when you go looking; <a href="https://oreil.ly/KyNRb">Forrest Shull et al.’s paper from 2002</a> suggests 100:1 costs for severe defects encountered in post-deployment, for example, but puts the cost for non-severe defects at around 2:1, whereas a <a href="https://oreil.ly/nn6m7">2017 paper</a> by <a data-primary="Menzies, Tim" data-type="indexterm" id="id2246"/>Tim Menzies et al. suggests the effect disappears in the 150+ projects from 2006 to 2014 that they looked at.</p><p data-type="footnote" id="id2127"><sup><a href="ch14.html#id2127-marker">2</a></sup> See Chaitali Narla and Diego Salas, <a href="https://oreil.ly/FchlY">“Hermetic Servers”</a>, Google Testing Blog, October 23, 2012.</p><p data-type="footnote" id="id2142"><sup><a href="ch14.html#id2142-marker">3</a></sup> For more on this topic, we highly recommend Mike Bland’s June 2014 <a href="https://oreil.ly/5kb_D">“Goto Fail, Heartbleed, and Unit Testing Culture” blog post</a>.</p><p data-type="footnote" id="id2144"><sup><a href="ch14.html#id2144-marker">4</a></sup> One rule of thumb is to start by having the release impact 0.1% of user traffic and then scaling by orders of magnitude every 24 hours while varying the geographic location of servers being upgraded, but many choose to ramp up quickly at the low end (e.g., 0.1% → 1%) and slowly at the high end (e.g., 10% - &gt;50% → 80% → 100% rather than 10% → 100%). If the traffic is heterogeneous (e.g., you have enterprise customers who have very different traffic patterns), you will need a more sophisticated strategy.</p><p data-type="footnote" id="id2147"><sup><a href="ch14.html#id2147-marker">5</a></sup> For details on our specific system, see Štěpán Davidovič and Betsy Beyer, <a href="https://oreil.ly/i3Nwt">“Canary Analysis Service”</a>, <em>Communications of the ACM</em> 61, no. 5 (2018): 54–62.</p><p data-type="footnote" id="id2150"><sup><a href="ch14.html#id2150-marker">6</a></sup> See Diego Lo Giudice,  <a href="https://oreil.ly/M2d-w">“Why Agile Development Races Ahead of Traditional Testing”</a>, in <em>ComputerWeekly.com</em> (2013); Lisa Crispin, <a href="https://oreil.ly/iEpMA">“How Testing Processes Should Change When You Shift Left”</a>, in <em>mabl</em> (2019).</p><p data-type="footnote" id="id2167"><sup><a href="ch14.html#id2167-marker">7</a></sup> See <a href="https://oreil.ly/FLumk">the gRPC guide</a>.</p><p data-type="footnote" id="id2173"><sup><a href="ch14.html#id2173-marker">8</a></sup> The <a href="https://oreil.ly/tTcaV">Monarch paper</a> has more details.</p><p data-type="footnote" id="id2180"><sup><a href="ch14.html#id2180-marker">9</a></sup> An important caveat: these improvements should be tested to confirm that they would prevent the problem from recurring and don’t themselves introduce new problems.</p><p data-type="footnote" id="id2184"><sup><a href="ch14.html#id2184-marker">10</a></sup> See <a href="https://sre.google/sre-book/effective-troubleshooting/#xref_troubleshooting_negative-results">“Negative Results Are Magic” in Chapter 12 of the first edition</a>.</p><p data-type="footnote" id="id2193"><sup><a href="ch14.html#id2193-marker">11</a></sup> An example is <a href="https://oreil.ly/EKkPU">Envoy Gateway’s fault injection</a>.</p><p data-type="footnote" id="id2194"><sup><a href="ch14.html#id2194-marker">12</a></sup> There are many open source and commercial fault injection tools; the best-known is likely Netflix’s <a href="https://oreil.ly/XJ1-d">Chaos Monkey</a>.</p><p data-type="footnote" id="id2200"><sup><a href="ch14.html#id2200-marker">13</a></sup> The TLA+ tools are available on <a href="https://oreil.ly/aOaBK">GitHub</a>. Learn more about TLA+ with a <a href="https://learntla.com">tutorial</a>.</p><p data-type="footnote" id="id2222"><sup><a href="ch14.html#id2222-marker">14</a></sup> MBT is closely related to property-based testing, but it generates tests from a model  rather than from invariants.</p><p data-type="footnote" id="id2225"><sup><a href="ch14.html#id2225-marker">15</a></sup> See Jonathan DiLorenzo’s LDI 2025 presentation <a href="https://oreil.ly/WGaxA">“P4-Based Automated Reasoning (P4-BAR) Using Symbolic Execution at Google”</a> and Kinan Dak Albab et al., <a href="https://oreil.ly/Yr8QP">“SwitchV: Automated SDN Switch Validation with P4 Models”</a>, <em>Proceedings of the ACM SIGCOMM 2022 Conference</em> (2022): 365–79.</p></div></div></section></body></html>

@@ -1,0 +1,535 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>SRE at the Tipping Point</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 19. SRE at the Tipping Point" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch19">
+<h1><span class="label">Chapter 19. </span>SRE at the Tipping Point</h1>
+
+
+<p>It is now possible to instruct a machine to write code to do an
+arbitrary task using colloquial English. While not perfect, the output
+you get is generally usable, and we expect it will only get
+better.<sup><a data-type="noteref" href="ch19.html#id2689" id="id2689-marker">1</a></sup> This raises many questions.</p>
+
+<p>Given that AI
+is redefining much of how we understand and approach software
+development, how is what we currently do in SRE likely to change as a result? As the underlying dynamics of development change, what is likely
+to happen to how software is built, maintained, and operated? How will nonfunctional requirements
+such as reliability and security be handled, and in particular, what will
+happen to production-related work? Or, to put it another way, if the cost
+of generating semi-useful lines of code becomes marginal, what becomes
+costly?</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>Throughout the rest of this chapter, we will use the term “AI dev” to
+mean AI-driven software development (via CLI tool or editor plug-in,
+in-stream, or otherwise). This is distinct from “AI SRE,” which we
+use to mean production engineering activities conducted with the aid of‚ and perhaps sometimes entirely by, AI.</p>
+</div>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Software Development Lifecycle" data-type="sect1"><div class="sect1" id="ch19_the_software_development_lifecycle">
+<h1>The Software Development Lifecycle</h1>
+
+<p class="fix_tracking">Software, at scale, goes <a data-primary="SDLC (software development lifecycle)" data-type="indexterm" id="sdlc"/><a data-primary="software development lifecycle" data-see="SDLC" data-type="indexterm" id="id2690"/>through a lifecycle as it is developed and
+deployed. While the precise details vary between organizations and
+projects, most software engineers are familiar with a prototypical
+model that divides software development into distinct phases,
+roughly along the following lines (as shown in <a data-type="xref" href="#ch19_fig01">Figure 19-1</a>): 
+<span class="keep-together"><em>Plan</em> → <em>Analyze</em> → <em>Design</em> →</span>
+<em>Build</em> → <em>Test</em> → <em>Deploy</em> → <em>Maintain</em>. This is a staged, or phased,
+model of the software development lifecycle; there are also SDLC
+models that are not linear, and of course, in practice, phases tend to
+overlap.</p>
+
+<figure><div class="figure" id="ch19_fig01">
+<img alt="Diagram illustrating a simple linear software development lifecycle with stages: Plan, Analyze, Design, Build, Test, Deploy, Maintain." src="assets/sre2_1901.png"/>
+<h6><span class="label">Figure 19-1. </span>A simple linear software development lifecycle</h6>
+</div></figure>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>Although it wasn’t present at the very birth of
+computing, the concept of a lifecycle model for software construction dates back about 60 years. A defining moment in its development was the famous 1968 NATO conference on software engineering, where the term
+“software crisis” was first used.<sup><a data-type="noteref" href="ch19.html#id2691" id="id2691-marker">2</a></sup>
+Simple but reasonable first-take models started to appear after that,
+probably the best known of them being <a href="https://oreil.ly/xA0Q5">Royce’s waterfall model</a> (1970).<sup><a data-type="noteref" href="ch19.html#id2692" id="id2692-marker">3</a></sup> A succession of other models emerged over the following decades, including the <a href="https://oreil.ly/sqfSe">spiral model</a>,
+<a href="https://oreil.ly/I81Dl">Lean software development</a>,
+<a href="https://oreil.ly/xVogC">continuous delivery</a>,
+and many others.</p>
+</div>
+
+<p>A model discards some aspects of the world in order
+to represent a complex thing as a simpler thing that is easier to reason
+about, allowing us to make and test predictions about the
+world. Ultimately, the job of an SDLC model is to discard some
+details about how software gets done in order to give us ways to
+structure our work. It helps us partition and manage the complexity of a
+very complex task.</p>
+
+<p>Two simple but powerful ideas to take from the SDLC are:</p>
+
+<ul>
+<li>
+<p>Work is approximately <em>serialized</em>. There are certain stages that
+should be done before other stages, separating concerns—i.e., you
+shouldn’t need to worry about testing while you’re building, or
+about deployment while you’re designing.</p>
+</li>
+<li>
+<p>There will be <em>loops</em>. That is, you might go back to certain earlier
+stages and cycle through them again. This is particularly relevant to the
+maintenance phase.</p>
+</li>
+</ul>
+
+<p>Together, these two ideas—though somewhat in tension—describe a good
+deal of the activity we do in software engineering: figuring out what to
+do and then how to do<a data-primary="SDLC (software development lifecycle)" data-startref="sdlc" data-type="indexterm" id="id2693"/> it, doing it, then going back to the beginning
+again.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The SDLC and Non-Functional Requirements" data-type="sect2"><div class="sect2" id="ch19_the_sdlc_and_non_functional_attributes">
+<h2>The SDLC and Non-Functional Requirements</h2>
+
+<p>Performance, quality, reliability, security, testability, and so on are all important <em>nonfunctional requirements</em> of software, <a data-primary="SDLC (software development lifecycle)" data-secondary="nonfunctional and functional requirements" data-type="indexterm" id="id2694"/><a data-primary="nonfunctional requirements (NFRs)" data-secondary="software development" data-type="indexterm" id="id2695"/><a data-primary="functional requirements (FRs)" data-secondary="software development" data-type="indexterm" id="id2696"/>whose properties can be destroyed by changing a single line of code.  As a result, those attributes cannot be ensured within the scope of just one phase; the work must take place across many phases.</p>
+
+<p>Deciding how reliable something should be is a question of requirements
+gathering and resource optimization. As with functional requirements, these decisions are made during the Plan, Analyze, and Design stages. Ideally, SRE becomes involved during the Design phase (see <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>), if not
+earlier.</p>
+
+<p>Building a system capable of meeting those reliability targets requires work across the Design, Test, and Deploy phases—phases less central to pure functional concerns. SRE is often heavily involved in testing, and it is inherently and deeply engaged in deployment and
+maintenance.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The SDLC Under Tension and Transition" data-type="sect2"><div class="sect2" id="ch19_the_sdlc_under_tension_and_transition">
+<h2>The SDLC Under Tension and Transition</h2>
+
+<p>It appears that <a data-primary="SDLC (software development lifecycle)" data-secondary="cost and speed improvements, implications" data-type="indexterm" id="id2697"/>the cost of emitting moderately specification-compliant
+lines of code is being driven steadily closer to zero, and the speed of
+emitting those lines is also rising rapidly. What are the implications of these trends?</p>
+
+<p>The SDLC phases can help us think about a world in which lines of code are produced much more quickly and cheaply (with, so far, mixed effects on quality). The phases themselves haven’t changed: the same requirements still need to be met. But the time spent in each phase has shrunk, in some cases dramatically. As a result, the overall process creates much more output.</p>
+
+<p>The increased speed and volume of software delivery are causing great excitement. However, we also discover a paradoxical effect: before AI dev, the work happening in each phase provided more time for incremental adjustment. A build phase lasting two weeks allowed you to make refinements while you were building, but a build phase of two hours doesn’t.</p>
+
+<p>Getting software in front of customers still helps answer many
+questions about what actually works, and now this can be done faster than ever before. But this
+helps primarily with the <em>functional</em> requirements, not the nonfunctional ones.
+The code being produced is currently about as reliable as
+it ever was—in fact, at the time of writing, there’s some
+<a href="https://oreil.ly/uC2d-">evidence
+that AI-generated code is less reliable</a>—so the historical dynamics
+around defects ending up in production haven’t changed. In other words, if we don’t make additional changes to the way we work, reliability won’t improve. Things will likely still break, and we’ll still need to fix them.</p>
+
+<p class="pagebreak-before less_space">Will this continue forever? We can assume that the software emitted by
+AI will <a data-primary="AI (artificial intelligence)" data-secondary="software development" data-type="indexterm" id="ai_stwdev"/>remain imperfect—the code will not encompass all possible
+features, cover all possible failure scenarios, or implement all security
+requirements without error. Certainly, superhuman AI coding
+performance may become available—but programs that execute
+successfully and produce the desired output aren’t necessarily secure or
+reliable, and the training corpus probably contains many more examples of software that functions correctly than of software that both functions correctly and is highly reliable in production.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Social SDLC" data-type="sect2"><div class="sect2" id="ch19_the_social_sdlc">
+<h2>The Social SDLC</h2>
+
+<p>The SDLC is as much about<a data-primary="SDLC (software development lifecycle)" data-secondary="social interaction during" data-type="indexterm" id="id2698"/> social interaction and consensus building as it is about effective software delivery, describing communication paths between teams. This is explicit in the earliest
+stages—for example, the planning and analysis phases are mainly about
+understanding a business process, problem, or job to be done on behalf
+of a user, and almost always involve talking to someone. However, even the phases
+of the SDLC that involve a lot of mechanical support, such as testing, have a social component.</p>
+
+<p><a href="https://oreil.ly/7SVgy">Conway’s law</a> states <a data-primary="Conway’s law" data-type="indexterm" id="id2699"/>that
+communication between humans influences the structure of software. AI
+dev changes this. Communication no longer <em>has</em> to flow between
+teams or individuals to take software through the entire lifecycle: it is now possible for a single human, with the aid of a single agent, to take a specification all the way to production.</p>
+
+<p>Although we try to establish an objective framework for definitions of concepts such as security and reliability, nonfunctional work also has a strong social component, relying on how people perceive them and the trade-offs they’re willing to make. Many
+experienced SREs have sat in a post-incident review meeting
+discussing whether to prioritize paid over unpaid traffic, and there is no
+single objectively correct answer to such a question—it’s often a
+matter of reaching consensus among the people in the room.</p>
+
+<p>Adding AI to this situation <em>could</em> change it considerably. For example, in the
+scenario just described, AI could recommend a prioritization strategy that is itself subject to human approval; the entire prioritization process could
+be delegated to it (perhaps opaquely, perhaps not); or it could
+redesign the entire system so that prioritization never has
+to be done. Where social consensus previously shaped conventions that played out across the SDLC, AI-assisted software engineering will likely change this, including
+in production work. More of our work is based on conventions and rules of
+thumb than we often realize, and we should be prepared for AI-assisted software development to expose established ways of working to more rigorous
+scrutiny than they’ve ever received before.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Production Work in the Era of AI Dev" data-type="sect1"><div class="sect1" id="ch19_production_work_in_the_era_of_ai_dev">
+<h1>Production Work in the Era of AI Dev</h1>
+
+<p>SRE is particularly <a data-primary="AI (artificial intelligence)" data-secondary="software development" data-startref="ai_stwdev" data-type="indexterm" id="id2700"/><a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-tertiary="effect on production work" data-type="indexterm" id="id2701"/>interested in the transition from testing to
+deployment. We expect the
+pre-deployment SDLC phases to become increasingly compressed as AI dev makes it easier to
+commingle activities that were previously separate. For
+example, it has long been considered good practice to run unit tests directly
+after writing new code, and many practitioners swore by test-driven
+development (TDD), while more comprehensive testing was left until later.
+However, running previously expensive, resource-hungry full-system
+tests essentially continuously is becoming close to best practice for managing AI
+systems. Automated evaluation is critical to many processes working at
+this speed, since humans no longer have the capacity to directly
+supervise them. In this world, building and testing converge.</p>
+
+<p>Other SDLC phases are likely to converge as well. For example, knowledge
+gained during building can and should<sup><a data-type="noteref" href="ch19.html#id2702" id="id2702-marker">4</a></sup> influence how both humans and
+agents design software, rather than design influencing building unidirectionally.
+Agentic software objects as currently constructed are challenged by the
+need to strongly separate things, so it seems the direction is toward
+mixing them up. But the hard boundary imposed by deployment, and the
+consequences of getting it wrong, are unchanged, even if it’s possible to
+produce lines of code at an accelerated rate. Organizations still need
+to deliver a quality user experience, are still exposed to different
+potential risks, may have certain legal or commercial obligations, want
+to make money from their software, and so on. The post-deployment world
+doesn’t really care whether you are AI-ing or not.</p>
+
+<p>So if the way we approach production remains unchanged, what does
+change? Here are our best guesses as to what is likely to happen in this
+nondeterministic future.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Rate of Change" data-type="sect2"><div class="sect2" id="ch19_the_rate_of_change">
+<h2>Rate of Change</h2>
+
+<p>Under AI dev, we will reach<a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-tertiary="effect on resolving production problems" data-type="indexterm" id="sdlc_ai_spdsd"/><a data-primary="AI dev" data-secondary="rate of code change" data-tertiary="effect on resolving production problems" data-type="indexterm" id="aidev_cdchng_prodprbms"/> an important milestone: <em>the rate of code
+changes reaching production will very likely pass the point where human
+timescales allow for action.</em></p>
+
+<p>Tactically, this acceleration makes traditional cherry-picking
+increasingly difficult as a means of resolving production problems. This technique
+assumes that the development trunk is stable enough to select a
+subset of changes from which to build a custom binary. However, the trunk
+may be moving too fast to be considered stable, making this impractical.
+Rolling forward may become the primary method for changing production, with
+rollbacks less feasible, whether they are executed by humans or machines—the inverse of traditional SRE preference.</p>
+
+<p>Critically, if <em>nothing else changes</em> but you speed up delivery by 10×, with high probability, you’ll get 10× the incidents, 10× the weird
+interactions between subsystems, 10× the resource depletion,
+etc.<sup><a data-type="noteref" href="ch19.html#id2703" id="id2703-marker">5</a></sup> Expect to see more
+problems more rapidly —and if automation is developed to handle the easy
+cases, SREs will likely see the complex, difficult cases at
+approximately the rate they saw the easy ones in the past. (And how will you learn to handle the hard problems without having practiced on easy ones first?)</p>
+
+<p>Of course, AI can help on the preventative side as well. Projects
+that proactively mine system topologies, source code, post-incident
+reports, and so on for ideas and practical approaches that can be applied across the board will likely become more common—perhaps in combination with
+approaches discussed elsewhere in this book, such as STPA. Similarly, we can leverage the stabilizing effects of AI by supplementing human review
+with test frameworks, eval frameworks, LLM cross-judging, and
+direct user feedback to<a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-startref="sdlc_ai_spdsd" data-tertiary="effect on resolving production problems" data-type="indexterm" id="id2704"/><a data-primary="AI dev" data-secondary="rate of code change" data-startref="aidev_cdchng_prodprbms" data-tertiary="effect on resolving production problems" data-type="indexterm" id="id2705"/> help manage risk.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Strategic Incoherence and Technical Debt" data-type="sect2"><div class="sect2" id="ch19_strategic_incoherence_and_technical_debt">
+<h2>Strategic Incoherence and Technical Debt</h2>
+
+<p>Software behavior emerges from the interaction of
+services and systems, the data they consume, and user behavior. With
+more software, we’ll likely see more of those emergent effects, and most
+testing approaches are poorly equipped to detect them. A
+key characteristic of today’s AI dev<a data-primary="AI dev" data-secondary="strategic incoherence, technical debt" data-type="indexterm" id="id2706"/><a data-primary="strategic incoherence" data-type="indexterm" id="id2707"/><a data-primary="technical debt" data-secondary="strategic incoherence" data-type="indexterm" id="id2708"/> output is a thing we call
+<em>strategic incoherence</em>: the systems are capable of performing quite
+sophisticated low-context tasks, but as their feature sets are extended again and again, their overall coherence tends to degrade. One common manifestation is that particular implementations get
+reproduced in slightly different ways throughout the codebase (violating the
+<a href="https://oreil.ly/KpRhf">Don’t Repeat
+Yourself principle</a>), but this can occur on a subsystem level as
+well as a class level. There’s also a potential negative feedback loop
+here: as duplication increases, system complexity may grow to
+overload the context window, and AI dev is unable to make meaningful
+progress under these conditions. In this way, AI dev systems can
+become tireless generators of technical debt—and
+technical debt often incurs
+<a href="https://oreil.ly/JeWqE">an
+interest payment in production</a>.</p>
+
+<p>Approaches like specification-driven development are a way to overcome
+purely local optimization and incremental delivery. It’s the same as in
+human-driven software engineering: documenting general design
+principles, system architecture, and so on helps both humans and AI systems stay aligned.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Versioning" data-type="sect2"><div class="sect2" id="ch19_versioning">
+<h2>Versioning</h2>
+
+<p>Similarly, at <em>very</em> rapid change <a data-primary="AI dev" data-secondary="rate of code change" data-tertiary="versioning issues" data-type="indexterm" id="id2709"/><a data-primary="versioning, rapid code change issues" data-type="indexterm" id="id2710"/>application rates, versioning as a way
+of partitioning risk starts to break down. By the time you’ve chosen a
+particular version of things (APIs, binaries, on-the-wire protocols),
+what’s shipping already may have changed. There might have to be
+per-request, per-session, or per-user versioning. Answering questions
+like “What’s actually running?” becomes nontrivial. Production
+resolution techniques that relied on stable versioning are less
+relevant. It is possible to live in such a universe, but it is very
+demanding.</p>
+
+<p>One approach is revisiting how large-scale production environments were
+handled in the past. We went from one machine being up or down—a
+kind of Boolean model—to a production environment composed of
+hundreds or thousands of machines, some of which are up and some down at any given moment. We might treat the idea of versioning
+similarly: we don’t need everything to be on one version, and in practice that’s rarely
+the case anyway, but we do need to control the circumstances under
+which transitions occur.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Staging and Test Environments" data-type="sect2"><div class="sect2" id="ch19_staging_and_test_environments">
+<h2>Staging and Test Environments</h2>
+
+<p>Staging environments <a data-primary="staging environments, production scaling issues" data-type="indexterm" id="id2711"/><a data-primary="test environments, production scaling issues" data-type="indexterm" id="id2712"/>may also struggle to produce behavior
+usefully representative of production. If production scales
+substantially in size as well as in the rate and volume of changes (common as the
+total amount of deployed software increases), setting up and maintaining these environments could
+become infeasible.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Production Debugging" data-type="sect2"><div class="sect2" id="ch19_production_debugging">
+<h2>Production Debugging</h2>
+
+<p>Production debugging is <a data-primary="debugging" data-secondary="production scaling issues" data-type="indexterm" id="id2713"/><a data-primary="production debugging, production scaling issues" data-type="indexterm" id="id2714"/>widely understood as the province of SRE. If the
+pace of change continues to accelerate as it has been, incident
+resolution and information gathering will likely require extensive tooling support. Furthermore, as the amount of deployed software grows exponentially,
+we can no longer rely on humans having read and reviewed enough of the codebase to build the context needed for production debugging.
+Instead, we will need to build that context on the fly, using tools
+(potentially lossy or probabilistic ones) to infer what happened. We will also need to infer the expected behavior on the
+fly, and most likely roll forward to the right behavior while the
+system continues to change underneath us.</p>
+
+<p>If the rate of deployment
+continues to scale indefinitely, it will eventually become too
+problematic to do this manually at all. However, current tools are
+not designed to handle that scale either. This might ultimately motivate the construction of a large number of separate
+production environments, which are automatically deleted and replaced as they fail when automatic recovery attempts are exhausted.</p>
+
+<p class="pagebreak-before less_space">Socially and emotionally speaking, there is likely to be some negative
+impact on SREs, who derive part of their professional identity from being able to
+figure things out on their own in high-pressure situations. That said,
+tool-supported investigations may still inspire the same feelings.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incidents" data-type="sect2"><div class="sect2" id="ch19_incidents">
+<h2>Incidents</h2>
+
+<p>Until full artificial general <a data-primary="AI dev" data-secondary="incident response issues" data-type="indexterm" id="id2715"/><a data-primary="incident response" data-secondary="increase in system complexity" data-type="indexterm" id="id2716"/>intelligence (AGI) is available, we expect
+that humans will remain necessary to both prevent and respond to software
+failures. The primary reason is that software failures are
+inherently unpredictable, and current token-prediction AI techniques do
+not work well on out-of-sample cases. The <a href="https://oreil.ly/DcwDk">unknown unknown category of
+incidents</a> will continue to exist in any system where either the
+software or its inputs are changing, and that’s doubly true when both
+are.</p>
+
+<p>Current-generation LLMs have a nonzero probability of hallucinating,
+especially in complex situations, and public-facing outages often demand
+a certain degree of human accountability and explainability regardless
+of the capabilities of automated systems.</p>
+
+<p>Incidents themselves are likely to take longer to resolve as well, since greater system complexity can result in longer and more complex causal
+chains. The old jokes about
+<a href="https://oreil.ly/Efoki">production
+outages being murder mysteries</a> imply that we are heading more toward
+the world of multiple suspects being involved than lone wolves. Systems that
+track production changes are therefore likely to become even more important.</p>
+
+<p>Another potential outcome is that incident response tools become
+so effective at resolving problems quickly that prevention efforts become underresourced. It’s also possible that if responding to failures becomes cheap enough, organizations may start to place less value on systemic prevention, which is relatively more difficult.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Skill Erosion" data-type="sect2"><div class="sect2" id="ch19_skill_erosion">
+<h2>Skill Erosion</h2>
+
+<p>Unexercised skills naturally lose <a data-primary="AI dev" data-secondary="skill erosion issues" data-type="indexterm" id="id2717"/><a data-primary="Wheel of Misfortune" data-secondary="skill erosion mitigation" data-type="indexterm" id="id2718"/>fluency and relevance over time: we
+practice the Wheel
+of Misfortune (see <a data-type="xref" href="ch05.html#ch05">Chapter 5</a>) for a reason. New debugging tools and more complex
+scenarios won’t change this.</p>
+
+<p>Similarly, we may struggle with the difficulties inherent in relying on a machine whose suggestions are right only some proportion of the
+time. It’s definitely easier to just press that button—but
+sometimes as a result, things fail catastrophically. This risk is
+amplified because SREs tend to deal with rare and exceptional events at
+the tail end of the probability distribution. Tools that provide useful
+answers only for common or moderately uncommon events are not necessarily that
+useful for those of us who have to deal regularly with highly unusual events.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability and Monitoring" data-type="sect2"><div class="sect2" id="ch19_observability_and_monitoring">
+<h2>Observability and Monitoring</h2>
+
+<p>A bright spot is<a data-primary="AI dev" data-secondary="observability issues" data-type="indexterm" id="id2719"/><a data-primary="observability" data-secondary="AI dev issues" data-type="indexterm" id="id2720"/> that the cost of introducing high-quality
+observability is likely to drop substantially. It’s already easier than ever to
+introduce new metrics in code and follow that through to collection, aggregation, display, and so on. However, we are likely to
+see two obvious downsides from this: first, a proliferation of metrics,
+aggregations, and dashboards; and second, duplication of those metrics,
+as AI dev systems are unlikely to consistently deduplicate metric generation at the source. Conversely, AI SRE is
+very likely to become the de facto observability layer on top of a set
+of ever-changing—possibly even dynamically generated—telemetry.</p>
+
+<p>The observability of AI systems themselves remains a hugely
+complex problem. Although it may well get better, there is still considerable work to do before we can reliably understand what agentic systems did, how they did it, and why. The <em>why</em> is, unfortunately, critical to establish for
+production changes, and without that context, the search space for debugging increases
+dramatically.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal Methods" data-type="sect2"><div class="sect2" id="ch19_formal_methods">
+<h2>Formal Methods</h2>
+
+<p>Another bright spot is that using formal methods<a data-primary="formal testing methods" data-secondary="reliability of" data-type="indexterm" id="id2721"/> to describe system
+behavior is becoming increasingly tractable and efficient. Systems that are constructed in this way can provide guarantees about certain aspects of their behavior, making them more reliable than systems that are not (although formal methods will still need to be complemented by comprehensive testing). We regard this as a very promising area and talk
+about it more in <a data-type="xref" href="ch14.html#ch14">Chapter 14</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Leadership and the Interpretation of Value" data-type="sect2"><div class="sect2" id="ch19_leadership_and_the_interpretation_of_value">
+<h2>Leadership and the Interpretation of Value</h2>
+
+<p>This harks back to <a data-primary="production" data-secondary="future role of SRE" data-type="indexterm" id="id2722"/><a data-primary="future of SRE" data-type="indexterm" id="id2723"/>questions of the social construction of value. To be
+clear, we see nothing that indicates to us that the job of running
+production is going to become less important or less difficult. But we do anticipate that SREs are going to be equipped with many
+more tools to do their jobs. It might well become impossible to do the
+job without those tools. Furthermore, while innovation is
+necessary, it seems unlikely that all of those tools can be
+successfully agentic, at least in the short term.</p>
+
+<p>However, we are practitioners, and we naturally have a strong bias
+toward valuing that activity. It is possible that as the work mix changes,
+and agentic SRE takes on more of the post-deployment activity, what we
+do may also change. For example, we have
+<a href="https://oreil.ly/mBz-j">previously likened</a>
+the role of the Google SRE to what the outside
+world calls a “staff engineer”: someone who is skilled with code but maintains a holistic view of the software and the teams that build and operate it. Perhaps the
+pre-deployment work of SREs will become even more important.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch19_conclusion">
+<h1>Conclusion</h1>
+
+<p>The way we make software is likely to continue to change, and the constraints that
+motivate how we do so are becoming less and less relevant. As a result,
+nonfunctional requirements in general, and specifically how SRE ends up
+fulfilling its traditional mission, are also likely to change.</p>
+
+<p>In the absence of AGI and perfect pull requests, the constraints
+of the production domain are likely here to stay. It is meaningful to
+push something to production. Every time you do so is an opportunity for
+the world model envisioned by the change to fail, and at the time of
+writing, AI dev does not have a great world model itself. AI SRE tooling
+may help with some of that, but there will be more (and more complex)
+unknown unknowns as the size of the complexity space grows exponentially along with the size of the codebase. Incidents are likely to be the front
+lines of this conflict, and it seems likely that even excellent-quality
+agents will be unable to completely avoid creating difficult-to-resolve
+problems—even our best teams struggle with that today. At the moment,
+humans as the understanders-of-last-resort is the best approach we have,
+even if we move from comprehension at the moment of creation to
+comprehension at the moment of failure.</p>
+
+<p class="fix_tracking">Just as the SDLC is now ripe for reworking, SRE itself is at a
+tipping point. The assumptions underlying much of our work are being
+invalidated, and the way forward is not yet fully clear. But we believe
+that certain things are not going to change—the constraints of
+production, in particular—and in a sense, AI SRE is assistance for
+what has always been very demanding work. If as a result we all become more
+like staff engineers—i.e., individuals with a holistic approach to a
+system, people who know it both broadly and deeply—and are still
+professionals steeped in software, we might even welcome that change.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2689"><sup><a href="ch19.html#id2689-marker">1</a></sup> Questions remain about how quickly the quality will improve, which domains it works well and poorly for, and the larger social and environmental effects that are likely to flow from all this; this chapter will not tackle them.</p><p data-type="footnote" id="id2691"><sup><a href="ch19.html#id2691-marker">2</a></sup> See section 7.1.2 in the <a href="https://oreil.ly/5vgH6">conference notes</a>.</p><p data-type="footnote" id="id2692"><sup><a href="ch19.html#id2692-marker">3</a></sup> Ironically, given its subsequent widespread adoption, Royce explicitly described the waterfall model as “risky and invit[ing] failure,” proposing several other features to mitigate the risks.</p><p data-type="footnote" id="id2702"><sup><a href="ch19.html#id2702-marker">4</a></sup> Royce argued this in the original <a href="https://oreil.ly/mR1ch">waterfall model paper</a>, for example.</p><p data-type="footnote" id="id2703"><sup><a href="ch19.html#id2703-marker">5</a></sup> The relationship might not be fully linear, but it seems unlikely that we’ll get lucky with it being sublinear.</p></div></div></section></body></html>

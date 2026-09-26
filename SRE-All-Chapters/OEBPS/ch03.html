@@ -1,0 +1,805 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Trends in Production</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 3. Trends in Production" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch03">
+<h1><span class="label">Chapter 3. </span>Trends in Production</h1>
+
+
+<p class="byline">By Derek Remund, Garrett Plasky, and Roman Seibel<br/>
+
+<span class="keep-together">with David Grizzanti, Faraz Khan, Nick Soda, Oleg Klyudt,</span> 
+<span class="keep-together">Pereira Braga,</span> Pim van Pelt, 
+<span class="keep-together">Saurabh Phaltane,</span> 
+<span class="keep-together">Garrett Holthaus, and Carmela Quinito</span></p>
+
+<p>When the first edition of this book was published in 2016, production
+infrastructure at Google differed significantly from that of other
+businesses. We provided an examination of production at Google and discussed trends appearing in the industry at large. Since
+then, concepts like pervasive containerization, user-centric
+observability, and universal production platforms have led to widespread
+fundamental changes in the table stakes for running modern software at
+scale.</p>
+
+<p>The timing of Google’s founding and its subsequent growth rate may have
+led the company to be a first mover in developing many technologies and
+patterns that have since become widely adopted, or at least accepted as
+useful methods. However, much of this sea change should be credited to
+the efforts of myriad engineers across industries and the globe.
+It’s worth recognizing that evolution, both as a checkpoint in how far
+we’ve come and as a bellwether of where we’re headed.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Cloud Computing Era" data-type="sect1"><div class="sect1" id="ch03_the_cloud_computing_era">
+<h1>The Cloud Computing Era</h1>
+
+<p>Cloud computing is<a data-primary="cloud computing" data-type="indexterm" id="cldcomp"/> here to stay; that much is certain. For organizations
+that have made the shift, cloud computing has eliminated traditional
+headaches like server procurement lead times, locally available energy, and the zero-sum negotiations for limited hardware
+resources. However, this transition from physical to logical constraints
+is not a panacea. Instead, it introduces new operational challenges,
+including the translation of capacity planning into financial
+engineering, the upward shift of abstraction boundaries via managed
+services, and the necessity of shared state.</p>
+
+<p>While the elasticity of the public cloud has enabled organizations to
+scale at a velocity that was previously infeasible, successfully
+navigating this paradigm shift requires more than just moving workloads;
+it requires adapting the core SRE toolkit to a world of variable costs
+and externalized control planes. Although Google predates cloud
+computing as we know it today, the organization has arguably had a cloud
+computing mindset from the beginning.</p>
+
+<p>The challenges of managing large, distributed systems are common across
+industries and verticals, even as the failure modes have changed—shifting
+from localized hardware faults to complex, emergent failures in shared
+state and global control planes. Despite this, the core SRE mission of
+ensuring reliable, scalable systems <a data-primary="cloud computing" data-startref="cldcomp" data-type="indexterm" id="id1103"/>remains the same.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Capacity Management 2.0" data-type="sect2"><div class="sect2" id="ch03_capacity_management_2_0">
+<h2>Capacity Management 2.0</h2>
+
+<p>The nature of <a data-primary="cloud computing" data-secondary="capacity management" data-type="indexterm" id="id1104"/><a data-primary="capacity management" data-type="indexterm" id="id1105"/><a data-primary="financial management, capacity planning" data-type="indexterm" id="id1106"/>capacity planning has evolved from a hardware procurement
+waterfall into a continuous exercise in financial engineering. Long-term
+planning is no longer about physical arrival dates but about judicious
+spending—ensuring just-in-time (JIT) elasticity for known spikes (such
+as Black Friday/Cyber Monday) rather than carrying idle capital
+expenditure (CapEx)<a data-primary="CapEx (capital expenditure)" data-type="indexterm" id="id1107"/> for the remaining 51 weeks of the year.</p>
+
+<p>Without careful management, organizations often find they have merely
+traded predictable CapEx for highly volatile <a data-primary="operating expenditure (OpEx)" data-type="indexterm" id="id1108"/><a data-primary="OpEx (operating expenditure)" data-type="indexterm" id="id1109"/>operating expenditure
+(OpEx). This has given rise to<a data-primary="FinOps (financial operations)" data-type="indexterm" id="id1110"/> FinOps,<sup><a data-type="noteref" href="ch03.html#id1111" id="id1111-marker">1</a></sup> a discipline that applies SRE concepts—such as automation and
+customer-centric monitoring—to the intersection of reliability,
+capacity, and cost. Within this framework, SREs manage capacity through
+explicit cost versus availability trade-offs, balancing the stability of
+long-term commitments against the high-discount but inherently ephemeral
+nature of spot instances.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Managed Services and Open Standards" data-type="sect2"><div class="sect2" id="ch03_managed_services_and_open_standards">
+<h2>Managed Services and Open Standards</h2>
+
+<p>The proliferation<a data-primary="cloud computing" data-secondary="managed services" data-type="indexterm" id="id1112"/><a data-primary="managed services" data-type="indexterm" id="id1113"/> of managed services—including but not limited to infrastructure as a service (IaaS), platform as a service (PaaS), function as a service (FaaS), and database as a service (DBaaS) offerings—has shifted the boundary of abstraction upward.
+SREs can now delegate the operational lifecycle of infrastructure
+primitives such as disk firmware, hypervisor patching, or base database
+engines to their cloud provider. This allows teams to refocus their
+engineering effort on higher-order reliability concerns, architectural
+robustness, and complex failure modes that are unique to their business
+logic.</p>
+
+<p>This acceleration is bolstered by <a data-primary="cloud computing" data-secondary="open standards" data-type="indexterm" id="cldcmp_opstnd"/><a data-primary="open standards" data-type="indexterm" id="opstnds"/>open standards like Kubernetes and
+OpenTelemetry, which have brought the industry closer to the “write
+once, run anywhere” dream. By adhering to these standards, SREs can
+mitigate some of the risks of vendor lock-in, maintaining the
+flexibility to move workloads across providers and products as cost or
+reliability requirements <a data-primary="cloud computing" data-secondary="open standards" data-startref="cldcmp_opstnd" data-type="indexterm" id="id1114"/><a data-primary="open standards" data-startref="opstnds" data-type="indexterm" id="id1115"/>shift.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shared State" data-type="sect2"><div class="sect2" id="ch03_shared_state">
+<h2>Shared State</h2>
+
+<p>Cloud native<a data-primary="cloud computing" data-secondary="shared state" data-type="indexterm" id="id1116"/><a data-primary="shared state" data-type="indexterm" id="id1117"/><a data-primary="troubleshooting" data-secondary="shared state" data-type="indexterm" id="id1118"/> necessitates a new mental model for troubleshooting: shared
+state. When a service<a data-primary="services" data-secondary="shared state" data-type="indexterm" id="id1119"/> fails, the immediate question is no longer just
+“What changed in my code?” but “Is it you or is it me?” Navigating
+this shift requires organizations to treat vendors as partners, where
+service level agreements (SLAs) are merely the starting point.
+Successful partnerships prioritize integrated operations, relying on
+shared context between organizations and their cloud providers. While
+the specifics of this partnership vary, shared state via
+customer-specific service health dashboards and integrated telemetry are
+just a few of the burgeoning trends. The cloud provider’s control plane
+effectively becomes an extension of the organizations’ own
+infrastructure, making transparency and state sharing—unnecessary in
+more traditional vendor relationships—more important.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure Trends" data-type="sect1"><div class="sect1" id="ch03_infrastructure_trends">
+<h1>Infrastructure Trends</h1>
+
+<p>A decade ago, <a data-primary="infrastructure" data-secondary="trends" data-type="indexterm" id="infrstr_trnds"/>production was a “virtual machine–first” world. While
+the industry was <a data-primary="VMs (virtual machines)" data-type="indexterm" id="id1120"/><a data-primary="virtual machines (VMs)" data-type="indexterm" id="id1121"/>beginning to consider containers, the primary unit of
+compute remained the virtual machine (VM)—often managed as a
+pet-like entity with a long lifespan.<sup><a data-type="noteref" href="ch03.html#id1122" id="id1122-marker">2</a></sup> Infrastructure
+was a rigid fortress. Provisioning was achieved through convoluted
+configuration management scripts that sought to bring order to a
+collection of discrete virtual boxes. Reliability was intrinsically tied
+to the health of these boxes and their connecting pipes—static firewalls
+and load balancers that required manual coordination.</p>
+
+<p>Consider the typical enterprise deployment of 2016: an application lived
+on a specific set of VMs, with storage locally attached or mapped via a
+complex storage area network (SAN). These were proprietary, vendor-specific subsystems run by specialized roles with limited functional
+overlap and a tendency to lack holistic ownership of the entire
+production system. Issues with network, storage, or
+compute required dedicated attention from people with the requisite
+skills. If the underlying hardware failed, the proverbial fortress
+crumbled. The operations engineer’s primary battle was against
+configuration drift and the fragility of long-lived, stateful instances, with rather basic tools for understanding and troubleshooting
+failures in low-observability environments.</p>
+
+<p>The last 10 years marked a fundamental transition from <em>server-centric</em>
+to <em>workload-centric</em> architectures. The rise of cloud computing enabled—or some may say necessitated—this transition. We moved away from the
+fortress model toward a more fluid, decomposed system, with the standard unit
+of production shifting from VMs toward containerized microservices and
+ephemeral functions. This was not just a change in packaging; it was a
+shift in the unit of reliability.</p>
+
+<p>This decade saw three critical architectural decouplings:</p>
+<dl>
+<dt>Compute abstraction</dt>
+<dd>
+<p>Orchestrators<a data-primary="compute abstraction" data-type="indexterm" id="id1123"/> moved the focus from “where the
+server is” to “what the workload needs.” Infrastructure became a
+(seemingly) elastic resource pool. For example, a modern streaming
+service no longer manages a video encoder server; it manages a pool of
+encoding tasks that burst across thousands of temporary containers that shrink or even disappear the moment the work is done or demand has
+declined, without manual intervention.</p>
+</dd>
+<dt>Storage-compute separation</dt>
+<dd>
+<p>The tether<a data-primary="storage-compute separation" data-type="indexterm" id="id1124"/> between processing power and
+data persistence broke. Traditional monolithic databases are increasingly being
+replaced by distributed, globally consistent systems, with widespread
+adoption of architectures where data lives independently of the engines
+that query it. Modern data warehouses exemplify this: you can scale your
+compute to scan a petabyte of data in seconds, then shut it down
+completely while the data remains cost-effectively deposited in an
+underlying object storage layer. This decoupling removed the
+preallocation tax that plagued earlier production systems, where
+engineers had to actively plan storage sizes for certain applications
+and battle underutilization and out-of-space scenarios that could
+paralyze entire services.</p>
+</dd>
+<dt>Software-defined connectivity</dt>
+<dd>
+<p>Networking <a data-primary="software-defined connectivity" data-type="indexterm" id="id1125"/>evolved from static
+IP-based routing to identity-driven and software-defined data planes.
+Advancements in kernel-level extensibility transformed the operating
+system from a black box into an instrumentable environment. High-scale
+platforms now use these advancements to perform sophisticated packet
+filtering and observability directly within the host’s privileged
+execution layer, allowing faster and more secure deployment cycles and
+avoiding the overhead of traditional networking stacks and dependency on
+vendor or OS-level patches while gaining centralized control. The
+network is no longer just “plumbing”; it is an active, observable, and
+policy-enforcing layer of the application itself.</p>
+</dd>
+</dl>
+
+<p>As we look to the coming years, we anticipate a further decoupling
+of the application from its execution environment. The industry is
+moving toward universal runtimes—portable, sandboxed, and highly efficient code that can run across a continuum of execution environments, from massive datacenters to personal devices and 
+<span class="keep-together">low-resource</span> edge hardware. This execution model relies on standardized interfaces for isolated compute with a minimal footprint, extending the principles and benefits of containers.</p>
+
+<p>This technological shift is being shaped by two emerging constraints:</p>
+<dl>
+<dt>Digital sovereignty</dt>
+<dd>
+<p>Workloads <a data-primary="digital sovereignty" data-type="indexterm" id="id1126"/>are increasingly subject to
+<em>geopatriation</em>—the dynamic <a data-primary="geopatriation" data-type="indexterm" id="id1127"/>partitioning of systems across regional
+zones to satisfy complex regulatory and residency requirements. For SRE,
+this means managing a fragmented global landscape where a single service
+might exist in 10 different jurisdictions, each with its own local
+compliance and residency requirements.</p>
+</dd>
+<dt>Autonomous self-optimization</dt>
+<dd>
+<p>We’re seeing <a data-primary="autonomous self-optimization" data-type="indexterm" id="id1128"/>the start of a move toward resource-aware systems, and we expect future production systems to utilize reasoning control loops
+to interpret high-level intent. Instead of an SRE consciously tuning a
+scaling policy, the system will balance application performance against
+real-time variables like energy availability and other unit economics. A
+system might automatically migrate nonurgent background tasks to a datacenter with abundant resources, or throttle performance to stay within a
+specific financial budget.</p>
+</dd>
+</dl>
+
+<p>For the next generation of SREs, the <a data-primary="infrastructure" data-secondary="trends" data-startref="infrstr_trnds" data-type="indexterm" id="id1129"/>challenge will shift from resource
+allocation to policy governance. The role is no longer about keeping the
+fortress standing but about defining the high-level constraints that
+allow a self-optimizing, geodistributed system to maintain its own
+equilibrium.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Evolution of Production Platforms" data-type="sect1"><div class="sect1" id="ch03_the_evolution_of_production_platforms">
+<h1>The Evolution of Production Platforms</h1>
+
+<p>Previously, the interface <a data-primary="production platforms" data-secondary="evolution" data-type="indexterm" id="id1130"/><a data-primary="platforms" data-seealso="production platforms" data-type="indexterm" id="id1131"/>between development and production was largely
+defined by human-mediated gates. Production was a protected territory,
+accessed primarily through ticket-based requests and manual handovers.
+Platforms, where they existed, were often fragmented collections of
+bespoke scripts and static documentation. To an engineer in 2010,
+provisioning a service often meant entering a request into a service
+desk queue and waiting days—or weeks—for a specialized operations team
+to manually configure a virtual slice of hardware.</p>
+
+<p>In that era, the platform was not a product developers could use to
+bring their features into production—that was a complex and lengthy process involving physical
+runbooks and serious operational friction. The operations-focused roles
+often functioned as a human bridge, manually compensating for the lack
+of standardized tooling to ensure that software survived the transition
+to production. This created a “wall of confusion” where developers
+understood the code and operators understood the environment, but
+neither had a unified view of the system’s health.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Rise of the Self-Service Ecosystem (2016–2026)" data-type="sect2"><div class="sect2" id="ch03_the_rise_of_the_self_service_ecosystem_2016_2026">
+<h2>The Rise of the Self-Service Ecosystem (2016–2026)</h2>
+
+<p>The subsequent decade saw the platform transform into a
+comprehensive system that could be used as a product that took inputs,
+such as (compiled) code and configuration instructions, and placed them
+into production environments. As systems grew in complexity, it became
+clear that “you build it, you run it” was unsustainable if every
+developer had to be an expert in the entire infrastructure stack. To
+combat this rising cognitive load, organizations moved toward
+internal developer platforms.</p>
+
+<p>This shift represented a <a data-primary="production platforms" data-secondary="evolution" data-tertiary="golden path" data-type="indexterm" id="id1132"/><a data-primary="golden path workflows" data-type="indexterm" id="id1133"/>move toward the <em>golden path</em>—a standardized,
+automated workflow that abstracts away underlying complexity while
+providing built-in safety, inherent documentation, and robustness to
+unintentional errors like typos or misspellings. Instead of a ticket,
+the developer’s primary interface became a self-service portal or a set
+of unified APIs. Consider the mental picture of a vending machine: the
+developer selects a preconfigured template (an operating system, a web
+server, a runtime environment, an application framework, and a database),
+and the platform dispenses a production-ready instance that
+includes monitoring, security logging, and backup policies by default.</p>
+
+<p>This era marked a shift in the unit of governance. We moved away from
+auditing individual human actions toward building systemic guardrails.
+Operational roles transformed into what we understand as the SRE role
+today and rescoped to platform architecture, focusing on embedding
+reliability and security directly into the shared substrate. By
+<em>shifting left</em> these operational concerns, platforms allowed
+developers to move faster without increasing the risk of a catastrophic
+failure. Reliability was no longer checked at the end of a release
+cycle; it became a baseline property of the platform itself.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Trend Toward Intent-Based Coordination Systems" data-type="sect2"><div class="sect2" id="ch03_trend_towards_intent_based_coordination_systems">
+<h2>The Trend Toward Intent-Based Coordination Systems</h2>
+
+<p>As we look<a data-primary="production platforms" data-secondary="evolution" data-tertiary="intent-based coordination" data-type="indexterm" id="prodplat_evolv_inbsd"/> toward the immediate horizon—the next few years after the
+publication of this book—we observe early movements to evolve the
+platform from a collection of “vending machine” services into a more
+integrated coordination layer. The industry is beginning to experiment
+with intent-based patterns, where the emphasis shifts from selecting
+specific implementation details to declaring a desired state. In this
+model, rather than manually configuring individual scaling policies or
+database types, an engineer might define broader objectives, such as
+latency targets for a specific region or strict budgetary constraints.
+The platform then reconciles these goals with the available
+infrastructure via mechanisms like tier selection, resource isolation,
+or workload migration and performance throttling.</p>
+
+<p class="less_space pagebreak-before">This transition is currently being shaped by three emerging areas of
+focus:</p>
+<dl>
+<dt>Adaptive signal filtering</dt>
+<dd>
+<p>To combat the <a data-primary="adaptive signal filtering" data-type="indexterm" id="id1134"/>overwhelming noise of
+modern telemetry, there is an increasing effort to move away from static
+dashboards toward interfaces that prioritize information based on the
+current operational context, like context-aware debuggers and analysis
+tools. The goal is to surface only the most critical signals of a
+system’s state required for human decision making at any given moment,
+and thus further minimize time to diagnosis.</p>
+</dd>
+<dt>Embedded regulatory logic</dt>
+<dd>
+<p>As the <a data-primary="embedded regulatory logic" data-type="indexterm" id="id1135"/><a data-primary="regulations" data-secondary="embedded regulatory logic" data-type="indexterm" id="id1136"/>global landscape fragments, future
+platforms are expected to incorporate compliance and data residency
+rules directly into the deployment workflow. This treats legal and
+geographic constraints not as an afterthought but as a foundational
+part of the system’s intent.</p>
+</dd>
+<dt>Resource and sustainability constraints</dt>
+<dd>
+<p>We see <a data-primary="resource constraints, platform evolution" data-type="indexterm" id="id1137"/><a data-primary="sustainability constraints" data-type="indexterm" id="id1138"/>an emerging trend
+where carbon intensity, energy costs, and availability are treated as
+primary engineering constraints. This suggests a future where platforms
+might assist in rebalancing workloads based on the availability of
+energy or shifting regional power costs.</p>
+</dd>
+</dl>
+
+<p>This suggests that the SRE role may soon evolve from building golden paths to
+defining the constraints and objective functions that guide the
+platform’s decision making—in other words, toward high-level policy governance. In this view, success is less about the
+uptime of individual components and more about the platform’s ability to
+maintain a stable equilibrium, balancing performance, cost, and
+compliance in an increasingly <a data-primary="production platforms" data-secondary="evolution" data-startref="prodplat_evolv_inbsd" data-tertiary="intent-based coordination" data-type="indexterm" id="id1139"/>variable global environment.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="From Components to Context" data-type="sect1"><div class="sect1" id="ch03_from_components_to_context">
+<h1>From Components to Context</h1>
+
+<p>The delegation of infrastructure to <a data-primary="cloud computing" data-secondary="shift of infrastructure to" data-type="indexterm" id="id1140"/>public cloud providers naturally
+changes the diagnostic surface area of a system. When the underlying
+primitives are no longer owned by the enterprise, the focus of
+observability shifts from the internal health of individual components
+to the observable interactions between distributed services. Successful
+organizations acknowledge this shift, pivoting the way they think about
+their observability tools, processes, and even culture.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Mythical Single Pane of Glass" data-type="sect2"><div class="sect2" id="ch03_the_mythical_single_pane_of_glass">
+<h2>The Mythical Single Pane of Glass</h2>
+
+<p>The “single pane of glass”—one tool <a data-primary="cloud computing" data-secondary="open standards" data-type="indexterm" id="id1141"/><a data-primary="open data standards" data-type="indexterm" id="id1142"/>to rule them all—continues to
+elude most organizations. The reality is that a multivendor,
+multicloud landscape necessitates multiple specialized views. The trend
+has shifted from finding a single tool to adopting open data standards
+such as OpenTelemetry that allow telemetry of all types to flow across
+various “panes of glass” without loss of context. However, these standards are still relatively new, and while they are helping make
+this problem easier to solve, a loss of context between platforms nevertheless
+persists.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Distributed Tracing as a Critical Primitive" data-type="sect2"><div class="sect2" id="ch03_distributed_tracing_as_a_critical_primitive">
+<h2>Distributed Tracing as a Critical Primitive</h2>
+
+<p>In a cloud native<a data-primary="cloud computing" data-secondary="distributed request tracing" data-type="indexterm" id="id1143"/><a data-primary="distributed request tracing" data-type="indexterm" id="id1144"/><a data-primary="observability" data-secondary="distributed request tracing" data-type="indexterm" id="id1145"/> world, even a simple three-tier application may see a
+single request flow through a dozen distinct service boundaries. As a
+result, distributed request tracing is becoming a foundational
+requirement rather than an advanced feature. Identifying what triggered
+a request to fail in such a distributed system is significantly more
+difficult without traces and context propagation.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Quality over Quantity" data-type="sect2"><div class="sect2" id="ch03_quality_over_quantity">
+<h2>Quality over Quantity</h2>
+
+<p>The ease of cloud-scale ingestion <a data-primary="observability" data-secondary="system health" data-type="indexterm" id="id1146"/><a data-primary="SLOs (service level objectives)" data-secondary="system health" data-type="indexterm" id="id1147"/><a data-primary="system health" data-type="indexterm" id="id1148"/>has led to a common pitfall: the
+assumption that a higher volume of metrics leads to better outcomes. As
+production systems grow more complex, in many ways the systems that
+monitor them have to as well. It’s easy for engineers to get lost in a sea
+of signals if they aren’t focused on a more holistic understanding of
+the system. Modern observability strategies therefore prioritize SLOs as the primary signal for system health,
+diving into more detailed metrics only as needed to diagnose an objective
+violation.</p>
+
+<p>While modern observability platforms have addressed
+throughput and storage challenges similarly to how cloud computing
+solved infrastructure scaling, the management of <a data-primary="high-cardinality data" data-type="indexterm" id="id1149"/><a data-primary="observability" data-secondary="high-cardinality data" data-type="indexterm" id="id1150"/>high-cardinality
+data<sup><a data-type="noteref" href="ch03.html#id1151" id="id1151-marker">3</a></sup> remains a critical discipline.
+Scaling time-series databases (TSDBs) has gotten easier, but unmanaged
+cardinality can lead to costly surprises, misunderstandings, and/or
+degraded user experiences, necessitating continued investment in these
+platforms.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Democratization of Access" data-type="sect2"><div class="sect2" id="ch03_democratization_of_access">
+<h2>Democratization of Access</h2>
+
+<p>Today, developers, product managers, and even business analysts can use
+the same telemetry to make informed <a data-primary="observability" data-secondary="value of open approach to" data-type="indexterm" id="id1152"/><a data-primary="cloud computing" data-secondary="observability, value of open approach to" data-type="indexterm" id="id1153"/>decisions. One could even say
+observability is in its democratization era, thanks in no small part to
+self-service platforms and cloud computing. Conversely, siloing access
+to telemetry continues to be a stubborn antipattern that has evolved
+from previous sociotechnical norms. Silos erected around
+observability data create an information asymmetry that typically
+leads to lower-performing teams. While risk-averse security policies may
+have necessitated these boundaries in the past, the ubiquity of modern
+identity-aware access controls allows for a more open approach to
+visibility without compromising security.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizations Rethinking Reliability" data-type="sect1"><div class="sect1" id="ch03_organizations_rethinking_reliability">
+<h1>Organizations Rethinking Reliability</h1>
+
+<p>For decades, the <a data-primary="metrics" data-secondary="defining reliability" data-type="indexterm" id="met_defrel"/>gravitational center of reliability in the traditional
+enterprise was the infrastructure itself. The prevailing philosophy was
+straightforward: if the servers were up, the network pipes were clear,
+and the databases were responding, then the system was reliable. We
+built massive redundancy into hardware layers, obsessed over “five
+nines” of component availability, and defined success by the uptime of
+individual boxes.</p>
+
+<p>As earlier sections have explored, this infrastructure-centric view is
+obsolete at best, actively harmful at worst. Enterprise organizations
+are accelerating away from focusing solely on the resilience of
+underlying infrastructure and toward measuring the quality of the actual
+user experience. This isn’t just a semantic adjustment; it’s a practical
+necessity driven by the complexity of modern distributed architectures
+(often simply due to the impacts of internet scale, not just arbitrary
+design decisions), and it has become the norm rather than the exception.
+Over the past decade, the call to evolve has been heeded.</p>
+
+<p>This shift in perspective demands a rigorous reevaluation of the
+metrics that organizations use to define reliability. Historically,
+reliability discussions in the enterprise were dominated by two acronyms
+inherited from the world <a data-primary="business continuity and disaster recovery (BC/DR) programs" data-type="indexterm" id="id1154"/><a data-primary="BC/DR (business continuity and disaster recovery) programs" data-type="indexterm" id="id1155"/>of business continuity and disaster recovery
+(BC/DR):</p>
+<dl>
+<dt>Recovery Time Objective (RTO)</dt>
+<dd>
+<p>How quickly <a data-primary="Recovery Time Objectives (RTOs)" data-type="indexterm" id="id1156"/><a data-primary="RTOs (Recovery Time Objectives)" data-type="indexterm" id="id1157"/>must the system be
+restored after a failure?</p>
+</dd>
+<dt>Recovery Point Objective (RPO)</dt>
+<dd>
+<p>How much <a data-primary="Recovery Point Objectives (RPOs)" data-type="indexterm" id="id1158"/><a data-primary="RPOs" data-see="Recovery Point Objectives" data-type="indexterm" id="id1159"/>data loss is acceptable
+during a failure?</p>
+</dd>
+</dl>
+
+<p>RTO and RPO are crucial metrics for catastrophic scenarios—if an entire
+datacenter is incinerated, you absolutely need to know your RPO.
+However, RTO and RPO are increasingly inadequate as primary indicators
+of operational reliability in modern software systems. These traditional
+metrics assume binary failure states: the system is either “up” or
+“down,” and “down” is a disaster requiring recovery. Modern
+distributed systems rarely fail in a binary fashion. They suffer from
+<em>gray failures</em>: temporary <a data-primary="binary failures" data-type="indexterm" id="id1160"/><a data-primary="gray failures" data-type="indexterm" id="id1161"/>degradation, high-percentile latency spikes,
+or brownouts where only specific functionality is impaired. RTO has no
+vocabulary for a system that is 30% slower for 10% of users.</p>
+
+<p>These older approaches are also reactive, not proactive. RTO is a
+stopwatch that only starts ticking once disaster has struck. It measures
+how good the organization is at firefighting. Modern SRE seeks to move
+left, using error budgets to manage risks before they become incidents
+that require recovery. To do this, we cannot rely on metrics that are
+divorced from user intent. RTO and RPO act as aggregate metrics for the
+business but give us little insight into whether we are meeting users’
+implicit and explicit expectations. They are often determined by history
+and organizational politics, rather than through the joint efforts of
+product, engineering, and operations teams.</p>
+
+<p>This transition is challenging. It requires SREs to deeply understand
+the business domain, collaborate closely with product owners to identify
+what actually matters to the user, and implement more sophisticated
+instrumentation. However, the payoff is immense. By aligning reliability
+metrics with user experience rather than infrastructure resilience, SRE
+teams can go beyond defending infrastructure and start defending the
+business value those systems are meant to provide. Organizations are
+waking up to this reality, and the trend is accelerating. The ability to
+measure and report on SLOs has become a <a data-primary="metrics" data-secondary="defining reliability" data-startref="met_defrel" data-type="indexterm" id="id1162"/>fundamental expectation of
+modern production platforms.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Google’s Production Environment" data-type="sect1"><div class="sect1" id="ch03_google_s_production_environment">
+<h1>Google’s Production Environment</h1>
+
+<p>When Google’s <a data-primary="infrastructure" data-secondary="Google production infrastructure" data-type="indexterm" id="infrs"/><a data-primary="Google" data-secondary="production infrastructure" data-type="indexterm" id="gogl_infrastr"/>production environment was originally designed, it was a
+radical departure from traditional hardware management. It treats a vast
+fleet of heterogeneous machines as a single, unified pool of compute
+resources. As shown in <a data-type="xref" href="#ch03_fig01">Figure 3-1</a>, at the heart of this warehouse-scale
+computer <a data-primary="Borg (cluster operating system)" data-type="indexterm" id="id1163"/><a data-primary="cluster operating systems, Borg" data-type="indexterm" id="id1164"/>is <em>Borg</em>,<sup><a data-type="noteref" href="ch03.html#id1165" id="id1165-marker">4</a></sup> a cluster operating
+system that abstracts away individual machines. Instead of dedicated
+hardware for specific tasks, Borg manages <em>jobs</em> composed of multiple
+<em>tasks</em> handling scheduling, resource allocation, and failure recovery
+automatically.</p>
+
+<p>This abstraction extends to storage and networking, where systems<a data-primary="Colossus (cluster-level file system)" data-type="indexterm" id="id1166"/><a data-primary="cluster-level file systems, Colossus" data-type="indexterm" id="id1167"/> like
+<em>Colossus</em><sup><a data-type="noteref" href="ch03.html#id1168" id="id1168-marker">5</a></sup> (a cluster-level filesystem) <a data-primary="Spanner (globally consistent database)" data-type="indexterm" id="id1169"/><a data-primary="databases, Spanner" data-type="indexterm" id="id1170"/>and <em>Spanner</em><sup><a data-type="noteref" href="ch03.html#id1171" id="id1171-marker">6</a></sup> (a globally consistent
+database) provide high-level APIs that mask the underlying complexity
+of physical disk failures and data replication across a globe-spanning
+network. To handle<a data-primary="Bigtable (distributed storage system)" data-type="indexterm" id="id1172"/><a data-primary="storage systems" data-type="indexterm" id="id1173"/> structured data at massive scale, Google employs
+<em>Bigtable</em>,<sup><a data-type="noteref" href="ch03.html#id1174" id="id1174-marker">7</a></sup> a distributed,
+multidimensional sorted map designed to handle petabytes of data across
+thousands of commodity servers with low latency. For large, immutable
+binary objects, engineers <a data-primary="Blobstore" data-type="indexterm" id="id1175"/>utilize <em>Blobstore</em>, which offers a simplified
+interface for storing and retrieving unstructured data—such as images or
+videos—by leveraging the underlying efficiency of the cluster’s storage
+layer.</p>
+
+<figure><div class="figure" id="ch03_fig01">
+<img alt="Diagram illustrating the core components of the Google storage stack, showing how Blobstore, Spanner, and Bigtable interact with Colossus for byte storage." src="assets/sre2_0301.png"/>
+<h6><span class="label">Figure 3-1. </span>Core components of the Google storage stack</h6>
+</div></figure>
+
+<p class="fix_tracking">To navigate this fluid environment, SREs rely on a robust
+service-oriented architecture<a data-primary="service-oriented architecture" data-type="indexterm" id="id1176"/> held together by a sophisticated
+networking stack. Because tasks can move between machines at any time,
+communication is standardized through<a data-primary="gRPC (language-agnostic data exchange)" data-type="indexterm" id="id1177"/><a data-primary="Protocol Buffers, language-agnostic data exchange" data-type="indexterm" id="id1178"/> <a href="https://grpc.io"><em>gRPC</em></a>
+and <a href="https://protobuf.dev"><em>Protocol Buffers</em></a>, ensuring
+efficient, language-agnostic data exchange. To maintain performance<a data-primary="Global Software Load Balancer (GSLB)" data-type="indexterm" id="id1179"/><a data-primary="GSLB (Global Software Load Balancer)" data-type="indexterm" id="id1180"/> at
+scale, the <em>Global Software Load Balancer</em> (GSLB)<sup><a data-type="noteref" href="ch03.html#id1181" id="id1181-marker">8</a></sup> directs traffic across three
+levels—geographic DNS, service level, and remote procedure call (RPC) level—ensuring that user
+requests are handled by the nearest available datacenter while
+preventing any single cluster from becoming overwhelmed.</p>
+
+<p>This infrastructure is supported <a data-primary="Piper" data-type="indexterm" id="id1182"/>by <em>Piper</em>,<sup><a data-type="noteref" href="ch03.html#id1183" id="id1183-marker">9</a></sup> a “monorepo” source code
+versioning system that emphasizes velocity and
+consistency. Engineers work from a shared codebase, where every change
+undergoes rigorous automated testing and peer review before deployment.
+Infrastructure and service configuration files are stored in Piper
+alongside the services’ source code, utilizing the
+infrastructure-as-code philosophy.<sup><a data-type="noteref" href="ch03.html#id1184" id="id1184-marker">10</a></sup></p>
+
+<p class="pagebreak-before less_space">Continuous integration pipelines<a data-primary="continuous integration pipelines" data-type="indexterm" id="id1185"/> utilize the massive compute power
+of the production clusters to run tests in parallel, often enabling
+push-on-green deployments. By combining this standardized development
+lifecycle with deep observability <a data-primary="Monarch" data-type="indexterm" id="id1186"/>through <em>Monarch</em>,<sup><a data-type="noteref" href="ch03.html#id1187" id="id1187-marker">11</a></sup> a planet-scale
+monitoring system, SREs can manage thousands of services with high
+reliability, treating individual hardware failures as routine events
+rather than emergencies.</p>
+
+<p>For a more detailed discussion of
+Google’s production
+infrastructure, see <a href="https://sre.google/sre-book/production-environment">Chapter 2 of the first edition of this book</a>. Here, we will focus
+on how Google production has evolved as a case study illustrating the
+trends we’ve described throughout this chapter. While the broader
+industry has rapidly adopted cloud computing and container orchestration
+over the last decade, Google’s own production environment has undergone
+a parallel, organic evolution. Many of the industry-wide trends—from the
+rise of internal developer platforms to the demands of digital
+sovereignty—are directly reflected<a data-primary="Google" data-secondary="production infrastructure" data-startref="gogl_infrastr" data-type="indexterm" id="id1188"/><a data-primary="infrastructure" data-secondary="Google production infrastructure" data-startref="infrs" data-type="indexterm" id="id1189"/> in the changing realities of
+operating systems at Google’s scale.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Platformization" data-type="sect2"><div class="sect2" id="ch03_platformization">
+<h2>Platformization</h2>
+
+<p>Much <a data-primary="Google" data-secondary="production infrastructure" data-tertiary="platformization" data-type="indexterm" id="id1190"/><a data-primary="platformization" data-type="indexterm" id="id1191"/>as the industry has shifted toward self-service ecosystems (<a data-type="xref" href="ch18.html#ch18">Chapter 18</a>), Google has largely moved away from bespoke
+architectures that differed from product to product. Today, the majority of Google production runs on standardized platforms. To
+overcome the limitations of managing a vast array of unique,
+disconnected systems, Google <a data-primary="P2020 Google platform program" data-type="indexterm" id="id1192"/>introduced <em>P2020</em>, a platform program that
+aims to bring together different siloed operations into standardized
+initiatives. By enforcing a consistent level of standards for critical
+functions like CI/CD and
+observability, P2020 creates common patterns that allow SREs to support
+a much greater number of systems than previously possible.</p>
+
+<p>Working hand-in-hand with these standards are platforms such <a data-primary="developer platform, Boq" data-type="indexterm" id="id1193"/><a data-primary="Boq (developer platform)" data-type="indexterm" id="id1194"/>as <em>Boq</em>,
+which acts as a comprehensive internal developer platform to automate
+the configuration and deployment of Borg applications. Boq covers the
+end-to-end server lifecycle, including service design, development,
+testing, and maintenance in production. By enforcing a strict set of
+conformance requirements for how to develop a service, it significantly
+speeds up development while rigorously adhering to established best
+practices.</p>
+
+<p>While gRPC and Protocol Buffers remain the foundational
+plumbing for these distributed microservices, platforms like Boq and
+P2020 abstract away this complexity by providing hooks for common operational concerns such as overload management, retries, and caching, providing the
+golden paths that allow developers to move faster without compromising
+reliability.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Digital Sovereignty and Embedded Compliance" data-type="sect2"><div class="sect2" id="ch03_digital_sovereignty_and_embedded_compliance">
+<h2>Digital Sovereignty and Embedded Compliance</h2>
+
+<p>The industry-wide trend toward <a data-primary="geopatriation" data-secondary="digital sovereignty" data-type="indexterm" id="id1195"/><a data-primary="regulations" data-secondary="digital sovereignty" data-type="indexterm" id="id1196"/><a data-primary="digital sovereignty" data-type="indexterm" id="id1197"/><a data-primary="compliance, trends" data-type="indexterm" id="id1198"/>geopatriation and strict regulatory
+compliance, including regulations such as the General Data Protection Regulation (GDPR), the
+Digital Services Act (DSA), the Digital Markets Act (DMA), and evolving
+<a href="https://oreil.ly/7thtc">sovereign cloud requirements</a>, has <a data-primary="sovereign cloud requirements" data-type="indexterm" id="id1199"/>necessitated substantial changes in how Google manages its
+production environments. These regulations demand not only strict
+physical and logical data separation but also enhanced auditing
+capabilities and stringent content moderation controls. To manage this,
+compliance has been shifted left directly into the deployment pipeline.</p>
+
+<p>Operations teams now rely heavily on policy-as-code and observability
+tools to help ensure that the legal and geographic constraints are
+treated as foundational system intent. The policy-as-code mechanisms
+automatically validate infrastructure definitions, and the observability
+tools monitor adherence to the policy frameworks. These adaptations are
+critical: they allow Google to demonstrate compliance while maintaining
+user trust and data integrity across services.</p>
+
+<p>Concurrently, the dissolution of traditional network boundaries has
+cemented identity as the primary security perimeter, leading to the widespread adoption of zero-trust architectures across systems, as described in Google’s
+<a href="https://oreil.ly/jh61E">BeyondCorp series of publications</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The AI Infrastructure Explosion" data-type="sect2"><div class="sect2" id="ch03_the_ai_infrastructure_explosion">
+<h2>The AI Infrastructure Explosion</h2>
+
+<p>Perhaps the most<a data-primary="AI (artificial intelligence)" data-secondary="integration into infrastructure" data-type="indexterm" id="ai_intinf"/><a data-primary="infrastructure" data-secondary="AI integration" data-type="indexterm" id="infrst_integr"/><a data-primary="production infrastructure" data-secondary="AI integration" data-type="indexterm" id="prodinf_aiintgrt"/> dramatic shift in modern production is the pervasive
+integration of artificial intelligence (<a data-type="xref" href="ch20.html#ch20">Chapter 20</a>). Driven by the
+unprecedented adoption of generative AI, Google’s infrastructure is
+managing unparalleled demand, processing over 3.2 quadrillion AI tokens per
+month across all of Google’s AI surfaces as of mid-2026. AI accelerator usage surged
+15× in a 24-month period, forcing datacenters to adapt to the rapid,
+multigenerational lifecycles of TPUs and GPUs while simultaneously
+preparing for a strategic pivot toward edge computing with Neural
+Processing Units (NPUs).<sup><a data-type="noteref" href="ch03.html#id1200" id="id1200-marker">12</a></sup></p>
+
+<p>Of course, AI is not just a workload <em>on</em> the infrastructure; it has
+become an operator <em>of</em> the infrastructure (<a data-type="xref" href="ch21.html#ch21">Chapter 21</a>). Google
+utilizes ML models to predict impending hardware failures via massive
+telemetry analysis, to optimize hardware resource allocation, and to
+detect zero-day exploits, while DeepMind AI continuously fine-tunes datacenter chiller units and server fan speeds to optimize energy
+efficiency<sup><a data-type="noteref" href="ch03.html#id1201" id="id1201-marker">13</a></sup>
+and
+reduce
+carbon footprints.<sup><a data-type="noteref" href="ch03.html#id1202" id="id1202-marker">14</a></sup></p>
+
+<p>Google’s production environment not only uses AI internally but also
+supports developing, deploying, and managing AI/ML models via our <a data-primary="AI (artificial intelligence)" data-secondary="production pipeline, stages" data-type="indexterm" id="ai_prodpip_stgs"/><a data-primary="production pipeline, AI" data-type="indexterm" id="id1203"/>AI
+production pipeline. This pipeline is crucial for efficiency and
+delivering AI-powered services. It has the following stages:</p>
+<dl>
+<dt>Data ingestion and processing</dt>
+<dd>
+<p>Robust<a data-primary="data ingestion" data-type="indexterm" id="id1204"/><a data-primary="data processing" data-type="indexterm" id="id1205"/> pipelines collect, cleanse,
+and transform diverse datasets for ML training. Data quality and volume
+are critical, requiring advanced validation, de-duplication, and feature
+engineering for petabytes of information.</p>
+</dd>
+<dt>Model training and experimentation</dt>
+<dd>
+<p>Leveraging<a data-primary="model training" data-type="indexterm" id="id1206"/> distributed
+computing, this stage uses frameworks like TensorFlow and JAX for
+training complex ML models. It involves iterative hyperparameter tuning,
+neural architecture search (e.g.,
+<a href="https://oreil.ly/ZEc6E">AutoML</a>), and A/B testing to optimize
+performance before deployment.</p>
+</dd>
+<dt>Model deployment and serving</dt>
+<dd>
+<p>Trained<a data-primary="model deployment" data-type="indexterm" id="id1207"/><a data-primary="deployments" data-secondary="models" data-type="indexterm" id="id1208"/> models are deployed using
+efficient infrastructure for low-latency predictions at scale. Key
+practices include model versioning, live A/B testing, and canary
+deployments to ensure reliability and minimal disruption.</p>
+</dd>
+<dt>Observability and maintenance</dt>
+<dd>
+<p>Continuous<a data-primary="observability" data-type="indexterm" id="id1209"/><a data-primary="maintenance" data-type="indexterm" id="id1210"/> monitoring of deployed AI
+models detects anomalies such as data drift or model decay. Automated
+systems trigger alerts and retraining, ensuring continuous accuracy and
+adaptability.</p>
+</dd>
+</dl>
+
+<p>These stages form the operational<a data-primary="AI (artificial intelligence)" data-secondary="integration into infrastructure" data-startref="ai_intinf" data-type="indexterm" id="id1211"/><a data-primary="infrastructure" data-secondary="AI integration" data-startref="infrst_integr" data-type="indexterm" id="id1212"/><a data-primary="production infrastructure" data-secondary="AI integration" data-startref="prodinf_aiintgrt" data-type="indexterm" id="id1213"/> backbone that allows Google to scale
+AI reliably from experimentation to production-ready.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch03_conclusion">
+<h1>Conclusion</h1>
+
+<p>The trends discussed in this chapter have played a part in supercharging
+technological evolution. Whether it’s intent-based control loops,
+internal developer platforms, pervasive observability, or proactive
+reliability risk management, production looks a lot different than it
+did just 10 short years ago. While some organizations are just getting
+started on their journey, many more have already evolved their
+production environments by embracing these trends.</p>
+
+<p>Faced with unique, but not dissimilar, challenges, many organizations
+have ultimately converged on common patterns to address the demands of
+scale, complexity, and continuous change. As with evolution (and production outages), it’s difficult to attribute this phenomenon to any single factor, but there are certainly elements—such
+as the first edition of this book—that played a significant part. This
+convergence, and ultimately this book, are the story of SRE’s second
+decade.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1111"><sup><a href="ch03.html#id1111-marker">1</a></sup> FinOps is an operational framework and cultural shift that brings technology, finance, and business together.</p><p data-type="footnote" id="id1122"><sup><a href="ch03.html#id1122-marker">2</a></sup> See Betsy Beyer et al., <a href="https://oreil.ly/ftqYs">“Invent More, Toil Less”</a>, <em>;login:</em> 41, no. 3 (2016): 44–48.</p><p data-type="footnote" id="id1151"><sup><a href="ch03.html#id1151-marker">3</a></sup> In observability, high-cardinality data refers to fields with a large and potentially unbounded number of unique values—such as distinct user or request IDs.</p><p data-type="footnote" id="id1165"><sup><a href="ch03.html#id1165-marker">4</a></sup> Abhishek Verma et al., <a href="https://oreil.ly/eBiRL">“Large-Scale Cluster Management at Google with Borg”</a>, in <em>Proceedings of the 10th European Conference on Computer Systems (EuroSys)</em>, 2015.</p><p data-type="footnote" id="id1168"><sup><a href="ch03.html#id1168-marker">5</a></sup> Eric Ma, <a href="https://oreil.ly/ZAFf3">“Colossus: Google’s Next-Generation Distributed File System”</a>, <em>SysTutorials</em>, November 29, 2012.</p><p data-type="footnote" id="id1171"><sup><a href="ch03.html#id1171-marker">6</a></sup> James C. Corbett  et al., <a href="https://oreil.ly/eXVRE">“Spanner: Google’s Globally-Distributed Database”</a>, <em>ACM Transactions on Computer Systems (TOCS)</em> 31, no. 3 (2013): 1–22.</p><p data-type="footnote" id="id1174"><sup><a href="ch03.html#id1174-marker">7</a></sup> Fay Chang et al., <a href="https://oreil.ly/i9Slo">“Bigtable: A Distributed Storage System for Structured Data”</a>, in <em>Proceedings of the 7th Symposium on Operating Systems Design and Implementation (OSDI)</em>, 2006.</p><p data-type="footnote" id="id1181"><sup><a href="ch03.html#id1181-marker">8</a></sup> Danielle E. Eisenbud et al., <a href="https://oreil.ly/wUsC7">“Maglev: A Fast and Reliable Software Network Load Balancer”</a>, in <em>Proceedings of the 13th USENIX Symposium on Networked Systems Design and Implementation (NSDI)</em>, 2016.</p><p data-type="footnote" id="id1183"><sup><a href="ch03.html#id1183-marker">9</a></sup> Rachel Potvin and Josh Levenberg, <a href="https://oreil.ly/4e4Dl">“Why Google Stores Billions of Lines of Code in a Single Repository”</a>, <em>Communications of the ACM</em> 59, no. 7 (2016): 78–87.</p><p data-type="footnote" id="id1184"><sup><a href="ch03.html#id1184-marker">10</a></sup> Kief Morris, <a class="orm:hideurl" href="https://www.oreilly.com/library/view/infrastructure-as-code/9781098114664/"><em>Infrastructure
+as Code</em></a>, 2nd ed. (O’Reilly, 2020).</p><p data-type="footnote" id="id1187"><sup><a href="ch03.html#id1187-marker">11</a></sup> Colin Adams et al., <a href="https://oreil.ly/j2xq7">“Monarch: Google’s Planet-Scale In-Memory Time Series Database”</a>, in <em>Proceedings of the VLDB Endowment</em>, 2020.</p><p data-type="footnote" id="id1200"><sup><a href="ch03.html#id1200-marker">12</a></sup> Parthasarathy Ranganathan and Amin Vahdat, <a href="https://oreil.ly/DKQX0">“Agile AI Architectures: A Fungible Data Center for the Intelligent Era”</a>, <em>Google Cloud Blog</em>, October 14, 2025.</p><p data-type="footnote" id="id1201"><sup><a href="ch03.html#id1201-marker">13</a></sup> Varun Mehra and Raiden Hasegawa, <a href="https://oreil.ly/ifQpo">“Supporting Power Grids with Demand Response at Google Data Centers”</a>, <em>Google Cloud Blog</em>, October 4, 2023.</p><p data-type="footnote" id="id1202"><sup><a href="ch03.html#id1202-marker">14</a></sup> Amin Vahdat and Jeff Dean, <a href="https://oreil.ly/oMxG9">“How Much Energy Does Google’s AI Use? We Did the Math”</a>, <em>Google Cloud Blog</em>, August 21, 2025.</p></div></div></section></body></html>

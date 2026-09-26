@@ -1,0 +1,3496 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>Designing for Resilience</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 17. Designing for Resilience" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch17">
+<h1><span class="label">Chapter 17. </span>Designing for Resilience</h1>
+
+
+<p class="byline">By Vitaliy Shipitsyn<br/>
+
+<span class="keep-together">with Christof Leng, Garrett Holthaus, and Kieran Broadfoot</span></p>
+
+<p>Resilience enhances reliability. <em>Reliability</em> is a system’s ability to
+consistently operate within designed norms, meeting both functional and
+nonfunctional requirements. <em>Resilience</em>, on <a data-primary="resilience" data-type="indexterm" id="resil"/>the other hand, is a system’s ability to detect and diagnose active failure patterns automatically or
+with the help of trained people or AI agents. A resilient system uses
+predefined response plans to reduce the impact of failures, even
+for novel failures that were not anticipated during system design.</p>
+
+<p>Resilience provides business continuity for the users who rely on your
+systems. A reliable system may consistently meet its SLO targets under
+normal conditions, but a resilient system maintains high levels of
+reliability in more adverse conditions. When a predefined response
+isn’t prepared, that alone might burn through your system’s error
+budgets. A lasting outage without a rebounding clean recovery can have
+an existential impact on business survivability. If you lose all of your
+users’ data and cannot restore it, this may put your entire business at
+risk.</p>
+
+<p>Your challenge is to anticipate unusual circumstances that stress
+systems beyond their original design expectations, testing their robustness. A system’s availability, security, integrity, or
+performance characteristics might fail—independently or
+simultaneously, partially or fully, for benign or malicious reasons. The
+open-ended nature of this challenge highlights that resilience is also
+about engendering flexibility in people, processes, and technologies
+that support your systems.</p>
+
+<p>In this chapter, we discuss a principled approach to understanding the
+failure modes that threaten the reliability of systems and designing
+resilience capabilities that support fulfilling user expectations. When
+you have a clear understanding of goals and risks, building mechanisms
+to control these risks becomes a structured engineering practice that adds durable resilience capabilities to complement, or gracefully extend,
+the reliability of your systems and teams.</p>
+
+<p>Resilience can be built into:</p>
+
+<ul>
+<li>
+<p>The <em>system itself</em>, so that it
+can automatically recover not only from unexpected failures but also
+from well-understood scenarios such as overload, failing dependencies, bad
+data, or parts of the system becoming unavailable</p>
+</li>
+<li>
+<p>The <em>operational workflows</em>
+supporting the system, so that on-callers are prepared for incident
+management, lending or borrowing expertise, and handling
+scenarios <em>not</em> fully covered by automated responses, such as rollbacks,
+drains, or 
+<span class="keep-together">throttling</span></p>
+</li>
+<li>
+<p>The <em>business continuity</em> of your
+organization’s mission, through defense-in-depth mechanisms</p>
+</li>
+</ul>
+
+<p>Of course, no one can anticipate and prepare for handling all failures.
+As you read, remember that every design choice you make is
+ultimately a cost-benefit trade-off—part of sustainable adaptability to
+changing conditions after considering the threat landscape for your
+systems, teams, and organizations.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Importance of Resilience" data-type="sect1"><div class="sect1" id="ch17_the_importance_of_resilience">
+<h1>The Importance of Resilience</h1>
+
+<p>Resilience is the ability to handle severe failures that warrant
+some form of response, whether technical or human-led, as conditions worsen.</p>
+
+<p>In practical terms, resilience means that failures are handled well enough that users do not experience a perceptible degradation of functionality, or, if degradation is unavoidable, the reduced functionality is clearly and unambiguously explained to the users.</p>
+
+<p>In technical terms, resilience means maintaining adequate service quality while the application or its
+underlying infrastructure is experiencing some type of failure, even if that failure was not anticipated<a data-primary="resilience" data-startref="resil" data-type="indexterm" id="id2427"/> during system design.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Emerging Reliability" data-type="sect2"><div class="sect2" id="ch17_emerging_reliability">
+<h2>Emerging Reliability</h2>
+
+<p>Let’s consider<a data-primary="resilience" data-secondary="compared to reliability" data-type="indexterm" id="resil_creliab"/> how resilience enhances reliability over system lifetime.</p>
+
+<p>Reliable systems deliver the promised reliability as long as the
+operating conditions are within designed or measured limits, but they could
+break outside those ranges (e.g., excessive traffic, invalid input,
+insufficient resources). You might discover or test some of the limits, for example
+with load testing or chaos engineering. <em>Resilient</em> systems,
+however, are prepared for conditions beyond the expected operating
+limits and tested to respond in a manner you define as appropriate.</p>
+
+<p>Designing for resilience is the practice of prioritizing failures,
+extrapolating to novel conditions or combinations of failures, reducing their
+impact, and demonstrating mitigations throughout the lifecycle of
+the system. When your findings and mitigations fuse into system designs,
+the system’s reliability grows, and you can <a data-primary="resilience" data-secondary="compared to reliability" data-startref="resil_creliab" data-type="indexterm" id="id2428"/>push the resilience frontier
+further.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Higher and Lower Probability" data-type="sect2"><div class="sect2" id="ch17_higher_and_lower_probability">
+<h2>Higher and Lower Probability</h2>
+
+<p>Resilience is actionable<a data-primary="resilience" data-secondary="investing in" data-type="indexterm" id="resil_invst"/> in three distinct ways: correctly and cost-effectively handling all
+higher-probability failures, prioritizing higher-impact (severity)
+failures first, and adequately handling the most impactful
+lower-probability failures. It can be tempting to focus on higher-probability
+failures and defer the lower-probability cases, but both require
+deliberate attention and commensurate investments.</p>
+
+<p>Every resilience improvement has a cost and a point at which its benefits are realized. If those benefits are highly unlikely to ever be realized, it may be difficult to justify investing heavily in the improvement.
+Let’s summarize how engineering investment often works in practice when what you want is less obvious than for higher-probability failures:</p>
+<dl>
+<dt>Lower-probability failures</dt>
+<dd>
+<p>Typically, reliability work in complex
+systems focuses on maximizing service availability at a high level of quality for an acceptable cost. For many organizations, a five-nines
+(99.999%) SLO is a practical upper limit (especially if users access the
+services through a lower-SLO system, such as the internet). Investing to
+close the remaining failures (~0.001%), especially when addressing them
+has a disproportionately high cost. Unfortunately, some of these failures
+could burn decades of error budget. If you don’t consider them at all, you may overlook even cheap solutions. You don’t always need the kind of
+high-quality solutions you design for higher-probability failures, but
+you should at least consider whether a low-cost mitigation—even if it only partially reduces the impact—is feasible.</p>
+</dd>
+<dt>Not worth the effort</dt>
+<dd>
+<p>After assessing low-probability and high-impact
+risks, you might conclude that any form of investment in them makes
+little sense because the available mitigation options don’t sufficiently
+reduce the risk. That may be the right conclusion. However, consider
+periodically revisiting these deferred risks to reassess new options in the ever-changing technical landscape.</p>
+</dd>
+</dl>
+
+<p>Importantly, investment in resilience may not always result in a
+technical implementation; instead, it might involve changes to processes or training
+for incident responders. In practice, teams design a range of solutions to handle specific failure classes and reduce the frequency and duration of outages. Resilience <a data-primary="resilience" data-secondary="improvement types" data-type="indexterm" id="id2429"/>improvements might be:</p>
+<dl>
+<dt>Manual</dt>
+<dd>
+<p>Reactive activities performed by people (or AI agents) for novel,
+complex, or infrequent failures or threats.</p>
+</dd>
+<dt>Automated</dt>
+<dd>
+<p>Reactive behaviors that are built into the system, correctly
+configured, and activated automatically to handle <em>recurring</em> failures that
+warrant investment in automation.</p>
+</dd>
+<dt>Architectural</dt>
+<dd>
+<p>Proactive changes that reduce or eliminate the need for
+reactive actions (automated or manual) by addressing<a data-primary="resilience" data-secondary="investing in" data-startref="resil_invst" data-type="indexterm" id="id2430"/> the underlying
+issue.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="User Expectations" data-type="sect2"><div class="sect2" id="ch17_user_expectations">
+<h2>User Expectations</h2>
+
+<p>When making design <a data-primary="resilience" data-secondary="user expectations" data-type="indexterm" id="id2431"/>decisions, remember that your system’s users
+(e.g., clients of servers, not only the end users of those clients) have
+reliability and resilience expectations, and they also want to easily understand and manage the actions the system expects of its users.<sup><a data-type="noteref" href="ch17.html#id2432" id="id2432-marker">1</a></sup> This means
+that <em>you</em> should understand those expectations and plan accordingly,
+weighing what’s required to meet them. Achieving this might necessitate cross-organizational work involving engineering, product, and sales
+teams. Ideally, you become the voice of the user, advocating for sound
+trade-offs within those teams and with leadership. This means you’ll need
+to be informed about the risks, which teams or technologies can help
+address them, how much to invest, and when to stop.</p>
+
+<p>With so much potential complexity to consider and manage, a principled
+approach is needed.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Google’s Principles for Reliability and Resilience" data-type="sect1"><div class="sect1" id="ch17_google_s_principles_for_reliability_and_resilience">
+<h1>Google’s Principles for Reliability and Resilience</h1>
+
+<p>Google SRE has formalized key
+lessons learned <a data-primary="Google" data-secondary="resilience and reliability principles" data-type="indexterm" id="gog_resilareliabprinc"/><a data-primary="resilience" data-secondary="principles" data-type="indexterm" id="resil_princ"/>(based on experience gained over the years) into a set of
+principles supporting reliability and resilience. These principles
+outline a high-level philosophy and provide essential definitions of what
+is expected from reliable and resilient systems.</p>
+
+<p>While the principles for <em>reliability</em> aim to provide reliable systems
+by assessing failures and controlling their impact on expected
+interactions, the principles for <em>resilience</em> aim to ensure reliable
+operation and recovery during failures outside the system’s design
+parameters. Think of the adaptability of on-call teams or compute
+resources to address capacity shortages during outages, the effectiveness
+and continuity of 
+<span class="keep-together">recovery</span> actions, preventing or limiting the duration
+of outages across multiple services, and controlling the risk of
+catastrophic loss to ensure business survivability.</p>
+
+<p>The principles cover:</p>
+<dl>
+<dt>Risk management</dt>
+<dd>
+<p>Having actionable data that provides situational
+and historical awareness about the health of systems and teams, and their
+capacity to handle failures and meet user demand</p>
+</dd>
+<dt>Change management</dt>
+<dd>
+<p>Balancing the velocity of system changes against
+their size to maintain control over system complexity and minimize
+potential disruption to users</p>
+</dd>
+<dt>Dependency management</dt>
+<dd>
+<p>Building system representations to help
+understand and control how systems depend on each other and work around
+failures</p>
+</dd>
+<dt>Failure domains</dt>
+<dd>
+<p>Deploying systems into independent failure domains
+to reduce the risk of global outages and enable recovery after failures affecting one or more domains</p>
+</dd>
+<dt>Overload management</dt>
+<dd>
+<p>Enabling systems to preserve the most valuable
+functionality during temporary or sustained excessive traffic and
+recover fully afterward</p>
+</dd>
+<dt>Input validation</dt>
+<dd>
+<p>Hardening how systems accept data from
+external sources</p>
+</dd>
+<dt>Data resilience</dt>
+<dd>
+<p>Protecting systems from corruption or loss of
+critical data, preventing system failures, and safeguarding users from
+data loss</p>
+</dd>
+<dt>Qualification</dt>
+<dd>
+<p>Expecting systems to validate their resilience
+properties under realistic conditions and in appropriate environments</p>
+</dd>
+<dt>Emergency mode</dt>
+<dd>
+<p>Ensuring systems and teams can maintain operational
+control and recover from failures during outages of core services and
+infrastructure</p>
+</dd>
+</dl>
+
+<p>We defined these principles because we wanted to focus our
+organization’s engineering energy. Through Google’s standardized
+production platform, compliance with many of the principles works by
+default. As a result, we were able to deprecate an ever-growing number of
+bespoke solutions and tools.</p>
+
+<p>A principles-based approach like Google’s can work for organizations of
+various sizes. You are in the best position to determine which risks
+matter most to your internal and external users, customers, or
+business partners. Use that understanding to influence your take on the
+principles.</p>
+
+<p>Defining your own set of principles (and
+supporting guidance) for resilience and reliability will enable you to focus more of your engineering
+effort on categorizing common risks, prioritizing them by impact, and
+selecting actionable remediation strategies. The following sections
+will help you understand <a data-primary="Google" data-secondary="resilience and reliability principles" data-startref="gog_resilareliabprinc" data-type="indexterm" id="id2433"/><a data-primary="resilience" data-secondary="principles" data-startref="resil_princ" data-type="indexterm" id="id2434"/>how to apply them.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Enforcement Through Technology" data-type="sect2"><div class="sect2" id="ch17_enforcement_through_technology">
+<h2>Enforcement Through Technology</h2>
+
+<p>Because resilience <a data-primary="resilience" data-secondary="principles" data-tertiary="ensuring conformity to" data-type="indexterm" id="resil_princ_conf"/>is everyone’s responsibility, these principles
+should be incorporated into the design of a system and throughout its
+lifecycle. The text of a policy or a standard will get you only so far.
+The resulting resilience should be made testable and validated wherever practical (see <a data-type="xref" href="ch14.html#ch14">Chapter 14</a>).</p>
+
+<p>You might be asking yourself, how do we ensure conformance to these
+principles? A simplistic answer is to define a rule to follow (a
+policy), then provide supporting instructions for how to do that (a
+standard). This kind of documentation is important, but it’s
+insufficient. The amount of awareness required to build a compliant
+service is likely to keep increasing. The constant evolution of
+technology and regulations, combined with shifting and conflicting goals
+and constraints, can contribute to cognitive overload for your engineers.</p>
+
+<p>Technological solutions can help keep resilience expectations—and the
+decisions made to resolve conflicts—organized and applied by default
+(where practical), ideally without a human in the loop. Adding
+measurements, platform defaults, and programmatic enforcement to support
+your policies helps make your resilience goals more tractable.</p>
+
+<p>At a very high level, you should:</p>
+<dl>
+<dt>Understand the risks.</dt>
+<dd>
+<p>Understand your reliability targets and error
+budgets, and assess how investments in resilience might affect your
+ability to stay within those limits. Consider what may help you avoid
+reaching those limits, and what solutions might be needed if they are exceeded.</p>
+</dd>
+<dt>Use common solutions.</dt>
+<dd>
+<p>Prioritize migrating to common solutions provided by your organization
+that offer desirable functionality out of the box.</p>
+</dd>
+<dt>Seek exceptions when common solutions aren’t sufficient.</dt>
+<dd>
+<p>If common solutions don’t support your system’s or team’s needs, seek
+exceptions from the standards and policy owners to implement a custom
+solution that meets their expectations. This covers impactful edge cases
+or novel situations where the better approach is a new approach or a
+variation of an existing solution.</p>
+</dd>
+<dt>Escalate remaining unacceptable risks.</dt>
+<dd>
+<p>If the cost of a solution substantially exceeds its potential rewards, escalate the issue to leadership so they can decide whether to accept the risk or prioritize additional engineering investment.</p>
+</dd>
+</dl>
+
+<p>When you can provide easy-to-use infrastructure and building blocks that
+seamlessly enforce the underlying principles, you get something much
+more effective and efficient, with<a data-primary="resilience" data-secondary="principles" data-tertiary="benefits" data-type="indexterm" id="id2435"/> benefits that are:</p>
+<dl>
+<dt>Durable</dt>
+<dd>
+<p>You’re probably familiar with the “superpower” of platforms—effective platforms hide technical complexity,
+offering users a smaller set of useful and safe controls.
+Even without a platform, defining and providing standalone solutions
+for the principles you’ve prioritized will improve the velocity and
+cost of achieving and maintaining conformance. To ensure durability, you
+must continue measuring the effectiveness of those solutions
+(e.g., through metrics such as usage, time to completion, and rates of
+complaints or praise) as feedback signals for ongoing investment.
+As your base of standalone solutions grows, you may eventually choose to
+build your own platform to host your reliability, resilience, and
+security practices.</p>
+</dd>
+<dt>Compounding</dt>
+<dd>
+<p>An organization’s production practices naturally
+evolve over time. When those practices are codified in technology,
+changes are less costly and less disruptive. Complete components or
+layers of the technical stack can be replaced safely, with excellent
+cost-benefit ratios. Contrast that with changing policies or instructions
+and waiting for people to notice, adjust their thinking, and go through a
+process of trial and error to reach a new steady state. Such changes are
+slower and reduce the cognitive capacity engineers have available for
+top-of-mind priorities—or, more realistically, the top-of-mind priorities
+perpetually delay your ability to effect policy changes.</p>
+</dd>
+</dl>
+
+<p>The concepts defined here are critical to keeping resilience agile.
+Threats emerge quickly, and their impact may be either tolerable or not
+deferrable. Therefore, the organizational capability  to make changes
+fast (both proactive and reactive) is also part of being resilient. Using
+technology can effectively build that flexibility into your
+organization’s resilience norms and practices. Implementing resilience
+expectations as code or procedures makes resilience durable,
+discoverable, and reusable for greater effect. Changes to these
+implementations can be rolled out quickly, while ensuring everyone learns
+about updates to familiar<a data-primary="resilience" data-secondary="principles" data-startref="resil_princ_conf" data-tertiary="ensuring conformity to" data-type="indexterm" id="id2436"/> procedures.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Role of Uniformity" data-type="sect2"><div class="sect2" id="ch17_the_role_of_uniformity">
+<h2>The Role of Uniformity</h2>
+
+<p>Solutions for <a data-primary="resilience" data-secondary="uniformity of tooling, standards, and policies" data-type="indexterm" id="id2437"/>resilience should be simple wherever possible. Complex
+plans or methods might work, but resilience <em>must</em> work. Simpler systems
+and interactions are easier to understand, build, verify, debug, and
+maintain.</p>
+
+<p>Uniformity can help reduce complexity. Increased uniformity of tooling,
+standards, and policies across production reduces cognitive load and improves cost efficiencies. However, forcing <a data-primary="standardization, effect on resilience" data-type="indexterm" id="id2438"/>standardization could
+undo those savings if it ignores the nuanced requirements of different
+applications. It’s important to recognize when a specific application
+requirement merits a bespoke solution, as well as to allow developer teams to
+compensate in bespoke ways.</p>
+
+<p>It takes intent to find and maintain the right level of uniformity. A
+combination of empathy and rigor is needed to eliminate unnecessary
+complexity without making developers’ lives unnecessarily hard. We
+recommend ongoing discussions on how the needs of different
+organizational units align, how organizational units converge on
+practices and tooling choices locally, and how lessons learned are
+shared globally.</p>
+
+<p>A related consideration <a data-primary="brownfield systems" data-secondary="uniformity with greenfield systems" data-type="indexterm" id="id2439"/><a data-primary="greenfield systems" data-secondary="uniformity with brownfield systems" data-type="indexterm" id="id2440"/>is the difference in uniformity between new
+(greenfield) and existing (brownfield) systems. With new systems, you
+have the opportunity to design and enable all applicable solutions before
+they go into production. Existing systems, however, must be changed
+carefully to adopt those same solutions, taking into account each
+system’s unique requirements, as well as the risks and costs of modifying
+production systems. With this in mind, you’ll need to choose your focus
+carefully. Making solutions easier to adopt in greenfield systems will
+limit the expansion of the number of brownfield systems that don’t have
+them. You can then focus on implementing solutions in the most critical
+brownfield systems first. The resulting simpler, more uniform production
+environment will deliver greater resilience at lower cost while helping
+your technical ecosystem become more reliable by default.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk Management" data-type="sect1"><div class="sect1" id="ch17_risk_management">
+<h1>Risk Management</h1>
+
+<p>Risk management can <a data-primary="risk management" data-type="indexterm" id="rskman"/><a data-primary="resilience" data-secondary="risk management" data-type="indexterm" id="resil_riskman"/>directly influence technical investment strategies.
+Clearly articulated risks help an organization determine which risks
+to prioritize, and teams and leadership play distinct roles in enabling
+effective and accurate comparisons between them. One key goal is
+assessing the probability and impact of risks, although this can be
+nonscientific and subjective. Another is assessing the feasibility
+and cost of robust and durable remediations.</p>
+
+<p>To help make risk decisions actionable, system designs should enable
+the collection of data about failures that have already happened or could
+happen. This data should be gathered across all systems and all layers of
+the production stack. Each part of the organization should contribute
+what it observes, using a common framework for expressing risk
+attributes. For example, methods such as STPA and CAST (discussed in
+<a data-type="xref" href="ch12.html#ch12">Chapter 12</a>) and Disaster Resilience Testing (discussed in
+<a data-type="xref" href="ch14.html#ch14_disaster_recovery_and_resilience">“Disaster Recovery and Resilience”</a>) provide structured ways for
+systems and teams to identify risks</p>
+
+<p>Armed with this data, the organization can decide whether to accept a
+given risk or invest in appropriate <a data-primary="risk management" data-startref="rskman" data-type="indexterm" id="id2441"/><a data-primary="resilience" data-secondary="risk management" data-startref="resil_riskman" data-type="indexterm" id="id2442"/>changes to  architecture, automation, or operational responses.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Role of Teams" data-type="sect2"><div class="sect2" id="ch17_the_role_of_teams">
+<h2>The Role of Teams</h2>
+
+<p>Teams need actionable<a data-primary="risk management" data-secondary="responsibilities of teams" data-type="indexterm" id="id2443"/><a data-primary="resilience" data-secondary="risk management" data-tertiary="responsibilities of teams" data-type="indexterm" id="id2444"/><a data-primary="teams" data-secondary="responsibilities for resilience" data-type="indexterm" id="id2445"/> data to make informed decisions on risks within
+the technical stack of the systems they develop or maintain. This is the
+<em>vertical</em> view of<a data-primary="vertical view of ecosystem risks" data-type="indexterm" id="id2446"/> the ecosystem risks. Risk-finding methodologies such
+as STPA and CAST uncover risks and shine light on patterns and
+opportunities, but that’s not <em>data</em>. Data is what
+lets us quantify our reliability and resilience posture or confirm risk
+hypotheses. It can serve as further input for those methodologies.</p>
+
+<p>For example, teams are expected to record the impact and contributing
+factors of outages and act on this data to ensure the
+expectations of end users, customers, or <a data-primary="outages" data-secondary="responsibilities of teams" data-type="indexterm" id="id2447"/>business partners are met.</p>
+
+<p>For consistent results:</p>
+
+<ul>
+<li>
+<p><em>Reactively</em>, teams should track resolution of contributing factors
+of outages, known architectural weaknesses, rate of change, efficiency
+of alerting and supervision, and system degradation before the
+degradation becomes user-visible.</p>
+</li>
+<li>
+<p><em>Proactively</em>, teams should focus on the criticality and cross-dependencies
+of components, system degradation from which full recovery may not be possible, and anything else that can lead to products being unable to
+restart after failure.</p>
+</li>
+</ul>
+
+<p>This data enables teams to adjust engineering investment based on cost
+versus risk, test coverage and results, demonstrated track record, and
+remaining error budgets, helping reduce or eliminate repeat outages
+and avoid or shorten novel outages.</p>
+
+<p>Teams are expected to take end-to-end responsibility for the resilience
+of all interactions by their systems. This includes how failures affect
+clients (users or other systems), operations, preparedness for recovery,
+and failure containment, in addition to the factors mentioned previously.
+Assessments must be proactive, especially for lower-probability,
+higher-impact failures with little or no observed history.</p>
+
+<p>If data shows that interactions between systems cause outages, the teams
+that own those systems must cooperate. Organizational leadership
+is responsible for identifying and addressing gaps in ownership and
+the bystander effect (when no one responds because everyone assumes
+someone else will).</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Role of Leadership" data-type="sect2"><div class="sect2" id="ch17_the_role_of_leadership">
+<h2>The Role of Leadership</h2>
+
+<p>The data from <a data-primary="risk management" data-secondary="responsibilities of leadership" data-type="indexterm" id="id2448"/><a data-primary="resilience" data-secondary="risk management" data-tertiary="responsibilities of leadership" data-type="indexterm" id="id2449"/><a data-primary="leadership, responsibilities for resilience" data-type="indexterm" id="id2450"/>individual teams can be recorded and aggregated across
+entire organizational areas, to enable broader analysis. As a result,
+standards and guidance can be developed (think back to uniformity),
+allowing teams to prioritize reliability and resilience issues using
+central guidance so their systems don’t lag behind minimum standards.
+The goal is to shape the local optimizations teams make to improve
+overall reliability and resilience. This<a data-primary="horizontal view of ecosystem risks" data-type="indexterm" id="id2451"/> is the <em>horizontal</em> view of the
+ecosystem risks.</p>
+
+<p>One example of central guidance is that observability data should be
+collected before, during, and after failures. The combined insights from
+this data cover the full failure lifecycle (from good state to bad state
+and back again), supporting analysis and helping meet the observability
+objectives described in <a data-type="xref" href="ch19.html#ch19_observability_and_monitoring">“Observability and Monitoring”</a>. This
+matters in production and during development. For example, you can use
+failure injection to observe system behavior both when it is introduced
+and when the failure is removed, after varying durations (see
+<a data-type="xref" href="ch14.html#ch14_fault_injection_testing">“Fault Injection Testing”</a>). The first part targets response to the
+failure, while the second part targets recovery after the failure—is
+recovery automated or manual, partial or complete, slow or fast? In
+addition, how closely does observability match the changes in behavior?
+It also allows you to observe whether the behavior is stable or varies
+with time (perhaps unexpected side effects kick in).</p>
+
+<p>When evaluating risk and performance horizontally across the
+organization, leadership should pose the same risk questions to all
+critical product, system, and development/ops teams. This can be done
+through any suitable means, such as making data queries, building novel
+observability data, or simply talking to individuals (e.g., technical
+leads or advisory boards). The answers, representing <em>new and actionable</em>
+data on reliability or resilience, can then become part of the
+organization’s aggregate knowledge (e.g., reports) presented to the
+relevant stakeholders.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Probabilities" data-type="sect2"><div class="sect2" id="ch17_probabilities">
+<h2>Probabilities</h2>
+
+<p>Accuracy in risk <a data-primary="risk management" data-secondary="failure probabilities" data-type="indexterm" id="rskman_failprob"/><a data-primary="resilience" data-secondary="risk management" data-tertiary="failure probabilities" data-type="indexterm" id="res_rskman_failprob_rskman"/><a data-primary="failure probabilities, risk management" data-type="indexterm" id="failprob_rskman"/>assessment can be quite challenging. The classic risk
+formula—multiplying likelihood by impact—doesn’t provide useful values
+when either probability or impact is very low. This is fine for
+low-impact failures, because mishandling them has a natural upper limit
+on consequences. But resilience is more concerned with the
+low-probability failures with high impact, because these failures can
+have consequences that affect business survivability (and most
+organizations target maximum survivability). Therefore, failure
+probability guides the design for resilience. This<a data-primary="cost-based view of ecosystem risks" data-type="indexterm" id="id2452"/> is the <em>cost-based</em>
+view of ecosystem risks.</p>
+
+<p class="fix_tracking">For high- and medium-probability failures, regardless of impact, we
+recommend developing and handling scenarios that are low cost to execute and
+maintain. These mitigations should be enabled by default or be trivial
+and safe to actuate manually. Start with failures that can be resolved
+easily, completely, and across the largest possible portion of your
+infrastructure. Self-healing practices are preferred, so that issues are
+resolved more quickly and engineers get paged less. Server throttling,
+rate limiting, and rollout blocks are examples of mechanisms that contain (limit) failures. Continuous probing of required behaviors against a server
+instance where all optional dependencies are disabled (via failure
+injection) is one way to validate resilient behaviors.</p>
+
+<p>For lower-probability failures with <em>low</em> impact, explicitly accept the
+risk—defer all work, but keep the items in your backlogs or risk
+registers.<sup><a data-type="noteref" href="ch17.html#id2453" id="id2453-marker">2</a></sup></p>
+
+<p>For lower-probability failures with <em>high</em> impact, we recommend a
+different strategy. First, prepare a plan for how you would handle such
+failures today. If you aren’t satisfied with the predicted outcome or the
+robustness of that plan, you have work to do. For each failure’s plan,
+estimate the costs of implementing a reliable solution. Then, you’re
+ready to define the order in which engineering should churn through them,
+and how many months or years it will take. Don’t try to put engineering
+solutions in place to remediate all risks right away; instead, focus on
+addressing a few risks fully first, then move on to the
+next-highest-value risks. Here’s a rough guideline to prioritize the
+risks, from highest to lowest:</p>
+<ol>
+<li>
+<p>Your system has already experienced the failure (e.g., accidentally
+deleting data).</p>
+</li>
+<li>
+<p>Your system hasn’t experienced the failure, but others have (e.g.,
+unrecoverable backups).</p>
+</li>
+<li>
+<p>No one in your organization has experienced the failure, but most recognize its realism
+(e.g., in-flight data corruption).</p>
+</li>
+<li>
+<p>All the rest (known unknowns).</p>
+</li>
+
+</ol>
+
+<p>All scenarios (plans and behaviors) need regular testing. For more
+information on appropriate methods, refer to <a data-type="xref" href="ch14.html#ch14">Chapter 14</a>.</p>
+
+<p>In summary, risk management should “shift left” the key decisions needed
+to deliver the appropriate amount of resilience, moving them toward the
+earlier stages of the software development lifecycle. This can be done by
+using a combination of data about risks and performance in the face of
+failures, fed through distributed teams to central leadership, and
+prioritized by probability, impact, and<a data-primary="risk management" data-secondary="failure probabilities" data-startref="rskman_failprob" data-type="indexterm" id="id2454"/><a data-primary="resilience" data-secondary="risk management" data-startref="res_rskman_failprob_rskman" data-tertiary="failure probabilities" data-type="indexterm" id="id2455"/><a data-primary="failure probabilities, risk management" data-startref="failprob_rskman" data-type="indexterm" id="id2456"/> engineering feasibility.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Change Management" data-type="sect1"><div class="sect1" id="ch17_change_management">
+<h1>Change Management</h1>
+
+<p>While necessary,<a data-primary="risk management" data-secondary="change management" data-type="indexterm" id="rskman_chngman"/><a data-primary="resilience" data-secondary="change management" data-type="indexterm" id="res_chngman"/><a data-primary="change management" data-secondary="risk management" data-type="indexterm" id="chngman_rskman"/> technology changes are a continuous source of risk. The
+larger the scope of a change, the larger the area potentially affected,
+necessitating greater safety considerations before, during, and after
+the change. In addition, changes compound across all systems, teams, and
+workflows involved in production and operations.</p>
+
+<p>Google avoids changing too many things in production too quickly. This
+includes making a single update to too many components and making
+multiple updates to the same component. The core issue is the tension
+between the need for development velocity and the need for
+understandable, manageable systems. As systems are becoming more complex
+and evolving more rapidly, especially in the AI era, the following points
+are becoming increasingly evident:</p>
+<dl>
+<dt>Velocity is crucial.</dt>
+<dd>
+<p>Rapid development is essential to keep pace
+with the demands of the business and to respond to failures.</p>
+</dd>
+<dt>Small changes are necessary.</dt>
+<dd>
+<p>Changes must be small and
+manageable to allow for easier reasoning about the system’s behavior,
+especially when the complexity of interactions between systems grows
+superlinearly.</p>
+</dd>
+<dt>Balance is key.</dt>
+<dd>
+<p>If changes are too small, the rate of development
+slows. If changes are too large, the impact on systems becomes too
+complex to reason about, leading to reliability issues.</p>
+</dd>
+</dl>
+
+<p>Google’s change management policies and standards help engineers
+understand and manage the risks inherent to changes of any scale. In this
+section, we’ll cover some practices that build resilience to changes
+throughout<a data-primary="risk management" data-secondary="change management" data-startref="rskman_chngman" data-type="indexterm" id="id2457"/><a data-primary="resilience" data-secondary="change management" data-startref="res_chngman" data-type="indexterm" id="id2458"/><a data-primary="change management" data-secondary="risk management" data-startref="chngman_rskman" data-type="indexterm" id="id2459"/> a system’s lifecycle.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Progressive Rollout" data-type="sect2"><div class="sect2" id="ch17_progressive_rollout">
+<h2>Progressive Rollout</h2>
+
+<p>Changes of all <a data-primary="risk management" data-secondary="change management" data-tertiary="progressive rollouts" data-type="indexterm" id="rskman_chngman_progrol"/><a data-primary="resilience" data-secondary="change management" data-tertiary="progressive rollouts" data-type="indexterm" id="res_chngman_progrol"/><a data-primary="change management" data-secondary="risk management" data-tertiary="progressive rollouts" data-type="indexterm" id="chngman_rskman_progrol"/>types (e.g., to binaries, data, or configuration, or when
+running experiments) should be made with progressively increasing scope
+and at rates that allow for failure detection in the earliest rollout
+phases. Detection must occur early enough to mitigate impact and
+establish confidence that SLOs won’t be affected in the subsequent
+rollout phases. A simple goal here is to identify unexpected behaviors
+before they can affect a large proportion of serving capacity and burn an uncomfortable portion of the error budget.</p>
+
+<p>Changes to data <a data-primary="data management" data-secondary="change management" data-type="indexterm" id="id2460"/>used across multiple failure domains contain a special
+risk. This category of risk includes global data, where there’s the expectation of
+consistency in every failure domain, and therefore changes must
+be made in multiple places at once. Global data must be specifically
+identified, and progressive rollouts shouldn’t be skipped for either the
+data itself or the systems serving it. For example, consider using
+versioning for database schema and metadata changes, with activation by
+fast data pushes.</p>
+
+<p>When dealing with globally consistent <em>bad</em> data, the probability of
+failures increases in inverse proportion to the time allocated for change
+supervision (covered in <a data-type="xref" data-xrefstyle="select:nopage" href="#ch17_change_supervision">“Change Supervision”</a>). To compensate for
+this probability, clients of global data should improve their resilience
+when handling both expected and unexpected bad data, in a fail-open or
+fail-closed mode as appropriate for the<a data-primary="risk management" data-secondary="change management" data-startref="rskman_chngman_progrol" data-tertiary="progressive rollouts" data-type="indexterm" id="id2461"/><a data-primary="resilience" data-secondary="change management" data-startref="res_chngman_progrol" data-tertiary="progressive rollouts" data-type="indexterm" id="id2462"/><a data-primary="change management" data-secondary="risk management" data-startref="chngman_rskman_progrol" data-tertiary="progressive rollouts" data-type="indexterm" id="id2463"/> use case. We cover this in
+<a data-type="xref" href="#ch17_input_validation">“Input Validation”</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Change Concurrency" data-type="sect2"><div class="sect2" id="ch17_change_concurrency">
+<h2>Change Concurrency</h2>
+
+<p>Avoid making multiple <a data-primary="risk management" data-secondary="change management" data-tertiary="multiple changes" data-type="indexterm" id="id2464"/><a data-primary="resilience" data-secondary="change management" data-tertiary="multiple changes" data-type="indexterm" id="id2465"/><a data-primary="change management" data-secondary="risk management" data-tertiary="multiple changes" data-type="indexterm" id="id2466"/>changes in a single rollout until they have
+been proven safe individually. For example, updating the binary and
+the data used by a system are better done independently, as otherwise it
+might not be clear which change caused the system to behave unexpectedly.
+Also, don’t start to update your system in multiple zones at the same
+time; instead, update only one zone in the first stage of your
+progressive rollout. Wait for subsequent stages to update two zones at
+the same time, then more than two.</p>
+
+<p>Any time we change multiple behaviors in a system at the same time, we
+increase the time, cost, and risk of undoing those changes if necessary.
+When the effects and side effects of multiple changes interact, failures
+may take more time to materialize, compound (making the eventual outage
+worse), and be harder to trace back to the changes responsible for them.</p>
+
+<p>In complex environments like Google’s, changes can be happening in
+multiple layers of the production stack at the same time. When it’s not
+possible to serialize all changes, and you’re forced to parallelize
+changes during a time window, you should avoid changing components that
+interact with each other. For example, while you are updating an
+application’s server code, avoid updating the application’s clients or
+database schema. However, it might be okay to update the network firmware
+or OS packages of that application’s node. Always serialize changes to
+the interactions between the application’s client code and server code.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Change Supervision" data-type="sect2"><div class="sect2" id="ch17_change_supervision">
+<h2>Change Supervision</h2>
+
+<p>Changes should be <a data-primary="risk management" data-secondary="change management" data-tertiary="supervision" data-type="indexterm" id="rskman_chngman_supv"/><a data-primary="resilience" data-secondary="change management" data-tertiary="supervision" data-type="indexterm" id="res_chngman_supv"/><a data-primary="change management" data-secondary="risk management" data-tertiary="change supervision" data-type="indexterm" id="chngman_rskman_supv"/>supervised (e.g., using automated guardrails) to detect
+unexpected behaviors introduced to the system, using end-to-end
+observability signals as close as practical to the system’s end users.
+Google’s Canary Analysis Service (CAS) can automatically monitor the
+health of each replica undergoing a change and wait to mark the updated
+version as live until multiple replicas (canaries) demonstrate the
+change is safe. For example, CAS will use observability metrics, many of
+which are already engineered into Google’s production platforms, for
+CPU/memory usage growth, errors/exceptions, process crashes, prober
+results, etc. A simpler solution is having monitoring alerts reference a
+playbook describing how to pause the rollout, investigate whether alerts
+are related to the change, and resume or roll back.</p>
+
+<p>You might want stronger supervision for systems in the highest
+criticality tier, such as infrastructure providers or any systems that
+are required dependencies for many other systems. It’s good practice to
+understand and observe the health metrics of higher-level clients
+(clients of the dependents of the changing system). Practically, even
+though your system looks healthy during a rollout, failures in multiple
+systems that interact with yours can give sufficient justification to
+pause and investigate. To codify this supervision, you could include
+health signals from the <a data-primary="risk management" data-secondary="change management" data-startref="rskman_chngman_supv" data-tertiary="supervision" data-type="indexterm" id="id2467"/><a data-primary="resilience" data-secondary="change management" data-startref="res_chngman_supv" data-tertiary="supervision" data-type="indexterm" id="id2468"/><a data-primary="change management" data-secondary="risk management" data-startref="chngman_rskman_supv" data-tertiary="change supervision" data-type="indexterm" id="id2469"/>dependents as a signal of your system’s health.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Safe Mitigations" data-type="sect2"><div class="sect2" id="ch17_safe_mitigations">
+<h2>Safe Mitigations</h2>
+
+<p>Teams should know <a data-primary="risk management" data-secondary="change management" data-tertiary="reverting changes" data-type="indexterm" id="rskman_chngman_rev"/><a data-primary="resilience" data-secondary="change management" data-tertiary="reverting changes" data-type="indexterm" id="res_chngman_rev"/><a data-primary="change management" data-secondary="risk management" data-tertiary="reverting changes" data-type="indexterm" id="chngman_rskman_rev"/><a data-primary="mitigations" data-secondary="reverting system changes" data-type="indexterm" id="mit_revsyschng"/>what changed in their system and be able to safely
+revert those changes, using generic or specific mitigations. Some
+<a href="https://oreil.ly/F334I">generic
+mitigations</a> are:</p>
+<dl>
+<dt>Drain</dt>
+<dd>
+<p>Move traffic to other places not showing signs of failure.</p>
+</dd>
+<dt>Roll back</dt>
+<dd>
+<p>Revert your system to a known-good state. Most commonly,
+this is your binary (e.g. , if there’s a bug in the code) or your data (e.g., if pipelines
+built new data incorrectly).</p>
+</dd>
+<dt>Upsize</dt>
+<dd>
+<p>Manage overload or higher serving costs by adding more capacity (e.g.,
+replicas, quotas). This can be expensive and temporary, to buy time for more
+permanent solutions to scale the system.</p>
+</dd>
+<dt>Degrade</dt>
+<dd>
+<p>Manage overload or other specific conditions by reducing
+functionality to stay up rather than crash.</p>
+</dd>
+<dt>Block</dt>
+<dd>
+<p>If you encounter a new “query of death” that consumes excessive
+resources, or any other client behavior that affects the entire system,
+have a mechanism to block it.</p>
+</dd>
+</dl>
+
+<p>Using a rollback to revert your system can be a preferable safe mitigation
+(for binaries, configuration, and data), because you have higher
+confidence that the previous version will still work (although that’s not
+always true, for example if the new logic has already changed data in a
+way that’s incompatible with the old logic). If a rollback isn’t helping
+(e.g., because the old state can’t be made valid anymore), being
+prepared to safely complete a roll forward is prudent, too.</p>
+
+<p>You should establish processes to ensure that relevant mitigations are available when needed, routinely tested to work correctly (i.e., make
+the expected change without unintended side effects), and practiced to
+ensure people know how to use them and feel comfortable activating them.
+For example, you may think you can do a rollback but discover
+during an outage that you can’t. Practice and validate ahead of time.</p>
+
+<p>Finally, mitigations should still comply with all change management
+principles: progressive rollouts, concurrency, and supervision. If your
+system state was changed such that the rollback only creates a new
+broken state, help yourself<a data-primary="risk management" data-secondary="change management" data-startref="rskman_chngman_rev" data-tertiary="reverting changes" data-type="indexterm" id="id2470"/><a data-primary="resilience" data-secondary="change management" data-startref="res_chngman_rev" data-tertiary="reverting changes" data-type="indexterm" id="id2471"/><a data-primary="change management" data-secondary="risk management" data-startref="chngman_rskman_rev" data-tertiary="reverting changes" data-type="indexterm" id="id2472"/><a data-primary="mitigations" data-secondary="reverting system changes" data-startref="mit_revsyschng" data-type="indexterm" id="id2473"/> catch that early.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk Tolerance" data-type="sect2"><div class="sect2" id="ch17_risk_tolerance">
+<h2>Risk Tolerance</h2>
+
+<p>There may be <a data-primary="risk management" data-secondary="change management" data-tertiary="risk sensitivity" data-type="indexterm" id="id2474"/><a data-primary="resilience" data-secondary="change management" data-tertiary="risk sensitivity" data-type="indexterm" id="id2475"/><a data-primary="change management" data-secondary="risk management" data-tertiary="risk sensitivity" data-type="indexterm" id="id2476"/>times when your system or organization has unusually low
+risk tolerance. Changes during these sensitive times require additional
+scrutiny. Before an important event, you might want to reduce the rate
+of changes or increase supervision to lessen the probability of an outage. Strategies might include more change progressiveness, less
+change concurrency, and postponing changes. Which systems are affected,
+for how long, and to what extent all depend on the situation.</p>
+
+<p>Due to heightened sensitivity and the potential for outages, Google has
+defined and regularly activates operational periods that allow only
+minimal production changes. During these periods, nonessential code
+deployments to production systems are paused, to ensure stability and
+reliability. Several intermediate levels have also been defined to
+accommodate less sensitive and more routine production situations. Here’s
+a brief summary of the levels:</p>
+<dl>
+<dt>Normal sensitivity</dt>
+<dd>
+<p>Proceed with feature development and rollouts
+according to standard production practices.</p>
+</dd>
+<dt>Medium sensitivity</dt>
+<dd>
+<p>Proceed as usual with routine builds and
+rollouts, but postpone changes deemed high risk by the team.</p>
+</dd>
+<dt>High sensitivity</dt>
+<dd>
+<p>Reduce rollouts to only change types considered
+low-scope or high-value: break fixes, routine quota changes,
+location-isolated infrastructure turnups, or critical security fixes.</p>
+</dd>
+<dt>Highest sensitivity</dt>
+<dd>
+<p>Pause all elective production changes and any
+in-flight rollouts; only break fixes and critical security fixes may
+continue.</p>
+</dd>
+</dl>
+
+<p>You could develop and follow a similar practice to apply, for example,
+during high-traffic holiday periods when staff levels are lower, or when
+your company is preparing for an important launch and wants to minimize
+the possibility of disruptions.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Defense in Depth" data-type="sect2"><div class="sect2" id="ch17_defense_in_depth">
+<h2>Defense in Depth</h2>
+
+<p>As a general <a data-primary="risk management" data-secondary="change management" data-tertiary="defense in depth" data-type="indexterm" id="id2477"/><a data-primary="resilience" data-secondary="change management" data-tertiary="defense in depth" data-type="indexterm" id="id2478"/><a data-primary="change management" data-secondary="risk management" data-tertiary="defense in depth" data-type="indexterm" id="id2479"/><a data-primary="defense in depth" data-type="indexterm" id="id2480"/>principle, problems should be detected as early as possible
+throughout the software development lifecycle and during change
+management. Ideally, you would want all changes to production, manual
+and automated, to be implemented so that they can be proactively blocked
+when unforeseen extraordinary circumstances warrant it. Remember that
+for any breaking change that is caught by tests and blocked from rolling
+out, or detected by the application during a data push, your application
+shows resilience by avoiding the need for incident responders to apply
+mitigations. We can offer two examples of Google’s approaches: feature flags and emergency stops.</p>
+
+<p>A <em>feature flag</em> is a coding practice where changes with potentially
+high impact are fully implemented but disabled until a configuration
+flag is changed from the default “disabled” to “enabled.” This can
+be used when introducing incompatible behaviors or changes to global
+data or systems that generate such data. This solution makes the
+rollback a matter of a simple configuration change, without concurrent
+unrelated changes. Feature flags generally have
+fewer dependencies than a binary rollback: they don’t require fetching
+binaries, modifying the filesystem, or rebuilding containers. If
+disabling a behavior is safe, using feature flags can shorten outages.
+For maximum value, developers should consistently follow the guidance
+for adequately implementing them (e.g., including feature flags
+for all current features and maintaining flag hygiene, so flags are
+easy to reason about and use safely).</p>
+
+<p>An <em>emergency stop</em> tells the system to stop its activities or to change
+its behaviors, in some predefined and inherently safe ways. That safety is
+necessary for reliability, but it also plays into psychological safety
+when deciding to activate a mitigation. For example, Google has a system
+that updates the kernel and firmware on machines. It’s possible to pause
+changes to some or all machines if we’re seeing unexpected behaviors and
+don’t yet understand the contributing factors. Because activating this
+emergency stop can be highly visible, people need confidence that it
+won’t introduce new failures and that the rollout can be resumed if
+another more critical migration is being delayed.</p>
+
+<p>In summary, a set of independent systems should monitor the overall
+health of a system’s software stack and its runtime environment, slowing
+down or stopping ongoing changes if disruptions are detected. Signals
+from the system’s clients can provide situational awareness that helps
+assess the health of systems undergoing change. If you can alert when
+more outages are being declared compared to a recent baseline, teams can
+be proactively prompted to look for contributing factors outside their
+systems, making incident response more effective.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Dependency Management" data-type="sect1"><div class="sect1" id="ch17_dependency_management">
+<h1>Dependency Management</h1>
+
+<p>Dependency management<a data-primary="risk management" data-secondary="dependency management" data-type="indexterm" id="id2481"/><a data-primary="resilience" data-secondary="dependency management" data-type="indexterm" id="id2482"/><a data-primary="dependency management" data-type="indexterm" id="id2483"/> is about how your system depends on other systems
+and how you enable other systems to safely depend on yours. This also
+applies at the level of components and assets that make up a system.</p>
+
+<p>Teams should actively manage their dependencies and avoid dependencies
+on systems that do not have appropriate reliability targets to support
+the system’s reliability needs. When you understand how system parts
+(e.g., RPC-based microservices, databases) and supply chains
+(e.g., software libraries, firmware, hardware) affect the overall functions
+expected by your users, you can more effectively apply engineering
+effort and manage risks. And when you regularly review dependencies, you
+can actively respond to changes—for example, you might notice when a
+small piece of business logic becomes critical but is found to be
+operating without sufficient reliability for such a dependency.</p>
+
+<p>The more layers in a function’s dependency tree, the more opportunities there are for a single failure to have unintended consequences. Dependency loops
+(cyclic dependencies) or fragile dependencies can result in a risk of
+deadlocks or cascading failures at runtime, which could lead to local or
+global outages. Supply chain failures (external dependencies) can
+disrupt build pipelines, which could delay outage recovery or business
+growth. Designing for resilience needs to account for these possibilities.</p>
+
+<p>System developers and operators should be able to:</p>
+
+<ul>
+<li>
+<p><em>Describe the composition</em> of the system, so that everyone can have a consistent understanding of how it’s put together and the nature of its dependencies.</p>
+</li>
+<li>
+<p><em>Document the dependencies</em> of the system, so that these relationships
+can be monitored (and optionally enforced), both statically and in real
+time, according to criticality.</p>
+</li>
+<li>
+<p><em>Define usage scenarios</em> for the system, so that its users can understand
+the safe and predictable ways of depending on it.</p>
+</li>
+<li>
+<p><em>Declare failure scenarios</em> handled or not handled by the system, so
+that its users can make informed decisions about additional resilience
+they might need to build.</p>
+</li>
+<li>
+<p><em>Understand the users’ use cases</em> indirectly supported by the system,
+so that this signal can influence the prioritization of risk burndown and
+any relevant compliance efforts.</p>
+</li>
+</ul>
+
+<p>Combined, these capabilities will help ensure that your organization can
+analyze, monitor, audit, and enforce interdependencies between systems,
+to identify and manage resilience risks.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Representations and Controls" data-type="sect2"><div class="sect2" id="ch17_representations_and_controls">
+<h2>Representations and Controls</h2>
+
+<p>Useful dependency <a data-primary="risk management" data-secondary="dependency management" data-tertiary="system representation" data-type="indexterm" id="rskman_depman_sysrep"/><a data-primary="resilience" data-secondary="dependency management" data-tertiary="system representation" data-type="indexterm" id="rsil_depman_sysrep"/><a data-primary="dependency management" data-secondary="system representation" data-type="indexterm" id="depman_sysrep"/>management includes processes and tools for two
+complementary outcomes: representing your systems correctly and
+having controls for maintaining expectations for the dependencies.</p>
+
+<p>Representing your system correctly is the first milestone. You need to
+account for the full set of production assets that belong to the
+system, categorized into components and annotated with metadata about
+environment and type. Production assets include application processes,
+databases, nodes, and any other resources that allow the system to be
+built, started, and run in production. Include the most important details for each, and increase granularity where it makes sense.</p>
+
+<p>Dependency management <a data-primary="risk management" data-secondary="dependency management" data-tertiary="controls" data-type="indexterm" id="id2484"/><a data-primary="resilience" data-secondary="dependency management" data-tertiary="controls" data-type="indexterm" id="id2485"/><a data-primary="dependency management" data-secondary="controls" data-type="indexterm" id="id2486"/>controls are your next milestone. First, you need
+mechanisms to lock down which dependencies a component is allowed—for
+example, by checking compiled-in libraries or allowed RPC endpoints
+against defined ACLs at build, configuration, startup, or runtime, as
+appropriate. Second, set up alerts for violations, which notify you if
+unwanted dependencies are introduced. Finally, ensure that your system
+representation remains up-to-date, and make changes to your system
+definition to correct missing or wrong data.</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="ch17_modeling_a_dependency">
+<h1>Modeling a Dependency</h1>
+<p>To model <a data-primary="dependency modeling" data-type="indexterm" id="depmod"/><a data-primary="models" data-secondary="dependency modeling" data-type="indexterm" id="mod_depmod"/>dependencies, it can be helpful to define the essential attributes of a system and its dependency relationships.</p>
+
+<p>In many cases, a system representation can be generated automatically
+with a reasonable degree of accuracy. To create a more accurate representation, you can provide a system definition: a configuration file that specifies how the technical assets making up a system should be categorized when constructing the system representation.</p>
+
+<p>A <em>system definition</em> <a data-primary="system definitions" data-type="indexterm" id="id2487"/>can include the following concepts:</p>
+<dl>
+<dt>System</dt>
+<dd>
+<p>Represents a set of production assets grouped together
+based on their ownership, implementation, functionality, and
+responsibilities.</p>
+</dd>
+<dt>Component</dt>
+<dd>
+<p>Groups production assets that
+provide the same functionality. Those assets might operate in different regions,
+release stages, or other organizational units.</p>
+</dd>
+<dt>Component type</dt>
+<dd>
+<p>Describes the core purpose of the component (e.g., serving user traffic, performing batch processing, monitoring, or  executing operational changes).</p>
+</dd>
+<dt>Environment</dt>
+<dd>
+<p>Represents the context in which production assets fulfill
+business goals and enables consistent but isolated system deployments
+across environments. Components in “prod” affect users more directly than
+those in “staging,” but “staging” versions of systems must still behave
+similarly to the “prod” versions. Importantly, production systems should
+not depend on non-production assets.</p>
+</dd>
+</dl>
+
+<p>A <em>dependency relationship</em> <a data-primary="dependency relationships, attributes" data-type="indexterm" id="id2488"/>can include the following attributes:</p>
+<dl>
+<dt>Mechanism</dt>
+<dd>
+<p>How the dependency is technically realized. This can
+take the form of:</p>
+
+<ul>
+<li>
+<p><em>Configuration</em>: When system operating parameters change in response
+to factors external to the system (e.g., configuration or data pushes define
+which addresses and timeout values the system uses for backends or
+caches)</p>
+</li>
+<li>
+<p><em>Execution</em>: When parts of the system logic are provided and configured by a
+component in a separate execution environment (e.g., via RPC) or
+technology stack layer (e.g., via operating system modules)</p>
+</li>
+<li>
+<p><em>Physical</em>: When systems need tangible resources, such as machines
+and the power and cooling required for datacenter operations</p>
+</li>
+</ul>
+</dd>
+<dt>Criticality</dt>
+<dd>
+<p>The consequences to the system if the dependency fails.
+How much to prepare for a dependency’s failure is guided by the
+criticality of the functionality that dependency provides. Failures in
+the functionality required for a critical user journey can have impacts
+that users care strongly about. Dependencies can be classified as:</p>
+
+<ul>
+<li>
+<p><em>Optional</em>: When failures can be tolerated without loss of critical
+functionality. The system is fault-tolerant to this dependency and
+should fail open when appropriate.</p>
+</li>
+<li>
+<p><em>Required</em>: When failures disrupt critical functionality. The system
+is not fault-tolerant to this dependency and might fail closed or fail secure when a sufficient fallback isn’t available to substitute
+for it.</p>
+</li>
+</ul>
+</dd>
+<dt>Conditions</dt>
+<dd>
+<p>The stage of the system lifecycle during which the dependency is required. The stages include:</p>
+
+<ul>
+<li>
+<p><em>Build</em>: Required to build the system (e.g., compile or install it)</p>
+</li>
+<li>
+<p><em>Startup</em>: Required for the system to begin serving the functionality users expect</p>
+</li>
+<li>
+<p><em>Runtime</em>: Required for the<a data-primary="risk management" data-secondary="dependency management" data-startref="rskman_depman_sysrep" data-tertiary="system representation" data-type="indexterm" id="id2489"/><a data-primary="resilience" data-secondary="dependency management" data-startref="rsil_depman_sysrep" data-tertiary="system representation" data-type="indexterm" id="id2490"/><a data-primary="dependency management" data-secondary="system representation" data-startref="depman_sysrep" data-type="indexterm" id="id2491"/><a data-primary="dependency modeling" data-startref="depmod" data-type="indexterm" id="id2492"/><a data-primary="models" data-secondary="dependency modeling" data-startref="mod_depmod" data-type="indexterm" id="id2493"/> running system to perform its expected behavior</p>
+</li>
+</ul>
+</dd>
+</dl>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Resilience to Dependency Failures" data-type="sect2"><div class="sect2" id="ch17_resilience_to_dependency_failures">
+<h2>Resilience to Dependency Failures</h2>
+
+<p>To improve resilience<a data-primary="risk management" data-secondary="dependency management" data-tertiary="dependency failures" data-type="indexterm" id="id2494"/><a data-primary="resilience" data-secondary="dependency management" data-tertiary="dependency failures" data-type="indexterm" id="id2495"/><a data-primary="dependency management" data-secondary="dependency failures" data-type="indexterm" id="id2496"/> to unexpected behavior in dependencies, focus first
+on broad categories of failure, then expand to the failure categories
+that occur most frequently. When analyzing failure scenarios, focus on direct dependencies but also consider indirect ones.</p>
+
+<p>Regularly demonstrate that optional dependencies are indeed optional. If
+you inject failures into every dependency marked as optional
+(fault-tolerant) in your system representation, your system’s
+observability should not report new failures in any critical functions.
+If you get alerts, find and address the gaps. If you can’t confirm a
+dependency is optional, it should be considered a required dependency.</p>
+
+<p>For required dependencies, plan what you expect to happen during
+failures, and regularly demonstrate that those plans work. When you
+inject failures for one required dependency, the alerts you get should
+be for the specific functions and nothing else. Also, those alerts
+should automatically stop after you stop injecting failures, indicating
+that the system recovers on its own. If what you observe in practice
+differs, find and address the gaps. For more on this, see <a data-type="xref" href="ch14.html#ch14_testing_dependencies">“Testing Dependencies”</a>.</p>
+
+<p>When investigating and validating the fault tolerance of dependencies,
+you may use any failure injection mechanism appropriate for the
+specific production asset type. Use systems in a non-production
+environment, such as “staging” or “dev,” to observe how the system
+reacts, and improve it until it matches the expected behaviors. Consider injecting occasional failures into production as well, to confirm that the expected resilience is maintained while staying within acceptable
+error budgets.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Defense of Dependents" data-type="sect2"><div class="sect2" id="ch17_defense_of_dependents">
+<h2>Defense of Dependents</h2>
+
+<p>The inverse <a data-primary="risk management" data-secondary="protecting dependents" data-type="indexterm" id="rskman_protdep"/><a data-primary="resilience" data-secondary="protecting dependents" data-type="indexterm" id="rsil_protdep"/><a data-primary="dependents, risk management" data-type="indexterm" id="dep_rskmanag"/>of a <em>dependency</em> is a <em>dependent</em>—something that
+depends on your system. In this relationship, your system is another
+system’s dependency.</p>
+
+<p>You should consider how changes to (and failures in) your system affect
+its dependents, especially mission-critical ones. Beyond direct
+dependents, also think about effects on the broader ecosystem surrounding
+your system: business uses, operator habits, operations playbooks,
+cross-system interactions, and recovery procedures.</p>
+
+<p>Imagine that an outage puts multiple systems in a degraded state because
+their required dependency failed. The incident responders must decide
+how to allocate their efforts and limited time across all affected
+systems.</p>
+
+<p class="pagebreak-before less_space">If your dependency management platform helps discover a failed system’s
+<em>dependents</em> and their criticality, CUJs, and locations:</p>
+
+<ul>
+<li>
+<p><em>Incident responders</em> can identify and prioritize restoring the
+functionality that the critical dependents require. The longer the
+recovery takes—from minutes to hours—the more this matters.</p>
+</li>
+<li>
+<p><em>Planners of maintenance</em> or other disruptive changes (“controlled
+outages”; see <a data-type="xref" href="ch08.html#ch08_implicit_slos">“Implicit SLOs”</a>) can help the affected dependents
+prepare for whatever might potentially go wrong or can start changes first in the locations with the least critical dependents.</p>
+</li>
+<li>
+<p><em>Engineers building automation</em> can determine where outages will have
+the greatest impact on dependents and prioritize safe automated failure
+handling—on the order of seconds—for those CUJs first.</p>
+</li>
+</ul>
+
+<p>If your change management system helps systems declare and make
+discoverable their current risk tolerance, then it becomes possible for
+your dependency management system to find systems affected by an outage
+and ask them to adopt (or enforce) a higher level of change scrutiny.
+Incident responders or automated maintenance processes can then take
+action to:</p>
+<dl>
+<dt>Protect remaining dependencies</dt>
+<dd>
+<p>Whenever your system enters a
+degraded mode, you might want to protect its remaining functionality by
+asking healthy dependencies to pause changes, for example by setting
+their risk tolerance to “highest sensitivity” (see
+<a data-type="xref" href="#ch17_risk_tolerance">“Risk Tolerance”</a>). This can be especially valuable for
+mission-critical systems or while rolling out organization-wide critical
+changes, to minimize risk from simultaneous lower-priority changes.</p>
+</dd>
+<dt>Protect fallback capabilities</dt>
+<dd>
+<p>Similarly, you might want to lower
+the risk tolerance of your system’s fallback mechanisms (see
+<a data-type="xref" data-xrefstyle="select:nopage" href="#ch17_managing_fallbacks">“Managing Fallbacks”</a>) or operational capabilities (such as incident response and recovery systems). This helps avoid unrelated new
+outages affecting<a data-primary="risk management" data-secondary="protecting dependents" data-startref="rskman_protdep" data-type="indexterm" id="id2497"/><a data-primary="resilience" data-secondary="protecting dependents" data-startref="rsil_protdep" data-type="indexterm" id="id2498"/><a data-primary="dependents, risk management" data-startref="dep_rskmanag" data-type="indexterm" id="id2499"/> your already degraded system’s recovery.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Managing Fallbacks" data-type="sect2"><div class="sect2" id="ch17_managing_fallbacks">
+<h2>Managing Fallbacks</h2>
+
+<p>Teams should<a data-primary="risk management" data-secondary="dependency management" data-tertiary="fallback availability" data-type="indexterm" id="id2500"/><a data-primary="resilience" data-secondary="dependency management" data-tertiary="fallback availability" data-type="indexterm" id="id2501"/><a data-primary="dependency management" data-secondary="fallback availability" data-type="indexterm" id="id2502"/> assess the availability of alternatives (fallbacks) for
+required dependencies, whenever failure of those dependencies could
+violate SLOs beyond acceptable margins. Outage duration can often be reduced if you can “switch” the affected system to an alternative version
+of a damaged or defective dependency.</p>
+
+<p>For example, you could build and maintain an earlier version of your
+system or a completely distinct implementation with a low-dependency
+architecture and/or fewer features. Google uses both approaches sparingly
+for situations where the main system’s functionality is especially
+valuable to justify the inevitable added costs. Each has its strengths and weaknesses:</p>
+
+<ul>
+<li>
+<p>It’s easy to keep earlier versions (just use older releases) running
+in a separate environment or failure domain (covered in the next
+section). The downside is that the revisions will share many parts with
+the main system, and failures in those parts aren’t covered by this
+“fallback.”</p>
+</li>
+<li>
+<p>It’s much more costly to build a full alternative, because it needs to
+stay compatible or interchangeable with the existing implementation.
+The upside is you can create a fully distinct stack with little
+shared fate and thus very few failure types capable of disabling the
+primary system and the fallback.</p>
+</li>
+</ul>
+
+<p>To support this, systems with many dependents should take responsibility
+for providing their own fallbacks (e.g., earlier versions, low-dependency
+implementations, etc). The need to provide these alternatives varies with
+the criticality of the system—for example, systems that are critical to
+managing production warrant stronger fallback options. For optional dependencies, the cost of managing fallbacks might not be
+worth it.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Failure Domains" data-type="sect1"><div class="sect1" id="ch17_failure_domains">
+<h1>Failure Domains</h1>
+
+<p>Splitting your service <a data-primary="risk management" data-secondary="failure domains" data-type="indexterm" id="rskman_fluredom"/><a data-primary="failure domains" data-type="indexterm" id="faildoms"/><a data-primary="resilience" data-secondary="failure domains" data-type="indexterm" id="res_faildom"/><a data-primary="services" data-secondary="failure domains" data-type="indexterm" id="srvs_fluredoms"/>into multiple independent failure domains reduces
+the risk of broader and global outages of that service, but only if done
+correctly. Otherwise, you might have only an illusion of safety. If your
+failure domains are not fully independent, a single
+failure domain being down can lead to outages in others,
+potentially taking down the entire system.</p>
+
+<p>To take full advantage of redundancies designed into your system, it’s
+important to limit how many service instances could be disrupted by a
+single failure (or by a set of related failures). This requires
+assessing the application’s serving path (from clients to
+backends), the internal dependencies (interactions among components and
+with upstream services), and what failure domains the
+upstream infrastructure can guarantee (e.g., cloud regions as units of
+logical and/or physical isolation).</p>
+
+<p>When considering failures, distinguish what you control versus what your
+infrastructure promises. Once you’ve determined which failures you must
+handle, plan for the occasions when the infrastructure might fail
+to deliver on <em>its</em> promises. As discussed earlier, you will plan and
+prepare differently for higher-probability and lower-probability failures.</p>
+
+<p>Your goal is to ensure that failures in one domain (e.g., cluster,
+partition, region) don’t disrupt other domains beyond what can be
+managed practically and cost-efficiently. Determine where
+isolation and colocation are most critical, and aim for an architecture
+and a deployment strategy that enable the application to be subdivided
+into self-sufficient parts. Each part should contain all the dependencies
+it needs (with the exception of allowed global upstream systems or
+data) and be able to grow its capacity or be repaired independently of
+other parts, to address local bottlenecks due to usage changes or
+failures. The simplest strategy is for the entire stack to run locally,
+but even then you have several <a data-primary="risk management" data-secondary="failure domains" data-startref="rskman_fluredom" data-type="indexterm" id="id2503"/><a data-primary="failure domains" data-startref="faildoms" data-type="indexterm" id="id2504"/><a data-primary="resilience" data-secondary="failure domains" data-startref="res_faildom" data-type="indexterm" id="id2505"/><a data-primary="services" data-secondary="failure domains" data-startref="srvs_fluredoms" data-type="indexterm" id="id2506"/>options to consider and optimize for.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Type of Failures and Domains" data-type="sect2"><div class="sect2" id="ch17_type_of_failures_and_domains">
+<h2>Type of Failures and Domains</h2>
+
+<p>How to break <a data-primary="risk management" data-secondary="failure domains" data-tertiary="types" data-type="indexterm" id="rskman_fluredom_tps"/><a data-primary="failure domains" data-secondary="types" data-type="indexterm" id="faildoms_tps"/><a data-primary="resilience" data-secondary="failure domains" data-tertiary="types" data-type="indexterm" id="res_faildom_tps"/><a data-primary="services" data-secondary="failure domains" data-tertiary="types" data-type="indexterm" id="srvs_fluredoms_typs"/>up a system into failure domains often depends on the
+nature of the expected failures. Broadly speaking, application failures
+can originate due to:</p>
+
+<ul>
+<li>
+<p><em>Client activities</em> (e.g., a “query of death”)</p>
+</li>
+<li>
+<p><em>Application component</em> behaviors and interactions (e.g., a required dependency starting to crash after a recent rollout or data push)</p>
+</li>
+<li>
+<p><em>Upstream infrastructure</em> outages (e.g., an outage of a cloud provider’s APIs)</p>
+</li>
+<li>
+<p><em>Physical infrastructure</em> outages (e.g., a datacenter cooling outage
+causing multiple machines in a zone to be shut down)</p>
+</li>
+</ul>
+
+<p>The nature of the failure often determines what failure scopes are
+applicable, which in turn helps you make “isolation walls” within your
+system’s architecture. At Google, we’ve found the following types of isolation helpful for developers when defining failure domains:</p>
+
+<ul>
+<li>
+<p><em>Logical geographic isolation</em>: Isolation of regions, zones, and nodes
+containing the system.</p>
+</li>
+<li>
+<p><em>Logical functional isolation</em>: Isolation of system functions based on which clients are allowed to use them.</p>
+</li>
+<li>
+<p><em>Infrastructure isolation</em>: Isolation across hardware racks and network 
+<span class="keep-together">infrastructure.</span></p>
+</li>
+<li>
+<p><em>Operational isolation</em>: Isolation of operators and automation,
+with sufficient credentials and capabilities to change systems.</p>
+</li>
+</ul>
+
+<p>Logical geographic isolation is a common way of defining failure domains
+(e.g., zones and regions in cloud deployments). If global outages are not
+acceptable for a particular application, deploy it to multiple zones
+within a region, and to multiple regions. This provides you with
+protection from certain common physical failures, as well as software
+failures or rollouts within your individual systems. If you choose a
+conservative footprint, to reduce costs, prepare clear and regularly
+tested plans for quick turnup in a new region.</p>
+
+<p>Logical functional isolation can be achieved by running application
+stacks dedicated to particular functionality (logical partitioning)
+or sets of users (user sharding). For example, certain functions or
+distinct populations of users may need different shapes of compute
+resources or customized compute containers, each of which could become
+its own failure domain.</p>
+
+<p>Infrastructure isolation ensures that you don’t end up with all
+servers running in a single rack or reachable via a single networking
+domain (whether the racks and networks are logical or physical). Your
+visibility into and control over these failure domains may be a feature of
+your available infrastructure, ideally enforced by default. If you
+experience such failures, you might need to develop your own
+mitigations.</p>
+
+<p>Operational isolation focuses on avoiding loss of the operational
+capabilities required for the system to keep functioning and evolving to
+meet user demand, including normal updates or repairs after failures,
+while still following change management principles. For example, you
+need on-callers who understand the system well enough to change it
+quickly and safely, and those on-callers need appropriate playbooks and
+tools. Google typically partitions on-call teams into two shards that serve on-call at
+different times, and assigns two on-callers (primary and secondary) from
+each shard to the same system. As a result, the current on-caller has
+one local fallback person and two more from the remote fallback team, so
+the system is resilient to on-callers becoming unavailable during their
+shift. In addition, Google provides more than one way of making playbooks
+available to on-callers, in case the normal playbook server is
+affected by an outage. As a result, operational capabilities are also
+isolated from upstream infrastructure outages.</p>
+
+<p>Decide which failure domain categories you want to prepare for first,
+and iterate to handle the rest. At the organizational level,
+define an appropriate failure domain taxonomy that considers your
+product requirements and business needs, and guides developers and SREs
+in what to prioritize and<a data-primary="risk management" data-secondary="failure domains" data-startref="rskman_fluredom_tps" data-tertiary="types" data-type="indexterm" id="id2507"/><a data-primary="failure domains" data-secondary="types" data-startref="faildoms_tps" data-type="indexterm" id="id2508"/><a data-primary="resilience" data-secondary="failure domains" data-startref="res_faildom_tps" data-tertiary="types" data-type="indexterm" id="id2509"/><a data-primary="services" data-secondary="failure domains" data-startref="srvs_fluredoms_typs" data-tertiary="types" data-type="indexterm" id="id2510"/> how to implement it.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Aligning Failure Domains" data-type="sect2"><div class="sect2" id="ch17_aligning_failure_domains">
+<h2>Aligning Failure Domains</h2>
+
+<p>Aligning <a data-primary="risk management" data-secondary="failure domains" data-tertiary="aligning deployments to" data-type="indexterm" id="rskman_fluredom_algndep"/><a data-primary="failure domains" data-secondary="aligning deployments to" data-type="indexterm" id="faildoms_algndeps"/><a data-primary="resilience" data-secondary="failure domains" data-tertiary="aligning deployments to" data-type="indexterm" id="res_faildom_algndeps"/><a data-primary="services" data-secondary="failure domains" data-tertiary="aligning deployments to" data-type="indexterm" id="srvs_fluredoms_algndep"/>your system deployments to failure domains is the core of
+resilience design, ensuring that a single failure—of hardware,
+network, or coding logic—doesn’t disrupt more of your system than
+you expect. Well-aligned deployments improve your organization’s ability
+to operate, recover, and plan capacity.</p>
+
+<p>When you align your system’s architecture to the boundaries of physical
+and logical domains, no group of components should reside in only one
+failure domain if you aren’t ready to lose that entire group at once.
+Check that each group spans multiple failure domains for every applicable
+type of failure domain (e.g., region, zone, device, network fabric, etc.).</p>
+
+<p>Consider <a data-type="xref" href="#ch17_fig01">Figure 17-1</a>. Any given node will reside in some zone and
+region. If your system is distributed evenly across two regions, with two zones per region and nodes distributed evenly across those zones, the loss of a single zone will result in the loss of at most 25% of your global capacity. If instead you used only one zone per region and ignored anti-affinity measures,<sup><a data-type="noteref" href="ch17.html#id2511" id="id2511-marker">3</a></sup> you could risk losing 50% of your global capacity.</p>
+
+<figure><div class="figure" id="ch17_fig01">
+<img alt="Diagram illustrating a global deployment split evenly across two regions and four zones, each hosting nodes for application instances." src="assets/sre2_1701.png"/>
+<h6><span class="label">Figure 17-1. </span>Global deployment example</h6>
+</div></figure>
+
+<p>You might not know if common dependencies exist in the lower layers of
+your system’s production stack. From <a data-type="xref" href="#ch17_fig01">Figure 17-1</a>, those nodes will also be located in a datacenter rack within a cluster assigned to some zone. The
+infrastructure teams (or cloud service providers) that own those
+layers should be aligning failure domains, too.</p>
+
+<p>Another antipattern to avoid is distributing system components too
+widely. This may reduce resilience. If a system has two interacting
+components that reside in separate network fabrics, this may seem like a
+good idea (network diversity), but only if each network fabric has
+replicas of each component that are configured to prioritize interactions
+with their local counterparts. Otherwise, the moment either network
+fabric fails, the system loses that interaction.</p>
+
+<p>Finally, you should manage the size of failure domain instances. For
+example, as traffic increases and your capacity needs expand to match, consider adding more zones (rather than growing the existing
+zones) to ensure the size of any given zone you might lose stays within
+your comfort level. This type of scaling strategy not only gives you
+more growth options but also lowers the risk of failure domains
+becoming “too large to fail” or causing cascading failures due to the thundering herd effect (when a large failure domain
+fails, its traffic can overwhelm smaller alternative failure domains, as well as the large domain itself when it restarts). Any time a larger failure domain fails, a generic mitigation such as draining that segment might stop being safe because of
+the resulting increase in load on the remaining domains. In such cases,
+it may be better to manage the<a data-primary="risk management" data-secondary="failure domains" data-startref="rskman_fluredom_algndep" data-tertiary="aligning deployments to" data-type="indexterm" id="id2512"/><a data-primary="failure domains" data-secondary="aligning deployments to" data-startref="faildoms_algndeps" data-type="indexterm" id="id2513"/><a data-primary="resilience" data-secondary="failure domains" data-startref="res_faildom_algndeps" data-tertiary="aligning deployments to" data-type="indexterm" id="id2514"/><a data-primary="services" data-secondary="failure domains" data-startref="srvs_fluredoms_algndep" data-tertiary="aligning deployments to" data-type="indexterm" id="id2515"/> resulting side effects by limiting traffic
+shifts.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Recovering Failure Domains" data-type="sect2"><div class="sect2" id="ch17_recovering_failure_domains">
+<h2>Recovering Failure Domains</h2>
+
+<p>We’ve already <a data-primary="risk management" data-secondary="failure domains" data-tertiary="recovering" data-type="indexterm" id="rskman_fluredom_recvr"/><a data-primary="failure domains" data-secondary="recovering" data-type="indexterm" id="faildoms_recvr"/><a data-primary="resilience" data-secondary="failure domains" data-tertiary="recovering" data-type="indexterm" id="res_faildom_recvr"/>established the importance of containing small failures and
+not allowing them to turn into widespread outages. The minimal
+expectation for aligning failure domains is that all required
+dependencies are available within the local failure domain (regardless of
+how many remote failure domains also offer the same dependencies). This
+should be true for as many types of failure domains as possible, within
+the limits of cost effectiveness and reason for each specific system.</p>
+
+<p>However, it’s still important to design for resilience to multiple failure domains, or failures that take so long to mitigate that multiple failure domains fail. In other words, you need a strategy for when all failure domains fail. Incident responders can attempt to contain the spread by applying safe mitigations, activating broader mitigations, and enabling the “highest sensitivity” change mode. But when the spread of the failure is eventually stopped, some proportion of your capacity may remain disrupted or unusable. In some situations, a fix must be repeated across many failure domains.</p>
+
+<p>Suppose your system has an RTO of 24 hours. (RTOs, along with RPOs and RWOs, are covered in <a data-type="xref" href="ch16.html#ch16_slos">“SLOs”</a>). This means you must have a validated method of restoring service within 24 hours. If you can’t close the capacity gap and restore the required functionality within that time frame, your promise is broken. If your system is critical, and users expect a near-zero RTO, this implies near-instantaneous
+failover to a healthy replica, which may require critical data to be
+written to multiple replicas in real time. If an outage is disrupting too
+many replicas, the key to preventing substantial SLO violations is
+recovering disrupted replicas to full functionality faster than the
+failure spreads.</p>
+
+<p>To stop the spread of failures across multiple failure domains  and
+recover your application, your operations teams need a small set of
+capabilities. Teams should know how to perform the following steps:</p>
+<ol>
+<li>
+<p><em>Isolate</em> a system’s affected failure domain. Stop the components in that failure domain from serving clients and influencing (“poisoning”) unaffected failure domains by effectively removing them from those domains’ decision making and execution paths.</p>
+</li>
+<li>
+<p><em>Repair</em> the system there. Fix the system inside the isolated failure
+domain, without relying on other domains. Using other failure domains may be acceptable for expediency, but if this is the only possible
+way, it increases survivability risks.</p>
+</li>
+<li>
+<p><em>Reassemble</em> the system from repaired isolated domains. This
+replenishes system capacity lost with failure domains and enables full
+recovery (survivability) if all failure domains were lost.</p>
+</li>
+<li>
+<p><em>Reach</em> into nonlocal failure domains. This capability enables
+repeating steps 1 through 3 as many times as needed, each time
+returning one failed domain into service, all from a single healthy
+failure domain (such as the “pristine” system copy we cover in <a data-type="xref" href="#ch17_preventing_loss">“Preventing Loss”</a>).</p>
+</li>
+
+</ol>
+
+<p>The most expedient option is to “seed” the recovery from existing functioning replicas, but this option doesn’t suffice if you
+seek maximum survivability, because it doesn’t account for having no
+functioning replicas your application can reach (e.g., due to a network
+failure or a latent bug in global data). Prioritizing recovering a local failure domain in isolation from other parts of the system helps make it more resilient to large-scale loss, for the lower-probability
+but imaginable cases where all replicas have been disrupted.</p>
+
+<p>Expediency also matters because systems in a broken or stranded
+state degrade your organization until they are returned to
+a usable state. Any components you put “in repair” are not
+getting regular updates, which includes security and compatibility
+changes. Keep in mind that when you bring components back online, you might have data consistency and logic consistency issues to resolve as
+part of reassembling the previously isolated failure domain.</p>
+
+<p>Miscellaneous pitfalls to keep in mind:</p>
+
+<ul>
+<li>
+<p>Recovery of nonlocal failure domains must include checks and balances to mitigate the risks of having one actor make changes across multiple
+(or even all) failure domains. This follows the change management
+principle of avoiding situations where fixing one thing breaks another.</p>
+</li>
+<li>
+<p>Recovery capabilities with inherently global powers must run only in
+locations selected for their safety. This helps reduce the risk of
+these capabilities becoming unavailable due to an outage or being compromised and abused. The principle is similar to using safes rather than laptops to store security keys used during fleet-wide recovery efforts, as safes are more secure.</p>
+</li>
+</ul>
+
+<p>Your application might also need to customize how it distributes traffic among failure domains. For geographic isolation, using load balancers is standard practice, for example based on client-to-server
+proximity. For functional isolation, load balancers need a way to
+differentiate which shards of users are served by which backend groups,
+which may require per-user naming and supporting logic in the application
+backends. For physical failure domains, no action is needed, as the
+necessary infrastructure is usually part of domain design. You just
+select which machines in which racks to use, assuming the racks are interconnected so all <a data-primary="risk management" data-secondary="failure domains" data-startref="rskman_fluredom_recvr" data-tertiary="recovering" data-type="indexterm" id="id2516"/><a data-primary="failure domains" data-secondary="recovering" data-startref="faildoms_recvr" data-type="indexterm" id="id2517"/><a data-primary="resilience" data-secondary="failure domains" data-startref="res_faildom_recvr" data-tertiary="recovering" data-type="indexterm" id="id2518"/>machines can reach each other.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Preventing Loss" data-type="sect2"><div class="sect2" id="ch17_preventing_loss">
+<h2>Preventing Loss</h2>
+
+<p>How failure <a data-primary="risk management" data-secondary="failure domains" data-tertiary="global state loss prevention" data-type="indexterm" id="id2519"/><a data-primary="failure domains" data-secondary="global state loss prevention" data-type="indexterm" id="id2520"/><a data-primary="resilience" data-secondary="failure domains" data-tertiary="global state loss prevention" data-type="indexterm" id="id2521"/>domains can help prevent the loss of global state—a condition that can limit your ability to return systems to a correct and/or usable known state—deserves some attention. Global state is often unavoidable, and managing it requires special care because failures can
+easily cause global disruptions that are difficult or even impossible to repair.</p>
+
+<p>An example of global state is globally replicated metadata used to
+find all the places where a system stores the distributed data it serves to users. It might be possible to rebuild such information given enough
+time, but recovery could take a very long time and success might not be certain. In some cases, you can avoid the need for rebuilding altogether by statically compiling and distributing the global data. Where practical, this is usually a better option.</p>
+
+<p>As a general principle, all inherently global components and functions
+should be designed to preserve, within at least one failure domain, their
+pristine, known-good state (data, configuration, and binaries). While it’s critical to back up data, that’s
+not enough. You must also be able to restore your system’s components to
+a functioning state (by correctly configuring and starting its binaries)
+so that the system can load the previously backed-up data.</p>
+
+<p>Failure domains can help prevent loss by preserving copies of your
+system’s global state, but in practice this is more challenging than you
+might expect. You could designate a small number of failure domains to
+hold the “pristine” fallback copies of your system, adding an extra layer
+of isolation to minimize propagation of failures that could damage or
+destroy those copies. Failures resulting from accidental or malicious errors in software logic, in real time or delayed (“time bombs”), could
+be reduced if changes happen in these failure domains last and the rate
+of change is substantially reduced. For example, a system that uses
+logical partitions (e.g., for user or traffic isolation) could create a
+“pristine” partition where rollouts are delayed by multiple versions or
+weeks, emergency rollouts are prohibited, and only monitoring traffic is
+allowed. Such failure domains can’t necessarily serve as “warm
+standbys”; they are used not to serve emergency traffic but only to recover
+other failure domains using the preserved global state.</p>
+
+<p>There are a few questions to consider in determining whether this is a worthy investment for your organization, and, if so, how to implement it. How many failure domains should
+you designate to recover all functionality before risk of total loss
+becomes high? Is the data needed to recover the functionality available,
+and can it be used in that failure domain? Could security protections
+block recovery because the protections were designed to fail closed
+during disruptions?</p>
+
+<p>Defense in depth can alleviate some of the risks, especially with regard
+to handling overload from expected and unexpected causes. We’ll cover
+that next.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Overload Management" data-type="sect1"><div class="sect1" id="ch17_overload_management">
+<h1>Overload Management</h1>
+
+<p>Load balancing <a data-primary="risk management" data-secondary="overload management" data-type="indexterm" id="rskman_ovrldman"/><a data-primary="resilience" data-secondary="overload management" data-type="indexterm" id="res_ovrldman"/><a data-primary="overload management" data-type="indexterm" id="ovrldman"/><a data-primary="traffic management" data-secondary="overload management" data-type="indexterm" id="trafman_ovrldman"/>across failure domains, combined with horizontal scaling
+or upsizing of failure domains, can go a long way toward avoiding overloading
+parts of your system. However, it won’t address edge cases like when
+demand spikes too quickly (e.g., due to external factors or a query of
+death) or because it’s impossible to shift demand elsewhere (e.g., due to
+traffic-specific factors or all other failure domains are already disrupted). You
+need a complementary capability to keep compute resources useful when
+overload is unavoidable.</p>
+
+<p>Overload can become widely damaging when systems start to crash and
+stop handling traffic altogether. Systems receiving excessive traffic
+(whether total or per client, transient or sustained) should not fail in a way that’s disproportionate to the overload or require manual intervention
+to recover once the overload ends. For example, a system
+provisioned for X but receiving 10X instead should continue to
+serve close to X instead of close to 0, and should return to serving X without manual intervention once the overload subsides.</p>
+
+<p>A reduction in steady-state reliability is often unavoidable during
+overload, but that’s an appropriate resilience trade-off. Broadly speaking, three approaches can be taken here:</p>
+<dl>
+<dt>Server choosing which requests to prioritize or ignore</dt>
+<dd>
+<p>Reducing the compute resources allocated to lower-priority traffic, even to zero, may
+be appropriate. This will result in lower-priority traffic receiving a high percentage of errors (up to 100%), even though it has “done nothing wrong.”</p>
+</dd>
+<dt>Server providing lower-quality responses</dt>
+<dd>
+<p>Results could be served using stale cache entries or with fewer interactions with dependencies. This is a valid option if, for example, 80% of the response quality can be achieved with 20% of the computation.</p>
+</dd>
+<dt>Client reducing demand on the server</dt>
+<dd>
+<p>When the server starts to signal overload, clients can adjust their request rates, prioritizing the most useful, lowest-cost requests.</p>
+</dd>
+</dl>
+
+<p>You should design your systems with a combination of autoscaling, load
+balancing, overload shedding, per-client or per-user soft and hard
+quotas, and so on, and regularly verify the effectiveness of overload management procedures. Client code should be designed to reduce
+demand when the server is overloaded, using client-side adaptive
+throttling, exponential backoff retry logic, and traffic labeling by cost
+and criticality. All of these reduce reliability loss during overload.</p>
+
+<p>To test the system’s resilience to overload, you can incrementally increase traffic until the observed goodput stabilizes. Goodput represents the effective throughput of a system, specifically measuring the work successfully completed to fulfill client requests (not including failed requests or retries). The stable goodput indicates the amount of useful work your system can reliably perform under any level of overload.</p>
+
+<p>The overall goal is to continue performing useful work during overload. Success is determined by the extent to which the system is able to keep handling its highest-value operations. If that capability drops to zero, the system is effectively broken. A resilient <a data-primary="risk management" data-secondary="overload management" data-startref="rskman_ovrldman" data-type="indexterm" id="id2522"/><a data-primary="resilience" data-secondary="overload management" data-startref="res_ovrldman" data-type="indexterm" id="id2523"/><a data-primary="overload management" data-startref="ovrldman" data-type="indexterm" id="id2524"/><a data-primary="traffic management" data-secondary="overload management" data-startref="trafman_ovrldman" data-type="indexterm" id="id2525"/>system keeps it above zero for as long as possible and enables rapid recovery if it does drop to zero.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Avoiding Cascading Failures" data-type="sect2"><div class="sect2" id="ch17_avoiding_cascading_failures">
+<h2>Avoiding Cascading Failures</h2>
+
+<p>Cascading failures are<a data-primary="risk management" data-secondary="overload management" data-tertiary="cascading failures" data-type="indexterm" id="id2526"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="cascading failures" data-type="indexterm" id="id2527"/><a data-primary="overload management" data-secondary="cascading failures" data-type="indexterm" id="id2528"/><a data-primary="cascading failures" data-type="indexterm" id="id2529"/> dangerous because they can easily lead to
+global outages. The “cascade,” or “domino effect,” occurs when a failure
+damages one part of the system, reducing its capacity and causing damage to other parts. This reduces capacity further, creating a positive feedback loop that soon spirals out of control.</p>
+
+<p>Overload results in resource shortages. Shortages in CPU, memory,
+threads, file descriptors, or network bandwidth can manifest in various
+secondary effects that snowball into failures. Examples include:</p>
+<dl>
+<dt>Long queues of requests</dt>
+<dd>
+<p>Requests pile up as the CPU is unable to
+process the inflow, and the resources allocated to each request are not
+released.</p>
+</dd>
+<dt>Request deadline misses</dt>
+<dd>
+<p>As request latency increases, RPC deadlines expire, leading to repeat requests and wasted resources.</p>
+</dd>
+<dt>Container restarts</dt>
+<dd>
+<p>Containers can get restarted or evicted for exceeding
+allocated limits or not responding in time to health checks,
+including because of thread pool or file descriptor exhaustion.</p>
+</dd>
+<dt>Cache invalidation</dt>
+<dd>
+<p>Processes in the restarted containers have empty
+caches that must be repopulated, placing extra load on the computation and storage subsystems.</p>
+</dd>
+</dl>
+
+<p>To avoid cascading failures caused by overload, you need mechanisms that
+can lower the amount of traffic to a level the system can bear without
+failing and enable recovery efforts for the already failed capacity.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Server-Side Controls" data-type="sect2"><div class="sect2" id="ch17_server_side_controls">
+<h2>Server-Side Controls</h2>
+
+<p>A system resilient to<a data-primary="risk management" data-secondary="overload management" data-tertiary="load shedding and graceful degradation" data-type="indexterm" id="id2530"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="load shedding and graceful degradation" data-type="indexterm" id="id2531"/><a data-primary="overload management" data-secondary="load shedding and graceful degradation" data-type="indexterm" id="id2532"/><a data-primary="load shedding" data-secondary="overload management" data-type="indexterm" id="id2533"/><a data-primary="graceful degradation, overload management" data-type="indexterm" id="id2534"/> overload is designed and configured with two
+capabilities: to reject requests when overloaded and to fulfill the
+remaining requests sufficiently, even if partially. You might know these
+capabilities as load shedding and graceful degradation, respectively.</p>
+
+<p><em>Load shedding</em> avoids spending compute resources on some requests by
+rejecting them from the start, rather than waiting until overload
+conditions force them to fail. Any resources that would have been wasted partially processing those requests are instead made available to serve other requests fully.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>The system should be able to detect when it’s overloaded, using a
+combination of objective indicators such as request queue lengths,
+memory, available threads, etc.</p>
+</li>
+<li>
+<p>The system should have traffic labeling for requests (e.g., RPC service
+and method names and parameters), indicating when it’s okay to drop
+them (e.g., under moderate, severe, or extreme overload levels) based on cost and criticality.</p>
+</li>
+<li>
+<p>The system should return an error status clearly indicating the
+overload condition and whether the client should retry (e.g., “overloaded,” which may trigger a retry, or “overloaded; don’t retry”).</p>
+</li>
+</ul>
+
+<p><em>Graceful degradation</em> reduces the compute resources spent on accepted
+requests. By serving degraded responses, you provide some value instead
+of zero value, as is the case with requests rejected due to load shedding. Clients get responses that are less accurate or contain less
+data than normal but are cheaper to compute.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>The system should have clear degradation options for each supported
+request type, so that responses remain valid (e.g., how stale cache entries can be before serving them becomes unsafe, or what percentage
+of searched data can be skipped before returning partial search results).</p>
+</li>
+<li>
+<p>The system should add optional quality indicators to response
+metadata (such as different status codes for success), for use in
+resilience validation (whether expected degradation occurred) and to
+help clients discover and react to degraded service. For example, you might include cache staleness timestamps or the percentage of data or backend queries ignored when responding (as long as these indicators are
+not accidentally exposed to external end users).</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Client-Side Controls" data-type="sect2"><div class="sect2" id="ch17_client_side_controls">
+<h2>Client-Side Controls</h2>
+
+<p>A resilient system enables its clients to proactively reduce
+demand on an overloaded server by using client-side <em>retry logic</em> and
+<em>adaptive throttling</em>. Such clients can react similarly when a server resumes after a full failure. (Note that this applies only to clients
+over which the system has influence, for example because they are part of
+the system’s end-to-end architecture, and it assumes that the system or
+organization specifies a standard for client-side controls.)</p>
+
+<p><em>Retry logic</em> determines<a data-primary="risk management" data-secondary="overload management" data-tertiary="request retry logic" data-type="indexterm" id="id2535"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="request retry logic" data-type="indexterm" id="id2536"/><a data-primary="overload management" data-secondary="request retry logic" data-type="indexterm" id="id2537"/><a data-primary="retry logic, overload management" data-type="indexterm" id="id2538"/> how a client proceeds when a request fails. If the status code indicates an ephemeral (retriable) error,
+the client might retry the request. Your design goal is to set expectations for <em>how</em> to retry and to enable all systems to easily follow that standard.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>The client should use exponential backoff, which reduces server load
+and the need for load shedding.</p>
+</li>
+<li>
+<p>The client should randomize the exponential backoff (introduce
+jitter), which minimizes load spikes from multiple clients affected by
+server load shedding within the same small time window. This may be
+especially relevant for infrastructure systems, which typically have
+many clients.</p>
+</li>
+<li>
+<p>The client should carefully retry when a large volume of work gets
+queued up while the server is unavailable, which avoids exacerbating the
+likely overload conditions during server restarts. These retries should be limited to a single level of clients, so that clients of
+clients don’t create a cascade of retries.</p>
+</li>
+</ul>
+
+<p><em>Adaptive throttling</em> dynamically <a data-primary="risk management" data-secondary="overload management" data-tertiary="adaptive throttling" data-type="indexterm" id="rskman_olod_adthr"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="adaptive throttling" data-type="indexterm" id="tisl_olod_adthr"/><a data-primary="overload management" data-secondary="adaptive throttling" data-type="indexterm" id="olod_adthr"/><a data-primary="adaptive throttling, overload management" data-type="indexterm" id="adthr_olodman"/>adjusts client requests based on
+success rates and reduces traffic to avoid wasting server resources
+when the likelihood of errors is high. When a client observes that many recent requests have failed, it can choose to stop sending new requests (assuming they would fail, too) and apply retry logic only to the most important failed requests. This can substantially reduce server-side overload.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>The client should understand the error categories for requests and the likely recovery time for each, so that skipping the requests can be timed accordingly.</p>
+</li>
+<li>
+<p>The client should self-regulate by calculating the probability of
+getting an error based on the recent history of request failures in each category. As the number of failed requests increases, so does the calculated probability, causing the client to further reduce its
+load on the server.</p>
+</li>
+<li>
+<p>The client should consider criticality information (e.g., from the
+dependency management system’s specification) when calculating that
+probability. For lower-criticality workflows, lower error thresholds may
+be sufficient.</p>
+</li>
+</ul>
+
+<p>Systems don’t always control client code, so specifying
+behavioral guidelines (e.g., in published specifications) is key to
+informing potential clients. For clients that your system <em>can</em> control
+or influence, providing a default implementation via a client library is
+even better. Such a client library can be included in API
+gateways in front of HTTP-based services, or directly into user
+applications. At Google, we often use standardized client libraries that
+include client-side controls and <a data-primary="risk management" data-secondary="overload management" data-startref="rskman_olod_adthr" data-tertiary="adaptive throttling" data-type="indexterm" id="id2539"/><a data-primary="resilience" data-secondary="overload management" data-startref="tisl_olod_adthr" data-tertiary="adaptive throttling" data-type="indexterm" id="id2540"/><a data-primary="overload management" data-secondary="adaptive throttling" data-startref="olod_adthr" data-type="indexterm" id="id2541"/><a data-primary="adaptive throttling, overload management" data-startref="adthr_olodman" data-type="indexterm" id="id2542"/>integrate them with our production platform.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Isolating Overload" data-type="sect2"><div class="sect2" id="ch17_isolating_overload">
+<h2>Isolating Overload</h2>
+
+<p>When your system is<a data-primary="risk management" data-secondary="overload management" data-tertiary="isolating failures" data-type="indexterm" id="rskman_olod_isoflrs"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="isolating failures" data-type="indexterm" id="tisl_olod_isoflrs"/><a data-primary="overload management" data-secondary="isolating failures" data-type="indexterm" id="olod_isoflrs"/> overloaded, it is ideal to isolate failures (error
+responses) only to the clients that are causing the overload, so other clients are unaffected.</p>
+
+<p>The server-side and client-side controls covered in the previous sections
+can be applied on a per-user basis. If user isolation is valuable for your system,
+you may want to consider capacity provisioning with usage commitments
+and <em>per-user quotas</em> based on those commitments. You can then reuse
+these resource quotas when designing per-user budgets and
+parameters controlling each specific overload mechanism (load
+shedding, graceful degradation, retry logic, adaptive throttling, etc.)</p>
+
+<p>For a system that’s entering overload, the goal is to react quickly
+whenever any per-user quota is exceeded, and even more quickly when the
+excessive traffic is directly linkable to overload symptoms. For
+example, during CPU overload, all per-user thresholds for requests with
+high CPU costs might be <em>adjusted proportionally</em> and become <em>strictly
+enforced</em>. As a result, each affected user will experience X% more load shedding and Y% fewer retries, proportional to that user’s quota.</p>
+
+<p>For a client interacting with an overloaded server, errors specific to
+overload should aim at informing the user of actionable changes in
+behavior that could help relieve the overloaded resources. Client retry
+budgets can be defined to control how long to keep retrying before
+informing the user of the overload (e.g., with a status message such as
+“pause sending more requests for now”). On the server side, errors
+specific to overload should aim at relieving the overloaded resources.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>The server should implement a per-request retry budget. After the same
+kind of request fails X times, propagate the failure to the client via
+an overload error because the system’s backends are likely
+overloaded, which indicates a more durable condition within the system
+or its dependencies.</p>
+</li>
+<li>
+<p>The client should implement a per-service retry budget. If the retry
+ratio exceeds Y% across all requests the client sends to a
+server, propagate the failures to the user. This limits retry
+attempts across failure domains of the system, but only when many of
+those failure domains are overloaded.</p>
+</li>
+</ul>
+
+<p>In summary, even in a well-designed environment your users probably expect the occasional overload, and they may also expect to be informed if they can do anything about it, whether or not they contributed to the condition. Servers and clients should be designed to manage overload internally by detecting overload conditions and taking actions to <a data-primary="risk management" data-secondary="overload management" data-startref="rskman_olod_isoflrs" data-tertiary="isolating failures" data-type="indexterm" id="id2543"/><a data-primary="resilience" data-secondary="overload management" data-startref="tisl_olod_isoflrs" data-tertiary="isolating failures" data-type="indexterm" id="id2544"/><a data-primary="overload management" data-secondary="isolating failures" data-startref="olod_isoflrs" data-type="indexterm" id="id2545"/>reduce load where possible.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Actionable Mitigations" data-type="sect2"><div class="sect2" id="ch17_actionable_mitigations">
+<h2>Actionable Mitigations</h2>
+
+<p>When the overload response configured <a data-primary="risk management" data-secondary="overload management" data-tertiary="mitigations" data-type="indexterm" id="id2546"/><a data-primary="resilience" data-secondary="overload management" data-tertiary="mitigations" data-type="indexterm" id="id2547"/><a data-primary="overload management" data-secondary="mitigations" data-type="indexterm" id="id2548"/>for your system doesn’t suffice and you are facing a cascading failure or another outage, some emergency actions can help:</p>
+<dl>
+<dt>Block sources of excessive demand</dt>
+<dd>
+<p>You can remove certain sources of
+traffic by denying them network access to the system. If the system is
+subject to queries of death and can identify and block those queries, this might be the first action to take.</p>
+</dd>
+<dt>Provision additional resources</dt>
+<dd>
+<p>Before
+too many fail domains or required dependencies are disrupted by overload,
+causing your system to collapse, try increasing resource quotas in the existing failure domains, adjusting
+load-balancing for better utilization across failure domains, or turning up new replicas of system components, until adding
+resources is no longer enough to stabilize the system.</p>
+</dd>
+<dt>Prevent server restarts</dt>
+<dd>
+<p>Disable any production automation that
+might be trying to reset components that have stopped responding to
+infrastructure health checks. Overloaded systems are more likely to
+exhibit those symptoms, but restarting them will definitely remove
+capacity.</p>
+</dd>
+<dt>Expedite server restarts</dt>
+<dd>
+<p>If you determine that overloaded
+servers are not producing goodput, restarting them in a controlled way
+may enable you to restore lost capacity.</p>
+</dd>
+</dl>
+
+<p>You should also have a plan for a cold start of your system while users are impatiently trying to reload clients, as they check whether the service has recovered. A possible side effect of client restarts is the
+“thundering herd” problem mentioned in <a data-type="xref" href="#ch17_aligning_failure_domains">“Aligning Failure Domains”</a>.
+Clients sending too many retries can severely hamper recovery because the system might never achieve a good enough state to
+actually respond to incoming requests.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Input Validation" data-type="sect1"><div class="sect1" id="ch17_input_validation">
+<h1>Input Validation</h1>
+
+<p>Data is another <a data-primary="risk management" data-secondary="input validation" data-type="indexterm" id="id2549"/><a data-primary="resilience" data-secondary="input validation" data-type="indexterm" id="id2550"/>source of resilience adventures. Input to your system
+might come from sources with varying degrees of quality or security
+controls. The <a href="https://oreil.ly/9lT7W">robustness principle</a>
+in computing, which can be expressed as “be conservative in what you send, be liberal in what you accept,” applies to how your system should
+handle all inputs. We might want users interacting with our systems to
+follow rules, but we should still expect accidental (or malicious) bad inputs. Systems should fail safe in a way that preserves functionality after encountering bad data.</p>
+
+<p>Your system should expect and be prepared to handle bad data anywhere
+defects could have been introduced, including data
+originating outside the system, data provided by a dependency, and
+data read from storage. The diligence in handling input failures before
+they hurt your users or your missions will pay off.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Validation Outcomes" data-type="sect2"><div class="sect2" id="ch17_validation_outcomes">
+<h2>Validation Outcomes</h2>
+
+<p>As engineers and organizational leaders, you want to minimize the risk of bad inputs leading to outages. Inputs such as configuration and code are controls; they can change execution logic and trigger various failures. Don’t let them!</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>Suspected bad configs and bad user content should be detected quickly, accurately, and automatically before causing significant impact. Engineering focuses on helping teams
+recognize sources of input risk and maintaining a set of recommended
+response strategies and implementations. Use applicable algorithms
+to detect all relevant types of bad input.</p>
+</li>
+<li>
+<p>It should be possible to mitigate outages caused by bad data
+within a defined and reasonable time (minutes, not hours) after
+determining the right corrective action. Engineering focuses on
+identifying and preparing corrective actions (safe or broad mitigations)
+for known and potential scenarios, such as implementing data rollbacks and revising allowlists or denylists, as well as on-caller responses for
+manual corrective actions. The goal is defense in depth for when bad data
+detection might fail or experience a regression.</p>
+</li>
+</ul>
+
+<p>Note that here we’re focusing on resilience to changes during the system’s execution, as opposed to changes during the software development lifecycle; those are covered in <a data-type="xref" href="#ch17_change_management">“Change Management”</a>.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Types of Bad Input" data-type="sect2"><div class="sect2" id="ch17_types_of_bad_input">
+<h2>Types of Bad Input</h2>
+
+<p>How your system<a data-primary="risk management" data-secondary="input validation" data-tertiary="bad input types" data-type="indexterm" id="id2551"/><a data-primary="resilience" data-secondary="input validation" data-tertiary="bad input types" data-type="indexterm" id="id2552"/> reacts to bad data will depend on the nature of the input. Bad inputs include:</p>
+<dl>
+<dt>Empty updates</dt>
+<dd>
+<p>Replacing existing data with an empty update can
+amount to deletion. The consequences can be huge—for example, locking
+people out of systems when the ACL becomes empty, or servers crashing
+upon finding the set of critical backends empty due to a file
+permissions error. Always check if the input is empty, and assess if
+that’s a valid possibility.</p>
+</dd>
+<dt>Partial updates</dt>
+<dd>
+<p>Similar to empty updates, truncated updates can
+amount to partial deletion. If an error occurs during a
+streaming RPC, the system may know it has received only a partial update.
+But data truncated by the code that generated it can be
+harder to detect with precision and to diagnose later if it goes
+undetected. For example, how can the system confirm that the data push
+was meant to be 10% shorter that usual? Check for extra information that could validate data integrity.</p>
+</dd>
+<dt>Corrupted updates</dt>
+<dd>
+<p>For the smallest data elements (e.g., bytes or bits),
+error detection mechanisms such as checksums are required. These can be
+applied at every layer of data transfer and storage protocols (many do this by default). For example, integrity checks can detect bits corrupted by a faulty a network cable, as discussed in the sidebar <a data-type="xref" href="ch16.html#ch16_case_study_file_corrupted_during_replication">“Case Study: File Corrupted During Replication”</a>.</p>
+</dd>
+<dt>New wrong data</dt>
+<dd>
+<p>If the acceptable formats (what is “good,”
+or the allowlist) aren’t fully specified in the application logic, the
+data you accept might fail further along in the execution stream. For
+example, edge cases could be missed if the system attempts to define only
+what is “bad” (a denylist).</p>
+</dd>
+<dt>Expired existing data</dt>
+<dd>
+<p>If fresh versions of the data don’t arrive, existing data can become stale and the system may have to degrade
+gracefully. For example, cached information stops being valuable when the referenced objects change quickly, such as the addresses of healthy backends.</p>
+</dd>
+</dl>
+
+<p>Your systems should test for, detect, and correctly reject all bad
+inputs. You should also regularly test your system’s handling of bad
+inputs, including the effectiveness of its prevention and mitigation
+mechanisms.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Actionable Hardening" data-type="sect2"><div class="sect2" id="ch17_actionable_hardening">
+<h2>Actionable Hardening</h2>
+
+<p>When your<a data-primary="risk management" data-secondary="input validation" data-tertiary="system hardening" data-type="indexterm" id="id2553"/><a data-primary="resilience" data-secondary="input validation" data-tertiary="system hardening" data-type="indexterm" id="id2554"/> systems are hardened to bad data, they respond to
+implausible inputs by continuing to operate in the previous state or
+resorting to error handling techniques (covered in <a data-type="xref" href="#ch17_overload_management">“Overload Management”</a>). This resilience complements preparations for the
+failure scenarios covered in <a data-type="xref" href="ch16.html#ch16">Chapter 16</a>.</p>
+
+<p>In several outages Google has experienced internally, if the system had
+simply continued doing what it was doing before and ignored
+new suspicious instructions from the control plane, the outage would
+have been averted.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p><em>Diff too large</em>: Design the system to recognize when the diff between
+the old and new data is unusually large, to perform additional
+checks on that diff, and to reject it if there’s any doubt. For example,
+if quota limits or authorized user lists shrink or grow substantially, it
+may be safer to require additional indicators that the change is intentional.</p>
+</li>
+<li>
+<p><em>Partial updates</em>: Design the input to make data completeness easy to
+verify by providing redundant information. For example, a data
+structure with a set of permitted identities could include a field with
+the expected size of that set.</p>
+</li>
+<li>
+<p><em>New wrong data</em>: Design the input so that there’s only one correct format, making it practical to define what “good” looks like and avoiding trying to define “bad.” For example, use stable ordering for
+repeated fields and prohibit duplicates where appropriate.</p>
+</li>
+<li>
+<p><em>Keep good data</em>: Design the system not to discard good data until
+necessary for reclaiming system resources or for compliance with data
+handling policies. For example, keep the previous version of data in
+memory so you can roll back to it with the change of a memory pointer
+rather than retrieving it from the original stable storage (presuming
+the older version even remains readable).</p>
+</li>
+</ul>
+
+<p>Hardened systems should also alert on the receipt of bad input. This
+should happen not only when manual action is needed but also to collect
+actionable data about trends and patterns in handling failures, to improve risk management.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Data Resilience" data-type="sect1"><div class="sect1" id="ch17_data_resilience">
+<h1>Data Resilience</h1>
+
+<p>Resilience in data management <a data-primary="risk management" data-secondary="data loss" data-type="indexterm" id="rskman_datres"/><a data-primary="resilience" data-secondary="data loss" data-type="indexterm" id="resil_datres"/>is critical because data failures are
+categorically different from other types of failure. <a data-type="xref" href="ch16.html#ch16">Chapter 16</a> covered how remediation can be much harder—or impossible—when data is lost and what your systems should do to reduce opportunities for
+data loss from many higher-probability failures. In this chapter, we
+focus on the higher-layer problem of data loss due to unexpected
+interactions or gaps between cooperating systems.</p>
+
+<p>Your organization and systems probably manage user and infrastructure
+data using multiple storage systems, including physical storage, raw
+logical storage, distribution databases, and pipelines for derived data.
+Even with redundancy designed into every layer, you should prepare for
+some systemic risks of permanent loss of user data or your
+organization’s data.</p>
+
+<p>Here are some theoretical examples of lower-probability high-impact
+scenarios you should plan for:</p>
+
+<ul>
+<li>
+<p><em>Recovery of metadata loss</em> within a storage system—e.g., the
+knowledge of where the redundant data is and its criticality in enabling
+access to encrypted data bytes.</p>
+</li>
+<li>
+<p><em>Recovery of encryption keys</em>, such as the data encryption keys (DEKs) or key encryption keys (KEKs) that implement the security controls safeguarding data bytes from unprivileged use. Even data restore processes require these.</p>
+</li>
+<li>
+<p><em>Unintentional destruction of data</em> due to secondary effects of
+routine operations by lower-layer storage systems—e.g., when database or
+storage device replicas are removed from service without the semantic
+context that those are the copies for a mission-critical system.</p>
+</li>
+<li>
+<p><em>Recovery of failures in data management controls</em> meant to limit data
+losses—e.g., when a “write-once” storage system loses the capability
+to block data overwrites.</p>
+</li>
+</ul>
+
+<p>The velocity of reaction to these failure scenarios is critical because
+of their potentially global breaking impact. Implementing all the
+relevant advice from <a data-type="xref" href="ch16.html#ch16">Chapter 16</a> can significantly improve reaction time
+and lower the overall cost of cross-system data management risks.</p>
+
+<p>This section presents recommendations <a data-primary="risk management" data-secondary="data loss" data-startref="rskman_datres" data-type="indexterm" id="id2555"/><a data-primary="resilience" data-secondary="data loss" data-startref="resil_datres" data-type="indexterm" id="id2556"/>that can help reduce the risk of data loss or delays in data recovery.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Deglobalize Data Loss" data-type="sect2"><div class="sect2" id="ch17_deglobalize_data_loss">
+<h2>Deglobalize Data Loss</h2>
+
+<p>Any action on<a data-primary="risk management" data-secondary="data loss" data-tertiary="deglobalization" data-type="indexterm" id="rskman_datres_deglob"/><a data-primary="resilience" data-secondary="data loss" data-tertiary="deglobalization" data-type="indexterm" id="resil_datres_deglob"/> data—especially when humans are involved—should be
+considered a major threat to system integrity, which could manifest
+through potentially unintended global changes. Deglobalization
+of data operations is one way to limit impact. If you can build
+structural security barriers that restrict management actions on storage
+systems, then only smaller parts of the production environment can be
+updated at any time. This makes it virtually impossible for a single
+error or action by a human operator or an AI agent to cause an instantaneous, fleet-wide data disruption.</p>
+
+<p class="pagebreak-before less_space">Here are some ways change management can help deglobalize data loss:</p>
+
+<ul>
+<li>
+<p><em>Rollouts for configuration and binaries</em> for storage systems
+(e.g., block storage nodes) should be restricted to a scope that prevents
+bad rollouts from affecting the entire fleet.</p>
+</li>
+<li>
+<p><em>Mutating operations on nodes and devices</em> used by storage systems
+(e.g., OS upgrades, device upgrades) should be paused if global
+redundancy of datasets affected by the operation is insufficient.</p>
+</li>
+<li>
+<p><em>Mutating operations on stored data</em> (e.g., immediate deletion of data
+blobs) should be limited in scope and ideally reversible.</p>
+</li>
+</ul>
+
+<p>More than one of these categories could coincide, so it’s also
+important to manage change concurrency (see <a data-type="xref" href="#ch17_change_concurrency">“Change Concurrency”</a>).</p>
+
+<p>Once you define what you want to pursue, enforcement can progress in
+stages:</p>
+<ol>
+<li>
+<p>Provide observability into risky operations, to know how quickly they
+land across the global scope and if the expected safeguards are being
+used.</p>
+</li>
+<li>
+<p>Deglobalize automation and operators, because those could repeat
+locally scoped operations many times, maybe without supervision, to
+effectively bypass deglobalization objectives.</p>
+</li>
+<li>
+<p>Harden against elevated privileges, which can be inherently global and
+bypass any deglobalization constraints.</p>
+</li>
+
+</ol>
+
+<p>These scope reductions may introduce inefficiencies elsewhere, so you’ll have to decide what’s acceptable. For example, schema changes in the
+higher-level storage components may require substantially more storage
+in the lower-level storage <a data-primary="risk management" data-secondary="data loss" data-startref="rskman_datres_deglob" data-tertiary="deglobalization" data-type="indexterm" id="id2557"/><a data-primary="resilience" data-secondary="data loss" data-startref="resil_datres_deglob" data-tertiary="deglobalization" data-type="indexterm" id="id2558"/>systems, albeit intermittently.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Delete and Undelete Data Correctly" data-type="sect2"><div class="sect2" id="ch17_delete_and_undelete_data_correctly">
+<h2>Delete and Undelete Data Correctly</h2>
+
+<p>Make data deletion <a data-primary="risk management" data-secondary="data loss" data-tertiary="deletion resilience" data-type="indexterm" id="rskman_datres_delres"/><a data-primary="resilience" data-secondary="data loss" data-tertiary="deletion resilience" data-type="indexterm" id="resil_datres_delres"/>resilient by allowing only staged deletions, with
+built-in grace periods (like the “move to trash” function) that are not bypassable, except through completely separate, well-guarded processes
+dedicated to express requests by data owners or to your organization’s specific needs.</p>
+
+<p>Ensure that critical data management systems implement safety features,
+with safe defaults, to protect against accidental data loss caused by
+users. For example, critical deleted data could be kept for at least X
+days (within the retention commitments to data owners)—the opposite of setting a default expiration TTL for automatically
+deleting ephemeral data. Note that there is a risk of accidentally setting a
+TTL on critical data; such situations should be detectable for
+confirmation of intent, or prohibited via code logic if appropriate (see
+<a data-type="xref" href="#ch17_input_validation">“Input Validation”</a>).</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>Mechanisms to prevent unintended data loss should be implemented, ranging from impact warnings for user actions to configurable
+and automated deletion protections at appropriate layers of the
+application and the storage infrastructure.</p>
+</li>
+<li>
+<p>Rapid data recovery should be supported through default
+soft-deletion mechanisms (“undelete”), extended retention windows for critical
+assets, and hardened protections that prevent the manual purging of
+deleted data until the system-managed recovery window expires.</p>
+</li>
+<li>
+<p>Systems should enable data recovery with minimal
+dependencies, ranging from basic integrated restore features to
+deletion-resistant backups and support for per-user or per-system reinsertion of restored data into live databases.</p>
+</li>
+</ul>
+
+<p>For the design expectations valuable for your organization, you can
+progress in stages:</p>
+<dl>
+<dt>1. Define deletion safety guidelines.</dt>
+<dd>
+<p>At the organizational level,
+determine the safety measures appropriate for the data storage systems in
+broad use. Not all expectations will apply universally; guidance
+should be specific to each system, considering its nuanced purposes and
+constraints. Audit the available features
+regularly to adjust system-specific data protection policies and refine the general guidelines. Future data storage systems should
+follow the guidelines and be included in the audit.</p>
+</dd>
+<dt>2. Remediate gaps with safety guidelines.</dt>
+<dd>
+<p>Systems should develop the
+missing safety features and/or change the defaults to enable data
+resilience, as well as provide observability into feature usage across datasets. Your organization can then apply broad mitigations (covered in
+<a data-type="xref" href="#ch17_safe_mitigations">“Safe Mitigations”</a>) to identify production assets that need attention.</p>
+</dd>
+</dl>
+
+<p>Resilient data deletion can mean higher storage costs to accommodate the
+extra bytes staying around <a data-primary="risk management" data-secondary="data loss" data-startref="rskman_datres_delres" data-tertiary="deletion resilience" data-type="indexterm" id="id2559"/><a data-primary="resilience" data-secondary="data loss" data-startref="resil_datres_delres" data-tertiary="deletion resilience" data-type="indexterm" id="id2560"/>for longer. You should pick the most valuable
+places to introduce these overheads.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Independent Fallbacks for Critical Data" data-type="sect2"><div class="sect2" id="ch17_independent_fallbacks_for_critical_data">
+<h2>Independent Fallbacks for Critical Data</h2>
+
+<p>Loss of system <a data-primary="risk management" data-secondary="data loss" data-tertiary="critical data fallbacks" data-type="indexterm" id="rskman_datres_crtdatflbk"/><a data-primary="resilience" data-secondary="data loss" data-tertiary="critical data fallbacks" data-type="indexterm" id="resil_datres_crtdatflbk"/>metadata can be catastrophic if that system, as a result, cannot be
+reassembled to resume its critical functions. That’s why this type of data—critical data—requires defense in depth.</p>
+
+<p>If critical data uses backups, there should be no common dependencies
+(shared fate) between the systems using that data and the
+processes for restoring it. If common dependencies exist,
+there’s a chance that it won’t be possible to complete a restore when needed because
+both the system and its recovery are affected by the same failure. See
+<a data-type="xref" href="#ch17_dependency_management">“Dependency Management”</a> and <a data-type="xref" href="ch15.html#ch15_failure_domains">“Failure domains”</a> for more on this topic.</p>
+
+<p>Let’s consider two alternatives for recovering from storage metadata
+corruption:</p>
+<dl>
+<dt>Recovery via underlying storage backups</dt>
+<dd>
+<p>If storage system X loses
+its metadata, and X relies on storage system Y for its underlying storage, restoring system X’s metadata requires system Y’s metadata to be intact. If system Y was also damaged, you might recursively have
+to recover system Y’s metadata first, hoping that the system’s underlying
+storage (perhaps in storage system Z) is intact and has data restores
+configured and tested. This might work, but it will take a long time,
+which might be unacceptable in the midst of a global outage.</p>
+</dd>
+<dt>Recovering from independent fallback backups</dt>
+<dd>
+<p>The shortcut (when faced
+with that lower-probability combination of misfortunes) is to back up
+metadata to an independent storage system whose entire stack is
+independent of the primary storage system. As we covered in
+<a data-type="xref" href="#ch17_managing_fallbacks">“Managing Fallbacks”</a>, you can choose the appropriate degree of
+independence. For example, a system using PostgreSQL databases could
+store its database metadata in a separate PostgreSQL instance, or in a different database management system that is architecturally and
+organizationally distinct from PostgreSQL.</p>
+</dd>
+</dl>
+
+<p>Both approaches have pros and cons. Where the trade-offs are justified for the system being designed, ideally you’ll use both for maximum resilience.</p>
+
+<p>Fallback backup systems can potentially be reused for various cross-system resilience needs. For example, encryption keys and related data verification mechanics must not be susceptible to complete loss, as that would cause permanent data loss. With sufficient security precautions, you could preserve the decryption keys needed to recover backup data and the encryption keys needed to re-encrypt the restored data so that it is readable only by its intended system.</p>
+
+<p>Fallback backup systems should have appropriate protections, so you can
+rely on their resilience. For example, read-only backup systems should
+ensure that any read-write capabilities<a data-primary="risk management" data-secondary="data loss" data-startref="rskman_datres_crtdatflbk" data-tertiary="critical data fallbacks" data-type="indexterm" id="id2561"/><a data-primary="resilience" data-secondary="data loss" data-startref="resil_datres_crtdatflbk" data-tertiary="critical data fallbacks" data-type="indexterm" id="id2562"/> cannot destroy the backed-up data.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Recover Fast from Data Loss" data-type="sect2"><div class="sect2" id="ch17_recover_fast_from_data_loss">
+<h2>Recover Fast from Data Loss</h2>
+
+<p>Some of the scariest imaginable<a data-primary="risk management" data-secondary="data loss" data-tertiary="recovery" data-type="indexterm" id="rskman_datres_recov"/><a data-primary="resilience" data-secondary="data loss" data-tertiary="recovery" data-type="indexterm" id="resil_datres_recov"/> disasters occur when both data and metadata
+are lost, or when multiple storage layers are severely disrupted. This can
+apply across block-level and file-level storage systems, databases, and
+higher-level specialized data stores.</p>
+
+<p>If there’s even a recovery plan to execute, recovery speed becomes
+critical. This can be a matter of organizational survivability, and
+failure to recover can have a significant impact on users.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>Storage systems should define a plan to be able to recover, at a minimum, enough that users’ data can start being restored from backups. The plan’s feasibility should be validated for at least
+one failure domain (see <a data-type="xref" href="#ch17_recovering_failure_domains">“Recovering Failure Domains”</a>).</p>
+</li>
+<li>
+<p>Storage systems should estimate the time required to recover to the
+point where most user data can be restored, especially for systems that
+provide users with native backup solutions. Validation of this should already be covered by storage systems, but if not, remember that practicing recovery can uncover surprising roadblocks, such as struggling to obtain sufficient resource quotas for all user data.</p>
+</li>
+<li>
+<p>Storage systems should be designed with a clear strategy for whether to begin responding with no user data (while at least having the opportunity to explain the situation and possibly restore and reconcile later)
+or to remain unavailable until the full dataset has been recovered.</p>
+</li>
+</ul>
+
+<p>Because data loss can have unexpected secondary effects on operational
+capabilities, the risk of recovery plans failing or RPO/RTO/RWO targets (discussed in <a data-type="xref" href="ch16.html#ch16_slos">“SLOs”</a>) not being met is elevated. This is expected, and the one definitive way to discover and mitigate those risks ahead of time is through qualification in <a data-primary="risk management" data-secondary="data loss" data-startref="rskman_datres_recov" data-tertiary="recovery" data-type="indexterm" id="id2563"/><a data-primary="resilience" data-secondary="data loss" data-startref="resil_datres_recov" data-tertiary="recovery" data-type="indexterm" id="id2564"/>a realistic setting.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Qualification" data-type="sect1"><div class="sect1" id="ch17_qualification">
+<h1>Qualification</h1>
+
+<p>As teams continue development, they <a data-primary="risk management" data-secondary="validating resilience capability" data-type="indexterm" id="rskman_valres"/><a data-primary="resilience" data-secondary="validating resilience capability" data-type="indexterm" id="resil_valres"/>need to ensure that changes continue
+to meet requirements and remain backward compatible. Qualification of
+resilience is critical to achieving this. You can think of qualification
+as validating your ability to maintain and grow users’ faith in your
+organization’s products and mission. Here are some areas of focus:</p>
+<dl>
+<dt>Freshness</dt>
+<dd>
+<p>Tests should be updated over time, as requirements change
+in response to lessons learned during outages. This applies to
+all testing categories and mechanisms covered in <a data-type="xref" href="ch14.html#ch14">Chapter 14</a> and is
+applicable to resilience designs implemented by your systems and
+organization.</p>
+</dd>
+<dt>Realism</dt>
+<dd>
+<p>Validation of resilience focuses on observing systems and
+teams in sufficiently realistic yet still controlled circumstances. To
+break this down further, you want to cover workflows within and across
+systems and teams when they are operating in normal, emergency, and even
+disaster modes (covered in <a data-type="xref" href="#ch17_incident_modes">“Incident Modes”</a>). As
+mentioned in earlier chapters, resilience cannot be assumed if the
+expected behaviors haven’t been validated <em>realistically</em> and <em>recently
+enough</em>. Appropriately, use a mix of pre-production and in-production
+environments.</p>
+</dd>
+<dt>Theoretical</dt>
+<dd>
+<p>Where practical validation is infeasible, theoretical
+exercises can still provide substantial value. For example, performing
+a realistic test of recovery from global data loss can subject your
+organization to existential risk. Instead, you can conduct a scenario-based “pretend”
+test (see “Disaster Role Playing” in <a href="https://sre.google/sre-book/accelerating-sre-on-call">Chapter 28 of the first edition of this book</a>) that runs through all the relevant interactions and activities, leaving out the dangerous operations. It’s a bit like <em>Dungeons &amp; Dragons</em>, except players also
+know the “magical” IMAG protocol (discussed in <a data-type="xref" href="ch07.html#ch07_incident_management">“Incident management”</a>). Then, following the theoretical exercise, the “players” can practice further by running safer variants of commands that surfaced during that exercise.</p>
+</dd>
+<dt>Participation</dt>
+<dd>
+<p>If qualification activities are optional, they likely
+won’t be sustained. Instead, aim for what can be made cheap, repeatable,
+and automated, so that the qualification process is in place and
+focused on both discovery of novel failures and validation of remediated
+risks. Where appropriate, automate the scheduling of
+qualification activities, as well as reporting on their regularity and
+results. Automate all activities that don’t require human involvement.
+Where there are cross-team dependencies for qualification, ownership and
+responsibilities should be clear <a data-primary="risk management" data-secondary="validating resilience capability" data-startref="rskman_valres" data-type="indexterm" id="id2565"/><a data-primary="resilience" data-secondary="validating resilience capability" data-startref="resil_valres" data-type="indexterm" id="id2566"/>and acknowledged.</p>
+</dd>
+</dl>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Environments and Shifting Left" data-type="sect2"><div class="sect2" id="ch17_environments_and_shifting_left">
+<h2>Environments and Shifting Left</h2>
+
+<p>Teams should <a data-primary="risk management" data-secondary="validating resilience capability" data-tertiary="test environment maintenance" data-type="indexterm" id="rskman_valres_tstenv"/><a data-primary="resilience" data-secondary="validating resilience capability" data-tertiary="test environment maintenance" data-type="indexterm" id="resil_valres_tstenv"/>maintain environments for all key reliability and resilience
+test types to ensure adequate coverage of their systems. The
+organization should typically make provisioning these environments part
+of the testing strategy for all developers.</p>
+
+<p>System owners should then adapt each qualification activity to the appropriate environment. By using multiple environments, you balance
+safe risk allocation with gradual confidence building:</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>Not all defects can be caught in earlier qualification phases (e.g.,
+integration tests), because the fidelity of the systems under test is
+usually insufficiently representative of the system’s
+realistic (“lived”) experience. However, the more defects you catch
+early, the fewer escape to the later phases of qualification,
+where environments are larger and debugging is more expensive due to many
+changes being tested together.</p>
+</li>
+<li>
+<p>Defects can be caught more quickly after they are introduced in the
+qualification phases where testing can run more frequently. This happens
+more in the earlier phases than in the later phases, because testing is
+cheaper there (e.g., unit tests).</p>
+</li>
+<li>
+<p>Defects found in later phases of qualification should be mostly novel
+discoveries or surprise regressions not caught in earlier phases, with
+the majority of tests passing as a realistic confirmation of behaviors
+tested earlier.</p>
+</li>
+</ul>
+
+<p>After you reach a steady state of qualification coverage, the point of
+expensive tests in more realistic environments is to confirm that the
+cheaper tests in less realistic environments continue to represent and
+successfully qualify all important resilience behaviors. More
+realistic environments can also be used to validate human response plans, ensuring that operators can perform the appropriate actions when the system ends up outside its
+designed norms. It’s important to discover novel failure scenarios.</p>
+
+<p>To reach that steady state, use only pre-production environments to test
+expected resilience behaviors that don’t require the full complexity of
+live production. This will help you establish a safety track record for
+the tests, which reduces <a data-primary="risk management" data-secondary="validating resilience capability" data-startref="rskman_valres_tstenv" data-tertiary="test environment maintenance" data-type="indexterm" id="id2567"/><a data-primary="resilience" data-secondary="validating resilience capability" data-startref="resil_valres_tstenv" data-tertiary="test environment maintenance" data-type="indexterm" id="id2568"/>the probability that the same tests will cause outages if they’re repeated in production.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Realistic Environments" data-type="sect2"><div class="sect2" id="ch17_realistic_environments">
+<h2>Realistic Environments</h2>
+
+<p>Qualification of resilience<a data-primary="risk management" data-secondary="validating resilience capability" data-tertiary="test environments" data-type="indexterm" id="id2569"/><a data-primary="resilience" data-secondary="validating resilience capability" data-tertiary="test environments" data-type="indexterm" id="id2570"/> should at some point use a test environment
+permitting setup of real and complete conditions for targeted failure
+scenarios. We’ll provide a few examples here, but it’s up to you to define what that looks like. Qualifications performed outside of these defined conditions are insufficient for building trust in the system’s resilience capabilities.</p>
+
+<p>For example, to confirm user-visible recovery after the loss of several
+table rows, you must observe that your live system instance—the one that’s currently serving errors to users—resumes its functions after you
+restore a backup or snapshot and copy the missing table rows from there
+into the live database. By actually deleting table rows in such a test, you definitively exercise many parts of the expected recovery workflow.
+Make sure that the test succeeds regularly in non-production
+environments before repeating it in production, and that it uses test data created and added in production specifically for this purpose.</p>
+
+<p>As another example, to qualify a “rollback” of a production router by
+reinstalling and reconfiguring its OS over its standard out-of-band
+network interface, ensure that your network isolates that router such
+that it cannot communicate with anything using its normal network ports.
+Then, after the qualification procedure completes, deisolate the router
+and confirm it resumes normal functions.</p>
+
+<p>It can be expensive to build and maintain environments for realistic
+testing. At Google, we find multiple uses for these environments, which
+increases our ROI. Building and testing system resilience in these
+environments helps offset the costs of the physical resources and
+operational toil of maintaining extra instances of every system that
+makes up the ecosystem whose resilience we test.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Practical Validation" data-type="sect2"><div class="sect2" id="ch17_practical_validation">
+<h2>Practical Validation</h2>
+
+<p>Regardless of the <a data-primary="risk management" data-secondary="validation design considerations" data-type="indexterm" id="rskman_valdescons"/><a data-primary="resilience" data-secondary="validation design considerations" data-type="indexterm" id="resil_valdescons"/>test environment you select, or whether the exercise is
+theoretical, validation should be performed regularly, at a frequency commensurate with the value and costs in each specific case. It can be achieved through a single test or a combination of multiple tests, but only the end-to-end aggregate workflows that accomplish recovery outcomes count as practical validation.</p>
+
+<p>Design expectations include:</p>
+
+<ul>
+<li>
+<p>Resilient behaviors (expected reactions and recovery actions in
+response to changing production conditions) should be observed in
+practice. The more critical system components and/or interactions there
+are, the more coverage and realism their validation deserves. Realism
+includes setting the conditions that would evoke a resilience response
+from a real system or its high-fidelity copy, and confirming that the
+response meets expectations.</p>
+</li>
+<li>
+<p>Teams should validate their operational abilities in all
+modes of operational disruption (see <a data-type="xref" href="#ch17_incident_modes">“Incident Modes”</a>)
+applicable to their systems, prioritized commensurately with tracked
+risk assessments. This includes setting up the work environment
+(workstation, shell or browser access to tools, etc.), locating and accessing relevant standard operating procedures (playbooks), and executing actions that investigate or modify a realistic instance of the system.</p>
+</li>
+</ul>
+
+<p>For example, Google’s resilience engineering team would prepare a
+realistic environment that simulates disaster conditions, tuned for
+practically validating a large set of disaster recovery scenarios, as
+well as testing operations continuity across incident responders.
+Within this environment, we would isolate systems from the rest of
+production (e.g., making DNS and load balancing unavailable, among many
+other critical dependencies), setting the stage for uniquely valuable
+DiRT tests (see <a data-type="xref" href="ch14.html#ch14_disaster_recovery_and_resilience">“Disaster Recovery and Resilience”</a>). The on-callers participating in those tests could then practice recovery procedures in conditions matching the outage conditions they wanted to
+validate against. In tests simulating a substantial network outage, for example, this might enable the discovery of localized cyclic dependencies and behaviors that made certain systems completely unusable (and were easy to fix).</p>
+
+<p>As another example, Google’s teams occasionally handle imminent
+power loss in datacenters. In these situations, emergency power-off procedures for affected clusters rely on the safe shutdown of local
+infrastructure systems. Joint emergency training for datacenter and SRE teams involves real cluster reboots, under controlled but absolutely real conditions.</p>
+
+<p>These examples are meant to show how, due to the complexity of
+Google’s technical stack, systems and teams cannot rely solely on designs
+or theoretical exercises. Instead, we aim to develop maturity demonstrated through continuous validation of resilience capabilities. That maturity can be represented by an expanding set of clear statements in the form: “Workflow X is resilient to failure Y, as measured by Z.”</p>
+
+<p><em>What to validate</em> (the sets of X, Y, and Z) can be defined when systems proactively and regularly  perform resilience scenario analysis, triage
+identified gaps (using approaches such as STPA and CAST), and select which of them need coverage, even in <a data-primary="risk management" data-secondary="validation design considerations" data-startref="rskman_valdescons" data-type="indexterm" id="id2571"/><a data-primary="resilience" data-secondary="validation design considerations" data-startref="resil_valdescons" data-type="indexterm" id="id2572"/>emergency mode.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Emergency Mode" data-type="sect1"><div class="sect1" id="ch17_emergency_mode">
+<h1>Emergency Mode</h1>
+
+<p>Incident response, <a data-primary="resilience" data-secondary="incident response" data-tertiary="emergency mode" data-type="indexterm" id="id2573"/><a data-primary="incident response" data-secondary="emergency mode" data-type="indexterm" id="id2574"/><a data-primary="emergency mode" data-secondary="incident response" data-type="indexterm" id="id2575"/>covered in <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>,
+focuses on mitigating failures. But if failures begin to inhibit
+incident response itself, things stop being normal for responders. At
+Google, we call these conditions <em>emergency mode</em>. To prepare for these conditions, rather than trying to anticipate every possible permutation of failures, we’ve designed a set of flexible response capabilities that have broad applicability.</p>
+
+<p>For example, a responder typically uses security credentials, network
+access, authorization proxies, communications, incident management
+software, and other tools to triage outages and execute
+mitigations (e.g., expedited rollbacks or data pushes). When some of
+these components break (e.g., issuing new credentials), parts of the incident response break, too. The affected responders then need alternative ways to carry out their operational tasks. These responders are now in emergency mode.</p>
+
+<p>The overall objective is to ensure incident response can continue, even
+when core services and infrastructure—including the tools for
+recovery—are failing, thereby preventing a complete lockout. This
+can be achieved by creating distinct, highly resilient fallback
+mechanisms for critical capabilities such as access, communications,
+approvals, and other response CUJs.</p>
+
+<p>Designing for emergency mode involves organization-wide and
+system-specific investments. Generally, the larger the outage, the less
+infrastructure remains available to support incident response, the
+more responders are forced into emergency mode, and the more effectively
+they need to collaborate to mitigate that outage. In these conditions, responders need clear and composable solutions for common parts of incident response CUJs.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incident Modes" data-type="sect2"><div class="sect2" id="ch17_incident_modes">
+<h2>Incident Modes</h2>
+
+<p>Incident <a data-primary="resilience" data-secondary="incident response" data-tertiary="incident modes" data-type="indexterm" id="res_incres_incmod"/><a data-primary="incident response" data-secondary="incident modes" data-type="indexterm" id="incres_incmod"/><a data-primary="emergency mode" data-secondary="incident modes" data-type="indexterm" id="ememod_incmod"/>modes are a tiered approach to incident response
+that categorizes operational circumstances based on the severity of a
+failure (<a data-type="xref" href="#ch17_fig02">Figure 17-2</a>). A key consideration is how that failure affects the tools and infrastructure used to manage the incident itself (<a data-type="xref" href="#ch17_table_01">Table 17-1</a>).</p>
+
+<figure><div class="figure" id="ch17_fig02">
+<img alt="Diagram illustrating the escalation of incident severity from Normal mode to Emergency and Disaster modes." src="assets/sre2_1702.png"/>
+<h6><span class="label">Figure 17-2. </span>Incident severity usually grows as incident mode degrades toward disasters</h6>
+</div></figure>
+<table id="ch17_table_01">
+<caption><span class="label">Table 17-1. </span>Comparison of incident modes</caption>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Key characteristics</th>
+<th>Dependencies and tools</th>
+<th>Target responders</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>Normal</p></td>
+<td><p>The standard mode of operations for everyday incidents, used when failures are routine and do not stop the incident response process.</p></td>
+<td><p>Uses high-dependency systems, standard interfaces, and rich features.</p></td>
+<td><p>Everyone, most of the time.</p></td>
+</tr>
+<tr>
+<td><p>Emergency</p></td>
+<td><p>Failures inhibit the use of normal incident response tools, but it’s possible to anticipate and plan for these failures by building robust fallbacks that allow responders to more or less follow the standard incident response process.</p></td>
+<td><p>Uses low-dependency fallback systems, which may maintain the same standard interfaces familiar to responders.</p></td>
+<td><p>Everyone, most of the time, but with possible capacity or security restrictions (most responders who operate in normal mode can switch to emergency mode fallbacks with minimal training and usually on the spot).</p></td>
+</tr>
+<tr>
+<td><p>Disaster</p></td>
+<td><p>The last-resort mode for catastrophic events, where responders rely on specialized skills and tools in the absence of fundamental distributed services (e.g., global network failure).</p></td>
+<td><p>Uses zero-dependency components and adapts available interfaces to work together (e.g., command-line tools, direct network access).</p></td>
+<td><p>Small specialized operations teams with rigorous training for required highly technical skills.</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>This chapter focuses primarily on emergency mode, because emergencies
+have much higher probability than disasters and deserve priority in
+engineering investment. As mentioned earlier, you should still make
+plans for disasters and allocate sufficient engineering capacity to manage them.</p>
+
+<p class="pagebreak-before less_space">Incident modes can provide distinct roadmaps for both system
+developers and incident responders, helping them maintain operational capacity during failures. For leadership, understanding incident modes can help sustain investment in those roadmaps, ensuring <a data-primary="resilience" data-secondary="incident response" data-startref="res_incres_incmod" data-tertiary="incident modes" data-type="indexterm" id="id2576"/><a data-primary="incident response" data-secondary="incident modes" data-startref="incres_incmod" data-type="indexterm" id="id2577"/><a data-primary="emergency mode" data-secondary="incident modes" data-startref="ememod_incmod" data-type="indexterm" id="id2578"/>they remain effective over time.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="For System Developers" data-type="sect2"><div class="sect2" id="ch17_for_system_developers">
+<h2>For System Developers</h2>
+
+<p>Emergency mode preparedness <a data-primary="resilience" data-secondary="emergency response" data-tertiary="system developer considerations" data-type="indexterm" id="res_ememod_sysdev"/><a data-primary="emergency mode" data-secondary="system developers" data-type="indexterm" id="ememod_sysdev"/>guides system design to ensure resilience by
+creating layered, low-dependency fallbacks. System developers should:</p>
+<dl>
+<dt>Design for low dependency.</dt>
+<dd>
+<p>Create simplified versions of systems
+expected to still work in emergency mode, using the smallest set of
+required dependencies spread across the smallest set of failure domains.
+For example, it’s ideal if the whole system (with dependencies) fits onto
+one machine and doesn’t have RPC dependencies outside that machine. Not
+every system needs such a fallback, given the implementation constraints.
+Prioritize the smallest number of critical systems
+necessary for bootstrapping your organization’s technical stack to the
+point where the majority of engineers can play a role in recovering the
+totality of your systems.</p>
+</dd>
+<dt>Maintain interface consistency.</dt>
+<dd>
+<p>Ensure that normal and emergency
+mode components use compatible interfaces, to optimize transitions for
+responders. For example, to switch to a fallback system, the responder
+will need to change the address of the system they use but shouldn’t need to change the core elements of their workflow.</p>
+</dd>
+<dt>Define fallback capabilities.</dt>
+<dd>
+<p>Contribute documentation modules for
+fallbacks available for the system’s functions and indicate how to correctly activate low-dependency features in the adopted fallback solutions.</p>
+</dd>
+<dt>Support mode transitions.</dt>
+<dd>
+<p>Systems should be able to detect failure,
+suggest to the user how to activate fallbacks or low-dependency modes,
+and show clear indicators when they are operating in emergency mode. For example, error messages could include actionable guidance
+for switching to a fallback. This can substantially reduce cognitive
+load on responders.</p>
+</dd>
+<dt>Retain usability during failures.</dt>
+<dd>
+<p>Systems should remain stable during
+failures that disable features (e.g., through graceful degradation of GUI or CLI behaviors). Avoiding complete user interface failure and reducing responders’ cognitive load improves incident management efficiency at scale over time.</p>
+</dd>
+<dt>Retain security posture.</dt>
+<dd>
+<p>The security posture of system components <em>must
+not degrade</em> as you move from normal to emergency to disaster mode.
+This discourages attempts to <a data-primary="resilience" data-secondary="emergency response" data-startref="res_ememod_sysdev" data-tertiary="system developer considerations" data-type="indexterm" id="id2579"/><a data-primary="emergency mode" data-secondary="system developers" data-startref="ememod_sysdev" data-type="indexterm" id="id2580"/>bypass security by intentionally breaking normal
+systems.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="For Incident Responders" data-type="sect2"><div class="sect2" id="ch17_for_incident_responders">
+<h2>For Incident Responders</h2>
+
+<p>The tiered incident <a data-primary="resilience" data-secondary="emergency response" data-tertiary="incident responder considerations" data-type="indexterm" id="res_ememod_increspz"/><a data-primary="emergency mode" data-secondary="incident responders" data-type="indexterm" id="ememod_incresp"/>modes can serve as a framework for cognitive
+simplification, providing responders with a structured decision tree to
+navigate complex outages. Incident responders should:</p>
+<dl>
+<dt>Follow decision flow.</dt>
+<dd>
+<p>Upon incident activation, responders should
+evaluate the situation through a principled sequence to determine the
+appropriate operational mode:</p>
+<ol>
+<li>
+<p>Is the normal workflow available? (This evaluation happens implicitly.)</p>
+
+<ul>
+<li>
+<p><em>Yes</em>: Remain in <em>normal</em> mode and focus on mitigating failures.</p>
+</li>
+<li>
+<p><em>No</em>: Proceed to the next evaluative step.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Is the system or procedure providing guidance to use emergency
+fallbacks?</p>
+
+<ul>
+<li>
+<p><em>Yes</em>: Transition to <em>emergency</em> mode by substituting the specified fallbacks into the familiar workflows.</p>
+</li>
+<li>
+<p><em>No</em>: Wait for workflow owners to fix it, or, if you cannot
+wait, transition to <em>disaster</em> mode by coordinating a specialized
+response team of available production experts with the most relevant
+experience and knowledge.</p>
+</li>
+</ul>
+</li>
+
+</ol>
+</dd>
+<dt>Embrace fallbacks.</dt>
+<dd>
+<p>Responders should view mode transitions as a
+simplified, binary choice to switch to fallbacks. This mindset ensures
+efficacy during even the most extreme failure scenarios.</p>
+</dd>
+<dt>Prefer guidance over automation.</dt>
+<dd>
+<p>During an outage, automated systems might not see the full system state or the potential hazardous side effects  of their actions. Systems should favor providing actionable guidance to human responders rather than fully automating response. Responders should validate recommendations before acting on them.</p>
+</dd>
+<dt>Anticipate mixed modes.</dt>
+<dd>
+<p>Production environments are complex;
+responders may operate in multiple modes simultaneously, as individual
+tools and workflows transition based on the degradation of their
+specific dependency chains. For example, to mitigate outages of Google
+Chat, responders need to use secondary communication tools as fallbacks,
+but all other response capabilities might still be in normal mode.</p>
+</dd>
+</dl>
+
+<p>Consider procedures for an emergency rollback or an emergency upsize of
+capacity. These are generic safe mitigations critical to preventing and
+mitigating outages, used to expedite changes when time
+is of essence. Normally, these actions might work with a few simple
+actions in a management app or a web interface (this is true at Google).
+However, in emergency mode, the responder might see an error message leading them to documentation for crafting an equivalent CLI command and running it in the appropriate environment. While the CLI differs from the app, the process remains conceptually standard and familiar to the responder. The responder can follow that guidance, and with <a data-primary="resilience" data-secondary="emergency response" data-startref="res_ememod_increspz" data-tertiary="incident responder considerations" data-type="indexterm" id="id2581"/><a data-primary="emergency mode" data-secondary="incident responders" data-startref="ememod_incresp" data-type="indexterm" id="id2582"/>a little extra delay, initiate the emergency action.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="For Leadership" data-type="sect2"><div class="sect2" id="ch17_for_leadership">
+<h2>For Leadership</h2>
+
+<p>Understanding <a data-primary="resilience" data-secondary="emergency response" data-tertiary="leadership considerations" data-type="indexterm" id="id2583"/><a data-primary="emergency mode" data-secondary="leadership" data-type="indexterm" id="id2584"/>emergency mode can help organizational leadership prepare
+for risks during complex outages and sustain that preparedness over time. Leaders should focus on:</p>
+<dl>
+<dt>Broad mitigations</dt>
+<dd>
+<p>Teams should be able to perform relevant
+mitigations already prepared for normal mode in affected critical
+components, and in a timely manner. For example, following a large-scale disruption, systems might need to move quickly into healthy failure domains, and subsequently to fully recover the vacated failure domains (e.g., to avoid data loss or reclaim lost capacity).</p>
+</dd>
+<dt>Resilient workflows</dt>
+<dd>
+<p>Teams and systems should identify and fix regressions or gaps in their workflows for emergency mode, and report gaps in how other teams integrate and document these workflows. A common regression is when low-dependency fallbacks develop cyclic dependencies on their main systems (for which they are the fallback), so the fallbacks become unreliable. For example, when upgrading a system’s dependency to a new technology, teams might configure both the main and the fallback with the same new backends, forgetting that the fallback requires a distinct low-dependency variant. These changes must be detected and undone promptly.</p>
+</dd>
+<dt>Response CUJs</dt>
+<dd>
+<p>Leadership should define, select, and pursue CUJs
+essential for incident response in emergency mode. As a result, teams and systems should be able to participate effectively—and on a short timeline—in mitigations up to company-wide scale during prolonged or permanent failures of the underlying infrastructure.</p>
+</dd>
+</dl>
+
+<p>Another role of leadership is to compensate with discipline
+(e.g., policies and conformance checks) for the natural tendency of people to deprioritize lower-probability risks, even if their impact is perceived as high.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Response CUJs" data-type="sect2"><div class="sect2" id="ch17_response_cujs">
+<h2>Response CUJs</h2>
+
+<p>You can think <a data-primary="resilience" data-secondary="incident response" data-tertiary="response CUJs" data-type="indexterm" id="res_incrsp_rspcuj"/><a data-primary="incident response" data-secondary="response CUJs" data-type="indexterm" id="incresp_rspcuj"/><a data-primary="CUJ (critical user journey)" data-secondary="incident response" data-type="indexterm" id="cuj_incres"/><a data-primary="response CUJs" data-type="indexterm" id="respcujp"/>about incident response in terms of two high-level
+influences:</p>
+
+<ul>
+<li>
+<p>What people need to do</p>
+</li>
+<li>
+<p>What systems supporting people can do</p>
+</li>
+</ul>
+
+<p class="fix_tracking">Together, these determine a minimal set of <em>response CUJs</em> that are
+high-level, sufficient, and practical. Response CUJs must be composable, to enable arbitrary response paths toward mitigation and dependable and redundant, to prevent response lockouts. Each CUJ must be translated into one or more variants, implemented by concrete procedures and systems and with minimal divergence from what responders normally do.</p>
+
+<p>For example, during an outage, responders might need to provide quick internal updates
+to executives. That ability could be constrained if the primary or secondary internal communication tools are down, or if responders are not able to quickly figure out the outage’s impact. Therefore, we
+should have multiple solutions for the following CUJs: inspecting the
+production state of components affected by the outage, and communicating
+and collaborating among responders and with executives. Those solutions might include systems for inspecting production state and documented workflows for performing the inspections in emergency mode.</p>
+
+<p><a data-type="xref" href="#ch17_table_02">Table 17-2</a> shows categories of response CUJs we consider valuable in emergency mode. The prefixes can be used when creating IDs for the response CUJs.</p>
+<table id="ch17_table_02">
+<caption><span class="label">Table 17-2. </span>Categories of response CUJs</caption>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>Category</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>comms</p></td>
+<td><p>
+<span class="keep-together">Establishing communications</span></p></td>
+<td><p>Responders can connect and coordinate with each other, even when normal tools like Chat/Meet are down.</p></td>
+</tr>
+<tr>
+<td><p>imag</p></td>
+<td><p>Coordinating response</p></td>
+<td><p>Responders can manage the incident lifecycle (declaration, roles, tracking, handoff) using the IMAG protocol.</p></td>
+</tr>
+<tr>
+<td><p>dash</p></td>
+<td><p>Informing stakeholders</p></td>
+<td><p>Responders can provide timely updates internally (to executives) or externally (to customers).</p></td>
+</tr>
+<tr>
+<td><p>reach</p></td>
+<td><p>Accessing systems</p></td>
+<td><p>Responders can reach system components (hardware devices, service endpoints) that need fixing or have tools for incident response or recovery, even if normal network/office paths are unavailable.</p></td>
+</tr>
+<tr>
+<td><p>doc</p></td>
+<td><p>Accessing documentation</p></td>
+<td><p>Responders can access critical documentation (procedures, guides), even if standard Google Docs or Markdown access is disrupted.</p></td>
+</tr>
+<tr>
+<td><p>priv</p></td>
+<td><p>Activating permissions</p></td>
+<td><p>Responders can gain the necessary production privileges to modify systems, including mode-appropriate multiparty authorization flows if needed.</p></td>
+</tr>
+<tr>
+<td><p>dbg</p></td>
+<td><p>Debugging systems</p></td>
+<td><p>Responders can investigate system behavior, view monitoring data, and read logs to diagnose issues during an outage.</p></td>
+</tr>
+<tr>
+<td><p>fix</p></td>
+<td><p>Modifying systems</p></td>
+<td><p>Responders can make production changes, including rollbacks, resource adjustments, configuration changes, and load-balancing changes.</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>Within each CUJ category, you can define actual response CUJs and their
+essential capabilities and attributes, including which systems implement
+them. Here’s a short example showing two actual CUJs for the
+establishing communications (“comms”) category:</p>
+
+<ul>
+<li>
+<p><em>CUJs</em>:</p>
+
+<ul>
+<li>
+<p>Real-time text messages among responders (“comms-text”).</p>
+</li>
+<li>
+<p>Real-time audio/video conversations among responders
+(“comms-av”).</p>
+</li>
+</ul>
+</li>
+<li>
+<p><em>Normal systems</em>: Google Chat, Google Meet, Gmail</p>
+</li>
+<li>
+<p><em>Fallback systems</em>: IRC, direct phone calls (cellular)</p>
+</li>
+</ul>
+
+<p>It can be helpful to map the response CUJs to systems and procedures and
+the supported incident modes (N for normal, E for emergency). Tables <a data-type="xref" data-xrefstyle="select:labelnumber" href="#ch17_table_03">17-3</a>, <a data-type="xref" data-xrefstyle="select:labelnumber" href="#ch17_table_04">17-4</a>, and <a data-type="xref" data-xrefstyle="select:labelnumber" href="#ch17_table_05">17-5</a> are examples of what this might look like at Google. For brevity, we’ve included only three systems (the columns to the right in those tables); in reality, the number of systems can vary. The systems shown in these examples are:</p>
+<dl>
+<dt>Chat</dt>
+<dd>
+<p>Google Chat, used for communications using text and images</p>
+</dd>
+<dt>Meet</dt>
+<dd>
+<p>Google Meet, used for voice and video communications</p>
+</dd>
+<dt>Fallback</dt>
+<dd>
+<p>Represents our lower-dependency solutions designed for
+emergency mode</p>
+</dd>
+<dt>IRM</dt>
+<dd>
+<p>Google’s internal incident response management system for the outage lifecycle</p>
+</dd>
+<dt>Docs</dt>
+<dd>
+<p>Google Docs, used for collaborating on dynamic unstructured
+information</p>
+</dd>
+<dt>GCS</dt>
+<dd>
+<p>Google’s public <a href="https://oreil.ly/7pPao">Cloud Status site</a></p>
+</dd>
+<dt>PSH</dt>
+<dd>
+<p>Google’s public <a href="https://oreil.ly/W572P">Personalized Service Health site</a></p>
+</dd>
+</dl>
+<table class="pagebreak-before less_space" id="ch17_table_03" style="width: 85%">
+<caption><span class="label">Table 17-3. </span>Response CUJs for communications</caption>
+<thead>
+<tr>
+<th>CUJ ID</th>
+<th>Description</th>
+<th>Chat</th>
+<th>Meet</th>
+<th>Fallback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>comms-text</p></td>
+<td><p>Real-time text messages among responders.</p></td>
+<td><p>N</p></td>
+<td/>
+<td><p>E</p></td>
+</tr>
+<tr>
+<td><p>comms-av</p></td>
+<td><p>Real-time audio/video conversations among responders.</p></td>
+<td/>
+<td><p>N</p></td>
+<td/>
+</tr>
+</tbody>
+</table>
+<table id="ch17_table_04" style="width: 85%">
+<caption><span class="label">Table 17-4. </span>Response CUJs for incident management</caption>
+<thead>
+<tr>
+<th>CUJ ID</th>
+<th>Description</th>
+<th>IRM</th>
+<th>Docs</th>
+<th>Fallback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>imag-declare</p></td>
+<td><p>Declare an incident and escalate it appropriately.</p></td>
+<td><p>N</p></td>
+<td/>
+<td><p>E</p></td>
+</tr>
+<tr>
+<td><p>imag-handoff</p></td>
+<td><p>Transfer roles and context to incoming responders.</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>E</p></td>
+</tr>
+</tbody>
+</table>
+<table id="ch17_table_05" style="width: 85%">
+<caption><span class="label">Table 17-5. </span>Response CUJs for informing stakeholders</caption>
+<thead>
+<tr>
+<th>CUJ ID</th>
+<th>Description</th>
+<th>IRM</th>
+<th>GCS</th>
+<th>PSH</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>dash-internal</p></td>
+<td><p>Broadcast status updates to affected internal teams.</p></td>
+<td><p>N</p></td>
+<td/>
+<td/>
+</tr>
+<tr>
+<td><p>dash-external</p></td>
+<td><p>Update external users about incident status.</p></td>
+<td/>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>How to implement these (and other) CUJs for emergency mode is up to you. For example, you could decide to use telephone calls for high-bandwidth discussions, IRC channel messages to publish current IMAG role assignments, and an external company’s workspace services for keeping notes.</p>
+
+<p>The best-case scenario is that your normal tooling continues to support these CUJs. However, you may need to do significant engineering work to ensure resilience when “everything is down.” You’ll need to decide how much to invest in additional robustness for <a data-primary="resilience" data-secondary="incident response" data-startref="res_incrsp_rspcuj" data-tertiary="response CUJs" data-type="indexterm" id="id2585"/><a data-primary="incident response" data-secondary="response CUJs" data-startref="incresp_rspcuj" data-type="indexterm" id="id2586"/><a data-primary="CUJ (critical user journey)" data-secondary="incident response" data-startref="cuj_incres" data-type="indexterm" id="id2587"/>each response CUJ.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Training and Practicing" data-type="sect2"><div class="sect2" id="ch17_training_and_practicing">
+<h2>Training and Practicing</h2>
+
+<p>People should <a data-primary="resilience" data-secondary="incident response" data-tertiary="response CUJ training" data-type="indexterm" id="res_incrsp_rspcujtrn"/><a data-primary="incident response" data-secondary="response CUJs" data-tertiary="training" data-type="indexterm" id="incresp_rspcuj_trn"/><a data-primary="CUJ (critical user journey)" data-secondary="incident response" data-tertiary="training" data-type="indexterm" id="cuj_incres_trn"/>practice their ability to use response CUJs in emergency
+mode. While the following considerations apply in any incident mode,
+emergency and disaster modes leave much less margin for error. Because
+people rarely encounter emergency mode, their ability to respond might not develop naturally and will degrade over time. Therefore, you should pay attention to how prepared your incident responders are.</p>
+
+<p>Teams should be prepared to respond to incidents outside of
+normal conditions. Procedures and system behaviors might differ, for example because fallback implementations often
+limit capabilities to only the most critical ones. When we
+know that on-callers can access a broken system even if the central login or proxy systems are unavailable, we can expect outages to have shorter mean time to mitigation (MTTM).</p>
+
+<p class="pagebreak-before less_space">Additionally, teams should maintain sufficient collective expertise
+for their systems to compensate for individuals changing projects or teams or going on vacation, office-wide local personnel outages,
+etc. For example, if only two people have in-depth knowledge of critical
+technical nuances, what will happen if one goes on vacation
+and the other gets sick? Considering such possibilities is part of your
+risk management efforts.</p>
+
+<p>As you prepare your team, it’s important to understand the distinction
+between training and practicing. For example:</p>
+
+<ul>
+<li>
+<p><em>Training</em> gives you an <em>understanding</em> of what CUJs are available
+and how they work.</p>
+</li>
+<li>
+<p><em>Practicing</em> gives you <em>experience</em> performing CUJs before you need to use them during outages.</p>
+</li>
+<li>
+<p><em>Not all training involves practicing</em>—e.g., online courses always
+offer training but only sometimes offer practicing.</p>
+</li>
+<li>
+<p><em>Not all practicing requires training</em>—e.g., a workflow could
+encapsulate all necessary understanding but still require practicing to
+rule out person-specific setup risks.</p>
+</li>
+</ul>
+
+<p>Training and practicing for emergency mode have a higher cost-value
+ratio (this is natural). Therefore, you should prioritize response CUJs
+that are the most frequent and deviate the most from their normal mode
+variants. Here are some ideas for when to pay those costs.</p>
+
+<p>Training may be needed when:</p>
+
+<ul>
+<li>
+<p>New tools are introduced, replacing parts of everyone’s normal
+response 
+<span class="keep-together">processes.</span></p>
+</li>
+<li>
+<p>Whole new processes are introduced, changing everyone’s starting point.</p>
+</li>
+<li>
+<p>There is evidence that responders are insufficiently trained on the
+existing procedures and tools.</p>
+</li>
+</ul>
+
+<p>Practicing might be prioritized as follows (across all categories of
+response CUJs):</p>
+<ol>
+<li>
+<p>Core actions prerequisite to fix production (“reach,” “comms,”
+“priv,” “doc,” “imag”)</p>
+</li>
+<li>
+<p>Common actions required to fix production (“dash,” “dbg,” “fix”)</p>
+</li>
+<li>
+<p>Bespoke actions specifically developed to fix only your system</p>
+</li>
+
+</ol>
+
+<p>For example, it should be easy to see that to
+investigate, debug, and fix a server in production, we first need to
+reach into production, assess the incident state, communicate among
+responders, obtain sufficient privileges, and access contextual
+documentation. Therefore, those core actions should be practiced first, to provide a solid foundation.</p>
+
+<p>It can be hard to make practicing sustainable until it can be made cheap
+and frictionless. It will help if responders who routinely demonstrate
+their ability to perform certain emergency mode actions aren’t required to train on and practice those actions. Instead, they should focus on response CUJs that are becoming stale or <a data-primary="resilience" data-secondary="incident response" data-startref="res_incrsp_rspcujtrn" data-tertiary="response CUJ training" data-type="indexterm" id="id2588"/><a data-primary="incident response" data-secondary="response CUJs" data-startref="incresp_rspcuj_trn" data-tertiary="training" data-type="indexterm" id="id2589"/><a data-primary="CUJ (critical user journey)" data-secondary="incident response" data-startref="cuj_incres_trn" data-tertiary="training" data-type="indexterm" id="id2590"/><a data-primary="response CUJs" data-startref="respcujp" data-type="indexterm" id="id2591"/>have never been touched.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Outlook" data-type="sect1"><div class="sect1" id="ch17_outlook">
+<h1>Outlook</h1>
+
+<p>We’ve covered a lot of ground in this chapter. Before we wrap up, we
+want to provide you with a few helpful pointers.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Drivers and Costs" data-type="sect2"><div class="sect2" id="ch17_drivers_and_costs">
+<h2>Drivers and Costs</h2>
+
+<p>Delivering resilient <a data-primary="resilience" data-secondary="investing in" data-type="indexterm" id="id2592"/>systems can be an expensive undertaking, and the
+act of negating future threats to these systems may make resilience
+improvements difficult to demonstrate (you’re
+<a href="https://oreil.ly/QudSV">proving a negative</a>).
+However, don’t let this dissuade you from action.</p>
+
+<p>In <a data-type="xref" href="#ch17_higher_and_lower_probability">“Higher and Lower Probability”</a>, we discussed prioritizing higher-probability and lower-probability failures. Focusing on higher-probability failures first generates improvements that are easier to demonstrate (e.g., by reducing or eliminating the impact of those failures), which can increase your organization’s willingness to invest in addressing lower-probability but still impactful threats. As a general guide:</p>
+
+<ul>
+<li>
+<p>First, address the failures you’ve been encountering frequently and for which you can estimate the associated costs.</p>
+</li>
+<li>
+<p>Then, identify the lower-probability scenarios that you absolutely cannot afford to experience, and make plans that can “move the needle.”</p>
+</li>
+</ul>
+
+<p>Don’t be surprised if resilience initiatives compete for
+prioritization with your organization’s other priorities, including
+business growth, user satisfaction, and security improvements.</p>
+
+<p>If your organization is subject to industry regulations, you may find
+that business continuity and resilience requirements oblige you to
+demonstrate resilience. These regulatory requirements need to be translated into concrete expectations for resilience. Once you’ve clarified those expectations, the ideas in  this and other chapters can help you identify appropriate approaches.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Taking a Snapshot" data-type="sect2"><div class="sect2" id="ch17_taking_a_snapshot">
+<h2>Taking a Snapshot</h2>
+
+<p>To make resilience  <a data-primary="resilience" data-secondary="evaluating current state" data-type="indexterm" id="id2593"/>practical, start by taking a snapshot of the
+resilience you already have and then defining your resilience strategy
+going forward.</p>
+
+<p>Ask yourself these questions:</p>
+<ol>
+<li>
+<p>How does the understanding of resilience differ across
+people on my teams? Are we all aligned on resilience well enough to make
+consistent choices effectively?</p>
+</li>
+<li>
+<p>In what ways does our system’s current resilience posture match or
+mismatch user expectations about failures?</p>
+</li>
+<li>
+<p>What is our strategy for selecting which resilience improvements to
+prioritize?</p>
+</li>
+
+</ol>
+
+<p>Check that your resilience strategy covers the following areas:</p>
+<ol>
+<li>
+<p>Mission-critical goals the system must support</p>
+</li>
+<li>
+<p>Failure scenarios most likely to disrupt those mission-critical goals</p>
+</li>
+<li>
+<p>Technical solutions for handling failures at acceptable costs</p>
+</li>
+<li>
+<p>Validation plans for the durability of failure-handling solutions</p>
+</li>
+
+</ol>
+
+<p>Once your engineers and leadership are equipped with these details, you can start to iterate through practical improvements.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Making It Practical" data-type="sect2"><div class="sect2" id="ch17_making_it_practical">
+<h2>Making It Practical</h2>
+
+<p>You’ll need a systematic <a data-primary="resilience" data-secondary="systematic approach to" data-type="indexterm" id="id2594"/> approach to exploring the expected behaviors of
+your organization’s systems and users, then deciding whether to
+adjust those expectations or the behaviors themselves:</p>
+<ol>
+<li>
+<p>Define a rubric for what could go awry, so that expected behaviors can be evaluated and prioritized according to the dimensions in this rubric. For example:</p>
+
+<ul>
+<li>
+<p>Global versus localized impact of failure</p>
+</li>
+<li>
+<p>Fail-open or fail-closed reaction to failure</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Start with areas where you have the least justification for not having expected behaviors that could prevent users from being impacted.</p>
+</li>
+<li>
+<p>Check for dependencies that cannot be removed by system designers;
+the impact of failures in those dependencies cannot be ignored.</p>
+</li>
+<li>
+<p>Check for alignment with business advantage, for the business or
+competitive edge, or existential protection.</p>
+</li>
+<li>
+<p>Check for differences in improvement strategies between
+greenfield and brownfield systems, as the approaches might differ.</p>
+</li>
+
+</ol>
+
+<p>After you stack-rank the findings, don’t ignore any dimension entirely.
+Even for categories where you assess the ROI of resilience
+improvements as lower, make sure to confirm that through a small sample of engagements with systems in those categories.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Failures Without People" data-type="sect2"><div class="sect2" id="ch17_failures_without_people">
+<h2>Failures Without People</h2>
+
+<p>One ambitious goal <a data-primary="resilience" data-secondary="AI role" data-type="indexterm" id="id2595"/><a data-primary="AI (artificial intelligence)" data-secondary="role in resilience" data-type="indexterm" id="id2596"/> for the future of resilience is removing engineers
+from the loop of handling routine failures in live systems. This has several valuable effects:</p>
+
+<ul>
+<li>
+<p>For outages, it typically speeds up mitigation by enabling
+faster execution, fewer mistakes, and more predictable outcomes.</p>
+</li>
+<li>
+<p>For engineers, it typically reduces toil represented by failure
+scenarios that are simple enough and consistent enough to be safely
+automated.</p>
+</li>
+<li>
+<p>For reliability and resilience, it keeps investments aligned toward
+innovation.</p>
+</li>
+</ul>
+
+<p>With advancements in AI, agents can start to apply safe mitigations, and
+perhaps mature to assist with more complex outages. This would free up engineers to focus their time and attention on the most critical and
+creative work: handling new design challenges, novel outages, and failure combinations we haven’t seen before, allowing our engineering expertise to continue to evolve and enabling us to further develop, enhance, and mature AI.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch17_conclusion">
+<h1>Conclusion</h1>
+
+<p>Remember that user expectations of reliability and resilience are ultimately what matter. If your system does not demonstrate viability after failures, users might work around its limitations…or switch to a more competitive alternative.</p>
+
+<p>Every resilience improvement has costs but only <em>potential</em>
+future benefits. Your challenge is to prioritize the most valuable
+resilience efforts and determine when progress is sufficient to stop investing in one area and move on to the next. Keep in mind that:</p>
+
+<ul>
+<li>
+<p>Every change you implement to help systems stay reliable beyond their
+current operating parameters can be a small but durable structural
+improvement.</p>
+</li>
+<li>
+<p>As new resilience behaviors get integrated into systems, those
+systems become more reliable. You can then identify the next resilience risks worth mitigating permanently, and the cycle continues.</p>
+</li>
+</ul>
+
+<p>Every resilience improvement counts; small steps add up. That’s how
+investing in resilience advances your organization’s reliability
+frontier.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2432"><sup><a href="ch17.html#id2432-marker">1</a></sup> In terms of what users can assume will be handled versus what they are expected to act on in possible system failures.</p><p data-type="footnote" id="id2453"><sup><a href="ch17.html#id2453-marker">2</a></sup> A <a href="https://oreil.ly/amAbe">risk register</a> is a document recording the probability, potential impact, risk owner, and mitigation strategies for each tracked risk.</p><p data-type="footnote" id="id2511"><sup><a href="ch17.html#id2511-marker">3</a></sup> Anti-affinity is the strategy of keeping components separated to maximize fault tolerance and limit blast radius (e.g., not putting two database replicas in the same rack, or even the same datacenter).</p></div></div></section></body></html>

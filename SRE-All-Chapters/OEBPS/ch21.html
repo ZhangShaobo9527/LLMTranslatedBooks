@@ -1,0 +1,1538 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>How AI Supports SRE</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 21. How AI Supports SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch21">
+<h1><span class="label">Chapter 21. </span>How AI Supports SRE</h1>
+
+
+<p class="byline">By Boris Arnoux, Chris Wasik, 
+<span class="keep-together">Clément Baïsse,</span> 
+<span class="keep-together">Daniel Marshall,</span> Ioannis Papapanagiotou, 
+<span class="keep-together">Ramón Medrano Llamas,</span> 
+<span class="keep-together">Ruslan Meshenberg,</span> Stevan Malesevic, 
+<span class="keep-together">Thomas C. Hubschman, and William Thurston</span><br/>
+
+<span class="keep-together">with Garrett Holthaus</span></p>
+
+<p>The integration of AI into Site Reliability Engineering is a fundamental
+shift in how we engineer, operate, and build production systems.
+However, discussing how AI is used in SRE presents a unique challenge:
+everything is changing so fast, it’s hard to write down anything we’re
+certain will stay true.</p>
+
+<p>As we write this, many organizations are reporting that increasingly large
+percentages of their new code is written by AI, and agents are beginning
+to autonomously navigate complex troubleshooting flows. Just a year ago,
+AI code generation was helpful but required significant human
+interaction. Two years ago, agentic tool use by language models was
+unreliable and brittle. The next year is likely to bring
+similarly large advances in AI capability and deployment, rendering
+any specific tool or “how-to” guide written today outdated within months.</p>
+
+<p>Therefore, while this chapter introduces the tools of today, we focus
+heavily on the durable principles of an AI-first approach. To remain
+relevant, SRE organizations must prioritize finding opportunities where
+AI capabilities truly match business problems, and structure teams to
+adapt as those capabilities evolve.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Complexity, Scale, and Risk" data-type="sect1"><div class="sect1" id="ch21_complexity_scale_and_risk">
+<h1>Complexity, Scale, and Risk</h1>
+
+<p>To understand how <a data-primary="services" data-secondary="growing complexity of" data-type="indexterm" id="serv_complex"/>to apply AI to SRE, we must first appreciate the new
+pressures bearing down on our systems. Microservice architectures played
+a key role in scaling our teams and infrastructure, but they came at a
+cost: interactions between components have become exponentially more
+complex. Modern services now sprawl across vast geographical topologies,
+diverse hardware, and an increasingly intricate regulatory landscape.
+The sheer cognitive load required to understand these systems has become
+a reliability risk in itself.</p>
+
+<p>This complexity is compounded by an accelerated rate of change. Business
+demands have long driven a constant stream of updates, but the emergence
+of AI-driven development has fundamentally altered the equation.
+Developers can now deliver dramatically more system change, faster than
+ever before. This velocity is a double-edged sword: as feature
+delivery accelerates, the rate of failures is likely to as well. We are
+pushing larger, faster changes into systems that are already difficult
+to understand.</p>
+
+<p>Standard automation—scripts, runbooks, and simple logic—is excellent at
+executing known tasks, but it is brittle. It frequently fails when faced with the
+novel, effectively nondeterministic failure modes of complex
+distributed systems. AI offers a way through this complexity. It can
+process unstructured signals, infer intent, and navigate complex
+topologies without rigid rules.</p>
+
+<p>However, this power comes with a fundamental trade-off. Unlike a script
+that either succeeds or fails with a specific error code, <a data-primary="AI (artificial intelligence)" data-secondary="probabilistic operation, consequences" data-type="indexterm" id="id2839"/>AI operates
+probabilistically. It deals in confidence intervals and best guesses,
+not deterministic execution trees. When we introduce this probabilistic
+nature into high-scale, high-speed production environments, we introduce
+the risk of probabilistic failure at scale. At human interaction scales,
+ambiguous processes are typically noticed and caught after one or a few
+deterministic errors. With AI, the scale of interaction can be amplified
+across all of production, and even a 1% error rate can quickly lead to
+catastrophic impacts. As a result, we cannot simply sprinkle AI on top
+of existing processes. Given the magnitude of the change, we must
+rebuild our approach to reliability from the ground up and prioritize a
+cultural shift within our teams to manage this new class of risk. Many
+organizations will need to shift from a culture of verifiable
+correctness to one comfortable operating within<a data-primary="services" data-secondary="growing complexity of" data-startref="serv_complex" data-type="indexterm" id="id2840"/> a spectrum of quality and
+safety, embracing nondeterminism.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Structuring for Evolution" data-type="sect1"><div class="sect1" id="ch21_structuring_for_evolution">
+<h1>Structuring for Evolution</h1>
+
+<p>To navigate<a data-primary="services" data-secondary="growing complexity of" data-tertiary="capabilities needed" data-type="indexterm" id="serv_complex_capab"/><a data-primary="AI (artificial intelligence)" data-secondary="infrastructure complexity, capabilities needed" data-type="indexterm" id="ai_infra_capned"/> this rapid progression, organizations must cultivate three
+distinct 
+<span class="keep-together">capabilities.</span></p>
+
+<p class="fix_tracking"><em>Experimentation</em> functions as a discovery and validation mechanism. A
+dedicated portion of the organization should be asking if current AI
+capabilities match present needs, and then running experiments to
+confirm they match. This group tests the bleeding edge of model and
+agent capabilities with the goal of failing fast and identifying the
+moment a capability becomes viable. At the current rate of change in AI
+and model capabilities, a failed AI experiment today may be followed by
+success in only a few months, so it’s best to regard experimental
+results as provisional, rather than final.</p>
+
+<p>Once an experiment completes, the organization must determine if the
+outcome is ready for <em>productionization</em> and broader deployment. When
+broader deployment is warranted, this involves rigorous engineering to
+build the guardrails, evaluation pipelines, and integration with
+existing infrastructure necessary to harden experiments into
+production-grade reliability tools. Ongoing validation and monitoring of
+behavior and impact is necessary, as AI capabilities can progress
+dynamically and unevenly. As an example, a more capable model
+driving existing processes may take more action than expected in
+production, leading to undesirable outcomes if not effectively validated
+and monitored.</p>
+
+<p>Finally, rapid change requires <em>enablement</em> and change management. An
+AI-first transition creates significant human friction, requiring a
+dedicated focus on training and culture. We must rebuild the intuition
+of senior engineers accustomed to deterministic systems while upskilling
+junior engineers who may <a data-primary="services" data-secondary="growing complexity of" data-startref="serv_complex_capab" data-tertiary="capabilities needed" data-type="indexterm" id="id2841"/><a data-primary="AI (artificial intelligence)" data-secondary="infrastructure complexity, capabilities needed" data-startref="ai_infra_capned" data-type="indexterm" id="id2842"/>never triage an incident without an AI
+assistant.</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Hierarchy of Production Health" data-type="sect1"><div class="sect1" id="ch21_the_hierarchy_of_production_health">
+<h1>The Hierarchy of Production Health</h1>
+
+<p>We organize our AI strategy <a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-type="indexterm" id="id2843"/><a data-primary="hierarchy of production health" data-type="indexterm" id="id2844"/>around the hierarchy of production health introduced in <a data-type="xref" href="ch01.html#ch01">Chapter 1</a>. This
+hierarchy prioritizes the foundational elements that remain constant
+regardless of how quickly AI progresses and how fast change comes. We
+will explore AI in SRE by following this hierarchy:</p>
+<dl>
+<dt>1. Sociotechnical foundations (psychological safety and continuous improvement)</dt>
+<dd>
+<p>Before we can
+deploy AI agents to manage production, we must establish the governance,
+safety, and cultural frameworks that allow humans to trust the resulting
+changes and be in a good position to suggest improvements.</p>
+</dd>
+<dt>2. Situational awareness</dt>
+<dd>
+<p>We move beyond simple monitoring to deep
+understanding, using AI to perceive intent and impact amid the noise.</p>
+</dd>
+<dt>3. Continuous preparedness</dt>
+<dd>
+<p>When systems fail, AI acts as a partner for
+incident management, mitigation, and learning.</p>
+</dd>
+<dt>4. Infrastructure design</dt>
+<dd>
+<p>We engineer the environment to be robust,
+using standardized interfaces, adaptive release engineering, and toil
+elimination.</p>
+</dd>
+<dt>5. Resilient products</dt>
+<dd>
+<p>Reliability is baked into the product from day
+zero through AI-augmented design and testing.</p>
+</dd>
+<dt>6. Emergent reliability</dt>
+<dd>
+<p>The ultimate goal is a system that is reliable
+by default, where autonomy reduces the need for manual interventions.</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Sociotechnical Foundations" data-type="sect1"><div class="sect1" id="ch21_psychological_safety_and_continuous_improvement">
+<h1>Sociotechnical Foundations</h1>
+
+<p>A crucial<a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-type="indexterm" id="id2845"/><a data-primary="AI (artificial intelligence)" data-secondary="cultivating trust in" data-type="indexterm" id="ai_trst"/><a data-primary="psychological safety" data-secondary="cultivating" data-type="indexterm" id="psysaf_cult"/> first step in allowing humans to trust AI and improve it is establishing true psychological safety: a blameless environment where
+engineers are able and willing to take informed risks to
+advance the state of what’s possible in production.</p>
+
+<p>This transformation relies on a positive feedback loop: as we pivot from
+deterministic automation to probabilistic production management, a
+strong culture of blamelessness becomes a prerequisite to success.
+Organizations must avoid the trap of mandating mechanical AI
+adoption before integrating sufficient safety and governance measures,
+as doing so undermines both trust and the long-term viability of these
+practices.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Role of Humans" data-type="sect2"><div class="sect2" id="ch21_the_role_of_humans">
+<h2>The Role of Humans</h2>
+
+<p>As AI becomes <a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-tertiary="role of humans" data-type="indexterm" id="hierprodh_soctech_hum"/><a data-primary="AI (artificial intelligence)" data-secondary="increasing use of, changing role of humans" data-type="indexterm" id="ai_incus_rolhum"/>the method of choice for reliably and scalably automating
+workflows traditionally performed by domain experts, concern naturally
+arises. Engineers worry whether AI will replace them, whether it can match
+human reliability benchmarks, and whether they can trust nondeterministic
+architectures during critical outages. These concerns are natural
+reactions to a radical shift that challenges decades of established
+reliability best practices. Our current workflows are designed with
+specific assumptions about human intervention—assumptions that AI often
+invalidates. To enact such a drastic change, technological evolution is
+not sufficient; we require sociotechnical change management.</p>
+
+<p>In these early days, given the rapid evolution and improvement of state-of-the-art models, there is considerable uncertainty and discussion about the future role of humans. From human
+in the loop to human over the loop, will humans get <em>out</em> of the loop?</p>
+
+<p>Our hypothesis, which we ground in history, is that AI will not replace
+humans in the field of SRE: quite the opposite. Humans possess deep
+domain expertise and, crucially, judgment. AI augments this with
+machine-speed response times and always-on coverage. We are already
+seeing that domain experts armed with AI insight detect issues faster,
+diagnose them more accurately, and remediate them more thoroughly than
+their unaided colleagues. Furthermore, operations that were previously
+too costly to justify—such as large-scale migrations or broad code
+refactoring—are becoming viable, offering benefits at scale for a
+fraction of their pre-AI costs.</p>
+
+<p>The demand for production expertise currently outstrips supply. AI
+assistance helps bridge this gap by enabling more engineers to assume
+production responsibilities. It allows junior engineers to integrate
+best practices into their daily work, acting as a training accelerant
+rather than a threat. The trade-off here is that AI creates yet another
+level of abstraction, separating engineers from what’s happening on the
+machine level. AI is fundamentally different from previous shifts in the
+industry (such as GUIs and IaC). Not only is it a faster-moving
+transformation, but its impact is not limited to any one practice or
+industry—we’re seeing AI adoption and the resulting changes
+proliferating rapidly into every knowledge-based domain.</p>
+
+<p>We foresee a dynamic similar to the economic concept of
+<a href="https://oreil.ly/H81tN">the Jevons paradox</a>, which <a data-primary="Jevons paradox" data-type="indexterm" id="id2846"/>suggests that as technology increases the efficiency with
+which a resource is used, the total consumption of that resource rises
+rather than falls. As AI is showing early promises of reducing the cost
+of reliability for individual services, organizations are unlikely to
+reduce headcount. Instead, they will likely consume these efficiency
+gains by either absorbing the growth of the compute and datacenter
+resources required to power them, or demanding higher reliability
+across a broader portfolio of services—either way, increasing the total
+scope of SRE work.</p>
+
+<p>The role itself, however, will undergo significant changes. Since the
+creation of the discipline, SREs have been on a relentless quest to
+automate mundane and repetitive work. AI allows us to make a significant
+dent in this toil, freeing engineers to focus on the creative aspects of
+their roles: architecting, designing, and hardening production-grade
+systems rather than simply operating them. This shift brings SRE closer
+to its ultimate goal of engineering reliable-by-default systems. Humans
+will remain essential to mission-critical operations, but instead of
+executing static playbooks, they will engage primarily at critical
+junctures where their expertise and judgment are decisive. These human-driven interactions are captured and included in model training and
+future iterations, ensuring the AI aligns more closely with human
+judgment. This interaction cycle allows both engineers and AI
+systems to continuously<a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-startref="hierprodh_soctech_hum" data-tertiary="role of humans" data-type="indexterm" id="id2847"/><a data-primary="AI (artificial intelligence)" data-secondary="increasing use of, changing role of humans" data-startref="ai_incus_rolhum" data-type="indexterm" id="id2848"/> improve.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Safety and Reliability of AI Solutions" data-type="sect2"><div class="sect2" id="ch21_safety_and_reliability_of_ai_solutions">
+<h2>The Safety and Reliability of AI Solutions</h2>
+
+<p>Introducing AI agents <a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-tertiary="changes to system risk" data-type="indexterm" id="hierprodh_soctech_rsk"/><a data-primary="AI agents" data-secondary="changes to system risk" data-type="indexterm" id="ai_sysrsk"/>into the production environment fundamentally
+changes the risk profile of our systems. Unlike traditional software
+that executes deterministic logic, AI agents operate with a degree of
+nondeterminism and autonomy. The primary challenge in applying this to
+production management is the absence of a safe execution environment. In
+software development, a coding agent can safely make a mistake within a
+local repository; the worst-case scenario is a failed build. In
+production, however, an agent interacts with live user traffic, real
+revenue streams, and critical data. A mistake here—like incorrectly
+identifying a healthy cluster as unhealthy and draining it—causes an
+immediate, tangible outage.</p>
+
+<p>This risk is compounded by the sheer volume of interaction. As AI
+accelerates software development, we anticipate a massive increase in
+the volume of changes heading toward production—potentially orders of
+magnitude higher than today. We are already seeing SREs in our teams
+struggle to keep up with this rate of change with their current
+processes. In response, our SREs are now using AI in production just to
+keep up with AI in development. The safety <a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-startref="hierprodh_soctech_rsk" data-tertiary="changes to system risk" data-type="indexterm" id="id2849"/><a data-primary="AI agents" data-secondary="changes to system risk" data-startref="ai_sysrsk" data-type="indexterm" id="id2850"/>of these production agents is
+paramount.</p>
+
+<p>To entrust AI <a data-primary="AI (artificial intelligence)" data-secondary="safety architecture considerations" data-type="indexterm" id="id2851"/><a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-tertiary="safety architecture considerations" data-type="indexterm" id="id2852"/>with production access, we require a safety architecture
+built on three pillars: <em>transparency, contextual awareness</em>, and
+<em>progressive authorization</em>.</p>
+
+<p>These pillars do not exist in a vacuum; they are extensions of
+established SRE practices. For example, AI safety boundaries can be
+directly tied to error budgets. If a service’s error budget is depleted,
+the safety architecture can automatically downgrade the AI from
+autonomous execution back to a human-in-the-loop advisory
+role until the budget recovers.</p>
+
+<p>When implementing this architecture, teams should prioritize
+foundational controls first: strict least-privilege access for AI agents
+and dry-run auditing capabilities. Only once these day-zero controls are
+proven should teams layer on complex, dynamic anomaly detection and
+automated mitigation capabilities.</p>
+
+<p>To entrust an AI agent with production access, first, the AI must be transparent. It is not enough for an agent to
+execute a mitigation; it must explain its reasoning, the signals it
+used, and its confidence level. This transparency allows human operators
+to verify the “why” behind the action in real time. Second, the agent
+must possess contextual awareness. A specific command might be safe on a
+Tuesday morning when customer traffic is low but catastrophic during a
+peak traffic event. Therefore, every action must undergo a
+real-time risk assessment that considers the surrounding
+context—including deployment freezes, error budgets, and active
+incidents—before execution.</p>
+
+<p>Finally, we rely on progressive authorization. We do not grant agents
+root access on day one. Instead, trust is earned. Agents typically begin
+with read-only access, diagnosing issues without the ability to change
+state. Only after demonstrating consistent success in evaluation
+pipelines and real usage do they graduate to proposing actions for human
+approval, and eventually to autonomous execution for low-risk tasks.
+This graduated approach reduces the risk that the agent’s autonomy
+exceeds its proven competence and ensures that mistakes made and the
+human corrections applied feed into the process of continuous
+improvement.</p>
+
+<p>This dynamic evaluation system <a data-primary="AI (artificial intelligence)" data-secondary="service reliability considerations" data-type="indexterm" id="ai_servrel"/><a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-tertiary="AI performance as service reliability problem" data-type="indexterm" id="hier_stf_rel"/>treats AI performance as a service
+reliability problem. AI helpfulness and accuracy can be tracked using
+standard SLOs. For example, an AI agent might have an SLO for
+“mitigation proposal latency,” while safety constraint violations
+consume an “AI error budget” that, if exceeded, pauses autonomous
+operations.</p>
+
+<p>Even with mature agents, absolute human control remains essential. We
+require break-glass mechanisms to immediately block an agent’s access to
+production if it begins misbehaving. We have found engineers are more
+able to engage with agents confidently and in a psychologically safe way
+when they have the ability to quickly stop any actions that are underway
+or planned.</p>
+
+<p>Crucially, we introduce the principle of <em>reversible
+operations</em>: a production action is not taken unless the agent knows how
+to undo that action. If an agent pushes a configuration change to fix
+latency, it must immediately monitor the result over an appropriate,
+context-aware time window. If the service fails to reach expected health
+thresholds after accounting for normal warmup periods, it must
+autonomously trigger the inverse operation to restore the previous
+state. The action, validation, and potential rollback are treated as a
+single transaction that either succeeds completely or is fully reverted.
+While the principle of reversible actions is foundational to SRE, in
+practice—and especially across the broader industry—widespread adoption
+of the rollback approach remains rare. The industry norm is often to
+rely on “fixing forward” during crises. Paradoxically, AI agents
+provide the forcing function to finally implement strict reversibility:
+because agents lack the human intuition required to safely navigate a
+fix-forward scenario, the requirement for automated, guaranteed
+rollbacks becomes absolute.<sup><a data-type="noteref" href="ch21.html#id2853" id="id2853-marker">1</a></sup></p>
+
+<p>The reliability of these safety mechanisms depends entirely on the
+quality of the underlying technical foundations. An agent is only as
+good as the data it perceives. Therefore, we must ensure high-fidelity
+access to system topology, dependency maps, service lifecycle events,
+and historical incident data. This is often managed via real-time
+retrieval-augmented generation (RAG) platforms, which provide the agent
+with the immediate state of the world at the time of action.
+Additionally, agents must interact with the world through clean,
+standardized interfaces. Tools should be exposed via protocols like the
+Model Context Protocol (MCP), which allow agents to interact
+deterministically with infrastructure APIs. As we move toward
+multi-agent systems, we also require standardized Agent-to-Agent (A2A)
+communication protocols, allowing specialized agents to coordinate with
+generalist agents without human mediation. Orchestrating
+these collections of agents—reliably launching, monitoring and connecting them—emerges as a first-class infrastructure challenge that
+must be solved to operate safely at scale.</p>
+
+<p>Ultimately, we must close the loop between operation and improvement.
+Ensuring reliability requires moving beyond static test suites to
+dynamic evaluation systems that assess agents on safety, helpfulness,
+and accuracy. Just as a traditional service uses an availability SLO
+(e.g., 99.9% uptime) and an error budget to govern deployment velocity,
+an AI agent should have a helpfulness SLO (e.g., 95% of suggestions
+accepted by humans) and a safety SLO. These AI evaluation signals must
+be integrated into established reliability frameworks. For example, when
+an AI agent exhausts its safety error budget, it is automatically
+degraded from autonomous execution back to human-in-the-loop mode,
+treating AI impact assessment exactly like any other service
+degradation. This feedback loop (shown in <a data-type="xref" href="#ch21_fig01">Figure 21-1</a>) allows us to
+retrain models and refine prompts, helping to ensure that our agents
+become smarter and safer<a data-primary="AI (artificial intelligence)" data-secondary="service reliability considerations" data-startref="ai_servrel" data-type="indexterm" id="id2854"/><a data-primary="hierarchy of production health" data-secondary="sociotechnical foundations" data-startref="hier_stf_rel" data-tertiary="AI performance as service reliability problem" data-type="indexterm" id="id2855"/> with every incident they assist.</p>
+
+<figure><div class="figure" id="ch21_fig01">
+<img alt="Diagram illustrating the AI operations safety architecture and feedback loop, highlighting the process from AI agent proposal to risk assessment and human approval, with pathways for execution and feedback for model refinement." src="assets/sre2_2101.png"/>
+<h6><span class="label">Figure 21-1. </span>AI operations safety architecture and feedback loop</h6>
+</div></figure>
+
+<p>With these safety architectures and feedback loops established, we
+create the psychological safety and continuous improvement necessary for
+humans to trust the resulting changes. Only then can we move on to utilizing these agents to achieve superior
+situational awareness of our complex systems.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Situational Awareness" data-type="sect1"><div class="sect1" id="ch21_situational_awareness">
+<h1>Situational Awareness</h1>
+
+<p>With the safety foundations in place, the next layer in the hierarchy is knowing what is
+happening. AI fundamentally changes how we perceive the system, allowing
+us to move from metrics to meaning. Rather than replacing traditional
+observability signals, AI synthesizes
+them, correlating disparate data streams to provide high-level semantic
+context and actionable insights.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Metrics to Meaning" data-type="sect2"><div class="sect2" id="ch21_from_metrics_to_meaning">
+<h2>From Metrics to Meaning</h2>
+
+<p>Incident detection <a data-primary="hierarchy of production health" data-secondary="situational awareness" data-type="indexterm" id="hier_sitawar"/><a data-primary="situational awareness" data-secondary="incident detection" data-type="indexterm" id="sitawar_incdet"/><a data-primary="incident detection and analysis" data-type="indexterm" id="incdetanal"/>has traditionally relied on well-established
+telemetry—metrics, logs, and traces—to identify production issues. While
+essential, these methods are often blind to issues that are novel,
+subtle, or emerging, or that primarily manifest as user-perceived problems
+rather than clear deviations in observability signals. Pre-AI detection systems are
+typically overbroad or scoped to known failure modes, with alerting
+logic accumulating reactively over a product’s lifetime. This strategy
+scales poorly; humans cannot predict every new failure mode before it
+occurs.</p>
+
+<p>Furthermore, what you measure isn’t always what the customer
+experiences. Without granular knowledge of every customer’s use case,
+SLOs remain approximations. A 0.1% error rate may seem negligible in
+aggregate, but for a customer that calls an API 1,000 times per
+operation, that rate guarantees failure in almost every attempt. There
+may also be customers whose requests are serviced in a way that leads to
+much higher error rates than our high-level dashboards reveal. For
+example, most of a 0.1% error rate might originate from just 1% of
+customers with a unique usage pattern that fails 10% of the time. It is
+in these context-dependent gaps—where metrics look green but users are
+in pain—that AI has the highest potential to revolutionize our
+situational awareness.</p>
+
+<p>In <a data-type="xref" href="ch08.html#ch08_implicit_slos">“Implicit SLOs”</a>, we discussed how customer
+expectations anchor around historical performance. Consequently, a great
+deal of research was applied to anomaly detection using traditional
+machine learning techniques to close this gap. However, as illustrated in
+<a data-type="xref" href="#ch21_fig02">Figure 21-2</a>, distinguishing benign anomalies from true failures proved
+difficult in noisy production environments. A new feature launch, a
+regional traffic migration, or load-shedding mechanisms kicking in can
+all look, mathematically, like anomalies. These statistical approaches
+failed to find widespread adoption because they lacked an understanding
+of user intent—did the user actually get the outcome they were
+expecting?</p>
+
+<figure><div class="figure" id="ch21_fig02">
+<img alt="Diagram comparing network traffic over time between an ideal scenario with a clear anomaly and a reality scenario with dynamic fluctuations caused by events like feature launches and regional traffic migrations." src="assets/sre2_2102.png"/>
+<h6><span class="label">Figure 21-2. </span>Network traffic over time: ideal versus reality</h6>
+</div></figure>
+
+<p>One often untapped data source aligns well with user intent: written
+customer feedback. Historically, processing unstructured feedback from
+support tickets, social media, and forums was too slow to be an
+operational signal, but language models have fundamentally changed this
+dynamic. Unlike traditional metrics, this information is rich in
+context, often taking the form of “I tried to do X, with environment Y,
+and got outcome Z.”</p>
+
+<p>By clustering feedback based on common properties like time range,
+operation, environment, or region, AI provides a highly reliable signal
+for emerging outages. The semantic reasoning capabilities of language
+models allow them to piece together fragmented reports that individually
+lack sufficient detail but collectively describe a clear failure
+pattern. These clusters offer distinct advantages over traditional
+alerts: the volume of the cluster serves as a natural severity signal,
+and the intrinsic effort required <a data-primary="situational awareness" data-secondary="incident detection" data-startref="sitawar_incdet" data-type="indexterm" id="id2856"/><a data-primary="incident detection and analysis" data-startref="incdetanal" data-type="indexterm" id="id2857"/>to write feedback acts as a noise
+filter.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Detectr" data-type="sect2"><div class="sect2" id="ch21_case_study_detectr">
+<h2>Case Study: Detectr</h2>
+
+<p>To illustrate how these<a data-primary="situational awareness" data-secondary="incident detection" data-tertiary="Detectr platform" data-type="indexterm" id="sitawar_incdet_dp"/><a data-primary="incident detection and analysis" data-secondary="Detectr platform" data-type="indexterm" id="incdetanal_dp"/> concepts move from theory to production, let’s look
+at Detectr, Google SRE’s Gemini-powered platform that analyzes and
+organizes user feedback to detect user-reported outages. This is
+essential to monitoring modern systems, as many have intermittent failure
+modes with differential impact affecting only some users and some use
+cases. As we add AI to these customer-facing systems, they will fail
+probabilistically and partially. Ultimately, end users are likely to be
+the first people to detect these targeted, partial failures. Detectr
+doesn’t just provide a way of addressing user feedback; it harnesses
+that feedback to allow end-to-end quality measurement with grounding in
+real human users.</p>
+
+<p>Detectr aggregates signals across social media, customer support,
+product forums, and other human sources. It functions as an important
+backstop to traditional monitoring and is designed to catch novel issues
+that slip through the metric-based net. As shown in <a data-type="xref" href="#ch21_fig03">Figure 21-3</a>, this is
+done through a multipass AI pipeline that generates structured outage
+reports:</p>
+<dl>
+<dt>1. Augment</dt>
+<dd>
+<p>Internal information about the system state is attached
+from the time of the complaint.</p>
+</dd>
+<dt>2. LLM filter</dt>
+<dd>
+<p>Irrelevant posts are removed and data is categorized.</p>
+</dd>
+<dt>3. Embedding cluster</dt>
+<dd>
+<p>Loose embedding clustering is performed to reduce
+the search space.</p>
+</dd>
+<dt>4. LLM cluster</dt>
+<dd>
+<p>Related reports are grouped together to identify
+potential outages.</p>
+</dd>
+<dt>5. LLM report</dt>
+<dd>
+<p>A structured report is generated for triage.</p>
+</dd>
+<dt>6. Notification</dt>
+<dd>
+<p>The report can be delivered through normal mechanisms
+like email, tickets, or paging.</p>
+</dd>
+</dl>
+
+<p>This process transforms messy, unstructured user feedback into
+structured, actionable outage notifications that can be sent to the
+appropriate teams.</p>
+
+<figure><div class="figure" id="ch21_fig03">
+<img alt="Diagram of a data processing pipeline transforming unstructured data through LLM filtering and clustering into actionable alerts." src="assets/sre2_2103.png"/>
+<h6><span class="label">Figure 21-3. </span>A pipeline for scalably processing unstructured data</h6>
+</div></figure>
+
+<p>In early 2026, Detectr matured from a prototype into core
+infrastructure. It has been adopted by teams across all major Google
+products and has successfully served as the primary method of escalation
+for many outages. We estimate Detectr’s value with measurements taken
+during Q4 2025 and Q1 2026—it reduced the impact of these events on customers
+by thousands of cumulative hours, thanks to earlier detection and deeper
+understanding. As Ruslan Meshenberg, VP of SRE, commented:</p>
+<blockquote>I think Detectr has been one of the most meaningful projects/products under the AI Ops Program this year. [It’s] already shown
+significant business impact for multiple PAs—YouTube, Maps, Ads, GCP [Google Cloud]—providing significantly earlier detection for issues/outages and thus
+allowing SRE/SWE teams to address the issues earlier. The combination
+of revenue saved and reputation of reliability upheld by virtue of
+using Detectr cannot be overstated. It’s on a clear trajectory to
+become used almost universally across all Google PAs. As the executive
+sponsor of the AI Ops Program, I think it’s becoming one of the biggest
+breakout hits of 2025.</blockquote>
+
+<p>This success illustrates the productionization phase of AI adoption we
+discussed in <a data-type="xref" href="#ch21_structuring_for_evolution">“Structuring for Evolution”</a>. Detectr began as an experiment in
+semantic reasoning, but its value came from rigorous
+engineering—building the guardrails, filters, and integration pipelines
+that turned an experiment into a<a data-primary="situational awareness" data-secondary="incident detection" data-startref="sitawar_incdet_dp" data-tertiary="Detectr platform" data-type="indexterm" id="id2858"/><a data-primary="incident detection and analysis" data-secondary="Detectr platform" data-startref="incdetanal_dp" data-type="indexterm" id="id2859"/> durable reliability tool.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI Impact Assessment" data-type="sect2"><div class="sect2" id="ch21_ai_impact_assessment">
+<h2>AI Impact Assessment</h2>
+
+<p>Finally, <a data-primary="situational awareness" data-secondary="AI impact assessment" data-type="indexterm" id="id2860"/><a data-primary="hierarchy of production health" data-secondary="situational awareness" data-startref="hier_sitawar" data-type="indexterm" id="id2861"/>situational awareness requires understanding the <em>scope</em> of the
+impact. Complexity in modern services often obscures the blast radius of
+an incident, making targeted customer communication difficult.</p>
+
+<p>We use AI to bridge the gap between technical symptoms and customer
+impact. An AI agent can review an incident summary, map it to the most
+likely location and service, and correlate it with an asset management
+system to determine the most likely set of impacted customers.
+Furthermore, AI-based matching systems can correlate incoming customer
+cases with active incidents in real time, automatically detecting if a
+new report is a symptom of a known outage. This moves impact assessment
+from a post-incident estimate to a real-time operational signal,
+allowing SREs to communicate clearly with everyone who is affected.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Continuous Preparedness" data-type="sect1"><div class="sect1" id="ch21_emergency_preparedness">
+<h1>Continuous Preparedness</h1>
+
+<p>Once we know the <a data-primary="continuous preparedness" data-secondary="incident response" data-type="indexterm" id="contprp_incidresp"/>system is broken, we must fix it. This layer covers the
+reaction to failure: managing the complexity of the incident, mitigating
+the impact, and ensuring we learn from the failure to prevent
+recurrence.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Managing Incident Complexity" data-type="sect2"><div class="sect2" id="ch21_managing_incident_complexity">
+<h2>Managing Incident Complexity</h2>
+
+<p>A well-executed <a data-primary="hierarchy of production health" data-secondary="continuous preparedness" data-tertiary="incident complexity" data-type="indexterm" id="hier_contprp_inccom"/><a data-primary="AI agents" data-secondary="generating incident-specific insights" data-type="indexterm" id="aignts_incspcinsght"/><a data-primary="incident response" data-secondary="AI agents" data-tertiary="generating incident-specific insights" data-type="indexterm" id="incresp_aignt_incspc"/>incident response is a race against business loss and
+customer impact. In our most impactful incidents, it is common for the
+number of responders to grow, and with it the communication
+overhead. We want everyone involved in an incident to understand their role
+and concentrate on their assigned task. Reducing overhead and
+distraction is an important goal, and AI can help significantly here.</p>
+
+<p>Instead of asking the incident commander to manually summarize the state
+of the world for new joiners, AI agents monitor the communication surfaces
+used during the incident, such as traditional incident response tools, chat spaces,
+videoconferences, and tracking documents. They then consolidate and
+summarize this stream of information to ensure the right information is
+shared at the right time. Furthermore, agents support increased context
+sharing between humans participating in the incident (e.g., during shift
+changes), preventing context loss and eliminating the toil
+of manually creating handoff documents.</p>
+
+<p>The need for dynamic, real-time, actionable context extends beyond
+communication to the tools we use during incident response. Historical
+monitoring dashboards were often static, displaying a predefined set of
+metrics based on rules defined months or years previously. This approach does
+not tailor to specific incidents and rarely provides a single view that
+responders can use to understand the current state. As a result, the
+people working on the incident typically needed to open multiple
+dashboards—each with multiple graphs that might or might not be
+important—and manually interact with them based on dimensions relevant
+to the incident, such as location, time, or customer segment.</p>
+
+<p>To manage this complexity and speed up understanding during an incident, we
+use AI to generate incident-specific insights and tailor the set of
+graphs on the fly. The AI agents use multiple approaches to
+decide what graphs need to be on the dashboard:</p>
+<dl>
+<dt>Historical similarity</dt>
+<dd>
+<p>Using embeddings on the incident context and
+comparing distance to historical incidents to find graphs that were
+useful in the past</p>
+</dd>
+<dt>Playbook context</dt>
+<dd>
+<p>Extracting graphs mentioned in the playbooks
+triggered by the alert</p>
+</dd>
+<dt>Intent matching</dt>
+<dd>
+<p>Selecting graphs that meet the logical intent of
+the incident description</p>
+</dd>
+</dl>
+
+<p>Once the agent has created the set of dashboards, the responder is
+presented with suggestions of relevant dashboards and views that
+show impact, related systems, and potential early signals of trouble.
+Because agents can search quickly across many signals and many sources of
+context, this capability has driven a measurable reduction in
+the time it takes to mitigate<a data-primary="hierarchy of production health" data-secondary="continuous preparedness" data-startref="hier_contprp_inccom" data-tertiary="incident complexity" data-type="indexterm" id="id2862"/><a data-primary="AI agents" data-secondary="generating incident-specific insights" data-startref="aignts_incspcinsght" data-type="indexterm" id="id2863"/><a data-primary="incident response" data-secondary="AI agents" data-startref="incresp_aignt_incspc" data-tertiary="generating incident-specific insights" data-type="indexterm" id="id2864"/> incidents across Google.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Mitigation Versus Root Cause Analysis" data-type="sect2"><div class="sect2" id="ch21_mitigation_vs_root_cause_analysis">
+<h2>Mitigation Versus Root Cause Analysis</h2>
+
+<p>When applying AI to<a data-primary="hierarchy of production health" data-secondary="continuous preparedness" data-tertiary="incident response goals" data-type="indexterm" id="hier_contprp_incresgls"/><a data-primary="incident response" data-secondary="AI agents" data-tertiary="response goals" data-type="indexterm" id="incresp_aignt_rspgls"/> incident response, it is important to distinguish
+between two distinct<a data-primary="mitigations" data-secondary="incident response" data-type="indexterm" id="id2865"/><a data-primary="RCA (root cause analysis)" data-secondary="incident response" data-type="indexterm" id="id2866"/> phases with different goals: <em>mitigation</em> of impact
+and <em>root cause analysis of contributing factors</em>, where we search for
+deeper understanding.</p>
+
+<p>For many services, finding the right mitigation strategy is often a
+process of selection rather than discovery. At Google, our incident
+response AI system analyzes alert types, error codes, system metrics,
+time of day, and system characteristics, and identifies the most
+appropriate action from a predefined set, such as “rollback,”
+“drain,” or “upscale.” In this phase, deep understanding is
+secondary to speed. Determining which mitigation is effective and safe
+is the primary concern. By presenting a high-confidence recommendation
+to the human operator, like “95% confidence that a rollback will
+mitigate,”<sup><a data-type="noteref" href="ch21.html#id2867" id="id2867-marker">2</a></sup> the AI
+provides a practical path to reducing incident and customer impact while
+ensuring our human experts apply judgment.</p>
+
+<p>In contrast, root cause analysis requires deep investigation. Here, the
+AI acts as a detective, generating hypotheses based on system topology
+and dependencies to identify where an incident may have originated. It
+traces anomalies back through distributed systems to identify the source
+of errors, automating the tedious work of sifting through logs. To do
+this effectively, the AI uses observability data to ground the
+investigation in fact, topology data to establish the domain of the
+problem, and anomaly detection <a data-primary="hierarchy of production health" data-secondary="continuous preparedness" data-startref="hier_contprp_incresgls" data-tertiary="incident response goals" data-type="indexterm" id="id2868"/><a data-primary="incident response" data-secondary="AI agents" data-startref="incresp_aignt_rspgls" data-tertiary="response goals" data-type="indexterm" id="id2869"/>systems to pinpoint deviations.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Learning from Failure" data-type="sect2"><div class="sect2" id="ch21_learning_from_failure">
+<h2>Learning from Failure</h2>
+
+<p>The final, and <a data-primary="hierarchy of production health" data-secondary="continuous preparedness" data-tertiary="learning" data-type="indexterm" id="id2870"/>arguably most important, step of preparedness is ensuring
+we do not repeat the same mistakes. We leverage rich historical data
+from incidents to drive continuous improvement and systematically
+eliminate risk through structured learning.</p>
+
+<p>This process begins with the incident report. As explained in <a href="https://sre.google/sre-book/postmortem-culture">Chapter 15</a> of the first
+edition of this book,
+incident reports support a culture of learning from failures, but
+creating them involves the manual toil of collecting timestamps, chat
+logs, and graphs. We leverage AI to remove this tax on learning by
+automatically drafting incident reports, tagging risks, and suggesting
+action items. This ensures that the documents are created faster and follow
+a consistent structure, enabling humans to spend their time discussing
+the lessons learned rather than formatting the timeline.</p>
+
+<p>We can extend this learning beyond individual documents to the entire
+corpus of historical data. AI processes historical incidents to derive
+metainformation such as common root causes, successful mitigations, and
+violations of production principles. This aggregate view ensures that
+appropriate risk tagging—which humans can easily miss—always exists,
+driving smarter engineering investments.</p>
+
+<p>This intelligence ultimately feeds back into the code and documentation.
+AI can identify clusters of similar issues to drive effective
+deduplication, preventing multiple engineers from investigating the same
+bug, and can even suggest code-level fixes based on similar past
+resolutions. Taking this insight gathered from data, we optimize our
+playbooks to ensure our operational knowledge endures. Playbooks often
+become stale, drifting out of sync with code and topology. To address
+this drift, AI systems continuously review existing playbooks against
+real-world usage during incidents. If an incident occurs for which no
+playbook exists, the system uses the incident data and the human actions
+taken to autogenerate a draft playbook, ensuring that the next time the
+pager fires, the on-call engineer is better prepared than the last.
+Currently, many individual systems are delivering on small portions of
+the overall pictures, but the end goal is to<a data-primary="continuous preparedness" data-secondary="incident response" data-startref="contprp_incidresp" data-type="indexterm" id="id2871"/> create an autonomous
+end-to-end experience.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure Design" data-type="sect1"><div class="sect1" id="ch21_infrastructure_design">
+<h1>Infrastructure Design</h1>
+
+<p>This layer is about <a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-type="indexterm" id="id2872"/><a data-primary="infrastructure design" data-type="indexterm" id="id2873"/>engineering the environment the service operates in.
+It is a powerful tool to improve production health, covering release
+procedures, testing, and the elimination of toil. The approaches shared
+can be applied independently of each other, and the order in which you
+pursue them should be driven by your organization’s specific needs and
+priorities.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Adaptive Change Management" data-type="sect2"><div class="sect2" id="ch21_adaptive_change_management">
+<h2>Adaptive Change Management</h2>
+
+<p>SRE is commonly <a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-tertiary="adaptive change management" data-type="indexterm" id="id2874"/><a data-primary="infrastructure design" data-secondary="adaptive change management" data-type="indexterm" id="id2875"/><a data-primary="change management" data-secondary="adaptive" data-type="indexterm" id="id2876"/>involved in decisions around deployment: choosing
+locations, provisioning dependencies, and setting initial scaling
+factors. Historically, these decisions relied on human intuition and
+static heuristics. Today, we use AI to connect signals from service
+taxonomy, dependency health, and historical demand to extract optimal
+deployment values mathematically.</p>
+
+<p>This shift extends to the safety of deployments. Minimizing customer
+impact during a change is a critical SRE responsibility, often managed
+by static policies like “wait 30 minutes between deployments to different failure domains.”
+However, static policies are often too slow for urgent fixes, while being
+too fast to stop subtle regressions. We are seeing success in using AI
+to correlate signals and adaptively change the speed of a deployment
+through its own risk judgments, dynamically optimizing the balance
+between safety and velocity.</p>
+
+<p>Once deployed, the environment must be maintained. Modern platforms
+provide a large amount of diversity in possible configuration options,
+and demand on our services is often dynamic, making a service’s optimal
+configuration a moving target. We use AI systems to continuously review
+running infrastructure against best practices. By interpreting
+high-level availability policies, these systems can generate and apply
+code-level configuration changes at scale, ensuring that the fleet does
+not drift from its intended design.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Eliminating Toil" data-type="sect2"><div class="sect2" id="ch21_the_elimination_of_toil">
+<h2>Eliminating Toil</h2>
+
+<p>The <a href="https://sre.google/sre-book/eliminating-toil">first edition of this book</a> defined toil as work that is manual,
+repetitive,<a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-tertiary="elimination of toil" data-type="indexterm" id="hier_infstr_toil"/><a data-primary="infrastructure design" data-secondary="elimination of toil" data-type="indexterm" id="infstr_toil"/><a data-primary="toil" data-secondary="elimination of" data-type="indexterm" id="toil_elim"/> automatable, tactical, devoid of enduring value, and scales linearly with service
+growth. While most of this definition
+continues to hold true, AI now offers us the ability to automate the
+automation process itself.</p>
+
+<p>The first challenge in reducing toil is seeing it clearly. Human
+identification of toil is prone to recency bias—we remember the annoying
+task from this morning, not the chronic time sink from last month. We
+now use AI to perform real-time analysis of ticket streams, reviewing
+human actions, investigation steps, and mitigation strategies. By
+clustering this data, the system identifies high-volume areas ripe for
+automation that humans might miss. Even if you do not have a
+well-defined system to track tickets and unplanned work, AI is very
+capable of deriving insights about unplanned work from emails, chats,
+docs, etc.</p>
+
+<p>Simultaneously, we tackle the noise at the source. An AI ticket
+interceptor reviews incoming issues, finding similar past tickets and
+calculating the probability of 
+<span class="keep-together">duplication.</span> Aggregating these duplicates
+improves the quality of handling, giving the human owner better context
+and drastically reducing the volume of busywork in the queue.</p>
+
+<p>Once a cluster of toil is identified, we move to automation. AI generates playbooks from the successful actions taken by
+humans in the past. An agent then processes these playbooks, executing
+the steps needed to address new tickets autonomously. While autonomous
+execution is powerful, guardrails need to be put in place to determine
+what actions are allowed to be fully autonomous and when
+a human in the loop is needed in terms of reviews and approvals. If the
+agent encounters a novel situation, it falls back to requesting human
+help.</p>
+
+<p>Crucially, this system includes a self-tuning loop. If a ticket resolved
+by an agent is reopened by a human, it enters an evaluation phase. The
+system analyzes why the automated fix failed and retunes the playbook,
+ensuring the agent has better context available the next time it takes
+action.</p>
+
+<p>For toil that cannot be fully automated, AI focuses on enrichment.
+Historical data shows that a significant portion of ticket resolution
+time is wasted searching for missing information. We have built systems
+that process historical interactions to understand what context is
+required for different issue types. When a new ticket arrives, the
+system intercepts it, checks for necessary information, and immediately
+asks the submitter to fill in the gaps before transferring ownership to
+an SRE. This simple step <a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-startref="hier_infstr_toil" data-tertiary="elimination of toil" data-type="indexterm" id="id2877"/><a data-primary="infrastructure design" data-secondary="elimination of toil" data-startref="infstr_toil" data-type="indexterm" id="id2878"/><a data-primary="toil" data-secondary="elimination of" data-startref="toil_elim" data-type="indexterm" id="id2879"/>eliminates the time-consuming back and forth of
+context gathering.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Verifying Resilience" data-type="sect2"><div class="sect2" id="ch21_verifying_resilience">
+<h2>Verifying Resilience</h2>
+
+<p>Finally, <a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-tertiary="verifying resilience" data-type="indexterm" id="hier_infstr_resil"/><a data-primary="infrastructure design" data-secondary="verifying resilience" data-type="indexterm" id="infstr_resil"/><a data-primary="resilience" data-secondary="verifying" data-type="indexterm" id="resil_verf"/>infrastructure design requires proving that the system can
+survive failure. Natural disasters, cyberattacks, power events, and
+cooling failures are inevitable; survival is engineered against those
+constraints. AI is transforming how we decide what to test, how we
+review plans, and how we analyze results.</p>
+
+<p>We classify resilience tests according to a structured taxonomy of
+resilience properties, such as
+datacenter isolation or traffic management. This taxonomy allows us to
+partition the comprehensive scope of factors required to validate
+service resilience.</p>
+
+<p>Often, test authors start with an organic idea for a specific failure
+scenario rather than a formal property, so the specific resilience
+property they are evaluating may not be immediately apparent. To address
+this, the AI reviews every draft test plan and suggests the properties best
+aligned with the specific scenario. By automatically categorizing tests,
+it saves time for authors and ensures that data accuracy remains high
+across the entire corpus of resilience tests.</p>
+
+<p>Google employs a rigorous review and approval process so that tests run
+in production are sufficiently safe. This often involves a series of
+preliminary tests that seek to incrementally increase the blast radius of a
+failure. To help onboard new test authors to this process, the AI conducts a
+preliminary review of all test plans against established safety
+guidelines and identifies potential deficiencies that might
+expose systems to unnecessary risk (such as an overly aggressive
+deployment strategy, insufficient user segmentation, or the lack of
+lower-risk preliminary tests). This automated preliminary review reduces
+the burden on expert human reviewers by ensuring that only sufficiently
+well-formulated test plans are presented for their assessment.</p>
+
+<p>After tests are run, the AI analyzes the results by performing a comparative
+analysis between the steady-state behavior of the service and the
+behavior observed during the test. Depending on the specific resilience
+property under evaluation, the model selects distinct metrics to
+validate that the test produced a measurable impact while confirming that the
+system survived.</p>
+
+<p>For example, if a test is designed to verify that a system allows for
+the loss of a whole datacenter, the results must show that traffic
+served by the downed cluster dropped to zero and that other clusters picked
+up the resulting load. In this case, while aggregate global traffic
+metrics might remain constant, the AI verifies the traffic shift across
+clusters during the execution window. This confirms that the system was
+resilient to the specific fault introduced.</p>
+
+<p>Perhaps the most powerful application of AI in this space is determining
+where the largest resilience gaps exist. We <a data-primary="AI (artificial intelligence)" data-secondary="locating resilience gaps" data-type="indexterm" id="id2880"/>feed the system recent
+incident data to identify which resilience properties could have
+mitigated those specific outages. We then compare this data against the
+set of recently executed tests to surface gaps in our testing. This
+identifies precisely where resilience must be engineered and where the
+incident needs to be replayed with new protections in place.</p>
+
+<p>In addition to the insights into testing gaps, proposals often come from
+centrally defined resilience campaigns that seek to scale lessons
+learned from a single system to the broader organization. Regardless of
+the source, once models have identified areas for validation, we present
+these suggestions to teams to target their investments.</p>
+
+<p>Prioritizing the verification that past failure scenarios have been
+remediated alongside centrally directed resilience campaigns is still a
+largely human-driven exercise. This involves weighing the cost and
+desired depth of verification, the likelihood of incident recurrence,
+and impact of the failure. Complex or high-impact failures may warrant
+larger-scale verification efforts, while smaller incidents may only
+necessitate more localized testing or verification. We are also
+experimenting with AI-driven meta-analyses of incidents across teams or
+larger groups, helping teams focus their testing budgets on the
+highest-impact verification efforts.</p>
+
+<p>Finally, we move from identification to generation. Rather than simply
+asking teams to address a gap, we are experimenting with having AI draft
+detailed test plans for them to review and execute. As the corpus of
+available tests and templates grows, models use them as inspiration,
+leading to higher-quality and <a data-primary="hierarchy of production health" data-secondary="infrastructure design" data-startref="hier_infstr_resil" data-tertiary="verifying resilience" data-type="indexterm" id="id2881"/><a data-primary="infrastructure design" data-secondary="verifying resilience" data-startref="infstr_resil" data-type="indexterm" id="id2882"/><a data-primary="resilience" data-secondary="verifying" data-startref="resil_verf" data-type="indexterm" id="id2883"/>more impactful test plans being validated
+across the fleet.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Resilient Products" data-type="sect1"><div class="sect1" id="ch21_resilient_products">
+<h1>Resilient Products</h1>
+
+<p>Production <a data-primary="hierarchy of production health" data-secondary="resilient products" data-type="indexterm" id="id2884"/><a data-primary="resilient products" data-type="indexterm" id="id2885"/>health starts at the very beginning of software development.
+Delivery of resilient products is the fundamental goal; the earlier
+reliability practices are applied, the more effective our efforts
+become. In practice, this resilience is defined and measured using SLOs
+that closely track user experience metrics, such as request success
+rates, latency percentiles, and data freshness. By anchoring design
+decisions to these concrete SLOs, teams can quantify the impact of
+architectural choices and ensure that reliability is an engineered
+property rather than an afterthought.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI as an SRE Force Multiplier" data-type="sect2"><div class="sect2" id="ch21_ai_as_an_sre_force_multiplier">
+<h2>AI as an SRE Force Multiplier</h2>
+
+<p>AI represents<a data-primary="hierarchy of production health" data-secondary="resilient products" data-tertiary="SRE automation considerations" data-type="indexterm" id="id2886"/><a data-primary="resilient products" data-secondary="SRE automation considerations" data-type="indexterm" id="id2887"/> the next step in SRE automation, evolving from basic
+workflow automation to autonomous systems requiring minimal human
+intervention. These systems establish a continuous learning loop:
+post-incident analyses, real-time production metrics, and historical
+performance data are continuously fed back into the AI models. This
+ensures that the AI-driven design and review processes are grounded in
+real-world production realities, helping to prevent the recurrence of
+known failure modes. However, there is a misconception that the primary
+goal of AI is simply to eliminate toil. While reducing operational
+overhead is an important first step, it has a mathematical ceiling, with
+the earliest wins being the most valuable.</p>
+
+<p>Automating toil is often the first application of AI in
+operations, but measuring its success merely in hours saved fundamentally
+misunderstands the value of the AI tools. If an SRE team maintains a
+healthy toil baseline of 25%, even a massive 5× increase in processing
+that toil will yield only a modest improvement in traditional engineering
+productivity. Beyond that improvement, AI makes some existing best
+practices ROI-positive to deploy, leading to increased standardization,
+security, and reliability. However, the true promise of AI in operations
+is not about doing the same work with fewer people; rather, it’s about
+opening up entirely new capabilities. With the ever-growing scale and
+complexity of SRE-managed systems, AI acts as a cognitive lever allowing
+SREs to perform the kind of systemic, proactive engineering work that
+was previously out of reach.</p>
+
+<p>The logical next step is to tap into the immense opportunity that lies
+in scaling our ability to design autonomous and reliable systems in the
+first place. Beyond daily maintenance, the majority of Google SRE work
+is in developing and transforming large systems. By applying AI to these
+human-driven tasks—designing new components, managing migrations, and
+reviewing code—we unlock a force multiplier that far exceeds the gains
+from simple ticket automation.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI Design and Launch Reviews" data-type="sect2"><div class="sect2" id="ch21_ai_design_and_launch_reviews">
+<h2>AI Design and Launch Reviews</h2>
+
+<p>SRE teams <a data-primary="hierarchy of production health" data-secondary="resilient products" data-tertiary="design and launch reviews" data-type="indexterm" id="id2888"/><a data-primary="resilient products" data-secondary="design and launch reviews" data-type="indexterm" id="id2889"/>play a key role in reviewing design documents to ensure they
+meet production standards. This process often requires significant human
+effort, and the quality of the outcome tends to depend heavily on the
+experience level of the specific reviewer.</p>
+
+<p>To address this, we created an AI design review system. This system is
+based on a model trained on our internal knowledge base of reliable
+system designs, as well as specific insights from past incident reports.
+It scans design documents to check that known production principles are
+addressed and known risks are avoided. While this approach does not
+eliminate the need for human judgment, it significantly improves
+throughput by performing a first-level review. It enables humans to
+spend less time on basic compliance checks and more time on complex
+architectural decisions, while ensuring that even low-risk designs meet
+a minimum bar of quality without requiring a human bottleneck.</p>
+
+<p>Similarly, we augment the launch review process. Compliance for launches
+is often a tedious task involving checklists and manual verification. We
+now use AI agents to filter and raise signals from the actual production
+prototype being considered for launch. By automatically analyzing the
+prototype’s behavior against reliability standards, the agent makes
+reviews more thorough and cost-effective, preventing fragile services
+from ever entering the fleet.</p>
+
+<p>Finally, as models improve, we are moving from reactive review to
+proactive exploration. We are experimenting with AI systems that
+autonomously scan large, complex codebases to detect risky patterns and
+critical weaknesses before they manifest as incidents. This scales the
+impact of our incident reports: instead of a lesson learned being
+applied to one service, AI can identify every other service in the fleet
+that shares the same vulnerability, and proactively open a bug to fix
+it. This is the beginning of true self-healing design, where the system
+improves itself based on the collective experience of the entire
+organization.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Emergent Reliability" data-type="sect1"><div class="sect1" id="ch21_emergent_reliability">
+<h1>Emergent Reliability</h1>
+
+<p>The ultimate goal is to make production health inherent to all
+infrastructure, development, processes, and culture. Software becomes
+reliable by default.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Path to Autonomy" data-type="sect2"><div class="sect2" id="ch21_the_path_to_autonomy">
+<h2>The Path to Autonomy</h2>
+
+<p>Adopting AI in SRE is <a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-tertiary="levels of autonomy" data-type="indexterm" id="hier_emerrel_auton"/><a data-primary="emergent reliability" data-secondary="levels of autonomy" data-type="indexterm" id="emrgnt_auton"/>not a binary switch; it is a structured journey
+from standard human-operated tooling to fully autonomous systems. To
+guide this evolution safely and effectively, we use a maturity model, as illustrated in <a data-type="xref" href="#ch21_table_01">Table 21-1</a>.
+This model helps achieve <em>emergent reliability</em>, where systems become
+more reliable by design, minimizing manual interventions. The levels are
+defined by the degree of automation across key operational functions:
+monitoring, investigation, approval, actuation, and self-directed
+operations.</p>
+<table id="ch21_table_01">
+<caption><span class="label">Table 21-1. </span>Levels of autonomy</caption>
+<thead>
+<tr>
+<th>Action → Level ↓</th>
+<th>Monitor</th>
+<th>Investigate</th>
+<th>Approve</th>
+<th>Actuate</th>
+<th>Self-direct</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>L0: Manual</p></td>
+<td><p>Automation</p></td>
+<td><p>Human</p></td>
+<td><p>Human</p></td>
+<td><p>Human</p></td>
+<td><p>Human</p></td>
+</tr>
+<tr>
+<td><p>L1: Assisted</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Human</p></td>
+<td><p>Human</p></td>
+<td><p>Human</p></td>
+</tr>
+<tr>
+<td><p>L2: Partial</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Human</p></td>
+<td><p>Automation</p></td>
+<td><p>Human</p></td>
+</tr>
+<tr>
+<td><p>L3: High</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Human</p></td>
+</tr>
+<tr>
+<td><p>L4: Full</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+<td><p>Automation</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>The five levels of increasing autonomy are:</p>
+<dl>
+<dt>L0: Manual Execution</dt>
+<dd>
+<p>All activities are human-driven. Humans must
+<em>investigate</em> alerts, <em>approve</em> any course of action, <em>actuate</em> the
+changes, and handle any <em>operational resolution</em> that is required.</p>
+</dd>
+<dt>L1: Assisted</dt>
+<dd>
+<p>Automation extends to <em>monitoring</em> and
+<em>investigation</em>. The AI agent can analyze data and provide insights or
+suggestions (an AI-driven incident hypothesis), but a human is still
+required to <em>approve</em> any action and manually <em>actuate</em> it.</p>
+</dd>
+<dt>L2: Partial Autonomy (Human Approval)</dt>
+<dd>
+<p>Systems can <em>monitor</em>,
+<em>investigate</em>, and even <em>actuate</em> changes. However, a human must
+explicitly <em>approve</em> any plan before the system proceeds with an
+actuation. Partial Autonomy is called for when a safety check fails, or it can be a short-lived safety net as we build trust in the AI system.</p>
+</dd>
+<dt>L3: High Autonomy</dt>
+<dd>
+<p>Automation covers <em>monitoring</em>, <em>investigation</em>,
+<em>approval</em>, and <em>actuation</em> for specific, well-defined scenarios. The AI
+agent can independently detect, decide, and act within predefined bounds without human approval, though humans are often notified. Humans still
+handle novel situations requiring <em>operational resolution</em>. Safety relies
+heavily on technical controls and guardrails.</p>
+</dd>
+<dt>L4: Full Autonomy</dt>
+<dd>
+<p>An AI agent can:</p>
+
+<ul>
+<li>
+<p>Devise and execute a sequence of actions to diagnose, mitigate, and
+resolve incidents—especially those not covered by simple, linear
+playbooks.</p>
+</li>
+<li>
+<p>Continuously monitor the impact of its interventions on the system’s
+state and performance.</p>
+</li>
+<li>
+<p>Adapt its strategy in real time based on the observed outcomes. This
+includes the ability to attempt alternative mitigations if initial
+actions are ineffective, or to initiate rollbacks if an action has
+adverse effects.</p>
+</li>
+<li>
+<p>Manage the entire incident lifecycle until the system is confirmed to
+be back in a stable and desired state, going beyond just the initial
+trigger and actuation.</p>
+</li>
+</ul>
+</dd>
+</dl>
+
+<p>As systems move toward higher levels of autonomy, the potential risks
+and failure modes associated with autonomous actions, particularly in
+complex production environments, increase significantly. These risks
+must be managed through rigorous testing and strict technical
+guardrails.</p>
+
+<p>Moving a system to a higher level of autonomy is a significant decision
+that must be gated by rigorous evaluation, demonstrated reliability, and
+robust safety mechanisms. Prerequisites for progressing to higher levels
+include comprehensive test coverage, well-defined rollback mechanisms,
+established error budgets, and a history of successful operations at the
+current level of autonomy. Key safety principles include risk-scaled
+rigor, thorough evaluations, secure APIs, auditability, and clear human
+oversight and override capabilities.</p>
+
+<p>It is critical to remember that the goal is not for every system to
+reach L4. The appropriate level of autonomy depends on the specific
+context, balancing benefits like increased reliability and reduced toil
+against potential risks. When determining the appropriate level,
+consider factors such as system criticality, organizational risk
+tolerance, operational maturity, and the cost of failure. An AI system
+at a lower level of autonomy, when properly implemented, can provide
+substantial value and may be preferable to a higher-level system if the
+risks outweigh the <a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-startref="hier_emerrel_auton" data-tertiary="levels of autonomy" data-type="indexterm" id="id2890"/><a data-primary="emergent reliability" data-secondary="levels of autonomy" data-startref="emrgnt_auton" data-type="indexterm" id="id2891"/>benefits.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: AI Operator" data-type="sect2"><div class="sect2" id="ch21_case_study_ai_operator">
+<h2>Case Study: AI Operator</h2>
+
+<p>To better understand <a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-tertiary="AI Operator case study" data-type="indexterm" id="hier_emerrel_aiop"/><a data-primary="emergent reliability" data-secondary="levels of autonomy" data-tertiary="AI Operator case study" data-type="indexterm" id="emrgnt_aiop"/><a data-primary="AI Operator case study" data-type="indexterm" id="aiopcs"/>the journey through SRE autonomy levels, let’s look
+at AI Operator, an initiative within Google SRE to automate the handling
+of routine and predictable production incidents. AI-driven operations
+tools like AI Operator are becoming essential to managing the scale and
+complexity of modern systems.</p>
+
+<p>AI Operator functions as an AI agent designed to be the first responder
+to production alerts. It ingests alert signals and leverages a set of
+extensible modules to perform multiple investigations. Its reasoning
+process (as shown in <a data-type="xref" href="#ch21_fig04">Figure 21-4</a>) is guided by examples derived from how
+human experts have effectively investigated similar past incidents. This
+allows the agent to form and test hypotheses to perform root cause
+analysis. Once the analysis is complete, AI Operator can select from a
+catalog of available mitigation actions. Based on preconfigured
+permissions, it then executes the chosen mitigation.</p>
+
+<figure><div class="figure" id="ch21_fig04">
+<img alt="Diagram illustrating the AI Operator's workflow for handling production alerts, including tasks such as reading server errors, fetching job details, and investigating task failures." src="assets/sre2_2104.png"/>
+<h6><span class="label">Figure 21-4. </span>AI Operator chain of thought</h6>
+</div></figure>
+
+<p>AI Operator’s path through the SRE autonomy levels illustrates a safe
+and progressive approach to AI adoption in production:</p>
+<dl class="fix_tracking">
+<dt>Level 1: Assisted</dt>
+<dd>
+<p>From the outset, AI Operator provides assistive
+capabilities. It automatically performs <em>monitoring</em> and <em>investigation</em>
+on incoming alerts, correlates signals, checks for similar past
+incidents, and summarizes its findings. This gives human on-callers
+immediate context and potential diagnostic paths, accelerating
+their understanding. The on-caller still handles <em>approval</em>,
+<em>actuation</em>, and any <em>complex planning</em>.</p>
+</dd>
+<dt>Level 2: Partial Automation</dt>
+<dd>
+<p>After its investigation, AI Operator
+proposes concrete mitigation actions with clear justification. These
+actions can range from draining network traffic from a cluster to
+rolling back a software or configuration update. The system handles
+<em>monitoring</em> and <em>investigation</em> and can <em>actuate</em> the changes, but
+requires human <em>approval</em>. The exact commands and the reasoning are
+presented to a human SRE, who must review and explicitly approve the
+action before it is executed. <em>Complex planning</em> remains manual. This
+human-in-the-loop model provides safety while still significantly
+speeding up mean time to mitigation for common incident patterns.</p>
+</dd>
+<dt>Level 3: High Automation</dt>
+<dd>
+<p>AI Operator provides Level 3 capabilities
+for specific, well-understood scenarios. These are low-risk actions
+where the system handles <em>monitoring</em>, <em>investigation</em>, <em>approval</em>, and
+<em>actuation</em>. Examples include autonomously restarting a single aberrant
+task within a large job or clearing a specific type of cache known to
+cause transient issues. Promotion of any action to Level 3 requires
+rigorous validation in a dedicated evaluation framework, demonstrating a
+very high success rate and excellent safety record during Level 2 operations.
+Humans are typically informed of actions taken. <em>Complex planning</em> for
+novel issues remains a human task.</p>
+</dd>
+<dt>Level 4: Full Autonomous</dt>
+<dd>
+<p>The long-term vision for AI Operator is to
+achieve Level 4 autonomy across a wide range of scenarios. This involves
+enabling the system to autonomously handle complex tasks within its operational domain,
+such as sophisticated traffic management and multistep mitigations,
+from end to end. Reaching this state of full automation
+for advanced use cases is a significant goal, contingent on further
+advancements in AI reasoning, real-time risk assessment, and provable
+safety guarantees.</p>
+</dd>
+</dl>
+
+<p>AI Operator has self-improving capabilities. Through an evaluation
+framework that analyzes incident metadata and compares automated actions
+against ideal human responses (referred to as <em>golden data</em>), the system
+can identify areas for improvement. Techniques like
+<a href="https://oreil.ly/tvWcB">LLM-as-a-judge</a> help refine
+its investigation logic and decision making over time, creating a
+virtuous feedback loop.</p>
+
+<p><a data-type="xref" href="#ch21_fig05">Figure 21-5</a> shows the evaluation framework in action. On the left side, the agent
+correctly diagnosed the problem and mitigated it. On the right side, the
+agent incorrectly diagnosed the problem and therefore failed to mitigate
+it. Our LLM judge generated a critique and provided a suggestion of how to improve the agent.</p>
+
+<figure><div class="figure" id="ch21_fig05">
+<img alt="Diagram comparing two scenarios using LLM-as-a-Judge: one where the AI operator successfully diagnoses and mitigates an issue, and another where both diagnosis and mitigation fail, with critiques for improvement." src="assets/sre2_2105.png"/>
+<h6><span class="label">Figure 21-5. </span>Using AI Operator’s LLM-as-a-Judge framework</h6>
+</div></figure>
+
+<p>The impact of AI Operator is already being felt, and it is shifting
+the very nature of on-call work. Rather than simply acting as a faster
+set of hands for routine tasks, it serves as an analytical
+partner capable of instantly synthesizing signals across vast,
+interconnected infrastructure layers. Delegating the overwhelming
+volume of data correlation and initial hypothesis testing to AI empowers human
+engineers to operate at a higher level of abstraction.
+Teams adopting the tool are resolving incidents more quickly; perhaps
+more importantly, they are gaining the capacity to tackle novel
+reliability challenges, design resilient architectures, and safely
+manage a scale of operations<a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-startref="hier_emerrel_aiop" data-tertiary="AI Operator case study" data-type="indexterm" id="id2892"/><a data-primary="emergent reliability" data-secondary="levels of autonomy" data-startref="emrgnt_aiop" data-tertiary="AI Operator case study" data-type="indexterm" id="id2893"/><a data-primary="AI Operator case study" data-startref="aiopcs" data-type="indexterm" id="id2894"/> that would otherwise outstrip human
+capability.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Organizational Shift" data-type="sect2"><div class="sect2" id="ch21_the_organizational_shift">
+<h2>The Organizational Shift</h2>
+
+<p>Achieving emergent <a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-tertiary="business process changes" data-type="indexterm" id="hier_emerrel_bpc"/><a data-primary="emergent reliability" data-secondary="business process changes" data-type="indexterm" id="emrgnt_bpc"/>reliability requires more than just new technology;
+it requires a fundamental shift in business processes, incentives, and
+culture. Every journey will be different, as these challenges are deeply
+rooted in the specifics of an organization. There is no specific
+framework or recipe that will work universally. To illustrate the
+magnitude of this challenge, we can look at how Google SRE has been
+evolving since the first edition of this book was published, and how AI is
+fundamentally reshaping the organization today while keeping it anchored
+to its original mission.</p>
+
+<p>Since its inception in 2003, the SRE organization has continually reinvented itself to
+adjust to the growing scale and complexity of our systems. This
+evolution was driven by product needs: the early days of Search and Ads
+forged the premises of error budgets, Gmail introduced the requirement
+for stateful user data management, the explosion of YouTube pushed the
+boundaries of networking, and the launch of Google Cloud shifted us from
+managing internal infrastructure to user-facing B2B solutions.</p>
+
+<p>Technological step changes also drove adaptation. The shift to mobile,
+for example, forced SRE to extend its focus beyond server-centric SLOs to include client-side
+reliability and to adjust change management strategies for app store
+release patterns. However, these evolutions were largely organic. The
+integration of AI represents a unique disruption because it challenges
+the operating model we have spent the past 10 years perfecting.</p>
+
+<p>For the last decade, Google SRE focused heavily on <em>platform
+engineering</em>. We acknowledged the inefficiencies of fragmentation and
+prioritized standardization, centralization, and aggressive
+deduplication. We built a culture where standardization was the gold
+standard.</p>
+
+<p>AI disrupts this cycle. The transformation is happening toward the end
+of a normalization cycle, forcing us to pivot when our organizational
+inertia is pulling toward stability. The pace of technological change
+is unprecedented: while personal computing performance roughly doubled
+every two years, the capabilities of applied AI have improved by at least an order
+of magnitude in the last two years alone. Integrating this
+superexponential acceleration into a five-year strategy requires us to
+think very differently about how we organize.</p>
+
+<p>To find the right product-market fit for AI, we had to encourage
+individual teams to experiment closer to their specific products. We
+intentionally sponsored incubator structures and accepted the
+duplication of solutions—anathema to traditional SRE thinking—to
+maximize learning velocity. We defined graduation paths to promote local
+solutions to broader use only after they had proven their value. This
+decentralized approach allows us to navigate the standardization
+versus innovation polarity by letting the most effective patterns emerge
+from the bottom up.</p>
+
+<p>This shift creates a significant human challenge. We found that the
+primary hurdle was not teaching junior engineers to use AI; it was
+rebuilding the intuition of our senior engineers. In a world where a
+human mistake can bring a service down, SREs are rightfully
+conservative. The idea of having fundamentally probabilistic systems
+interacting with complex production environments is scary.</p>
+
+<p>To overcome this, we had to help some of our most senior engineers learn
+new habits and techniques. We needed to build trust and confidence
+iteratively, training people to use the tools of today to build the
+tools of tomorrow. This is not just about learning to use a model; it is
+about building confidence in changing daily behaviors, and using a
+rigorous approach to understand and mitigate any novel risks that are
+emerging from the new patterns.</p>
+
+<p>Enabling this transformation involves standard engineering, data
+pipelines, and integration rather than pure modeling. At Google’s scale,
+the challenge is meeting users where they are. Rather than building a
+single, monolithic AI approach, we treat the transformation as a
+collection of microfeatures integrated into existing workflows.</p>
+
+<p>One of the main challenges of SRE remains identifying and solving
+problems that occupy the ideal intersection of being worth the effort
+and being technically achievable. Just like 10 years ago, the path to success lies
+in identifying achievable targets and iterating. This pragmatic approach
+of chipping away at complex problems is better achieved with strong
+domain expertise. SRE was built on the premise that you hire engineers
+to do the work, and then to engineer it away. This principle remains
+true today. AI simply expands<a data-primary="hierarchy of production health" data-secondary="emergent reliability" data-startref="hier_emerrel_bpc" data-tertiary="business process changes" data-type="indexterm" id="id2895"/><a data-primary="emergent reliability" data-secondary="business process changes" data-startref="emrgnt_bpc" data-type="indexterm" id="id2896"/> the definition of <em>what</em> can be engineered
+away.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch21_conclusion">
+<h1>Conclusion</h1>
+
+<p>The integration of AI into Site Reliability Engineering marks a
+fundamental shift, transforming both the practice and the systems we
+manage. It is a transformation occurring at a velocity that defies our
+traditional planning cycles, forcing us to rethink how we build and
+operate software.</p>
+
+<p>This chapter describes how we have navigated this shift by organizing our
+strategy around the hierarchy of production health:</p>
+<dl>
+<dt>Sociotechnical foundations (psychological safety and continuous improvement)</dt>
+<dd>
+<p>Establishing the governance, technical
+guardrails, and cultural frameworks necessary to trust AI in the loop</p>
+</dd>
+<dt>Situational awareness</dt>
+<dd>
+<p>Moving beyond static metrics to true semantic
+understanding, using tools like Detectr to perceive user intent amid
+the noise</p>
+</dd>
+<dt>Continuous preparedness</dt>
+<dd>
+<p>Positioning AI as a partner in incident
+management, using real-time dashboards to mitigate impact, and
+transforming root cause analysis from a search problem into a solved
+problem</p>
+</dd>
+<dt>Infrastructure design</dt>
+<dd>
+<p>Engineering the environment to be robust by
+eliminating toil through autonomous agents and verifying resilience
+through AI-generated testing</p>
+</dd>
+<dt>Resilient products</dt>
+<dd>
+<p>Baking reliability into the product from day
+zero by using AI as a force multiplier in design and code review</p>
+</dd>
+<dt>Emergent reliability</dt>
+<dd>
+<p>The ultimate goal, where autonomy and
+reliability become inherent properties of the system, reducing the need
+for manual intervention</p>
+</dd>
+</dl>
+
+<p>The landscape of AI changes rapidly. By focusing on the enduring principles of human augmentation, measured autonomy, continuous evaluation,
+and the foundational reliability of the AI systems themselves, this
+chapter provides a stable framework for SRE teams to navigate this new
+era and continue to deliver highly reliable services.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2853"><sup><a href="ch21.html#id2853-marker">1</a></sup> Note that this implies additional work is required in the case of destructive migrations.</p><p data-type="footnote" id="id2867"><sup><a href="ch21.html#id2867-marker">2</a></sup> If the confidence is below a certain threshold, it’s best to not present the mitigation at all to the on-caller.</p></div></div></section></body></html>

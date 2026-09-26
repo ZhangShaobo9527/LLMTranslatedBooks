@@ -1,0 +1,1948 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en"><head><title>SRE in Diverse Environments</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 22. SRE in Diverse Environments" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch22">
+<h1><span class="label">Chapter 22. </span>SRE in Diverse Environments</h1>
+
+
+<p class="byline">By Ana Oprea, Chris Jones, Derek Remund, Hannes Eder, 
+<span class="keep-together">Ian Schlesinger,</span> Joanna Wijntjes, and Yuri Grinshteyn<br/>
+
+<span class="keep-together">with Carmela Quinito</span></p>
+
+<p>The SRE approach pioneered at Google—which applies software
+engineering to production problems—has proven to be sufficiently
+effective to attract interest from organizations in many industries.
+We start this chapter by exploring a common situation: What if you’re
+the first SRE at a small company, or considering hiring one? Where do you
+start? How do you improve or maintain service reliability without
+succumbing entirely to operational work and toil?</p>
+
+<p class="fix_tracking">We then address organizations that struggle to replicate or adapt the
+SRE model due to technical, organizational, or process constraints.
+After outlining these common challenges, we suggest approaches to
+improve reliability practices under such conditions.</p>
+
+<p>To make these scenarios more concrete, we discuss real-world examples of
+applying SRE in various environments: a rapidly scaling B2B startup, a
+multinational bank, a large-scale mortgage lender, and Google’s
+autonomous driving company, Waymo. Finally, a section on security and
+privacy explores how SRE skills apply in a different context. While
+earlier sections detail how SREs communicate or divide tasks with
+separate organizational functions, this section explores a technical
+convergence where role boundaries naturally blur to defend the
+production environment.</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE When Faced with Staffing and &#10;Organizational Constraints" data-type="sect1"><div class="sect1" id="ch22_sre_when_faced_with_staffing_and_organizational_constraints">
+<h1>SRE When Faced with Staffing and 
+<span class="keep-together">Organizational Constraints</span></h1>
+
+<p>When reading about SRE, it’s easy to get the impression that an SRE
+team is always large. SRE books (including ours) commonly describe a follow-the-sun on-call model with engineers who are ready and available to respond to any outage, and incident response teams with a dedicated incident commander, communications lead, and operations lead, overseeing a team of engineers working to debug the problem.</p>
+
+<p>This can leave you with the impression that an SRE is
+always accompanied by a large team of stalwart coworkers. Worse, it can
+leave you with the impression that you can’t do SRE if you don’t have a
+large team supporting you. This section outlines some of the challenges
+that small SRE teams face and offers practical advice on how to maximize your
+impact with fewer people.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Solo SRE: Surviving and Scaling SRE in a Startup or as Part of a New, Small Team" data-type="sect2"><div class="sect2" id="ch22_the_solo_sre_surviving_and_scaling_sre_in_a_startup_or_as_part_of_a_new_and_small_team">
+<h2>The Solo SRE: Surviving and Scaling SRE in a Startup or as Part of a New, Small Team</h2>
+
+<p>Google SRE <a data-primary="small teams" data-secondary="scaling challenges" data-type="indexterm" id="sre_smtm_chal"/><a data-primary="teams" data-secondary="small" data-tertiary="scaling challenges" data-type="indexterm" id="tms_sml_scclchlng"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="scaling challenges" data-type="indexterm" id="sretms_sm_scalchlng"/>has been around long enough to see valued coworkers leave
+and start SRE teams at other companies. We’ve had the opportunity to share SRE practices with engineering teams outside Google, and in doing so we’ve learned how challenging it can be to get started without the
+many tools and frameworks that are available to us internally. But
+arriving as the first SRE or being on a small team at a company that
+wants to start doing SRE can be an exciting opportunity to focus on what’s important and make a really measurable contribution.</p>
+
+<p>The decision to hire the first SRE is often a reaction to a painful
+outage—or worse, a series of painful outages. The platform is fragile,
+release is manual and dependent on human oversight, finances are
+limited, and everyone is in firefighting mode. The outages may have
+become public enough that they are hurting the chances of the company
+being able to survive at all, and someone decides that having an SRE
+might help. Another common motivation might be that
+while no dramatic public outages are happening, all available
+resources are dedicated to keeping a highly fragile service just barely
+together so that from the outside it appears mostly reliable. In both
+scenarios, there is extremely little
+time available to write and deploy new features.</p>
+
+<p>The reality is that when you are an organization’s first or only SRE, you have
+several roles. You are the firefighter who steps in during an outage and
+leads the team back to a stable position. You are the builder who
+figures out what needs to be added to prevent the next outage from
+happening, or at least reduce its impact. And you are the
+evangelist who starts the process of getting everyone on board with a
+new way of operating. In a larger organization, you would be able to
+specialize—for example, in observability, storage, or building new
+tools. As a solo SRE, you own it all. Your stakeholders are the entire
+engineering team, the product team, and the founders themselves. You must balance restoring production stability
+(firefighting) with building the automation necessary to stop the fires
+in the future (engineering).</p>
+
+<p class="pagebreak-before less_space"><a data-type="xref" href="#ch22_table_01">Table 22-1</a> compares different aspects of the role of a solo SRE with that of an SRE in a large
+company.</p>
+<table id="ch22_table_01">
+<caption><span class="label">Table 22-1. </span>Characteristics of the SRE role in different contexts</caption>
+<thead>
+<tr>
+<th/>
+<th>Large company SRE</th>
+<th>Solo SRE (startup)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><strong>Focus</strong></p></td>
+<td><p>Adding automation, reducing toil, building and reviewing designs of large-scale systems</p></td>
+<td><p>Keeping the service running, empowering developers to be as self-sufficient as possible</p></td>
+</tr>
+<tr>
+<td><p><strong>Pillars</strong></p></td>
+<td><p>SLOs, error budgets</p></td>
+<td><p>Basic observability and deployment safety</p></td>
+</tr>
+<tr>
+<td><p><strong>Time allocation</strong></p></td>
+<td><p>&lt;50% toil, &gt;50% engineering (note that 50% toil is not the target—the more toil gets removed, the more features can be written)</p></td>
+<td><p>Aggressive prioritization, targets identified with the assistance of SLOs wherever possible; often starts at 80% toil</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>Next, we’ll explore some guidelines for the lone SRE. They will also be valuable for the manager of that SRE, or someone
+contemplating whether to<a data-primary="small teams" data-secondary="scaling challenges" data-startref="sre_smtm_chal" data-type="indexterm" id="id2897"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_scclchlng" data-tertiary="scaling challenges" data-type="indexterm" id="id2898"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_scalchlng" data-tertiary="scaling challenges" data-type="indexterm" id="id2899"/> hire or move someone into their company’s first
+SRE role.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Prioritization is key" data-type="sect3"><div class="sect3" id="ch22_prioritization_is_key">
+<h3>Prioritization is key</h3>
+
+<p>As the lone or <a data-primary="small teams" data-secondary="prioritizing tasks" data-type="indexterm" id="sre_smtm_prtsk"/><a data-primary="teams" data-secondary="small" data-tertiary="prioritizing tasks" data-type="indexterm" id="tms_sml_prtsk"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="prioritizing tasks" data-type="indexterm" id="sretms_sm_prtsk"/>first SRE, it is important to acknowledge to yourself
+that you cannot fix everything at once. You must prioritize with great
+efficiency, focusing on the tasks that reduce the highest amount of
+toil or mitigate the largest amount of risk. Make your priority stack,
+share it around, consider recommendations, and do not add new material
+without removing other items. When you have a list of priorities:</p>
+<ol>
+<li>
+<p>Make your first targets as specific as possible.</p>
+</li>
+<li>
+<p>Choose one of those targets, and say when you will have a design to
+address it (if a design is necessary) and when it can be cleared.</p>
+</li>
+<li>
+<p>When you clear the target, update the list and show the improvement.</p>
+</li>
+
+</ol>
+
+<p>The sense of accomplishment you experience will encourage you to continue making progress by moving on to the
+next item on your list.</p>
+
+<p>Here is a possible prioritization stack for the solo SRE, from most to least urgent (priority zero, or P0, to P3):</p>
+<dl>
+<dt>Stop the bleeding (P0)</dt>
+<dd>
+<p>Immediately stabilize the worst, most
+frequent failure modes. If the database crashes twice a week, fixing
+this issue is your primary task, even if it means putting off feature
+work. Absolutely everyone hates experiencing the same outage over and over.
+Getting this kind of repeating problem sorted will be a tremendous
+relief and help to build confidence in your work.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Establish visibility (P1)</dt>
+<dd>
+<p>You cannot fix what you cannot see.
+Implementing basic, end-to-end observability is the foundation of
+everything else in this stack. Don’t let perfect be the enemy of good;
+use an out-of-the-box solution or what the company has already to get
+yourself on the road to having visibility into the services that you are
+responsible for. You’ll be able to improve on this later, when you have more time or help. Concentrate on these areas:</p>
+<dl>
+<dt>Metrics</dt>
+<dd>
+<p>Instrument key business and system metrics (latency, error
+rate, throughput). Strive to move away from situations where your customers are
+reporting critical problems to you and toward finding the problems
+first.</p>
+</dd>
+<dt>Alerting</dt>
+<dd>
+<p>Focus on symptoms, not causes (e.g., “latency is high,”
+not “CPU is at 90%”). Ensure your alerts are actionable and low-noise.
+Test new alerts, or at least enable them at the start of the
+business day, not when you head home for the night.</p>
+</dd>
+<dt>Logging</dt>
+<dd>
+<p>Make a place for the logs to go and a way for them to
+get there. This could be an Elastic cluster, or even a single machine when
+you’re getting started. Logs should be written with a clear
+structure—JSON is nice because it’s both machine- and human-readable.
+There are good reasons why engineers still love to add print statements
+when they’re trying to debug a problem, and you want to make it easy for
+them.</p>
+</dd>
+</dl>
+</dd>
+<dt>Automate the scariest task (P2)</dt>
+<dd>
+<p>Identify the single process that
+has been causing your new coworkers the most fear, stress, or errors.
+This process is usually something in the deployment pipeline. Your first
+major automation project could be making deployment a one-click,
+rollback-capable, zero-downtime operation. Of these characteristics,
+being rollback-capable is usually the most important: this makes people more confident about making changes
+(because you can always roll back) and makes it less likely that people
+will try to fix forward—a route that can lead to outage upon outage.
+Automating this high-visibility task will further build confidence in your work.</p>
+</dd>
+<dt>Developer self-service (P3)</dt>
+<dd>
+<p>Instead of fixing every
+developer-raised issue, invest time in creating tools and documentation
+that allow the development teams to handle routine tasks themselves. This
+is how you scale your impact without scaling your headcount.</p>
+</dd>
+</dl>
+
+<p>Careful prioritization of the<a data-primary="small teams" data-secondary="prioritizing tasks" data-startref="sre_smtm_prtsk" data-type="indexterm" id="id2900"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_prtsk" data-tertiary="prioritizing tasks" data-type="indexterm" id="id2901"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_prtsk" data-tertiary="prioritizing tasks" data-type="indexterm" id="id2902"/> tasks in this stack will enable you to start tackling some of the deficits of being a one-person SRE team right from the start.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The first 90 days" data-type="sect3"><div class="sect3" id="ch22_the_first_ninety_days">
+<h3>The first 90 days</h3>
+
+<p>Start with <a data-primary="small teams, first steps" data-type="indexterm" id="id2903"/><a data-primary="teams" data-secondary="small" data-tertiary="first steps" data-type="indexterm" id="id2904"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="first steps" data-type="indexterm" id="id2905"/>simple, centralized observability. You don’t want or need a
+million dashboards—what you need are answers to a handful of questions
+about the service you are responsible for:</p>
+
+<ul>
+<li>
+<p>Is it down? Check for pings and health checks.</p>
+</li>
+<li>
+<p>Is it slow? Check for latency metrics at the edge.</p>
+</li>
+<li>
+<p>Is it broken? Check for error rates or status codes.</p>
+</li>
+<li>
+<p>Is it driving users away? Check whether a bug or
+missing feature is frustrating them.</p>
+</li>
+</ul>
+
+<p>Use a lightweight integrated toolset (a single-vendor or open source
+solution is desirable here) that centralizes logs, metrics, and traces.
+Avoid putting yourself in the position of having to integrate multiple
+disparate systems—this kind of integration work is toil you can’t afford
+at this juncture.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Leveraging AI for help" data-type="sect3"><div class="sect3" id="ch22_leveraging_ai_for_help">
+<h3>Leveraging AI for help</h3>
+
+<p>AI-powered <a data-primary="small teams" data-secondary="AI tools" data-type="indexterm" id="id2906"/><a data-primary="teams" data-secondary="small" data-tertiary="AI tools" data-type="indexterm" id="id2907"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="AI tools" data-type="indexterm" id="id2908"/>tools can be a great assistant to someone attempting to
+jump-start a new SRE team. You can use these tools to automatically analyze the centralized logs, metrics,
+and traces that you are gathering.</p>
+
+<p>By analyzing historical performance data from your
+metrics, AI tools can help identify baseline performance for key
+indicators such as latency and availability. This data-driven approach can
+provide realistic starting points for SLOs, reflecting actual service
+behavior and user experience; you can then refine these over time.</p>
+
+<p>Natural language processing capabilities within AI tools can be applied
+to user feedback, support tickets, or error message patterns to gauge
+user frustration (“Is it driving users away?”), offering insights
+beyond traditional metrics. The goal is to leverage AI to surface
+actionable answers from your observability data, reducing the need for
+extensive manual integration, dashboard proliferation, and guesswork in
+SLO definition.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Playbooks" data-type="sect3"><div class="sect3" id="ch22_playbooks">
+<h3>Playbooks</h3>
+
+<p>Playbooks can be <a data-primary="small teams" data-secondary="playbooks" data-type="indexterm" id="sre_smtm_plybks"/><a data-primary="teams" data-secondary="small" data-tertiary="playbooks" data-type="indexterm" id="tms_sml_plybks"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="playbooks" data-type="indexterm" id="sretms_sm_plybks"/><a data-primary="playbooks" data-type="indexterm" id="plyboks"/>surprisingly controversial, and for some people,
+the idea of taking time to work on them when there are so many fires
+to fight seems like a bad use of time. However, well-written playbooks can
+serve multiple purposes. They help people fix problems when you are
+away, facilitate new hire onboarding, and can
+function as pseudocode for future automation—you write down, test, and
+fix up your playbook, and it becomes version one of the automation needed to
+address the problem going forward. It can be frustrating to have an
+outage where you know what mitigation is required, but no one knows how
+to perform it because the one person who does is on vacation, or is in the
+hospital, or has left the company. If you have put in the time to ensure
+that there is a straightforward way to roll your service back to a
+known good version, you also need to put in the time to ensure that
+other people know how to do the actual work—possibly at
+2 a.m., when they are not at their most alert.</p>
+
+<p>Start by creating playbooks for the five most recent outages (e.g., “database reads/writes are too slow,” “API is serving 500s,” or
+“failed deploy”). Write these playbooks for the non-SRE, because if you
+are on a small team, it may very well not be an SRE trying to
+follow the steps. Make the playbook useful to people in different roles
+who want to help recover the service—say, a developer who has discovered
+that they introduced a problem, or an operations person who was paged.
+This playbook is your opportunity to empower developers and
+other skilled personnel.</p>
+
+<p>One of the first wins you can get from a nicely written playbook is the
+ability to delegate initial troubleshooting and diagnosis to the larger
+team: the playbook walks someone from that team through initial checks
+about the problem. It should also inspire you to create a good usable
+toolset—if you have a tiny bash script that works on any and all
+problems you are debugging, productionize the key elements of that
+script so that other people can share in the work. The team may still
+need to escalate to you, but when they do, they will have already
+completed initial troubleshooting, saving you time and effort. Once the
+outage is resolved, you can make updates that will get the team closer
+to being able to resolve the problem without needing to escalate to you
+at all.</p>
+
+<p>As you learn more about how to operate the service, and as changes are
+made to the service, playbooks can become outdated. Establish a
+culture of making small, fast improvements as they are observed, and be
+sure to solicit feedback on what needs to be made clear. For example, a
+team might be experiencing a rollout that gets into a failure mode that, while not service-impacting, is frustrating. In this situation, you can
+create a playbook showing on-callers how to fix the problem, and then iterate and make improvements as different people encounter the problem.</p>
+
+<p>If you successfully engage the team in creating playbooks, you can
+leverage an LLM to make them findable and
+interactive. Retrieval-augmented generation lets you index your
+playbook library so that when an incident occurs, you don’t have to sift
+through documents  manually; you can ask what the steps are to roll back a specific
+deployment, effectively transforming your static playbook into a
+queryable knowledge database and speeding up your incident response.</p>
+
+<p>The playbooks should become important resources during outages. You’ll want to identify a low-overhead way to
+ensure the most important information is available even when the service
+is completely unreachable. There are a number of ways to handle that
+(GitHub repo, panic package on a local machine, offline compilations).
+Identify what makes the most sense for your situation and target the most
+critical information so that<a data-primary="small teams" data-secondary="playbooks" data-startref="sre_smtm_plybks" data-type="indexterm" id="id2909"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_plybks" data-tertiary="playbooks" data-type="indexterm" id="id2910"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_plybks" data-tertiary="playbooks" data-type="indexterm" id="id2911"/><a data-primary="playbooks" data-startref="plyboks" data-type="indexterm" id="id2912"/> it is available when you need it.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling yourself" data-type="sect3"><div class="sect3" id="ch22_scaling_yourself">
+<h3>Scaling yourself</h3>
+
+<p>You are just <a data-primary="small teams" data-secondary="collaboration with coworkers" data-type="indexterm" id="sre_smtm_cloab"/><a data-primary="teams" data-secondary="small" data-tertiary="collaboration with coworkers" data-type="indexterm" id="tms_sml_cloab"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="collaboration with coworkers" data-type="indexterm" id="sretms_sm_colab"/><a data-primary="collaboration" data-secondary="SRE small teams" data-type="indexterm" id="colabor"/>one person. You don’t have two
+times six people in an on-call rotation nicely arranged across two time
+zones.<sup><a data-type="noteref" href="ch22.html#id2913" id="id2913-marker">1</a></sup> You may be the only SRE
+at a company preparing for an important launch. As discussed previously, it is
+likely that you were hired after a bad outage, so it’s a high-pressure situation
+and everyone around you has expectations. In these conditions, it’s going to be really
+important for you to scale yourself.</p>
+
+<p>Your initial SLOs and SLIs need to be focused on the most critical
+user-facing parts of the service. While the core implementation is
+going to be like that at a much larger company, it will distill down the
+results into something very focused. To address the priority items outlined in
+<a data-type="xref" href="#ch22_the_first_ninety_days">“The first 90 days”</a>, identify the critical user journeys and set up a prober service to measure important SLIs like availability, latency, throughput, and errors.</p>
+
+<p>Once your SLOs are accurately defined, you
+can use them as a reference to determine whether a filed bug requires
+immediate action or if the SLO needs adjustment. These checks will
+provide a foundation that you can refine and improve on and share with
+your team and partners.</p>
+
+<p>At a company of any size, it’s important to build a culture of
+cooperation with the developers. However, this is especially important when you are the single SRE, or an SRE in a small team
+without round-the-clock coverage, as developers are best positioned to
+help you improve the reliability of the service. SREs have a reputation
+for saying “no” a lot, but they also have a reputation for showing up when
+a confusing and upsetting outage is in progress and doing the
+work required to create order, apply mitigation, and (eventually) build understanding. Make
+yourself someone who enables rather than
+blocks other people, and the team and culture will thrive. Be on the lookout for cleaner, easier solutions and for complexity that might cause problems as the feature evolves. Writing and supporting code at a startup can be a big
+trade-off game: do we build this time-consuming, robust solution, or do we choose this simpler but much faster solution? Both of these options have value,
+and if you create a culture of cooperation with the product development
+team, you can balance the options together and make better choices.</p>
+
+<p>You can establish an on-call rotation composed of the development team and
+yourself. You have the additional goal of collecting information about what
+fails and making improvements to observability and SLOs, but the product
+development team is most likely to know that the problem happening
+today is the result of a bug in the code they wrote the day before. Being part of
+a shared on-call rotation is a great
+opportunity to evangelize SRE norms. If there is an outage, you can take on
+the role of incident manager and demonstrate a calm, effective way
+to organize the debugging and mitigation. After the outage, you can
+determine the causal factors, publish the postmortem internally, and
+get feedback on proposed action items.</p>
+
+<p>An important part of collaboration can be reviewing each other’s work.
+We recommend implementing a code review process even if people do some
+(or a lot of) initial complaining. A culture of code review is self-reinforcing, getting people accustomed to the idea that having an
+extra set of eyes on a change is not a drag on velocity but an
+additional way to spot problems. It’s helpful to point out here that
+reliability actually <em>improves</em> velocity, because developers have fewer
+outages that demand their time. Buggy code submitted fast that needs to be rolled
+back is an even greater drag.</p>
+
+<p>A review process can be the start of
+growing an SRE culture, and in the case of the solo SRE, it can be the
+beginning of growing your team. A review provides the following
+benefits:</p>
+
+<ul>
+<li>
+<p>At least one other person knows about the change that was just
+introduced, even if they miss the bug that just got written. They’ve signed off on the change, so they share in
+the responsibility for what happens next.</p>
+</li>
+<li>
+<p>Junior engineers learn from reviewing code written by senior engineers, and senior engineers reviewing code written by juniors can provide coaching.</p>
+</li>
+<li>
+<p>A reviewer can provide helpful suggestions, such as adding unit tests
+to the code.</p>
+</li>
+<li>
+<p>A reviewer can catch problems, even if it’s only one problem in five
+pull requests.</p>
+</li>
+</ul>
+
+<p>Many tools and automated checks can identify
+problems with a pull request before it is submitted. Increasingly, AI can also be leveraged to check for both common and uncommon
+failures. As the first SRE, or the person starting the SRE team, an
+important job will be to establish code review norms and get the developers
+out of a mode where they submit whatever they want, whenever they want, without anyone else looking at it. Instead, SREs and developers should write up
+change requests with clear descriptions and send them to a peer for
+review.</p>
+
+<p>You can use AI to help vet changes; however, at this stage of your
+development, make it a goal that all changes are reviewed by at least one other
+human. This will help catch errors and move you toward a culture
+of accountability. As you mature your service operations by
+defining SLOs, integrating them into monitoring, and building trust in
+consistently meeting them, you can judiciously reduce human oversight,
+confident that any service<a data-primary="small teams" data-secondary="collaboration with coworkers" data-startref="sre_smtm_cloab" data-type="indexterm" id="id2914"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_cloab" data-tertiary="collaboration with coworkers" data-type="indexterm" id="id2915"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_colab" data-tertiary="collaboration with coworkers" data-type="indexterm" id="id2916"/><a data-primary="collaboration" data-secondary="SRE small teams" data-startref="colabor" data-type="indexterm" id="id2917"/> degradations will be rapidly detected and
+mitigated.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Applied in Hybrid and Legacy Environments" data-type="sect2"><div class="sect2" id="ch22_sre_applied_in_hybrid_and_legacy_environments">
+<h2>SRE Applied in Hybrid and Legacy Environments</h2>
+
+<p>In the software industry, “hybrid and legacy” typically refers to
+siloed <a data-primary="hybrid and legacy environments" data-type="indexterm" id="id2918"/><a data-primary="environments" data-secondary="hybrid and legacy" data-type="indexterm" id="id2919"/>environments with a mix of internally developed software and
+acquired systems or components. As other enterprises—especially those
+operating in legacy or hybrid environments—attempt to adopt SRE
+principles and practices, they typically face challenges in two major
+areas. The first is the constraints imposed by organizational structures, processes, access models, and related requirements. The second is technical
+and environmental limitations. This section provides suggestions for how
+to tackle these challenges in your own environment and context.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizational, Process, and Access Constraints" data-type="sect2"><div class="sect2" id="ch22_organizational_process_and_access_constraints">
+<h2>Organizational, Process, and Access Constraints</h2>
+
+<p>Bridging the gap between <a data-primary="operational boundaries, importance" data-type="indexterm" id="id2920"/>security requirements and production stability
+requires thoughtfully constructed operational boundaries. The tension
+between these priorities becomes most acute during incidents, when
+rapid mitigation must be balanced with explicit authorization and
+auditability.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Access and authority during incidents" data-type="sect3"><div class="sect3" id="ch22_access_and_authority_during_incidents">
+<h3>Access and authority during incidents</h3>
+
+<p>To accurately and <a data-primary="incident response" data-secondary="requirements for effective response" data-type="indexterm" id="inc_sreaccauth"/>effectively detect, triage, and mitigate a production issue, an
+engineer responding to the issue requires the following:</p>
+
+<ul>
+<li>
+<p>Sufficient visibility into the service, its dependencies, and the
+underlying infrastructure to understand what’s going on</p>
+</li>
+<li>
+<p>Sufficient access to make the changes to these systems that are needed to mitigate an
+ongoing incident</p>
+</li>
+</ul>
+
+<p>Google SRE on-callers have the access they need to understand the state
+of the system itself via metrics, logs, traces, and other debugging
+information without having to ask for permissions or escalate to another
+team. As a direct result of a years-long technical and cultural
+investment in a common production platform and set of tools, they can
+get similar information for dependencies from the same centralized
+observability systems without needing to ask other teams to provide it.
+They can then take the actions necessary to restore their own service to
+a known good state, such as rolling back a bad configuration or code
+change, or redirecting traffic around physical network or infrastructure
+issues. They can even take actions for services they don’t own directly
+by temporarily escalating their own privileges or (more commonly) by
+preparing a rollback of a bad change and sending it to the service
+owners. If they make a mistake at any point, they are not personally
+held responsible for making the outage worse, and therefore they feel safe doing what they deem to be best in the moment.</p>
+
+<p>We have seen a number of common challenges arising from
+organizational, legacy, or even regulatory constraints. Incident
+response personnel in a large network operations center (NOC), for example, may only have permission to inspect the production
+system at a surface level and may not be able to make changes
+themselves. The NOC may also be staffed through an outsourcing arrangement, where
+incident responders are not employees, operate with limited access, and
+must escalate to in-house teams to gain additional access or make changes.</p>
+
+<p>In these contexts, SRE principles can improve incident response by
+formalizing the transition from steady-state operations to active crisis
+management. One effective approach is to designate an incident commander
+(IC) with the explicit authority to direct the response, regardless of
+the organization’s size or existing hierarchy. While the IC may not
+possess “all-access” technical permissions (the “superpower” to touch
+every system), they hold the <em>mandate</em> to coordinate those who do. For
+smaller organizations, this may simply mean the
+IC has the authority to reprioritize the work of any available engineer.
+To bridge the gap between authority and physical access, define
+predefined emergency access paths, such as time-bound privilege
+escalations, that the IC can authorize for responders. Incident
+commanders bypass organizational silos because the organization
+grants them full authority for the duration of the incident.</p>
+
+<p>While granting broad system access to engineers accelerates incident
+resolution, it undeniably introduces a significant attack surface and
+potential trust problems. To mitigate risks of malice, incompetence,
+or external coercion, such autonomy must be paired with robust technical
+guardrails. Organizations can minimize the blast radius of any
+single individual’s mistakes or malicious actions by implementing
+least privilege access by default, requiring multiparty authorization
+(e.g., a two-person rule) for sensitive data access, and maintaining
+immutable audit logs of all production actions. Create systems that
+require that every high-level privilege escalation be short-lived,
+logged, and justified, and use them to empower on-callers to act
+decisively during outages, while also monitoring and auditing their
+access to sensitive user data such as chat logs or financial records. At
+Google, such systems govern, audit, and control all access to production systems, whether during incident response, routine<a data-primary="incident response" data-secondary="requirements for effective response" data-startref="inc_sreaccauth" data-type="indexterm" id="id2921"/> troubleshooting, or other operational activities.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Autonomy and authority to prevent incidents" data-type="sect3"><div class="sect3" id="ch22_autonomy_and_authority_to_prevent_incidents">
+<h3>Autonomy and authority to prevent incidents</h3>
+
+<p>To improve the reliability <a data-primary="incident response" data-secondary="requirements for reliability and supportability" data-type="indexterm" id="inc_reqrelsup"/>and supportability of systems over time,
+engineers who respond to production issues require the following:</p>
+
+<ul>
+<li>
+<p>Engineering capacity (time) allocated to postmortems and identifying
+improvement opportunities. This allocation depends on leadership prioritization.</p>
+</li>
+<li>
+<p>Commitment from the teams that own, build, and maintain the service to invest engineering capacity in implementing the resulting
+action items.</p>
+</li>
+</ul>
+
+<p>In the ideal case, SREs work in
+partnership with the service owners or developers. They work jointly
+with product engineers to include reliability considerations in designs
+and address reliability issues that are uncovered in production. At Google, when
+this relationship breaks down, SREs are empowered to walk away from the
+service if they cannot support it while adhering to operational work
+limits (see <a data-type="xref" href="ch07.html#ch07">Chapter 7</a>).</p>
+
+<p>The ability to walk away may not be possible in your case. In fact, it
+may be that the engineers charged with production responsibilities are
+expected to support the service and defend its reliability no matter
+what happens on the other side of the proverbial fence. One way to
+improve this scenario can be to run a <a data-primary="toil" data-secondary="audits" data-type="indexterm" id="id2922"/>toil audit and use its results to
+negotiate for time to invest in additional automation. The objective is
+to quantify the most frustrating and frequent manual tasks. The staff
+who perform the work can identify and list these tasks, quantify the
+time savings and other benefits (such as reliability improvements) that
+might be realized by automating them, and leverage this data with
+management to budget time for automation work. This approach reframes
+the issue from a suggestion for change (“we should automate”) or a
+complaint (“we’re doing too much toil”) to a business justification
+(“automating X repetitive task gives us Y hours back to work on product
+features”).</p>
+
+<p>In some cases,<a data-primary="automation" data-secondary="incident response" data-type="indexterm" id="id2923"/> automation may unlock
+entirely new use cases that weren’t possible before. Automatically
+scaling infrastructure to meet user demand is a simple example of what’s
+possible. Another example is setting up probers to validate application
+performance and availability—especially while the application is
+undergoing disaster recovery, chaos testing, or failover testing. Many
+users perform simple manual validation during a disaster recovery test
+to confirm that it “worked.” Having reliable SLIs derived from prober traffic
+against test environments that track application health before, during,
+and after the test provides a much more complete picture of whether the
+experiment passed or failed.</p>
+
+<p>While automation is a core pillar of SRE, it is not a “set and forget”
+solution that yields immediate time dividends. As noted by Lisanne
+Bainbridge in her work on the “Ironies of Automation” (see the sidebar <a data-type="xref" href="ch13.html#ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">“The Ironies of Automation”</a>), shifting tasks from humans to machines often replaces simple
+manual work with more complex supervisory and maintenance tasks. Every
+automated system introduces a new surface area for debugging,
+integration challenges, and the eventual need for rewrites as the
+underlying environment evolves. Therefore, the goal of automation isn’t
+just to eliminate toil but to intentionally trade high-frequency manual
+labor for the lower-frequency, higher-value work of maintaining
+the automation itself.</p>
+
+<p class="fix_tracking">Another approach is to integrate incident responders into the postmortem
+and action item process. If the support team’s insights fail to
+translate into system improvements, it is usually because their
+experiences are not being formalized or recorded as organizational
+knowledge. This can also occur when the primary responders are 
+<span class="keep-together">disconnected</span> from the product development team and its knowledge. The SRE model uses
+postmortems as the formal mechanism for closing these gaps and
+driving systematic change. (See <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>
+for an in-depth discussion of blameless postmortems.)</p>
+
+<p>This focus on learning from incidents in a blameless way gives a
+formal voice to the responders’ operational reality: their inability to
+fix a problem or suggest a better playbook becomes an <em>organizational</em>
+failure to be addressed through action items, ensuring the problem is
+surfaced to leadership and assigned an owner for resolution. Finally, in
+regulated enterprises accountable to government authorities (such as the US
+Federal Aviation Administration or Food and Drug Administration), when things go wrong, the postmortem might be used as
+formal documentation demonstrating that <a href="https://oreil.ly/PKTKt">corrective and preventive action (CAPA)</a>
+is being taken. The CAPA itself then becomes a documented regulatory
+requirement, effectively bypassing routine bureaucracy and elevating the
+priority of the reliability fix. If you work in such an environment,
+you’re likely well familiar with these regulations; if not, your local
+compliance office should be <a data-primary="incident response" data-secondary="requirements for reliability and supportability" data-startref="inc_reqrelsup" data-type="indexterm" id="id2924"/>able to help.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Technical Constraints and Obstacles" data-type="sect2"><div class="sect2" id="ch22_technical_constraints_and_obstacles">
+<h2>Technical Constraints and Obstacles</h2>
+
+<p>In cases where an organization<a data-primary="software development" data-secondary="SRE role" data-type="indexterm" id="id2925"/> builds all the software it runs, the SRE
+function has the freedom to write additional software to accomplish
+its objectives. SREs can also directly modify the code of the services
+they support to improve scalability, reliability, and efficiency.
+However, in practice, most enterprises have significant software
+investments in third-party commercial off-the-shelf (COTS) software,
+whose code cannot be easily modified, if it can be modified at all. But even when
+operating in such an environment, there are opportunities to employ SRE
+practices and principles for improvement.</p>
+
+<p>Most enterprises do not build their software stack in-house and instead rely
+heavily on third-party COTS software. This is true not just for business
+applications but also for the infrastructure and tooling used to run
+the environment, such as monitoring, provisioning, and CI/CD pipelines.</p>
+
+<p>Regardless of the software’s origin, the SRE function provides the most
+value when empowered to develop its own automation and software
+layers. Even when working with closed systems that cannot be directly
+modified, SRE teams can identify high-leverage opportunities to build
+custom wrappers. These tools allow SREs to
+extend existing capabilities, isolate proprietary systems, and inject
+the standardized reliability practices necessary to maintain a stable
+production environment.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Closed systems" data-type="sect3"><div class="sect3" id="ch22_closed_systems">
+<h3>Closed systems</h3>
+
+<p>When you cannot change <a data-primary="software development" data-secondary="SRE role" data-tertiary="working with third-party software" data-type="indexterm" id="stwdevsre_trdprt"/>the internal workings of a third-party
+application, focus on stabilizing the systems and processes that
+surround that application. Work with what you have, rather than trying
+to change systems that are “nearly impossible” to run the SRE way.
+While the core proprietary software cannot be managed via code, the
+deployment, networking, and operational components that support it can
+be. Infrastructure-as-code (IaC) tools, such as
+<a href="https://oreil.ly/4dp9K">Terraform</a>, can
+provide improved consistency, speed of deployment, and disaster recovery
+for system infrastructure components. These tools should help you reduce
+risk without needing access to the source code of the proprietary
+software itself.</p>
+
+<p>Running third-party systems in production often requires significant operational overhead and
+manual repetition (i.e., toil). As recommended previously, audit the toil and
+identify the most frequent, repetitive manual tasks
+related to supporting the system. Create scripts to handle common
+mitigations (e.g., restarting failed services or clearing caches after an
+incident), instead of attempting complex, self-healing automation.
+Scripts can also help with post-incident cleanup and validation,
+reducing operational debt and making the system easier to
+support.</p>
+
+<p>Beyond managing the infrastructure, SRE can develop a robust internal
+API or wrapper layer—often referred to as an anticorruption layer.
+By building this intermediary layer that the organization fully owns,
+SREs can programmatically control the communication path to the
+third-party software. This allows the team to inject critical
+reliability practices that the COTS product may lack out of the box,
+such as standardized observability, granular rate limiting, and
+validated configuration management. Rather than simply reacting to the
+behavior of an opaque system, this architectural approach empowers SREs
+to proactively govern how the system interacts with the rest of the
+environment, effectively turning a rigid<a data-primary="software development" data-secondary="SRE role" data-startref="stwdevsre_trdprt" data-tertiary="working with third-party software" data-type="indexterm" id="id2926"/> third-party tool into a more
+predictable and manageable component.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Heterogeneity and silos" data-type="sect3"><div class="sect3" id="ch22_heterogeneity_and_silos">
+<h3>Heterogeneity and silos</h3>
+
+<p>Google’s current standardization<a data-primary="environments" data-secondary="heterogenous, applying SRE practices" data-type="indexterm" id="env_het_srepract"/> on Borg-based infrastructure (see <a data-type="xref" href="ch03.html#ch03_google_s_production_environment">“Google’s Production Environment”</a>) and associated
+tooling enables the SRE organization to operate many (but by
+no means all) services in a uniform way and apply
+<a href="https://oreil.ly/F334I">generic
+mitigations</a>.<sup><a data-type="noteref" href="ch22.html#id2927" id="id2927-marker">2</a></sup> But what happens
+when you’re operating a complex, long-standing, and diverse technical
+environment, or one that is siloed with multiple distinct technical
+verticals? How do you apply modern SRE practices in this context?</p>
+
+<p>Pragmatism is key. When faced with these constraints, SRE teams should prioritize practical, customized solutions over rigid adherence to a standard framework. To maintain momentum, consider the following approaches:</p>
+<dl>
+<dt>Focus on generic mitigations</dt>
+<dd>
+<p>Identify ways to mitigate incidents that
+can be applied quickly and reliably and do not necessarily require deep
+system introspection.</p>
+</dd>
+<dt>Adopt principles incrementally</dt>
+<dd>
+<p>Instead of a wholesale transformation,
+introduce SRE concepts in stages (see <a data-type="xref" href="ch04.html#ch04_practical_considerations">“Practical Considerations”</a>).</p>
+</dd>
+<dt>Focus on limited scope</dt>
+<dd>
+<p>Start within a single vertical or system,
+tailoring the implementation to “work with what you have” rather than
+waiting for infrastructure upgrades.</p>
+</dd>
+<dt>Define context-specific goals</dt>
+<dd>
+<p>Set reliability targets that make sense
+for the individual system’s operational reality rather than pursuing a
+uniform standard across the entire enterprise.</p>
+</dd>
+<dt>Prioritize preparedness for rigid systems</dt>
+<dd>
+<p>For legacy or third-party
+systems that are difficult to modify, shift focus toward disaster
+testing, certifications, and live drills to handle emergencies caused by
+external factors. Treat highly reliable and redundant systems similarly.</p>
+</dd>
+</dl>
+
+<p>For a real-world example of these practices, see <a data-type="xref" href="#ch22_case_study_large_multinational_investment_and_consumer_bank">“Case Study: Large Multinational Investment and Consumer Bank”</a>.</p>
+
+<p>Next, introduce standardization through the systems that manage and
+operate the bits you cannot change, rather than the bits themselves.
+Build a lightweight, standardized toolchain and processes that sit
+<em>above</em> the disparate infrastructure, for example, using
+IaC and uniform monitoring tools. Tools like
+Terraform can improve the consistency and speed of deployments and make
+disaster recovery easier by managing the provisioning and
+configuration of all new and modernizable infrastructure components.
+Because this is a complex, time-consuming process involving significant
+organizational back-and-forth, standardization should be approached
+incrementally, treating it as a long-term evolution rather than an
+overnight transformation.</p>
+
+<p class="fix_tracking">Standardization ensures new systems are deployed uniformly and reduces
+future complexity. To unify monitoring across diverse technical stacks,
+introduce symptom-based alerting (<a data-type="xref" href="ch08.html#ch08">Chapter 8</a>). Since the heterogeneous
+systems may have widely varied internal performance metrics, focusing
+alerts on direct indicators of user happiness (e.g., latency or
+availability) standardizes the incident response experience. This
+approach moves the focus from the complex internal details to the
+measurable impact on <a data-primary="environments" data-secondary="heterogenous, applying SRE practices" data-startref="env_het_srepract" data-type="indexterm" id="id2928"/>the business.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Humans in the loop" data-type="sect3"><div class="sect3" id="ch22_humans_in_the_loop">
+<h3>Humans in the loop</h3>
+
+<p>In some cases, <a data-primary="automation" data-secondary="applying selectively" data-type="indexterm" id="aut_apsel"/>manual procedures are preferred or required, or
+human verification has to precede automated actions. Following the model
+used in the aviation industry, implement automation selectively,
+ensuring that core system implementations remain subject to manual
+inspection and verification. This
+preserves the benefits from the speed and repeatability of automation,
+which produces higher-quality standards, and retains the trust of the
+human decision chain. Consider using automated remediation actions for
+predefined breaches of SLOs or specific, high-urgency conditions where
+the risk introduced by fully automated response is lower than the risk
+inherent in slower human intervention. As a specific example, adding
+capacity when detecting a substantial increase in inbound traffic could
+be a good candidate for automated response as a well-understood,
+acceptable risk.</p>
+
+<p>If automation fails or leads to an incident, use the
+blameless postmortem process to analyze the systematic failure (e.g., a
+flaw in the automation tool or configuration) rather than an individual
+mistake. This process should help build the psychological safety required
+for engineers to continue proposing and building automation without fear
+of career repercussions, as well as improving the automations themselves over time.</p>
+
+<p>In regulated industries such as aviation, finance, and healthcare, trust automation only when
+verified by a human—failover may be automatic, but core system
+implementations often require manual inspection. In such environments,
+you can focus on highly specific, low-risk, high-return automation
+efforts, while formalizing the human role in the process.</p>
+
+<p>Ultimately, even though applying SRE principles to hybrid and legacy
+environments presents unique technical constraints—including reliance on
+third-party and legacy infrastructure and dealing with heterogeneous and
+siloed systems—these challenges can be effectively addressed. The key is
+to focus your efforts on the surrounding systems and processes, embrace
+pragmatic and incremental solutions tailored to specific contexts, and
+implement highly targeted automation for toil reduction—all while
+leveraging blameless postmortems for continuous improvement.</p>
+
+<p>Implementing SRE in hybrid and legacy environments requires a pragmatic
+balance between ideal reliability practices and the reality of ingrained
+organizational and technical constraints. While technical debt and
+siloed access often hinder the speed of incident response, the path
+forward lies in fostering a culture of accountability and incremental
+standardization. Empower engineers with greater visibility and the
+authority to act during outages to begin to dismantle the barriers that
+lead to high mean time to resolution (MTTR). Seek to adapt core SRE principles—like
+a blameless culture and a focus on automation to fit your needs—rather
+than trying to perfectly mimic a cloud native model or “be
+more like Google.” Aim to transform reliability from a specialized task
+into a shared responsibility and to enable even the most fragmented systems
+to achieve modern performance standards. Through persistent advocacy and
+technical evolution, you can move from mere maintenance toward a
+sustainable, proactive <a data-primary="automation" data-secondary="applying selectively" data-startref="aut_apsel" data-type="indexterm" id="id2929"/>operational future.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Real-World Examples" data-type="sect1"><div class="sect1" id="ch22_real_world_examples">
+<h1>Real-World Examples</h1>
+
+<p>Even in cases where the SRE adoption effort is well resourced, building
+a practice in an existing enterprise can come with its own set of
+challenges. Over the last decade, Google engineers have worked with a
+variety of customers to assist them in standing up SRE teams and
+instilling SRE practices, helping them build and run reliable, scalable
+systems in the cloud. These customers have included large enterprises,
+well-funded startups, and even public institutions. The case studies
+that follow describe some of these experiences and
+illustrate real-world approaches to retrofitting SRE into an existing
+organizational structure.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Rapidly Scaling B2B SaaS Startup" data-type="sect2"><div class="sect2" id="ch22_case_study_rapidly_scaling_b2b_saas_startup">
+<h2>Case Study: Rapidly Scaling B2B SaaS Startup</h2>
+
+<p>A recently <a data-primary="B2B SAAS startup, retrofitting SRE practices case study" data-type="indexterm" id="btb_retrofit"/>funded SaaS startup needed to stabilize its platform after
+experiencing sudden growth that pushed its ad hoc engineering practices
+to the breaking point.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The scenario" data-type="sect3"><div class="sect3" id="ch22_the_scenario">
+<h3>The scenario</h3>
+
+<p>Founded two years earlier, the company experienced a massive spike in user
+traffic once it found product-market fit. The initial two-person
+engineering team had grown to about 20 developers in response to product
+demands, but the operational model remained stuck in the “garage”
+phase: everyone pitches in, everyone wears all hats, everyone focuses on
+the most recent or prominent problem.</p>
+
+<p>On top of the cultural issues, deployments were more manual and less well
+documented than ideal, and outages were frequently discovered through
+user feedback surfaced to the founders. The core engineering team was
+thus trapped in a constant state of firefighting, making velocity
+unpredictable. Leadership identified these issues and brought in a new
+hire dedicated to “bringing order to the chaos” through SRE.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The adoption approach" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach">
+<h3>The adoption approach</h3>
+
+<p>The new SRE leader faced operational debt and overloaded engineers. Two
+engineers, one senior and one junior, were tapped to form the core of a
+new SRE group, bringing their number to three. They sat directly within
+the engineering group as fully fledged software engineers, but with a
+focus on the SRE mandate. The SRE group identified four critical priorities to
+tackle initially:</p>
+<dl>
+<dt>Establish visibility</dt>
+<dd>
+<p>They performed an immediate review of
+observability tooling and established standards for metrics, logs, and
+traces, which they partnered with the rest of engineering to
+systematically implement.</p>
+</dd>
+<dt>Automate the biggest source of toil</dt>
+<dd>
+<p>Issues with deployments caused
+the majority of outages (at least anecdotally, though this was later confirmed by updated data). The SREs focused on cleaning up the deployment automation
+and introduced “one-click” rollbacks for most rollouts.</p>
+</dd>
+<dt>Create playbooks</dt>
+<dd>
+<p>They gathered tacit knowledge from the team and
+wrote playbooks for the top 10 most common failure modes.</p>
+</dd>
+<dt>Implement basic SLOs</dt>
+<dd>
+<p>With the updated monitoring in place, they
+worked with the product manager and the founders to set initial SLOs
+that reflected user experience expectations. These were
+imperfect, but they formed the basis for reevaluating reliability from the
+users’ perspective.</p>
+</dd>
+</dl>
+
+<p>The SRE group also
+established a formal on-call rotation that included all of the
+engineering team.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The results" data-type="sect3"><div class="sect3" id="ch22_the_results">
+<h3>The results</h3>
+
+<p>By focusing on high-impact automation and developer enablement, rather
+than simply owning on-call and fixing the bug backlog, this initial
+group of SREs successfully transitioned the company out of the
+“constant firefighting” phase. Within six months, the following
+improvements were solidified:</p>
+<dl>
+<dt>Deployment confidence</dt>
+<dd>
+<p>Rollouts shifted from high-stress events to
+routine, frequent operations. Not only did mean time to failure (MTTF)
+increase, but developers took more risks (which paid off) due to higher
+confidence in rollbacks.</p>
+</dd>
+<dt>Reduced MTTR/MTTD</dt>
+<dd>
+<p>As use of SLOs proliferated, symptom-based
+alerting led to reduced mean time to detection (MTTD), while MTTM/MTTR improved via playbook usage and more
+consistent, less chaotic triage. The team saw an approximate 60%
+reduction in overall downtime across its identified critical user
+journeys.</p>
+</dd>
+<dt>Culture of collaboration</dt>
+<dd>
+<p>The inclusion of the full development team
+in the on-call rotation, and the developers’ enablement by the SREs, ensured that
+a “throw it over the wall” mentality wouldn’t develop with the growth
+of the SRE team.</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>Data-driven prioritization</dt>
+<dd>
+<p>SLOs and a more detailed reliability
+backlog became primary inputs into the team’s prioritization, allowing
+for more objective decision making and ultimately increasing product
+velocity. One major feature was shipped a full 60 days earlier than
+originally planned.</p>
+</dd>
+</dl>
+
+<p>The SRE group has since grown and now operates as a separate team alongside the development team, reporting through the same engineering leadership chain. With product velocity unlocked, the development team has grown as well, and the engineering
+group has stabilized at roughly a 7:1 developer-to-SRE ratio. Approximately
+half of SREs are direct hires, while the other half come from the
+development team. Although SRE ownership of on-call has increased over time,
+all developers still participate in some on-call rotations.
+Operational work for developers <a data-primary="B2B SAAS startup, retrofitting SRE practices case study" data-startref="btb_retrofit" data-type="indexterm" id="id2930"/>now accounts for about 5% of their time, down
+from nearly half when the first SREs joined the team.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Large Multinational Investment and Consumer Bank" data-type="sect2"><div class="sect2" id="ch22_case_study_large_multinational_investment_and_consumer_bank">
+<h2>Case Study: Large Multinational Investment and Consumer Bank</h2>
+
+<p>A key financial <a data-primary="banks, retrofitting SRE practices case study" data-type="indexterm" id="bnk_retrofit"/>institution was seeking to redefine the customer
+experience for critical products like trades and wire transfers, and
+looked to SRE to make it possible.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The scenario" data-type="sect3"><div class="sect3" id="ch22_the_scenario_2">
+<h3>The scenario</h3>
+
+<p>A storied company with a long technological history,
+over time the bank had adopted a large variety of infrastructure environments and overlapping tools, each used within one
+or more silos as a point solution to a particular problem. Many of
+these choices were driven by a combination of regulatory requirements
+and the need to interoperate with external organizations, as is the nature of a key
+player in the global financial system. Similarly, the bank had developed a
+complex web of internal and outsourced capabilities over the years, so
+even basic functions such as program management were performed differently by different teams, depending on the business unit.</p>
+
+<p>Even the most venerable institutions can recognize a need to improve. After a
+series of outages across the industry, introspection led the firm to a
+stark conclusion: it knew where it had problems, and when, but its
+ability to react to and resolve complex outages was heavily limited by
+a siloed organization and a culture of blame. These
+obstacles made navigating the complex environment incredibly
+difficult.</p>
+
+<p>When Google first began working on SRE transformation with this
+organization, a leader laid out a core issue: the company was composed
+of several distinct silos, each of which had existed “since before
+employees had computers on their desks” and acted as a
+quasi-independent entity, with leaders that expected near-total control
+and decision-making authority. Any method of building an SRE culture
+would have to avoid appearing to infringe on the sovereignty of
+these verticals.</p>
+
+<p>The bank did have some key strengths. Average employee tenure was
+quite high, which meant domain knowledge was strong. By market
+necessity, the firm also had a relatively high degree of technical
+sophistication in some areas. As a financial institution, clear
+ownership of success and comfort with discussing risk were cultural
+values that could be leveraged to build an SRE model.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The adoption approach" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach_2">
+<h3>The adoption approach</h3>
+
+<p>A simplistic, universal rollout of SRE practices such as SLOs and
+role-based incident response was likely to get bogged down in divisive debates.
+The diversity and sovereignty issues required a capabilities-based
+approach. We focused on identifying and pursuing specific SRE
+capabilities within individual verticals to address their unique needs.
+Standardizing the implementation of those capabilities would follow. This
+approach could also address the variety of infrastructure
+environments by building a standard capabilities “surface” that abstracted away their differences. Some of these capabilities could be required as
+a baseline, while adoption targets could be customized for each vertical, or in
+some cases even more granularly, allowing the different businesses to
+maintain a sense of control and ownership.</p>
+
+<p>In practice, the approach proceeded like this:</p>
+<ol>
+<li>
+<p>Work with a vertical to identify existing capabilities and key pain
+points.</p>
+</li>
+<li>
+<p>Identify reliability targets for key services.</p>
+</li>
+<li>
+<p>Align the combination of pain points and requirements for each
+vertical to a capabilities map,<sup><a data-type="noteref" href="ch22.html#id2931" id="id2931-marker">3</a></sup>
+classifying capabilities as “preexisting,” “must have,” “nice to
+have,” “unneeded,” and “explicitly undesirable.”</p>
+</li>
+<li>
+<p>Identify commonalities between the maps, some of which will exist
+because of our gentle prodding as coordinators.</p>
+</li>
+<li>
+<p>Establish a subset of the commonalities as baseline requirements for
+production applications, and have it ratified by the verticals.</p>
+</li>
+<li>
+<p>Work with each vertical to define an order and a timeline for gaining their
+needed capabilities.</p>
+</li>
+
+</ol>
+
+<p>Over the course of two years, SRE teams across several verticals established capabilities such as
+centralized SLO tracking, role-based incident response, and automated
+rollback. While they didn’t always act in perfect
+lockstep, this semicoordinated approach kept objections to a minimum
+while guiding the process. In the end, they had a consistent approach to
+SRE in which each vertical retained ownership of its
+reliability operations while contributing its improvements back to
+the whole.</p>
+
+<p>Two other key strategies, one organizational and one technical,
+contributed to this success. Organizationally, it was crucial to designate a senior
+executive to advocate for reliability and the SRE transformation at the highest levels, to maintain momentum over the course of a multiyear change effort. Ideally, the person who takes on this “chief reliability officer” role is someone at or near the C-level who is able to act as a lighthouse, providing consistency,
+inspiration, and thought leadership as inevitable challenges arise.
+In this case, given the size of the organization, the role was filled by a managing director. This individual successfully leveraged their seat at
+the table to present a reliability “meta vertical” of sorts. This was a smart
+approach, considering the bank’s preexisting organizational patterns:
+executive leadership understood the concept of a vertical and thus were
+primed to take in feedback from the owner of this critical reliability
+effort.</p>
+
+<p>Technically, to deal with the vast landscape of overlapping tools and to
+minimize early conflicts over ownership, we focused on adopting “meta
+tools” that could plug into teams’ existing
+software and processes to the greatest extent possible. These meta tools also helped speed up the
+process of establishing SRE capabilities. A secondary effort to reduce
+the tool space would then happen at a later stage. For example, we used
+dedicated SLO measurement and reporting software (a third-party SaaS
+product) that could integrate with all the major incumbent metrics and
+logging systems, so that the success of building initial SLOs didn’t
+hinge on exactly how individual service teams had built their existing
+monitoring.</p>
+
+<p>The adoption of similar SRE practices across verticals did its part to
+reduce blameful behaviors, but some issues remained, particularly with
+regard to severe multiservice incidents. This area was targeted
+directly by building a globally standardized incident response process
+and then practicing it, often and in depth, through disaster
+role-playing exercises. During these exercises, we put team members in a
+variety of roles, including ones outside their typical teams. A standing
+postmortem review committee, with representation from all SRE-aligned
+verticals, was established to guard against regressions into assigning
+blame and to ensure the completeness and actionability of incident records and
+follow-up action items.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The results" data-type="sect3"><div class="sect3" id="ch22_the_results_2">
+<h3>The results</h3>
+
+<p>The work continues, as this bank is a very large organization, but after
+nearly two years of efforts, many teams have transformed the way they do
+business. Some of the largest changes include:</p>
+
+<ul>
+<li>
+<p>SLOs that are tracked and reported the same way across verticals,
+allowing for better coordination between service teams and more
+confident distribution of resources based on need. MTTR was reduced
+overall, in part due to increased efficiency in mustering incident
+response teams.</p>
+</li>
+<li>
+<p>Incident response processes that are consistent while still allowing
+local service teams to have a major hand in resolution, rather than a
+centralized team dominating incident response and slowing
+MTTM/MTTR. This contributed to the lower MTTR by
+reducing escalation steps and decreasing time to console when human
+intervention is required.</p>
+</li>
+<li>
+<p>Fewer layers of service management, requiring less overhead
+for coordination and unlocking greater velocity per individual. In this
+case, the total number of personnel didn’t change significantly, but
+their distribution shifted toward wider, more flexible layers rather than a deep, five-plus-level escalation stack.</p>
+</li>
+<li>
+<p>Creation of aspirational service level targets that are seen as valid
+and useful across verticals, in contrast to the siloed mentality that prevailed
+before the shift. This led to a flywheel effect of SLO proliferation
+across the wider business.</p>
+</li>
+<li>
+<p>Reduction of postmortem outputs focused on assigning blame and
+measurable reduction <a data-primary="banks, retrofitting SRE practices case study" data-startref="bnk_retrofit" data-type="indexterm" id="id2932"/>in repeat incident frequency.</p>
+</li>
+</ul>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Large-Scale Mortgage Lender" data-type="sect2"><div class="sect2" id="ch22_case_study_large_scale_mortgage_lender">
+<h2>Case Study: Large-Scale Mortgage Lender</h2>
+
+<p>A top mortgage provider <a data-primary="mortgage lenders, retrofitting SRE practices case study" data-type="indexterm" id="mortlndrs_retrofit"/>was looking to stand up an SRE practice to help it meet the closing timelines borrowers expect.</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The scenario" data-type="sect3"><div class="sect3" id="ch22_the_scenario_3">
+<h3>The scenario</h3>
+
+<p>This lender had chosen to invest heavily in technology, as its market
+strategy involved working with independent brokers who brought in borrowers primarily based on the ease and consistency of the mortgage
+experience. It had also decided to grow these capabilities largely in-house,
+with an engineering staff of thousands building and running the software stack at scale.</p>
+
+<p>In its hurry to expand its market, the firm had focused far more on
+“building” than “running,” with one or two designated individuals acting as
+de facto on-callers within each software team, or in some cases across
+multiple teams. While leaders at the top did champion the user
+experience, there was a disconnect between their measurement of
+best-case scenarios and the reality for users impacted by outages or
+performance issues. Reliability might temporarily become a priority following an outage, but the subsequent improvements would be unevenly
+distributed across teams and often short-lived, as no one really owned
+production standards and the individual teams’ efforts were uncoordinated.</p>
+
+<p>A few key individuals in the company eventually recognized these efforts
+as positive but unsustainable, and they sought to build an SRE culture and
+organization to allow the company to truly practice user-centric
+engineering.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The adoption approach" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach_3">
+<h3>The adoption approach</h3>
+
+<p>The company began its journey toward SRE by identifying key
+developers, DevOps engineers, and de facto SREs within a few of its
+most critical service teams and putting them through an SRE development
+workshop over the course of about three months. The participants discussed SRE
+cultural practices, learned and practiced the art of building SLOs, and
+defined aspirational standards for incident response, postmortems,
+on-call planning, toil management, and similar functions. The goal was
+to plant the seed of SRE in their flagship services.</p>
+
+<p>The next priority was to define an SRE engagement model. Because of the size of the overall organization and the need to prove the concept
+before mass investment, leaders chose to start with a small centralized
+SRE team that would engage with service teams in the following
+ways:<sup><a data-type="noteref" href="ch22.html#id2933" id="id2933-marker">4</a></sup></p>
+
+<ul>
+<li>
+<p>Provide advice, guidance, and assistance as needed through
+an issue flow.</p>
+</li>
+<li>
+<p>Provide time-limited, 90-day engagements with teams to solve specific
+reliability problems or perform onboarding into the SRE approach.</p>
+</li>
+<li>
+<p>For the most critical services, provide one to three designated SREs
+aligned with those teams and dedicate a certain portion of their time
+(50–75%) to making reliability improvements for those services.</p>
+</li>
+<li>
+<p>Build ongoing reliability capabilities for rollout to all
+service teams.</p>
+</li>
+<li>
+<p>Provide training for new service-level SREs through a three- to six-month rotation on the centralized team.</p>
+</li>
+</ul>
+
+<p>Initially, this team was staffed mostly by individuals who had
+participated in the SRE development workshop. Once it had demonstrated
+value through a few key engagements with product teams, it was time to
+begin expanding.</p>
+
+<p>The centralized team developed an eight-week,
+eight-hour-per-week SRE enablement program to prepare service teams for
+SRE adoption. Participants learned SRE and SLO
+fundamentals and were exposed to the tooling and standards established
+by the centralized team. They then took those lessons back to their teams
+and, where appropriate, engaged further with the centralized team through one or more of
+the options in the aforementioned engagement model. This
+program was run multiple times to expand the reach of the nascent SRE
+practice.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The results" data-type="sect3"><div class="sect3" id="ch22_the_results_3">
+<h3>The results</h3>
+
+<p class="fix_tracking">The centralized SRE team now sits within a platform and reliability
+engineering vertical and works with the center of excellence team to
+develop production standards. More than six dozen practitioners have
+become SREs or embedded reliability-focused developers within their
+teams, and they’ve built a slate of SLOs that can now be used to better
+coordinate incident response and deal with the unsustainable operational
+load. It is still early in this transformation, but SLO
+attainment is already trending in the right direction, and teams report a
+reduction in contradictory management directives.</p>
+
+<p>One unforeseen improvement has been a reduction in “weaponized
+blamelessness,” where the desire not to point fingers leads to an
+increase in MTTM/MTTR as teams focus on their own responsibilities and use blamelessness
+defensively to dodge ownership. The spread of clearer SRE culture
+standards, and the embedding of SRE champions across critical service
+teams, continues to move the culture toward a truer approach to
+blamelessness, where the teams can focus on technical and operational
+realities without fear <a data-primary="mortgage lenders, retrofitting SRE practices case study" data-startref="mortlndrs_retrofit" data-type="indexterm" id="id2934"/>of political fallout.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Managing Real-World Safety: An Example with Waymo" data-type="sect2"><div class="sect2" id="ch22_sre_managing_real_world_safety_an_example_with_waymo">
+<h2>SRE Managing Real-World Safety: An Example with Waymo</h2>
+
+<p>The Incident Management<a data-primary="IMAG (Incident Management at Google)" data-type="indexterm" id="id2935"/> at Google (IMAG) protocol (discussed in <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>) is fundamental to
+maintaining consistent reliability for an organization. A core feature
+of IMAG is establishing an incident response team with clear roles
+at the outset of an event. These practices did not originate in a
+vacuum; as Google’s structured approach to incident response quickly evolved beyond the basic “everyone pitches in and helps” model, it drew on a myriad of existing paradigms to develop a unique and effective incident response culture.</p>
+
+<p>The first edition of this book included a chapter dedicated to
+<a href="https://sre.google/sre-book/lessons-learned">lessons learned from other
+industries</a>, which examined high-stakes fields such as nuclear power, aviation, telecommunications,
+and medicine—environments where failures have immediate real-world safety consequences. The emergencies these industries
+face can broadly be termed <em>crises</em>, and responding to them <em>crisis
+management</em>.</p>
+
+<p>Most SREs in the tech industry today are focused on
+software uptime in a more product-oriented sense and are less directly concerned with safety-critical environments. Software incidents are
+typically described as outages. Waymo, on the other hand, must balance
+those same product expectations with additional physical safety
+standards. This difference is reflected in Waymo’s incident response
+practices, which we’ll describe in detail here.</p>
+
+<p>SREs at Google and throughout the tech industry hone IMAG skills as a
+core responsibility; debugging and resolving major outages is a
+hallmark of the profession. When SREs are well versed in incident
+management, these skills can often be applied with surprising ease to nontechnical crises, enabling them to provide
+effective incident management for company-wide incidents that extend beyond technical issues. In doing so, they can deliver outsized
+impacts, drawing on the cross-disciplinary roots of IMAG that
+originated outside Silicon Valley. The following sections examine
+what this ability means in practice and when an organization should
+consider leveraging SREs beyond their traditional technical incident
+response role—as the spearhead of company-wide incidents—through a case
+study of Waymo SRE’s additional role within the company.</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>Waymo is a self-driving<a data-primary="Waymo" data-type="indexterm" id="id2936"/> technology company spun out of Google’s X
+incubator in 2016. It has since deployed the world’s first fully
+autonomous ride-hailing service to the public in half a dozen major
+cities (with more to come). As a technology company that utilizes both
+complex distributed systems in the cloud and cutting-edge technology in
+the vehicle itself, Waymo is a perfect example of how technology
+companies can bridge the gap between the digital and physical worlds.
+This is a useful showcase for how the SRE role can apply principles of reliability,
+resilience, and safety in nontraditional ways.</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Traditional role of SRE on-call" data-type="sect3"><div class="sect3" id="ch22_traditional_role_of_sre_on_call">
+<h3>Traditional role of SRE on-call</h3>
+
+<p>At many organizations, <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="on-call rotation" data-type="indexterm" id="id2937"/><a data-primary="on-call rotation" data-type="indexterm" id="id2938"/>there are multiple on-call echelons that an SRE might participate in.
+Every SRE will be on-call for their local team or product (their core
+rotation). Some SREs may have enough context to jump into any incident
+within their larger organization. At Google, there is a higher level of
+on-call rotation: senior SREs with a particular penchant for IMAG have the option to join the engineering-wide on-call rotation called the Tech
+Incident Response Team (Tech IRT). This is a central
+team that helps coordinate, mitigate, and/or resolve major service
+outages for any product at the company.</p>
+
+<p>At Waymo, the upper-echelon on-call rotation that an SRE can join is
+similar to Google’s Tech IRT, but with an even broader scope: Waymo IRT is not focused
+specifically on “tech” at all. Waymo SREs handle outages for their
+local teams as a typical SRE team would. They
+also lead the Waymo Incident Management Plan, serving as both
+coordinators and scribes during major incidents in a role that extends beyond software incident response.</p>
+
+<p class="fix_tracking">As described in <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>, incident management in SRE
+traditionally focuses on troubleshooting, investigation, and
+mitigation. Waymo emergencies—particularly those that arise on the road
+or in vehicle depots—present a more physical observability and human
+information-gathering challenge. Reconciling system states with the real world
+while coordinating multiple crucial business functions, often in safety-critical situations, requires a higher-level incident management role that oversees
+not just the incident itself but also the <em>many independent
+mitigations that need to proceed simultaneously</em>. Waymo SRE has, in
+effect, leveraged reliability engineers to extend the Tech IRT model to encompass not only the broad technical mitigations but also the safety, legal, communications, and operational aspects required to fully resolve crises.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE coordinating a large-scale crisis" data-type="sect3"><div class="sect3" id="ch22_sre_coordinating_a_large_scale_crisis">
+<h3>SRE coordinating a large-scale crisis</h3>
+
+<p>The bedrock of Waymo’s <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="incident response model" data-type="indexterm" id="imag_wmirmod"/><a data-primary="incident response" data-secondary="Waymo model" data-type="indexterm" id="ir_wmod"/>culture is safety first. When the SRE organization was first
+established at Waymo, its system
+reliability roots from Google were merged with Waymo’s hyperfocus on road safety.
+While Waymo must defend against server outages, it must also prepare for
+a wide array of operational and safety-related crises. To meet these business needs,
+Waymo SRE adopted a role unique among SRE teams at Alphabet. For a wide
+variety of safety-oriented events that are not purely engineering-focused (such as on-road incidents, physical security issues, and location-specific real-world events), Waymo SRE will activate the incident
+management plan and lead the cross-functional response.</p>
+
+<p>In this company-wide incident response model, SRE is at the helm
+but relies on on-callers from legal, safety, ops, communications, policy, product, and any other groups whose involvement might be needed for the specific event. Note that these are not engineering teams, and the types of events
+escalated in this way range from partially engineering-related to
+not at all. In these cases, Waymo SRE assumes the role of incident coordinator (described momentarily) and is not responsible for actual mitigations. This
+is the primary way that Waymo’s IRT differs from traditional SRE on-call
+rotations during an emergency.</p>
+
+<p>The core tenet of structured incident response is the establishment of
+clear roles and expectations, allowing responders to dedicate cognitive
+power to mitigation rather than figuring out who to call or what they
+should be doing. In this model, SRE leads and facilitates incident response and resolution through two independent, always-on roles (i.e., not a
+primary and secondary, but two primary roles that are activated
+simultaneously):</p>
+
+<ul>
+<li>
+<p>The <em>incident coordinator</em> is the overall incident and meeting
+facilitator. They do not mitigate issues on their own, but they know all
+of the subteams’ roles and when to activate their playbook. The
+coordinator keeps the group on track and processes the event at a high
+level, splitting out breakout groups if needed to hammer out details without
+disrupting the main group. They manage dissenting opinions
+and ensure that safety and mitigation remain the priorities. They are the
+<em>conductor</em> of the IRT’s symphony: they do not play an instrument
+themselves, but they direct the musicians.</p>
+</li>
+<li>
+<p>The <em>incident scribe</em> is the primary recordkeeper and screen
+presenter during the meeting. They make sure that the current state is
+well understood and the progression of the event is documented.
+The scribe calls out potential misalignments (“You just said <em>foo,</em> but
+the latest update from the field was <em>bar.</em> Which is correct?”) and
+requests formal updates when key information is missing from the timeline. This
+role is especially critical in prolonged events, where accurate
+information is key to ramping up people who join late and for retracing
+steps during the inevitable retrospective writeup. Note that despite the
+name, this role <em>should not be</em> just a stenography task. When scribes are doing their jobs well, they are vital partners: multimedia presenters, fact-checkers, and gut-checkers, as well as note takers. They work in
+tandem with coordinators to keep the incident meeting flowing and
+effective.</p>
+</li>
+</ul>
+
+<p>Together, the coordinator and scribe guide the incident response while consulting the assembled on-call experts. They utilize predefined
+decision matrices and escalation policies, bringing in additional or
+higher-level stakeholders as needed. Once the incident has been
+resolved (or at least mitigated), the pair can call an end to the response effort. All that remains are the traditional
+post-incident tasks, delegated to appropriate owners: cleaning up any
+temporary incident measures, writing up a retrospective, and
+implementing action items to prevent <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-startref="imag_wmirmod" data-tertiary="incident response model" data-type="indexterm" id="id2939"/><a data-primary="incident response" data-secondary="Waymo model" data-startref="ir_wmod" data-type="indexterm" id="id2940"/>similar issues in the future.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Why SRE can manage a crisis and not just an outage" data-type="sect3"><div class="sect3" id="ch22_why_sre_can_manage_a_crisis_and_not_just_an_outage">
+<h3>Why SRE can manage a crisis and not just an outage</h3>
+
+<p>Waymo SRE also does<a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="safety-forward, non-engineering emergencies" data-type="indexterm" id="imag_wmirsaf"/><a data-primary="incident management" data-secondary="Waymo safety-forward, non-engineering emergencies" data-type="indexterm" id="ir_wmsaft"/> traditional SRE incident management for distributed
+systems and customer-facing services, but what differentiates the team
+are these additional, broader incident management responsibilities.
+Waymo SRE’s coordinator and scribe have non-engineering
+responsibilities. Their roles are analogous to the incident commander
+and communications lead roles from traditional IMAG, but the incidents they handle
+at Waymo are not limited to software engineering; they may
+range from injury and property damage to regulatory response or more.
+So why have reliability <em>engineers</em> taken ownership of these roles to solve
+<em>non-engineering</em> problems? There are a number of reasons:</p>
+
+<ul>
+<li>
+<p>SREs are a mix of incident responders and engineers. While the
+coordinator and scribe roles do not require engineering expertise, they are
+the epitome of pure incident management. Other roles at Waymo may
+know more about the details of a given event, but none are as continuously trained
+in incident management. Letting SREs serve as high-level facilitators reuses
+this unique skillset.</p>
+</li>
+<li>
+<p>The role of a coordinator or incident commander is always to ensure
+the issue is mitigated—<em>not to resolve it themselves</em> (see <a data-type="xref" href="ch10.html#ch10">Chapter 10</a>). This positions SREs as experts in the
+<em>incident management process</em> itself, not necessarily as experts in the system
+involved in the incident.</p>
+</li>
+<li>
+<p>SREs <em>are also</em> engineers, and at Waymo the SRE team is on-call for
+the tooling used to escalate and organize an incident-level event. The
+same is true for several of the key tools frequently used during
+mitigation. As a result, while the core events are typically not within
+SRE’s domain of expertise, much of the critical supporting
+infrastructure and process tooling is.</p>
+</li>
+<li>
+<p>On occasion, large company-wide events <em>are</em> distributed system issues—in which case one team is trained to handle, communicate, and resolve
+both the technical and operational aspects seamlessly.</p>
+</li>
+<li>
+<p>As discussed throughout this book, SREs focus on process improvement and
+automation. Incident retrospectives often contain tooling or policy
+action items that are best owned by SRE. Being tightly integrated with
+the major event handling process allows SREs to improve organizational processes and tooling through firsthand experience.</p>
+</li>
+<li>
+<p>By training an existing SRE team to lead company-wide, nontechnical
+IRT rotations, the company gains structure and coordination. This leads
+to shorter outages and reduced severity of issues, without duplicating
+work or requiring significant additional headcount.</p>
+</li>
+</ul>
+
+<p>Ultimately, the idea of using incident management for safety-forward,
+non-engineering emergencies is not new—organizations and governments
+have been doing so in some form for decades. The novel aspect of Waymo’s approach was reusing an existing specialist engineering role—SRE—to apply its outage management <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-startref="imag_wmirsaf" data-tertiary="safety-forward, non-engineering emergencies" data-type="indexterm" id="id2941"/><a data-primary="incident management" data-secondary="Waymo safety-forward, non-engineering emergencies" data-startref="ir_wmsaft" data-type="indexterm" id="id2942"/>skill set to broader
+incident management across the company.</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="When SRE is—and is not—a good fit for crisis coordinator" data-type="sect3"><div class="sect3" id="ch22_when_sre_is_and_is_not_a_good_fit_for_crisis_coordinator">
+<h3>When SRE is—and is not—a good fit for crisis coordinator</h3>
+
+<p>SREs owning broad <a data-primary="IMAG (Incident Management at Google)" data-secondary="crisis coordination considerations" data-type="indexterm" id="imag_ccordcons"/><a data-primary="incident management" data-secondary="crisis coordination considerations" data-type="indexterm" id="ir_cordcons"/>incident management practices does not fit every business or industry. There are, however, simple hallmarks to consider when evaluating this expanded role for SREs: the optimal “Goldilocks”
+organizational size and the diversity of job functions. If your company
+meets these criteria, it may achieve better use of human resources
+and more effective incident management outcomes by opting for the
+SRE-led incident model.</p>
+
+<p>The first factor to consider is a company’s relative size. Exact sizes
+will clearly vary, but in general this model is not a good fit for very
+small companies (such as early startups) or very large companies (5,000+
+employees). On the smaller end of the spectrum, most startups will
+operate in a more ad hoc manner during major emergencies, and it is
+likely that anyone who can help will be involved in “all hands on
+deck” events. On the other end, large enough companies will probably
+have the resources to staff dedicated full-time corporate incident
+responders, reducing the need for SREs to fill this role.
+The sweet spot for SRE-led management of major company incident-level events is after “everyone senior hop on the video call” becomes
+untenable (and it <em>does</em> become untenable, sooner than you might expect) and
+before “we have dedicated teams just to handle these emergencies.”</p>
+
+<p>The second important aspect is the diversity of job roles within the
+company. SRE managing nontechnical IRTs works best if the nature of the
+company and the anticipated events require broad cross-functional participation. This is because SREs serving as non-domain-expert
+incident managers provide the most value when many disparate roles need
+to work in concert, and SRE can provide incident management
+value by <em>coordinating</em> those efforts. If a company is almost entirely made up of
+engineers and expects primarily engineering events, a more traditional
+technical IRT role for SRE is sufficient. On the other hand, if marketing represents 75% of the
+workforce and SRE is only a small part of operations, it may make more sense for marketing leaders with greater context to
+serve as IRT leads. The guideline here is that if an SRE-led IRT would
+continually defer to a <a data-primary="IMAG (Incident Management at Google)" data-secondary="crisis coordination considerations" data-startref="imag_ccordcons" data-type="indexterm" id="id2943"/><a data-primary="incident management" data-secondary="crisis coordination considerations" data-startref="ir_cordcons" data-type="indexterm" id="id2944"/>single group for most incidents, this model
+may not be a good fit.</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE for Security and Privacy" data-type="sect1"><div class="sect1" id="ch22_sre_for_security_and_privacy">
+<h1>SRE for Security and Privacy</h1>
+
+<p>SRE’s incident<a data-primary="security" data-secondary="risk identification considerations" data-type="indexterm" id="sec_rskidcons"/><a data-primary="risk management" data-secondary="risk identification" data-type="indexterm" id="rskman_rskid"/> management skill set isn’t the only versatile asset that
+can be used cross-functionally. Successful reliability engineering
+depends on attitudes of constructive pessimism—that is, looking at a system and understanding where its weak points
+are, under what conditions and in what ways those weak points might
+fail, and how they might be reinforced, redesigned, or
+even removed.<sup><a data-type="noteref" href="ch22.html#id2945" id="id2945-marker">5</a></sup></p>
+
+<p>SRE is just one discipline that uses these lenses to manage risk within
+tolerable levels; several other roles, with whom SREs often interact,
+also share these attitudes—it’s just that the adversary varies. SRE’s
+adversary is, in some sense, the simple fact that with sufficient scale,
+even one-in-a-billion chances happen frequently enough to need to be
+reckoned with. Adjacent roles consider other adversaries: most
+familiarly, in the security context, someone trying to abuse a system
+and use it for unintended purposes. Similarly, in the privacy
+context, an adversary might be attempting to use the system in unanticipated
+ways to discover information about other users that they shouldn’t be
+able to know.</p>
+
+<p>Modeling threats to privacy,
+reliability, and security is a key part of how an effective engineer
+assesses systems, both as designed and as instantiated.<sup><a data-type="noteref" href="ch22.html#id2946" id="id2946-marker">6</a></sup> While an SRE
+might identify insufficient capacity as a threat and consider load
+shedding, diverting traffic to other locations, or degrading the quality
+of responses as possible mitigations, a privacy engineer might appraise
+the same system for risk of reidentification and mitigate that with
+anonymization or strict limits on data access and retention.</p>
+
+<p>Privacy, reliability, and security also share many day-to-day tasks,
+albeit flavored by their respective domains. Each function:</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>Responds to incidents<sup><a data-type="noteref" href="ch22.html#id2947" id="id2947-marker">7</a></sup></p>
+</li>
+<li>
+<p>Tries to learn from incidents and identify mitigations, preventions,
+or even architectural and structural approaches to make entire classes
+of failure impossible</p>
+</li>
+<li>
+<p>Builds consensus and ideally implements these responses</p>
+</li>
+<li>
+<p>Documents what’s been learned for future benefit</p>
+</li>
+</ul>
+
+<p>When a new vulnerability is discovered, security and SRE teams
+often work hand in hand to patch it across the
+fleet as fast as possible, without compromising availability. The
+following sections describe <a data-primary="security" data-secondary="risk identification considerations" data-startref="sec_rskidcons" data-type="indexterm" id="id2948"/><a data-primary="risk management" data-secondary="risk identification" data-startref="rskman_rskid" data-type="indexterm" id="id2949"/>some events that demonstrate the critical connection between security
+and reliability.</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="IT Disruptions After Crowdstrike Software Update" data-type="sect2"><div class="sect2" id="ch22_it_disruptions_after_crowdstrike_software_update">
+<h2>IT Disruptions After Crowdstrike Software Update</h2>
+
+<p>On July 19, 2024, businesses <a data-primary="Crowdstrike, software update incident response" data-type="indexterm" id="id2950"/>across the world reported widespread IT
+disruptions caused by the CrowdStrike Falcon security software (an
+endpoint protection platform providing a range of security services).
+The affected organizations spanned a wide range of
+<a href="https://oreil.ly/tm5dJ">industries</a>.
+Google Cloud
+<a href="https://oreil.ly/zU2yl">detected</a>
+some customer Windows VMs running on Google Compute
+Engine (GCE) experiencing blue screens of death and crashloops. The VMs, which were running CrowdStrike Falcon, began to fail after a CrowdStrike
+software update. CrowdStrike quickly deployed a
+<a href="https://oreil.ly/C-Hiv">fix</a>,
+but some customer impact remained.</p>
+
+<p>As pointed out in <a href="https://oreil.ly/f2Ds6">Chapter 15</a> of <em>Building Secure and Reliable Systems</em>, “Most systems eventually fail. Your ability to investigate a complex
+system relies on a number of factors: in addition to having access to
+adequate logs and information sources for debugging, you need proper
+expertise.”
+During the CrowdStrike event, Google’s customer support teams
+received many requests. Their first task was to figure out who could
+determine contributing factors and fix the issue for customers,  which required an understanding of <a href="https://oreil.ly/lE_uA">roles and responsibilities</a>.
+Even though GCE SRE seemed like the appropriate team to investigate,
+its scope didn’t include incidents related to guest
+environment–specific issues; its focus was on the VM
+infrastructure. The second team support tried to reach was the
+Guest OS engineering team, who also couldn’t help, as CrowdStrike is
+third-party software that customers install manually on their VMs and is
+not shipped as part of Google’s Windows images. Ultimately, support reached out to CrowdStrike, and they collaborated to
+find a solution.</p>
+
+<p class="pagebreak-before less_space">While Google Cloud services were not directly affected,
+the Google Cloud Team worked closely with CrowdStrike to help our customers
+resolve any remaining issues (for example, by running commands on a recovery machine in Google Cloud to remediate the affected files—see <a href="https://oreil.ly/N_qI8">GitHub</a>). Successfully responding to this reliability disruption required customer support teams to work
+across organizational boundaries, collaborating with
+both SRE and security teams to identify the root causes of the problem caused by the security software.</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Log4j Vulnerability" data-type="sect2"><div class="sect2" id="ch22_log4jvulnerability">
+<h2>Log4j Vulnerability</h2>
+
+<p>Apache Log4j<a data-primary="Log4j, vulnerability incident response" data-type="indexterm" id="lg4j_vuln"/> is an open source, Java-based logging framework that
+collects and manages information about system activity—an important
+capability for
+<a href="https://oreil.ly/zA7Si">investigating
+issues</a>. Log4j is free,
+simple to use, and effective in its intended function,
+making it popular among Java developers, who have embedded it into
+countless software packages.</p>
+
+<p>In November 2021, a vulnerability was identified
+that could allow an attacker to compromise a system running Log4j and execute arbitrary code on the vulnerable server. The
+National Institute of Standards and Technology (NIST) published a critical CVE (Common Vulnerabilities and Exposures, a
+system for cataloging vulnerabilities) in the National Vulnerability Database
+with a severity of 10/10 (the highest level). According to the <a href="https://oreil.ly/6F5RN">Cyber Safety Review Board</a>, the vulnerability could be exploited by sending specially crafted log
+messages to Log4j. An attacker who could control log messages or their
+parameters could execute arbitrary code loaded from remote servers when
+message lookup substitution was enabled (see
+<a href="https://oreil.ly/QGFx9">“Google
+Cloud Recommendations for Investigating and Responding to the Apache
+<em>Log4j 2</em> Vulnerability”</a>).</p>
+
+<p>As the scope and urgency of the Log4j vulnerability came to light,
+Google’s central security team engaged with Tech IRT to respond to the
+issue. Tech IRT activated teams within each department to create scalable response groups to address the issue across the organization. Each response group was required
+to execute a Code Red.<sup><a data-type="noteref" href="ch22.html#id2951" id="id2951-marker">8</a></sup> The exit criteria of the Code Red
+included multiple requirements, among which were upgrading all instances
+of Log4j to a safe version, filing exceptions where upgrading was
+temporarily not feasible, and documenting the status of each system a
+team was responsible for. These initial steps were coordinated centrally
+by SRE and security.</p>
+
+<p class="pagebreak-before less_space">As the internal investigations progressed, communication and customer
+support teams worked on publishing security advisories,
+sending <a href="https://oreil.ly/eVH2j">Mandatory Service Announcements
+(MSAs)</a> when customer action was
+needed, and sharing relevant information.</p>
+
+<p>The large-scale response required collaboration across SRE,
+security, technical program management, product, support,
+communications, and legal teams. One thing that went particularly well was defining an
+end-to-end process flow at the start of the Code Red. Additionally,
+maintaining an overview of products that had identified a
+risk and required remediation enabled centralized tracking of progress and
+code changes without requiring direct communication with a given point
+of contact. Executive and senior leadership sponsorship, engagement, and
+prioritization were critical during the response, which took place
+during the holiday season code freeze. One area for improvement that was identified was the verification process: product teams
+could have used more specific instructions about how to demonstrate that they had
+upgraded their systems to a safe version.</p>
+
+<p>Aside from the specifics of the Log4j vulnerability event, the broader reason we believe strong collaboration between SRE and security is
+important is detailed in
+<a href="https://oreil.ly/9kx2j">Chapter
+1 of <em>Building Secure and Reliable Systems</em></a>. Recovering quickly,
+investigating systems and logs, thorough crisis management following
+the IMAG protocol, and the organizational structure of Tech IRT all contribute to an effective response to large-scale security incidents.</p>
+
+<p>There’s much for practitioners in software quality, privacy,
+reliability, and security to learn from adjacent disciplines: don’t be
+afraid to examine what your counterparts have learned over the
+years and see whether there<a data-primary="Log4j, vulnerability incident response" data-startref="lg4j_vuln" data-type="indexterm" id="id2952"/> are lessons of value you can bring to bear in
+your organization.</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch22_conclusion">
+<h1>Conclusion</h1>
+
+<p>Implementing SRE principles outside of major tech companies requires a
+cultural shift rather than a simple tooling mandate. The primary
+challenge is adapting proven reliability principles and practices into a
+flexible toolkit tailored to your organization. To succeed, you’ll need
+to select the practices with the greatest impact (such as defining SLOs and SLIs, reducing toil, and encouraging a blameless postmortem culture) that align with your company’s
+unique scale, budget, business priorities, and regulatory constraints.
+You and your organization must do the work to define what SRE means for
+you. Your adoption of SRE may manifest as platform engineering, a
+specialized on-call rotation, or an enhanced DevOps function. Once that work is
+done, you need to ensure the new SRE team has the autonomy and
+management buy-in necessary to enable the engineering work required to
+elevate your standard of reliability.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2913"><sup><a href="ch22.html#id2913-marker">1</a></sup> As recommended in <a data-type="xref" href="ch06.html#ch06_on_call_considerations">“On-Call Considerations”</a>.</p><p data-type="footnote" id="id2927"><sup><a href="ch22.html#id2927-marker">2</a></sup> Generic mitigations are actions that can reduce the duration or impact of a wide variety of production outages, rather than being tailored to a single, specific failure scenario.</p><p data-type="footnote" id="id2931"><sup><a href="ch22.html#id2931-marker">3</a></sup> E.g., <a href="https://r9y.dev">r9y</a>.</p><p data-type="footnote" id="id2933"><sup><a href="ch22.html#id2933-marker">4</a></sup> As described in <a data-type="xref" href="ch07.html#ch07_kitchen_sink">“Kitchen Sink”</a>.</p><p data-type="footnote" id="id2945"><sup><a href="ch22.html#id2945-marker">5</a></sup> Todd Underwood’s talk <a href="https://oreil.ly/5ux36">“PostOps: A Non-Surgical Tale of Software, Fragility, and Reliability”</a> at the 27th Large Installation System Administration Conference (LISA ’13); the slides are also <a href="https://oreil.ly/axmmO">available</a>.</p><p data-type="footnote" id="id2946"><sup><a href="ch22.html#id2946-marker">6</a></sup> For an overview of threat modeling, largely in the security context, see <a href="https://oreil.ly/E2lLz">Chapter 14</a> of Heather Adkins et al.’s <em>Building Secure and Reliable Systems</em> (O’Reilly, 2020) and Gayathri Mohan and Jim Gumbley’s <a href="https://oreil.ly/qjF3b">“2025 article “Threat Modeling Guide for Software Teams”</a>. In the privacy context, see Cara Bloom’s PEPR ’22 talk <a href="https://oreil.ly/yZOCP">“Privacy Threat Modeling”</a>. In the reliability context, see <a data-type="xref" href="ch12.html#ch12">Chapter 12</a>.</p><p data-type="footnote" id="id2947"><sup><a href="ch22.html#id2947-marker">7</a></sup> See Lea Kissner’s presentation <a href="https://oreil.ly/mZat1">“When Things Go Wrong”</a> at the PEPR Conference (2020) for privacy incident response. For an overview of the (extensive) security response considerations, see Alex Nelson et al.’s <a href="https://oreil.ly/xAfwD">“Incident Response Recommendations and Considerations for Cybersecurity Risk Management”</a>, NIST Special Publication 800-61 Revision 3, 2025; and <a href="https://oreil.ly/CDHo8">Chapter 17 of <em>Building Secure and Reliable Systems</em></a> by Heather Adkins et al. (O’Reilly, 2020).</p><p data-type="footnote" id="id2951"><sup><a href="ch22.html#id2951-marker">8</a></sup> Google uses color codes to denote the severity of different types of emergencies and strategic initiatives. Code Red is the highest priority code, for problems that are already causing major damage or will cause damage in the next 24 to 48 hours. Code Yellow is the second highest, for problems that may cause business issues, or outages, over the next quarter.</p></div></div></section></body></html>
