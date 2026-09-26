@@ -1,0 +1,391 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>引言：我们做什么，以及为何这样做</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 1. Introduction: &#10;Modeling What We Do and Why" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch01">
+<h1><span class="label">第 1 章　 </span>引言： 
+<span class="keep-together">我们做什么，以及为何这样做</span></h1>
+
+
+<p class="byline">
+<span class="keep-together">作者：Christof Leng</span><br/>
+
+<span class="keep-together">Carmela Quinito 协作</span></p>
+
+<p>无论一款软件产品拥有多么丰富的功能，只要它发生停机、慢到无法使用，或给出不准确的结果，对用户而言最终都毫无用处。为解决这一根本问题，确保企业能够可靠地交付服务，站点可靠性工程（Site Reliability Engineering，SRE）已经发展为一场广泛的行业运动。那么，SRE 究竟是什么？</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>SRE 一词既可以指整个领域（Site Reliability Engineering），也可以指从事这项工作的个人（Site Reliability Engineer），还可以指这个人所在的团队（SRE 团队）。阅读本书时请留意上下文。本章多数时候用 SRE 指这个领域，但有些地方谈论的是个人或团队。</p>
+</div>
+
+<p>乍看之下，这个名称或许有些奇怪，但每个词都有更深的含义；合在一起，它们恰好能从高层概括 SRE 的要义：</p>
+<dl>
+<dt>站点（Site）：为何做</dt>
+<dd>
+<p>名称中的第一个词可能最令人困惑。了解 SRE 的起源后，它就容易理解多了。Google 于 2003 年设立 SRE 职能时，其使命非常直接：“让站点（<em>google.com</em>）持续在线。”如今，行业内 SRE 团队的角色当然已经细致复杂得多，但核心价值没有改变：与业务影响直接相连。让用户能够使用公司的产品和服务，正是 SRE 存在的理由。以用户为本处于 SRE 的核心位置（详见 <a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>
+）。</p>
+</dd>
+<dt>可靠性（Reliability）：做什么</dt>
+<dd>
+<p>在软件产品的开发与运行中，SRE 承担着一个非常明确的职责：可靠性。<sup><a data-type="noteref" href="ch01-zh.html#id997" id="id997-marker">1</a></sup> 这种清晰的聚焦是一项关键优势。它让 SRE 工程师能够形成独到的专业能力，并以通才型软件工程师难以达到的质量或效率推动改进。可靠性就是 SRE 的目标。</p>
+</dd>
+<dt>工程（Engineering）：怎么做</dt>
+<dd>
+<p>工程方法是 SRE 为企业实现可靠性的途径。它不靠英雄主义、超能力或神秘魔法，而是用软件工程思维解决可靠性问题。这听起来或许只是技术细节，却正是 SRE 带来变革的原因。工程化让 SRE 工作可以重复、扩展、高效执行并传承复用；这是其核心原则。</p>
+</dd>
+</dl>
+
+<p>牢记 SRE 的含义，有助于我们判断一个项目是否属于 SRE 工作：</p>
+
+<ul>
+<li>
+<p>它是否与业务目标一致？</p>
+</li>
+<li>
+<p>它是否提升了可靠性？</p>
+</li>
+<li>
+<p>它是否采用工程方法？</p>
+</li>
+</ul>
+
+<p>在 SRE 实践之旅中，可以把这些价值观当作指引方向的北极星。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE Is a Dedicated Voice for Reliability" data-type="sect1"><div class="sect1" id="ch01_sre_is_a_dedicated_voice_for_reliability">
+<h1>SRE 是可靠性的专职代言人</h1>
+
+<p>需要强调的是，SRE 不只是一组技能，而是一种明确的角色。若同时还要处理完全无关的工作，就很难兼职做好 SRE。<sup><a data-type="noteref" href="ch01-zh.html#id998" id="id998-marker">2</a></sup> SRE 的优势在于，把可靠生产系统所需的专业能力集中到一个特定职能中。这种专业化需要专门投入时间，也需要专家群体的支持。如果 SRE 不是你的首要职责，就很难持续为它留出时间，它随时可能跌出优先事项的取舍线。此外，身边没有 SRE 团队，也更难建立一个可以共同学习、提升 SRE 技能的社群。</p>
+
+<p>SRE 是一种 <em>专业化角色</em> ，用于解决通才型软件工程师的知识通常不足以应对的问题。SRE 的专业能力既深入又广泛。它之所以专业化，是因为聚焦于软件工程的一个特定方面：生产系统及其可靠性。其深度来自 SRE 工程师能够专注研究复杂生产系统的细节；相比通才型软件工程师，他们有更多机会排查和设计生产系统。其广度则来自 SRE 工程师往往要负责比普通产品开发者更多的系统。因此，他们能够跨越系统边界观察问题，解决超越单一边界的端到端用户体验问题；还可以把一个系统中积累的经验迁移到另一个系统，推动整个系统版图的横向改进。</p>
+
+<p>SRE 是可靠性的 <em>专职代言人</em> 。可靠性不仅是 SRE 这一名称的核心，也是该角色精神内核的中心。它不是 SRE 工程师需要兼顾的诸多事项之一，而是他们的使命。这种专注很重要，因为可靠性是一项长期投资，很容易被下一次重大发布之类的短期需求挤占。决策桌上始终有人主张平衡这些投入，并在后台持续推进可靠性工作，才能帮助软件生态保持健康。</p>
+
+<p>有意识地投资可靠性对企业很重要，因为可靠性是任何软件产品最基本的特性之一。可用性、响应时间、可扩展性、效率等非功能需求很容易被忽略，但研究表明，无论企业规模大小，这种忽略都可能代价高昂。<sup><a data-type="noteref" href="ch01-zh.html#id999" id="id999-marker">3</a></sup>
+人们几乎总把注意力放在功能需求上，例如软件能提供哪些功能。然而，当产品停机或慢到无法使用时，即使它正常时功能再多，对用户也没有意义。同样，一辆配有许多豪华设施的汽车固然美好，前提是它能开。如果多数时候都无法行驶，大多数人可能宁愿选择一辆功能基础但真正可用的汽车。有关可靠性价值的更多内容，请参见 <a data-type="xref" href="ch02-zh.html#ch02">第 2 章</a> 。</p>
+
+<p>SRE 天生是一项 <em>协作职能</em> ，旨在弥合组织内 <a data-primary="collaboration" data-type="indexterm" id="id1000"/>开发与运维之间的鸿沟。因此，SRE 绝不能与产品开发伙伴对立。SRE 工程师应当成为赋能者，而不是把关者。运行并维护可靠的生产环境，有助于提高开发者生产力。这是一个良性循环：健康的开发实践会带来健康的生产系统。关于 SRE 工程师与产品开发者如何协作，请参见第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch06.html#ch06">6</a> 章和第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch07.html#ch07">7</a> 章。</p>
+
+<p>建立专门的 SRE 职能，更不用说为完整的 SRE 团队提供资金，需要投入大量资源。并非每个组织都有这样的条件，小公司尤其如此。不过，组织仍然可以从 SRE 方法中获益。<a data-primary="cultural principles" data-type="indexterm" id="id1001"/> 
+<span class="keep-together">文化</span> 层面的原则——例如服务等级目标（SLO）、事件管理、事后复盘和风险管理——可以而且应该应用到 SRE 职能之外。没有明确 SRE 职能所带来的专业化和专注投入，有时更难建立并维持这些实践，但 DevOps 运动证明这完全可行。只要软件生态不太复杂，通才型软件工程师就可以掌握必要的运维知识和 SRE 最佳实践，让系统 
+<span class="keep-together">高效运行。</span></p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="A Software Engineering Approach to Operations" data-type="sect1"><div class="sect1" id="ch01_a_software_engineering_approach_to_operations">
+<h1>以软件工程方法开展运维</h1>
+
+<p>SRE<a data-primary="software engineering, approach to operations" data-type="indexterm" id="sftwreng_aprops"/><a data-primary="operations" data-secondary="SRE approach" data-type="indexterm" id="ops_sreappch"/> SRE 在很大程度上得益于软件工程思维。“把运维当作软件问题来处理，就会产生 SRE”，这句话或许是理解该领域最清晰、最切中要害的方式。SRE 工程师力求从算法层面理解生产问题，并通过设计、实现和修改软件及流程来解决它们。与传统运维模式相比，这种方法有三项重要优势。</p>
+
+<p>第一项优势是从根本上理解 <em>生产系统和运维流程</em> ，从而让 SRE 工程师能够追根究底。SRE 尝试通过 SLO、可观测性等机制，让生产健康状况能够被客观衡量；从第一性原理出发定义事件管理等运维流程；并借助无责事后复盘，以及 STPA、CAST 等风险管理方法，对问题作出清晰分析（参见 <a data-type="xref" href="ch12.html#ch12">第 12 章</a>）。这种严谨性让成功经验可以重复和迁移，同时保留必要的灵活性与整体视角，而高度机械化的 IT 运维流程可能缺少这些特质。</p>
+
+<p>软件工程思维的第二项优势，是倾向于 <em>自动化</em> （参见 <a data-type="xref" href="ch13.html#ch13">第 13 章</a>）。软件把任务编码成<a data-primary="automation" data-secondary="software engineering mindset" data-type="indexterm" id="id1002"/> 可由计算机执行的形式。自动化运维任务有两项好处：</p>
+<dl>
+<dt>效率</dt>
+<dd>
+<p>这是 <a data-primary="efficiency, software engineering" data-type="indexterm" id="id1003"/>最直观的好处。自动化任务几乎不需要人工介入就能完成，从而为其他工程工作腾出时间。大多数软件系统的复杂度和规模都在持续增长，效率使 SRE 团队能够跟上工作量。SRE 有一条核心原则：应努力通过自动化让自己不再需要做当前的工作；否则，你就没有余力承担新的机会及其带来的工作。</p>
+</dd>
+</dl>
+<dl class="less_space pagebreak-before">
+<dt>一致性</dt>
+<dd>
+<p>这是较不 <a data-primary="consistency, software engineering mindset" data-type="indexterm" id="id1004"/>显眼的好处。代码把任务执行方式正式确定下来，不会留下人为错误或意外差异的空间。自动化能防止微小的不一致和问题悄然进入生产环境，也可以推动生产系统简化，尽管最复杂的任务往往仍会留下。人类擅长随机应变，但在自动化中处理边缘情况困难得多。因此，自动化会激励人们简化流程，减少边缘情况。</p>
+</dd>
+</dl>
+
+<p>最后，软件工程思维会促进 <em>开发与运维的融合</em>。SRE 工程师弥合产品开发与运维之间的鸿沟，因为他们与程序员使用相同的语言。他们了解软件能做什么、不能做什么，也理解软件设计与开发流程。他们可以建立从生产环境返回开发流程的有效反馈回路，并把问题和概念转译给产品开发者。</p>
+
+<p>为了充分发挥作用，每位 SRE 工程师都应能够编写代码，哪怕只是简单的监控配置。并非每位 SRE 工程师都必须成为全能的软件工程师，但他们还需要扎实理解生产系统，包括操作系统、运维工具、计算机网络、数据库和分布式系统。理想情况下，SRE 工程师兼具软件 <a data-primary="software engineering, approach to operations" data-startref="sftwreng_aprops" data-type="indexterm" id="id1005"/><a data-primary="operations" data-secondary="SRE approach" data-startref="ops_sreappch" data-type="indexterm" id="id1006"/>工程与系统工程技能。详见 <a data-type="xref" href="ch05-zh.html#ch05">第 5 章</a> 。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Do SREs Do?" data-type="sect1"><div class="sect1" id="ch01_what_do_sres_do">
+<h1>SRE 工程师做什么？</h1>
+
+<p>SRE 的方法和概念一直在演进。这是有意为之，源于该领域内在的持续改进与学习文化（参见 <a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。尽管如此，简要勾勒界定 SRE 的范围和实践仍然很有帮助。早期尝试之一，是 Mikey Dickerson 于 2013 年 <a data-primary="Dickerson, Mikey" data-type="indexterm" id="id1007"/>提出的服务可靠性
+<a href="https://sre.google/sre-book/part-III-practices">层级</a> （参见 <a data-type="xref" href="#ch01_fig01">图 1-1</a>）。它的灵感来自马斯洛需求层次理论。<sup><a data-type="noteref" href="ch01-zh.html#id1008" id="id1008-marker">4</a></sup></p>
+
+<figure><div class="figure" id="ch01_fig01">
+<img alt="Dickerson 服务可靠性层级示意图：底层为监控，顶层为产品。" src="assets/sre2_0101.png"/>
+<h6><span class="label">图 1-1。 </span>Dickerson 的服务可靠性层级</h6>
+</div></figure>
+
+<p>Dickerson 的<a data-primary="Dickerson’s hierarchy of service reliability" data-type="indexterm" id="dichosr"/> 层级包含以下各层：</p>
+<dl>
+<dt>监控</dt>
+<dd>
+<p>这是基础 <a data-primary="monitoring" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1009"/>层。如果你不知道服务是否正常，就无法有针对性地开展工作。</p>
+</dd>
+<dt>事件响应</dt>
+<dd>
+<p>事件响应的 <a data-primary="incident response" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1010"/>事件响应的目标是先止住损失，因为用户期待服务能够正常工作。</p>
+</dd>
+<dt>事后复盘／根因分析</dt>
+<dd>
+<p>应当 <a data-primary="postmortems" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1011"/><a data-primary="RCA (root cause analysis)" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1012"/>必须回顾事件期间发生了什么，从中学习并防止再次发生。</p>
+</dd>
+<dt>测试与发布流程</dt>
+<dd>
+<p>经验教训<a data-primary="testing" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1013"/><a data-primary="release procedures, Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1014"/> 应把经验教训固化到代码和流程中，主动预防未来的中断。</p>
+</dd>
+<dt>容量规划</dt>
+<dd>
+<p>应预先考虑 <a data-primary="capacity planning" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1015"/>应预先考虑需求超过容量以及流量突增的情况，让服务具有效率，并能抵御外部触发的中断。</p>
+</dd>
+<dt>开发</dt>
+<dd>
+<p>通过软件改进 <a data-primary="development" data-secondary="Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1016"/>通过软件改进服务基础设施，包括自动化脚本、备份与恢复系统、数据处理流水线等许多方案。</p>
+</dd>
+<dt>产品</dt>
+<dd>
+<p>这是 <a data-primary="products, Dickerson's hierarchy of service reliability" data-type="indexterm" id="id1017"/>这是金字塔的顶层。目标是从第一天起，就设计并实现能够提供可靠用户体验的系统。</p>
+</dd>
+</dl>
+
+<p>Dickerson 层级很有道理，因为较低层会放大较高层工作的效果。没有监控，你甚至不知道系统是否在线，事件响应也会变得盲目而缓慢。没有事后复盘，就很难确定最关键 <a data-primary="Dickerson’s hierarchy of service reliability" data-startref="dichosr" data-type="indexterm" id="id1018"/>开发工作的优先级。</p>
+
+<p>不过，这一层级已无法涵盖今天生产健康的全部范围。容量规划等主题非常醒目，而数据完整性等同样重要的主题却被笼统归入开发层。此外，最下面三层在视觉上也最大，容易让人认为它们主要是被动的运维活动，而主动的工程方法只占较小位置。</p>
+
+<p>如今，生产健康的重点 <a data-primary="hierarchy of production health" data-type="indexterm" id="hierprodhlth"/>已经从危机管理更多转向设计和准备。IT 运维是一个社会技术系统，其健康状况不仅取决于做什么，也取决于怎么做。组织文化在 Dickerson 层级中只是隐含存在，但它其实是成功的根本因素。鉴于这些局限，我们提出了修订后的生产健康层级，如 <a data-type="xref" href="#ch01_fig02">图 1-2</a>所示。</p>
+
+<figure><div class="figure" id="ch01_fig02">
+<img alt="现代生产健康层级示意图：底层为社会技术基础，顶层为涌现式可靠性。" src="assets/sre2_0102.png"/>
+<h6><span class="label">图 1-2。 </span>现代生产健康层级</h6>
+</div></figure>
+
+<p class="less_space pagebreak-before">修订后的层级由基础到高级依次如下：</p>
+<dl>
+<dt>社会技术基础</dt>
+<dd>
+<p>以心理安全和持续改进为基础、能够正常运作的 <a data-primary="sociotechnical foundations, production health" data-type="indexterm" id="soctech_prodhlth"/>组织文化，对生产健康至关重要。它是上方所有层级的关键使能因素。</p>
+</dd>
+<dt>态势感知</dt>
+<dd>
+<p>监控 <a data-primary="situational awareness" data-secondary="hierarchy of production health" data-type="indexterm" id="id1019"/>只是 SRE 工具箱中指导行动的众多工具之一。可观测性提供了观察生产系统的广阔视野；了解运维工作量以及它与业务目标是否一致，同样重要。</p>
+</dd>
+<dt>持续准备</dt>
+<dd>
+<p>事件<a data-primary="continuous preparedness" data-secondary="hierarchy of production health" data-type="indexterm" id="id1020"/> 管理和事后复盘，是减少中断影响、避免未来再次发生类似中断乃至整类相似问题的更大行动的一部分。培训和文档也是让应急准备更加主动的工具。</p>
+</dd>
+<dt>基础设施设计</dt>
+<dd>
+<p>对服务运行的 <a data-primary="infrastructure design" data-secondary="hierarchy of production health" data-type="indexterm" id="id1021"/>环境进行工程化，是改善生产健康的有力手段。基础设施是一个广泛领域，涵盖发布流程（持续集成与部署）、测试、数据完整性、容量规划、自动化等诸多内容。</p>
+</dd>
+<dt>韧性产品</dt>
+<dd>
+<p>生产 <a data-primary="resilient products" data-secondary="hierarchy of production health" data-type="indexterm" id="id1022"/>健康始于软件开发生命周期最初的需求收集与设计阶段。交付有韧性、可正常工作的产品，是生产健康的根本目标。</p>
+</dd>
+<dt>涌现式可靠性</dt>
+<dd>
+<p>最终<a data-primary="emergent reliability" data-secondary="hierarchy of production health" data-type="indexterm" id="id1023"/> 目标是让生产健康内生于所有基础设施、开发活动、流程和文化之中。这样，软件默认就是可靠的，在较低层级投入的工作也会大幅减少。</p>
+</dd>
+</dl>
+
+<p>以下各节 <a data-primary="hierarchy of production health" data-startref="hierprodhlth" data-type="indexterm" id="id1024"/>将更详细地讨论每一层；本书许多章节也会深入介绍构成这些层级的具体主题。</p>
+<div data-type="warning" epub:type="warning"><h6>警告</h6>
+<p>需要注意的是，进入下一层之前，不必把当前层全部完成。事实上，任何一层可能永远都不会彻底完成。不过，较低层达到一定成熟度后，推进较高层会容易得多。应同时拓宽并加高你的金字塔，但不要让它倒置。如果基础不足，你投入的精力很可能是在浪费。</p>
+</div>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Sociotechnical Foundations" data-type="sect2"><div class="sect2" id="ch01_sociotechnical_foundations">
+<h2>社会技术基础</h2>
+
+<p>有一句通常被错误归于 <a data-primary="Drucker, Peter" data-type="indexterm" id="id1025"/>Peter Drucker 的名言：“文化把战略当早餐吃掉。”<sup><a data-type="noteref" href="ch01-zh.html#id1026" id="id1026-marker">5</a></sup>
+无论战略举措多么高明，如果 <a data-primary="production health" data-secondary="sociotechnical foundations" data-type="indexterm" id="prodhlth_soctecfnd"/><a data-primary="production health" data-seealso="hierarchy of production health" data-type="indexterm" id="id1027"/><a data-primary="hierarchy of production health" data-seealso="production health" data-type="indexterm" id="id1028"/>它与组织 <a data-primary="culture" data-secondary="importance for production health" data-type="indexterm" id="id1029"/><a data-primary="organizational culture" data-seealso="culture" data-type="indexterm" id="id1030"/>文化相冲突，就很可能失败。组织共同遵循的规范、核心价值观和行为模式，是一股难以抗衡的巨大背景力量。改变文化或许令人望而生畏，但只要把重点放在行动和行为模式上，就可以做到。不妨从小处着手，抓住机会改进流程；行为会随着时间塑造文化。</p>
+
+<p>对生产健康最重要的 <a data-primary="cultural tenets, production health" data-type="indexterm" id="id1031"/>文化原则是心理安全、 <a data-primary="psychological safety" data-type="indexterm" id="id1032"/>无责文化和 <a data-primary="trust" data-type="indexterm" id="id1033"/>信任。如果工程师不敢发声，担心指出问题会遭到报复，或预期会发生相互指责，他们就不愿承担风险和处理生产问题。信任是跨职能协作的基础，包括运维与开发之间的协作，也包括负责彼此依赖的不同系统的团队之间、跨组织边界的协作。关于心理安全和高效团队的更多信息，请参阅 Google 的
+<a href="https://oreil.ly/1An6x">亚里士多德项目</a>.</p>
+
+<p>持续改进与学习的共同文化，对于保持势头并让变化可持续至关重要。如果团队不认为事情需要改善，或不相信每个人都愿意尽一份力，那么任何改变都会耗费巨大精力，团队还可能忽视甚至主动抵制它。聚焦用户有助于凝聚团队，支持必要的改变。追求卓越的文化会不断推动边界、挑战现状。类似敏捷开发中常见的短反馈回路，<sup><a data-type="noteref" href="ch01-zh.html#id1034" id="id1034-marker">6</a></sup> 能让改进及时发生，并把组织开销控制在可管理范围内。</p>
+
+<p>员工还需要感到自己有权并受到鼓励去采取行动。组织壁垒和共同责任感的缺失，会阻碍弥合开发与运维鸿沟的努力。生产领域专家需要在开发流程中受到重视，产品开发者也不应觉得运维团队总是在妨碍他们。组织必须让激励保持一致，并奖励那些采取行动改善生产健康的员工。</p>
+
+<p>这里描述的是组织文化的理想状态，但我们也承认，追求完美可能成为做到良好的敌人。关键是认可这一基础的价值，并长期持续改进。关于文化如何促成 SRE 成功的更多内容，参见 <a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>.</p>
+
+<p class="pagebreak-before less_space">SRE 职能可以在塑造围绕 IT 运维的组织文化方面发挥关键作用。SRE 工程师是整个组织可靠性文化的守护者，并向合作伙伴倡导可靠性原则。不过，SRE 从不以任何代价追求绝对可靠。SRE 的使命是帮助产品开发者向用户交付更好的产品，而“更好”既指可靠，也指功能丰富。SRE 可以帮助产品开发者加深对生产系统的理解，从而扩大自身影响。例如，渐进式发布可以用很小的负面影响部署高风险变更，同时逐步建立对系统的信心。“授人以渔，而不是给人鱼吃”，能在 SRE 团队直接影响范围之外建立更广泛的生产健康文化。关于 SRE 与产品开发协作的更多细节，参见 <a data-type="xref" href="ch07.html#ch07">第 7 章</a> 。</p>
+
+<p>开始行动 <a data-primary="sociotechnical foundations, production health" data-startref="soctech_prodhlth" data-type="indexterm" id="id1035"/><a data-primary="production health" data-secondary="sociotechnical foundations" data-startref="prodhlth_soctecfnd" data-type="indexterm" id="id1036"/>往往最困难。有关如何开启 SRE 之旅，并在生产健康层级中规划独特路径的实用建议，请参阅 <a data-type="xref" href="ch04-zh.html#ch04_practical_considerations">“实践注意事项”</a>。此外， <em>《SRE 企业路线图》</em> 报告<sup><a data-type="noteref" href="ch01-zh.html#id1037" id="id1037-marker">7</a></sup> 深入探讨了工程师在组织内采用 SRE 时面临的具体挑战。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Situational Awareness" data-type="sect2"><div class="sect2" id="ch01_situational_awareness">
+<h2>态势感知</h2>
+
+<p>只有 <a data-primary="situational awareness" data-secondary="production health" data-type="indexterm" id="sitawr_prodhlth"/><a data-primary="production health" data-secondary="situational awareness" data-type="indexterm" id="prodhlth_sitawr"/>真正了解哪里出了问题，才能改善生产健康。信息不清晰，行动就会盲目且无效。靠猜测决定要改进什么，会造成过早优化，进而引入不必要的复杂性。如果看不见生产健康状况，又无法在问题发生时自动收到通知，你就会措手不及，只能被动救火。理想情况下，应当在用户察觉之前发现生产问题。</p>
+
+<p>许多基础 SRE 方法都旨在改善态势感知。可观测性 <a data-primary="observability" data-secondary="importance to production health" data-type="indexterm" id="id1038"/>会提供相关生产指标的监控、系统活动日志，以及贯穿系统的执行路径追踪。这些信息对于排查生产问题、确定导致中断的因素不可或缺。更多内容参见 <a data-type="xref" href="ch09.html#ch09">第 9 章</a> 。SLO <a data-primary="SLOs (service level objectives)" data-secondary="production health" data-type="indexterm" id="id1039"/>是一种强有力的机制，可以把抽象的“用户满意”转化为生产系统中可衡量的指标。第 <a data-type="xref" href="ch08.html#ch08">8 章</a>会详细讨论它，但这里值得提到告警和仪表板。告警会在违反 SLO 或其他关键指标发生变化时自动通知你；仪表板则允许从不同维度切分数据，以便深入理解情况。</p>
+
+<p>除了关注系统健康，还需要跟踪琐事工作（toil）。琐事工作 <a data-primary="toil" data-type="indexterm" id="id1040"/>是与运行生产服务相关的一类工作，通常需要手工完成、重复出现、可以自动化、偏战术性且没有持久价值；其规模还会随服务增长而线性增加。运维过载<a data-primary="operational overload" data-type="indexterm" id="id1041"/> 会引发损害生产健康的连锁反应，也会伤害承受过载的团队。为确保有足够时间开展工程工作，Google SRE 将运维工作比例的上限设为 50%；实践中的目标会低得多，因为 50% 是阈值而非目标。运维过载有多种形式，最明显的是值班待命（处理寻呼告警）和值班处理（处理系统工单），但手动发布管理、维护、服务上线或迁移同样会造成大量琐事工作。实际上几乎不可能精确统计花在琐事工作上的时间，但至少掌握一些指标很重要，例如中断次数、工单吞吐量，以及对维护工作量的粗略估算。否则，团队健康受到威胁时，很可能无法及时发现。</p>
+
+<p>不过，保持系统健康、避免团队过载并不是仅有的关注点。态势感知还意味着清楚理解业务优先级，这需要 SRE 与产品开发、产品管理伙伴密切协作。常用工具包括共享的目标与关键结果（OKR）、节奏合理的同步会议，以及共同项目。SLO 也有助于让利益相关者就业务所需的可靠性水平达成一致。此外，衡量功能交付速度可以说明 SRE 是否真正提升了开发者生产力。如果 SRE 团队不理解业务优先级并据此行动，很快就可能被边缘化，对业务失去意义。</p>
+
+<p>总的来说，态势 <a data-primary="situational awareness" data-secondary="production health" data-startref="sitawr_prodhlth" data-type="indexterm" id="id1042"/><a data-primary="production health" data-secondary="situational awareness" data-startref="prodhlth_sitawr" data-type="indexterm" id="id1043"/>感知是一项基础能力，它告诉我们哪些行动最重要、最有用。投资态势感知甚至关系到生存。没有它，团队或其支持的产品都面临彻底失败的重大风险。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Continuous Preparedness" data-type="sect2"><div class="sect2" id="ch01_continuous_preparedness">
+<h2>持续准备</h2>
+
+<p>尽可能降低 <a data-primary="continuous preparedness" data-secondary="production health" data-type="indexterm" id="conprep_prodhlth"/><a data-primary="production health" data-secondary="continuous preparedness" data-type="indexterm" id="prodhlth_conprep"/>事件对用户满意度的影响，是 SRE 使命的核心。可以从三个维度降低影响：事件持续时间、发生频率和波及范围。快速检测（参见 <a data-type="xref" href="#ch01_situational_awareness">“态势感知”</a>）和快速缓解可以缩短事件持续时间。要做到后者，快速有效的事件管理策略至关重要。做好准备意味着值班工程师接受了充分培训（参见 <a data-type="xref" href="ch05-zh.html#ch05">第 5 章</a>），并且有清晰的流程和角色（参见
+<a data-type="xref" href="ch10.html#ch10">第 10 章</a>）。准备充分的事件响应 <a data-primary="incident response" data-type="indexterm" id="id1044"/>可以显著缩短用户受影响的时间。</p>
+
+<p>但 SRE 的工作并未到此为止。真正的工作从理解中断原因、识别促成因素开始。编写事后复盘报告，并确定改进服务的行动，有助于防止同类中断再次发生（参见 <a data-type="xref" href="ch11.html#ch11">第 11 章</a>）。对事件进行协调良好的后续处置，可以降低未来中断的频率。此外，它还可能促成系统设计变更，例如增加故障域，或支持非关键功能的优雅降级，从而缩小中断范围。如果中断只影响部分用户，或只有部分功能不可用，对用户的影响就会更小。</p>
+
+<p>最后，主动的风险管理 <a data-primary="risk management" data-type="indexterm" id="id1045"/>使工程团队能够识别并控制应用中的风险。系统分析控制流可以发现会破坏应用的边缘情况。STPA 和 CAST 方法能帮助 SRE 工程师找出应用逻辑中的此类缺陷。详见 <a data-type="xref" href="ch12.html#ch12">第 12 章</a> 。</p>
+
+<p>持续准备很好地说明了 SRE 如何结合运维与工程。值班不是 SRE 的目的，而是改善服务长期可靠性的手段。SRE 的运维工作为工程和设计工作提供信息，从而放大 SRE 的影响。它成为 <a data-primary="continuous preparedness" data-secondary="production health" data-startref="conprep_prodhlth" data-type="indexterm" id="id1046"/><a data-primary="production health" data-secondary="continuous preparedness" data-startref="prodhlth_conprep" data-type="indexterm" id="id1047"/>软件开发生命周期中的持续组成部分。这就是持续准备在该层级中占据重要位置的原因。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure Design" data-type="sect2"><div class="sect2" id="ch01_infrastructure_design">
+<h2>基础设施设计</h2>
+
+<p>位于基础设施设计之下的 <a data-primary="infrastructure design" data-secondary="production health" data-type="indexterm" id="infrdsgn_prodhlth"/><a data-primary="production health" data-secondary="infrastructure design" data-type="indexterm" id="prodhlth_infrdsgn"/>各层，使 SRE 团队能够理解哪里出了问题并采取缓解策略。当这种理解转化为工程投入时，真正的良性循环才开始。最佳起点是改善服务的基础设施。现代生产环境本身就是复杂的生态系统（参见
+<a data-type="xref" href="ch03-zh.html#ch03">第 3 章</a>）。服务的生产环境可能包含 Kubernetes 容器编排平台，以及许多其他组件，它们共同支持服务可靠、高效且可扩展地运行。</p>
+
+<p>设计良好的基础设施是服务可运维的关键。通过工程手段改善基础设施的机会很多，我们认为以下几项最重要：</p>
+<dl>
+<dt>发布管理</dt>
+<dd>
+<p>变更 <a data-primary="release management, infrastructure improvements" data-type="indexterm" id="id1048"/>经常被认为是中断的首要原因。稳健的发布机制可以把这种风险降到最低。采用现代持续集成／持续部署（CI/CD）实践和渐进式发布：先在服务的一小部分容量上发布，验证通过后再继续扩展。这样既能减少发布琐事，也有助于在全面中断前发现故障。基于主干的开发会降低发布管理的复杂度。频繁进行小规模发布，不仅提高功能交付速度，也降低每次发布的风险。</p>
+</dd>
+<dt>配置管理</dt>
+<dd>
+<p>配置 <a data-primary="configuration" data-secondary="management, infrastructure improvements" data-type="indexterm" id="id1049"/>变更与二进制发布一样容易引发中断。对配置数据采用版本控制和代码审查（即 GitOps<sup><a data-type="noteref" href="ch01-zh.html#id1050" id="id1050-marker">8</a></sup>），可以让配置数据享有应用代码常用的同一套机制。能够启用和禁用新功能代码的功能开关，有助于将功能开发与发布解耦。</p>
+</dd>
+<dt>数据管理</dt>
+<dd>
+<p>用户数据一旦 <a data-primary="data management" data-secondary="infrastructure improvements" data-type="indexterm" id="id1051"/>发生不可恢复的丢失或损坏，可能造成巨大的声誉和财务损失，甚至让产品遭受致命打击。任何处理宝贵用户数据的服务，都必须监控数据完整性问题，并能够从备份恢复数据。详见 <a data-type="xref" href="ch16.html#ch16">第 16 章</a> 。</p>
+</dd>
+<dt>容量管理</dt>
+<dd>
+<p>随着 <a data-primary="capacity management" data-secondary="infrastructure improvements" data-type="indexterm" id="id1052"/>服务扩展，机器资源管理会变得重要。充足容量是可靠运行的前提；恰到好处的容量则是高效运行的关键。对于大型服务，容量管理通常需要提前规划。其他基础设施可以帮助充分利用现有资源：负载均衡减少热点，限流降低重度用户的影响，拒绝服务（DoS）防护抵御旨在压垮服务的攻击。详见
+<a data-type="xref" href="ch15.html#ch15">第 15 章</a> 。</p>
+</dd>
+<dt>生产测试</dt>
+<dd>
+<p>测试 <a data-primary="production testing" data-secondary="infrastructure improvements" data-type="indexterm" id="id1053"/><a data-primary="production testing" data-type="indexterm" id="id1054"/>机制让系统运维人员能在用户之前发现问题。除经典的单元测试和集成测试外，以探针或故障注入测试（称为混沌工程<sup><a data-type="noteref" href="ch01-zh.html#id1055" id="id1055-marker">9</a></sup>）形式在生产环境中测试，可以系统地发现服务问题。负载测试则为容量规划提供服务可扩展性上限的信息。详见 <a data-type="xref" href="ch14.html#ch14">第 14 章</a>
+。</p>
+</dd>
+<dt>可观测性</dt>
+<dd>
+<p>严格 <a data-primary="observability" data-secondary="infrastructure improvements" data-type="indexterm" id="id1056"/>来说，可观测性已经包含在态势感知层。不过，可观测性工具本身也是基础设施的一部分，应当获得与这里其他主题同等的设计关注和工程投入。</p>
+</dd>
+</dl>
+
+<p>理想情况下，基础设施设计应与应用本身的设计并行推进。虽然可以为现有服务补建更好的基础设施，但在 <a data-primary="software development" data-secondary="infrastructure design" data-type="indexterm" id="id1057"/>软件开发生命周期中把基础设施工作左移，能够获得更好的结果，减少复杂问题和后期救火。</p>
+
+<p>基础设施从 <a data-primary="automation" data-secondary="benefits to infrastructure" data-type="indexterm" id="id1058"/>自动化中获益巨大。传统运维由于缺少自动化，需要投入大量人工琐事。这不只有人力成本，还会阻碍其他收益。例如，如果每次发布都需要一天工作，每天发布就不现实。此外，自动化比手工操作更一致，有助于避免导致中断的人为错误。</p>
+
+<p>有时，把简单的自动化脚本演进成真正的生产工具很有意义；当同一自动化适用于许多服务时尤其如此。更多内容参见 <a data-type="xref" href="ch13.html#ch13">第 13 章</a> 。</p>
+
+<p>良好的基础设施 <a data-primary="infrastructure design" data-secondary="production health" data-startref="infrdsgn_prodhlth" data-type="indexterm" id="id1059"/><a data-primary="production health" data-secondary="infrastructure design" data-startref="prodhlth_infrdsgn" data-type="indexterm" id="id1060"/>设计会简化生态，而不是增加复杂性；它让不同服务的基础设施标准化。设计良好的基础设施不应成为开发者和运维人员的负担，而应加速他们的工作，让服务更稳健。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Resilient Products" data-type="sect2"><div class="sect2" id="ch01_resilient_products">
+<h2>韧性产品</h2>
+
+<p>出色的基础设施 <a data-primary="resilient products" data-secondary="production health" data-type="indexterm" id="id1061"/><a data-primary="production health" data-secondary="resilient products" data-type="indexterm" id="id1062"/>可以带来巨大优势，但也有其极限。有些障碍只能在应用代码本身解决。当服务已经拥有不错的基础设施时，重新设计应用代码或架构的某些方面，可能带来转型式提升。</p>
+
+<p>天生按韧性设计的服务，可以实现高得多的可用性、性能、可扩展性和效率。不过，这一目标需要 SRE 工程师、应用开发者和服务架构师密切协作。有些必要变更可以渐进完成；有些情况下，最好在设计新服务或大规模改造应用的早期就参与进来。无论如何，具体改进和设计通常都高度依赖应用本身。</p>
+
+<p>一个机会是缩小服务中断的爆炸半径，包括受影响用户数、停机时间和损失的功能。把服务划分为多个独立故障域，可以降低全局中断风险。若只有一个云区域停机，就只影响该区域的用户。在许多服务器间横向扩展，可以通过自动故障转移掩盖单台服务器故障的影响。优雅降级也是一种有用技术：禁用非关键功能，而不是让整个服务彻底失败。例如，社交媒体应用的头像服务损坏时，页面仍可加载，只是不显示头像。</p>
+
+<p>另一个机会是简化服务。架构、技术债务和依赖关系方面的复杂性（循环依赖更糟），不仅提高中断风险，也让问题更难调试和缓解。对上游服务的不必要依赖尤其容易增加服务的复杂性与风险。</p>
+
+<p>有关韧性原则的深入讨论，请参见 <a data-type="xref" href="ch17.html#ch17">第 17 章</a> 。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Emergent Reliability" data-type="sect2"><div class="sect2" id="ch01_emergent_reliability">
+<h2>涌现式可靠性</h2>
+
+<p>充分建设 <a data-primary="emergent reliability" data-secondary="production infrastructure" data-type="indexterm" id="id1063"/><a data-primary="infrastructure" data-secondary="emergent reliability" data-type="indexterm" id="id1064"/><a data-primary="production infrastructure" data-secondary="emergent reliability" data-type="indexterm" id="id1065"/>直至韧性产品层的各个层级，会带来高度可靠的产品和顺畅的运维。不过，这些成果需要持续且有意识的投入。一旦专注和纪律松懈，情况很可能恶化。最终目标是建立一个默认可靠的生态系统。</p>
+
+<p>某些情况下，可以在技术层面实现这一目标。生产平台若能让团队无需定制方案，就轻松设计、构建和运行可靠软件，便可减轻工程团队的负担。如果平台让某一类故障根本不可能发生，开发者就不必再为其担忧。设计良好的生产基础设施可以强制落实许多最佳实践（参见 <a data-type="xref" href="ch18.html#ch18">第 18 章</a>）。</p>
+
+<p>如果无法彻底消除某类故障，通常至少可以监控系统是否遵守最佳实践。例如，可能无法始终强制渐进式发布，但可以从生产日志中识别全局更新。团队通常不是故意违反最佳实践；他们要么不知道这些实践，要么没有意识到自己尚未遵守。</p>
+
+<p>另一个重要方向，是赋能产品开发者做正确的事。SRE 工程师不可能随时无处不在。教育开发者，比主动推动所有可靠性工作更有力量。正如俗话所说：“授人以鱼，只供一日；授人以渔，受用终身。”生产专家总会在某些情况下不可或缺，但开发者可以自己解决许多日常挑战。对于现代软件工程师而言，对生产系统的基本理解，与测试、安全和用户体验的基础知识一样，都是职责的一部分。</p>
+
+<p>涌现式可靠性无法在孤立的单个服务或产品范围内高效实现。它往往需要组织转型与协作，建立文化、基础设施、教育和最佳实践，让可靠性毫不费力地流经组织的完整产品组合。例如，这种转型可以包括成立平台工程团队、制定并执行全组织生产策略，或建立全组织培训计划。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI and SRE" data-type="sect2"><div class="sect2" id="ch01_ai_and_sre">
+<h2>AI 与 SRE</h2>
+
+<p>人工智能（AI）和 <a data-primary="production health" data-secondary="AI considerations" data-type="indexterm" id="id1066"/><a data-primary="AI (artificial intelligence)" data-secondary="production health" data-type="indexterm" id="id1067"/><a data-primary="artificial intelligence" data-see="AI" data-type="indexterm" id="id1068"/>机器学习（ML）明显没有出现在生产健康层级中。这并不是因为它们不重要。它们已经从根本上改变生产环境，以及系统的 
+<span class="keep-together">运维方式。</span> 不过，它们属于横切关注点，几乎触及生产健康的每个方面。</p>
+
+<p>一方面，大规模 AI 系统给软件运维带来新的挑战和陷阱，包括部署复杂性、让容量管理更复杂的新硬件范式、新型基础设施构件，以及新的可观测性方法。
+<a data-type="xref" href="ch20.html#ch20">第 20 章</a> 进一步介绍 SRE 如何帮助 AI 应用取得成功并保持可靠。</p>
+
+<p>另一方面，AI 也在改变我们运维软件的方式。AI 擅长驾驭复杂数据集，并回答高度模糊的问题；这两项能力在现代软件生态中至关重要。它可以帮助理解复杂的生产数据，让工程师更快查清棘手生产中断的根源；也能自动化传统工具无法处理的复杂任务。AI 驱动的生产系统究竟潜力多大，要到未来几年才会明朗。关于 SRE 将如何演进的更多讨论，请参见第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch19.html#ch19">19</a>、 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch21.html#ch21">21</a>和 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch23.html#ch23">23</a> 章。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch01_conclusion">
+<h1>结语</h1>
+
+<p>SRE 为运维提供了一套有原则、系统化的方法。应用 SRE 实践，可以让组织交付更可靠的软件产品，并让运维更顺畅、更高效。不过，每个组织的 SRE 旅程都不相同；需求各有独特之处，满足这些需求的方案也是如此。</p>
+
+<p>必须记住，SRE 不是一套静态的规则和流程，而是一种会随不断变化的环境调整的思维方式与理念。有韧性的文化会带来有韧性的运维。遵循 SRE 的核心原则，可以把 IT 运维从成本中心转变为提升业务的机会。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id997"><sup><a href="ch01-zh.html#id997-marker">1</a></sup> 这里的可靠性，是指软件能够以很高概率、无故障地执行预期功能。所需的确切概率取决于具体软件产品的预期用途。</p><p data-type="footnote" id="id998"><sup><a href="ch01-zh.html#id998-marker">2</a></sup> 即使你不是全职 SRE 工程师，也可以采用许多 SRE 最佳实践及其整体理念。DevOps <a data-primary="DevOps" data-type="indexterm" id="id1069"/>思维鼓励打破开发与运维之间的壁垒，能显著影响软件可靠性。SRE 最佳实践对这种通才式安排很有帮助，不过，设立专门职能才能最充分释放 SRE 的潜力。关于 SRE 与 DevOps 的关系，参见 <a href="https://sre.google/workbook/how-sre-relates">关于 SRE 与 DevOps 的关系，参见 <em>《站点可靠性工作手册》第 1 章</em></a>。</p><p data-type="footnote" id="id999"><sup><a href="ch01-zh.html#id999-marker">3</a></sup> Mark Stevens， <a href="https://oreil.ly/r3Epe"><em>《美国小型企业 IT 停机成本》</em></a> （Corporate Technologies，2026）。</p><p data-type="footnote" id="id1008"><sup><a href="ch01-zh.html#id1008-marker">4</a></sup> 据 <a href="https://oreil.ly/RpvbV">Wikipedia</a>称：“马斯洛需求层次理论是 <a data-primary="Maslow’s hierarchy of needs" data-type="indexterm" id="id1070"/>对驱动人类行为的需求（或目标）的概念化描述，由美国心理学家 Abraham Maslow 提出。”马斯洛层级从空气、食物等生理需求的基础层开始，逐步上升到自我实现等心理需求。</p><p data-type="footnote" id="id1026"><sup><a href="ch01-zh.html#id1026-marker">5</a></sup> 有关错误归因的更多信息，请参阅 <a href="https://oreil.ly/iRShZ">Dean Foust 于 2025 年发表的这篇 Medium 文章</a> 。</p><p data-type="footnote" id="id1034"><sup><a href="ch01-zh.html#id1034-marker">6</a></sup> 有关敏捷开发的商业价值，参见 Nicole Forsgren、Jez Humble 和 Gene Kim 合著的 <em>《加速：精益软件和 DevOps 的科学》</em> （IT Revolution，2018）。</p><p data-type="footnote" id="id1037"><sup><a href="ch01-zh.html#id1037-marker">7</a></sup> James Brookbank 和 Steve McGhee， <a href="https://sre.google/resources/practices-and-processes/enterprise-roadmap-to-sre"><em>《SRE 企业路线图》</em></a> （O’Reilly，2022）。</p><p data-type="footnote" id="id1050"><sup><a href="ch01-zh.html#id1050-marker">8</a></sup> 参见 Alexis Richardson 的 <a href="https://oreil.ly/YxloN">“GitOps——通过拉取请求开展运维”</a>，Weaveworks Blog，2018 年 9 月 28 日。</p><p data-type="footnote" id="id1055"><sup><a href="ch01-zh.html#id1055-marker">9</a></sup> 参见 Casey Rosenthal 和 Nora Jones 的 <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/chaos-engineering/9781492043850/"><em>《混沌工程：系统韧性实践》</em></a> （O’Reilly，2020）。</p></div></div></section></body></html>
