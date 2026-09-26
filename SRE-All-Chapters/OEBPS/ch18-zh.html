@@ -1,0 +1,607 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 中的平台工程</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 18. Platform Engineering in SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch18">
+<h1><span class="label">第 18 章　</span>SRE 中的平台工程</h1>
+
+
+<p class="byline">克里斯·琼斯、克里斯托夫·伦 著<br/><span class="keep-together">大卫·格里赞蒂、詹姆斯·布鲁克班克 协作</span></p>
+
+<p>系统从构想到退役的整个生命周期都处在一个生态系统之中，而非存在于真空里：它会与其他系统通信，运行在另一个系统之上，接受某个系统的监控，等等。<sup><a data-type="noteref" href="ch18-zh.html#id2597" id="id2597-marker">1</a></sup>事实上，理解并改变系统之间的<em>关系</em>，乃至各系统内部的连接，是 SRE 工作的重要组成部分。<sup><a data-type="noteref" href="ch18-zh.html#id2598" id="id2598-marker">2</a></sup></p>
+
+<p>生产平台<a data-primary="production platforms" data-secondary="importance" data-type="indexterm" id="prodplat_imp"></a>是组织的基础设施集合的抽象层：系统间通信、CI/CD、可观察性、编排、容量管理、负载平衡和存储系统等等。它通常还包括共享的操作工具，并提供使用这些构建块的上下文，有时带有明确的设计取向。</p>
+
+<p>精心设计的生产平台将基础设施变成开发人员和运维人员易于使用的自助产品；设计不良（甚至未经设计）的平台很容易变得混乱不堪。一个组织的生产平台可能非常简单：每个服务都在共享物理机上运行，​​通过复制源代码、在虚拟机上编译并重新启动二进制文件来手动发布，并由运维人员按需通过 SSH 登录，运行 <code translate="no">top</code> 并用 tail 查看文本日志，进行临时监控。另一个组织的情况可能要复杂得多：将源代码存储在 Git 中，并为每个新提交自动 CI/CD 到不可变的 Kubernetes pod，传入流量自动从一个 pod 切换到下一个 pod。我们在本书的其他地方（参见<a data-type="xref" href="ch03-zh.html#ch03">第三章</a>）和<a href="https://sre.google/sre-book/production-environment">上一版</a>中描述了 Google 的大部分生产平台。</p>
+
+<p class="fix_tracking">组织的规模和复杂性越高，对生态系统协调一致的需求就越强；但无论组织规模如何，都值得认真思考如何让平台各组件合理协作。理想情况下，生产平台通过技术手段落实政策，减轻基础设施工程师的认知负担。由此形成的“默认可靠”能力有助于大规模防范已知类别的故障。生产平台还可以<a data-primary="production platforms" data-secondary="importance" data-startref="prodplat_imp" data-type="indexterm" id="id2599"></a>集中落实可靠性最佳实践，而不必在每个系统中分别手工实施。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Platform Engineering" data-type="sect1"><div class="sect1" id="ch18_platform_engineering">
+<h1>平台工程</h1>
+
+<p>平台<a data-primary="platform engineering" data-type="indexterm" id="id2600"></a>工程是在长期演进中设计、构建、维护和发展这一生态系统的过程，理想状态是有意识、有远见地推进。<sup><a data-type="noteref" href="ch18-zh.html#id2601" id="id2601-marker">3</a></sup>这项工作有时由专门团队完成或指导，有时则从各小组长期决策的总和中自然形成：每个小组只考虑自己负责的平台部分，而未顾及整体——这或许源于<a href="https://oreil.ly/Rua7B"><em>有限理性</em></a>或<a href="https://oreil.ly/w7-yk"><em>局部理性</em></a>。（有时，整体确实庞大复杂到无法作为单一实体看待！）</p>
+
+<p>SRE 通常存在于生产平台的两侧。一方面，他们是平台的客户，在该生态系统内运行服务，这些服务可能面向内部、面向外部，或两者兼而有之。这些可能是产品 SRE，拥有一项或少数密切相关的服务，这些服务通常具有从前端到后端的多个层，<sup><a data-type="noteref" href="ch18-zh.html#id2602" id="id2602-marker">4</a></sup>或基础设施 SRE，他们操作部分或全部生产平台的共享基础设施，例如存储、网络或可观察性。这两种类型都倾向于在其服务中发展深厚的专业知识，通常承担很大一部分开发负担。</p>
+
+<p class="fix_tracking">第三种典型形态是<em>横向</em> SRE 团队：它为整个产品组织提供事件管理和系统设计方面的建议与咨询支持，运营共享工具和服务，还可能为组织构建和运营服务的方式制定标准。由于要支持更多种类的服务，<sup><a data-type="noteref" href="ch18-zh.html#id2603" id="id2603-marker">5</a></sup>横向团队对每项服务的介入通常不那么深入；<span class="keep-together">主要的</span>生产责任一般仍由服务开发人员承担。这类横向 SRE 团队往往以平台工程为主要工作。</p>
+
+<p>除了<a data-primary="production platforms" data-secondary="policies" data-type="indexterm" id="id2604"></a><a data-primary="policies" data-secondary="production platforms" data-type="indexterm" id="id2605"></a>平台的技术组件之外，还需要做出政策和社会技术决策。有助于制定这些决策的问题包括：</p>
+
+<ul>
+<li>
+<p>系统如何访问平台？他们需要特殊权限才能这样做吗？他们需要提前预留容量吗？</p>
+</li>
+<li>
+<p>我们应该运行多少个系统实例以及在哪里运行？我们如何判断这是否正确或是否需要更改？</p>
+</li>
+<li>
+<p>如果我们希望我们的系统依赖于另一个系统，我们是否需要获得访问它的权限？是否会有配额限制？如果有，如何设定？我们对性能有何期望？</p>
+</li>
+<li>
+<p>依赖于其他服务的服务是否需要为其使用付费？如果是这样，它们是如何计费的，这是否成为这些服务的实际可用收入，或者只是一种会计工具？</p>
+</li>
+<li>
+<p>我们是否应该有共同的标准，例如如何监控系统或如何在系统之间移动数据，或者团队可以自由地做出自己的选择？我们想要限制生产中使用哪些语言吗？</p>
+</li>
+<li>
+<p>谁可以访问控制平面以进行调试或更改设置？</p>
+</li>
+<li>
+<p>我们是否应该鼓励（甚至要求）团队重用已经构建的内容，或者他们应该可以自由地重新实现或替换这些部分？</p>
+</li>
+<li>
+<p>我们是想让事情变得很难出错，还是想让尝试新事物变得容易，即使它们不成功？</p>
+</li>
+</ul>
+
+<p>当然，每个问题都有多种可能的答案，并且根据风险承受能力、技术能力、预算和组织考虑因素以及既有路径依赖，适当的答案会因组织而异，甚至很可能随着时间的推移在一个组织内部也会有所不同。</p>
+
+<p>在通过文档和代码定义平台政策时，你不仅要指定平台的行为方式，还要塑造用户如何接近平台并与之交互，并创造影响其未来发展的条件和激励措施。其中一些影响明显、可预测，也正是设计者想要的；另一些则会从平台设计、明确规则、成文与不成文的惯例，以及用户对平台行为方式的认识（无论正确与否）中自然涌现。<sup><a data-type="noteref" href="ch18-zh.html#id2606" id="id2606-marker">6</a></sup></p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="What Is a Platform?" data-type="sect2"><div class="sect2" id="ch18_what_is_a_platform">
+<h2>什么是平台？</h2>
+
+<p>一个好的平台<a data-primary="platforms" data-seealso="production platforms" data-type="indexterm" id="id2607"></a><a data-primary="production platforms" data-seealso="platforms" data-type="indexterm" id="id2608"></a>承担着确保基础设施可靠的责任：进程间协调、任务调度和编排、容量管理以及更细粒度的细节，例如消息重试和访问控制。它为开发人员提供了一致的、有原则的通信、可扩展性、可观察性、可支持性和优雅降级的方法。所做的设计决策，无论广泛还是精细，都反映了平台用户的实际经历和设计师的技术意见。</p>
+
+<p>当组织中的大多数（甚至全部）应用开发人员共享同一个平台时，平台往往会有较高的可靠性——毕竟，人人都依赖它，因而都有动力推动它成功，这为形成良性循环奠定了基础。平台层对调度或资源管理的一项变更，就可能对其上运行的所有应用产生影响，无论好坏。良好的 SRE 实践既能降低风险，也能提升功能开发速度。</p>
+
+<p>那么，生产平台究竟是什么？简而言之，它包括承载系统的一组基础设施与实用工具，以及使这些设施和工具得以运作的组织文化。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Curating Solutions" data-type="sect2"><div class="sect2" id="ch18_curating_solutions">
+<h2>精选解决方案</h2>
+
+<p>在 Google，我们将<a data-primary="tools" data-secondary="developing, curating the process" data-type="indexterm" id="tols_dev_cuat"></a>我们的可靠性原则直接编入软件 SRE 和功能开发人员每天使用的代码中：例如，经过批准的发布系统将具有自动金丝雀分析、渐进式发布和内置的集成 SLO 监控。这种方法在自主性和标准化之间取得了关键的平衡，从而减少了认知开销，加快了入职速度，并确保整个组织的可靠性基准保持一致。</p>
+
+<p>谷歌的工程文化有一条由来已久的信条：“不要给我带来解决方案，而是给我带来需求。”这一原则促进了创新和自主权，使团队能够构建适合其特定需求的解决方案。在 SRE 的早期，同样的理念也被应用于可靠性实践。团队了解其系统需要可靠，并且可以自由构建自己的监控、发布和警报系统来满足该要求。</p>
+
+<p>虽然这种模型在孤立的环境中有效，但随着谷歌系统规模、成熟度和互联性的增长，它也暴露出了其局限性。 “仅需求”方法导致大量重复工作，无数团队独立解决相同的基本问题。在团队之间移动的 SRE 面临着陡峭的学习曲线，需要掌握全新的工具和工作流程集。</p>
+
+<p class="pagebreak-before less_space">临时、团队本地实验的成本不断增加，促使我们的治理模式发生根本性转变：从“仅需求”到“需求加精选解决方案”。这里倡导的并不是一套单一、庞杂的工具链。相反，它代表了向提供一套经过审查、得到良好支持和集成的工具迈出的一步，这些工具为服务运营提供指导和保证。我们针对具体问题精选解决方案，使团队能够选择最适合他们需求的解决方案。</p>
+
+<p>如果精选得当，就能让<a data-primary="tools" data-secondary="developing, curating the process" data-startref="tols_dev_cuat" data-type="indexterm" id="id2609"></a>以<em>正确的</em>方式管理变更，成为最<em>容易的</em>选择。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Platform Policies" data-type="sect2"><div class="sect2" id="ch18_platform_policies">
+<h2>平台政策</h2>
+
+<p>风格指南<a data-primary="platforms" data-secondary="policies" data-type="indexterm" id="plat_pol"></a><a data-primary="policies" data-secondary="platforms" data-type="indexterm" id="pol_plat"></a>是软件工程中的强大工具，可确保复杂代码库中的可持续性、一致性和工程师流动性。<sup><a data-type="noteref" href="ch18-zh.html#id2610" id="id2610-marker">7</a></sup>平台策略是生产环境的风格指南。它确保基础设施的使用在各个系统之间保持一致。这种一致性可能会限制工程师的选择，但也使他们能够避免常见的陷阱，并使他们更容易使用他们不熟悉的系统。这一优势不仅增加了工程师跨项目的流动性，而且对 SRE 也很有帮助，因为他们通常负责许多不同的系统，并且必须处理其上游和下游依赖项。</p>
+
+<p>就像可以通过 linter 强制执行编程语言风格指南一样，可以通过<a data-primary="policies" data-secondary="compliance checkers" data-type="indexterm" id="id2611"></a>合规性检查器<sup><a data-type="noteref" href="ch18-zh.html#id2612" id="id2612-marker">8</a></sup>来执行平台策略，这些检查器评估现有基础设施配置和使用情况，并为工程师标记违规行为。这不仅有助于提高对策略的遵从性，而且还减少了工程师的认知负担：他们不需要记住所有规则并跟踪策略更改，而是可以依靠工具来突出显示需要更改的内容，最好是立即提出修复建议。</p>
+
+<p>这些检查应在何时、以何种方式执行，需要具体权衡。检查可以发生在编辑器中、配置提交时或运行时。例如，可以建议改用支持更完善的 API；也可以在代码变更提交前，验证新依赖项声明的可用性是否足以让服务安全使用。不同规则采用这些方式的实现成本可能不同，还要考虑检查会对工程师的工作流造成多大干扰。过早执行、在编辑器里制造大量噪声的检查令人沮丧；本可在编辑或提交阶段发现、却拖到运行时才报错，迫使工程师重做复杂发布流程的检查同样如此。</p>
+
+<p>并非所有事情都需要检查或强制执行。在定义一套规则时，关键问题不是“我们应该有什么规则？”而是“我们要努力实现什么目标？”只有当合规性的价值明显超过增加的端到端开销时，引入新规则才有意义。</p>
+
+<p>强制执行也有不同等级。检查器既可以发出允许用户越过的警告，也可以报错并阻止变更。只有在绝对确定无需例外时，才应使用错误。即便如此，也应为不可预见的情况设置越权机制（通常称为“打破玻璃”），并可要求政策负责人批准。</p>
+
+<p>理想情况下，平台政策通过统一的生产平台来落实。这样，开发人员不必理解并记住每项细节，因而不会陷入审批疲劳和认知过载；系统只需采用平台默认值，就能自动满足合规要求<a data-primary="platforms" data-secondary="policies" data-startref="plat_pol" data-type="indexterm" id="id2613"></a><a data-primary="policies" data-secondary="platforms" data-startref="pol_plat" data-type="indexterm" id="id2614"></a>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Platforms as Gardens" data-type="sect1"><div class="sect1" id="ch18_platforms_as_gardens">
+<h1>平台如花园</h1>
+
+<p>不妨打个比方。请在脑海中想象一座花园，<sup><a data-type="noteref" href="ch18-zh.html#id2615" id="id2615-marker">9</a></sup>你会看到什么？是适合从远处观赏、布满树篱、铺石和直角构图的规整法式花园？突出多肉植物的沙漠花园？曲线柔和、锦鲤池上架着小桥的日式花园？种植香草和蔬菜的高架苗床？还是完全不同的景象？</p>
+
+<p>这些形态迥异的空间都可称为花园，而花园中该有什么，取决于它的设计目的。同理，平台维护者的选择也必须取决于平台要成为什么、要发挥什么作用，以及要帮助用户完成什么。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Complexity" data-type="sect2"><div class="sect2" id="ch18_complexity">
+<h2>复杂性</h2>
+
+<p>以<a href="https://oreil.ly/mPTex">Cynefin 框架</a>为例，这是一种广受采用的<a data-primary="Cynefin framework, decision-making domains" data-type="indexterm" id="cynfin_decmkdom"></a>模型，用于分析问题的复杂程度，以及在不同情境下应如何行动。该框架划分了五个<a data-primary="decision-making domains" data-type="indexterm" id="decmakdoms"></a>决策域：清晰（Clear）、繁杂（Complicated）、复杂（Complex）、混沌（Chaotic）和迷茫（Confusion）。</p>
+
+<p class="pagebreak-before less_space">在清晰情境中，成熟的最佳实践能够提供一条容易遵循、按部就班的解决路径。繁杂情境则需要借助更多专业知识和判断来作出决定。在复杂情境中，因果关系只能事后推知，决策需要通过试探来形成。混沌处于谱系的另一极端：在系统层面已无法理解因果关系，只能通过实验判断某项决策会如何影响结果。迷茫位于模型中央，表示尚不清楚问题属于哪个决策域。</p>
+
+<p>理想情况下，我们希望我们的生产生态系统最终进入清晰领域，或者至少进入繁杂领域。然而，过多的选择、交互的复杂性以及快速实验和探索的需要常常使生产生态系统落入复杂领域，有时甚至落入混沌领域。更糟糕的是，我们经常低估大型分布式系统固有的复杂性，最终陷入迷茫领域。</p>
+
+<p>因此，<a data-primary="production platforms" data-secondary="reducing complexity" data-type="indexterm" id="id2616"></a>生产平台的一个目标，是管理并减少生产运维中的偶生复杂性<sup><a data-type="noteref" href="ch18-zh.html#id2617" id="id2617-marker">10</a></sup>：让与生产生态系统交互、控制、观测和运维的问题依次从混沌转向复杂、繁杂，最终进入清晰域。</p>
+
+<p>当平台指导工程师如何使用生产环境时，决策过程就会更明确、更轻松。工程师可以遵循既定模板，避免容易失败的试错。开发人员无需再深入理解并反复选择如何配置系统才能在生产环境中有效运行，其开发速度和生产力便可显著提高；他们也能专注于自己擅长的业务领域，而不必把时间耗在看似只是额外负担的工作上。</p>
+
+<p>将主题转移到更简单的领域<a data-primary="Cynefin framework, decision-making domains" data-startref="cynfin_decmkdom" data-type="indexterm" id="id2618"></a><a data-primary="decision-making domains" data-startref="decmakdoms" data-type="indexterm" id="id2619"></a>是一个经典的 90/10 问题：10% 的问题占 90% 的工作。通过将生产中运行的 90% 的简单问题转移到清晰领域，我们使工程师能够将精力集中在需要深厚专业知识才能解决的剩余 10% 问题上。<sup><a data-type="noteref" href="ch18-zh.html#id2620" id="id2620-marker">11</a></sup></p>
+<aside class="pagebreak-before less_space" data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id2621">
+<h1>管理控制论和系统思维</h1>
+<p>我们可以将<a data-primary="management cybernetics, building sociotechnical systems" data-type="indexterm" id="id2622"></a><a data-primary="systems thinking, building sociotechnical systems" data-type="indexterm" id="id2623"></a><a data-primary="sociotechnical systems" data-type="indexterm" id="id2624"></a>管理控制论<sup><a data-type="noteref" href="ch18-zh.html#id2625" id="id2625-marker">12</a></sup>和系统思维<sup><a data-type="noteref" href="ch18-zh.html#id2626" id="id2626-marker">13</a></sup>的见解（特别是反馈循环和递归如何随着时间的推移影响系统）应用于组织，以便了解如何更有效地构建和改变社会技术系统，包括生产平台。一些值得探讨的主题包括：</p>
+
+<ul>
+<li>
+<p><a href="https://oreil.ly/nmvKw">系统动力学</a>，一种使用因果循环图、存量—流量图以及模拟对复杂系统进行建模的技术。</p>
+</li>
+<li>
+<p>梅多斯提出的 12 个系统干预杠杆点——尤其是缓冲、存量与流量的结构、延迟、反馈回路和信息流结构。<sup><a data-type="noteref" href="ch18-zh.html#id2627" id="id2627-marker">14</a></sup>与有意识地设计了这些杠杆点的系统相比，缺少这些杠杆点的系统往往更难管理。</p>
+</li>
+<li>
+<p>Ashby 的<a href="https://oreil.ly/iPb9z">必要多样性法则</a>指出，系统控制器所能呈现的潜在状态，至少要与被控系统一样多。<sup><a data-type="noteref" href="ch18-zh.html#id2628" id="id2628-marker">15</a></sup>降低系统复杂性，意味着管理方式也可以随之简化，与系统交互的人也会更容易完成工作。</p>
+</li>
+<li>
+<p>班布里奇的观察表明，具有讽刺意味的是，当出现问题时，自动化程度的提高会加重人类操作员的负担。<sup><a data-type="noteref" href="ch18-zh.html#id2629" id="id2629-marker">16</a></sup></p>
+</li>
+</ul>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Abstractions and Coupling" data-type="sect2"><div class="sect2" id="ch18_abstractions_and_coupling">
+<h2>抽象和耦合</h2>
+
+<p class="fix_tracking">我们在构建平台时使用的两个技术工具<a data-primary="platforms" data-secondary="building tools" data-type="indexterm" id="id2630"></a><a data-primary="coupling, building platforms" data-type="indexterm" id="id2631"></a><a data-primary="abstractions, building platforms" data-type="indexterm" id="id2632"></a>是抽象和耦合。<sup><a data-type="noteref" href="ch18-zh.html#id2633" id="id2633-marker">17</a></sup>这些使我们能够将简单、定义明确的部分以对平台用户有意义的连贯方式组合在一起，构建一个灵活的平台。</p>
+
+<p><em>耦合</em>指不同的组件或系统如何连接和交互。示例包括从一个服务到另一个服务进行 RPC 调用，或者从共享数据库写入然后读取状态。这让我们可以通过组合较小范围的组件来构建更大、更复杂的系统。然而，耦合的无限自由会导致系统难以推理并且组件之间的关系不明显。</p>
+
+<p><em>抽象</em>有助于把复杂性封装在系统内部；只有负责维护该抽象的人才需要理解其背后的机制。例如，Google 的 Borg 集群操作系统负责作业调度和任务放置，用户只需声明作业所需的资源和冗余度，而不必指定具体运行机器，也不必在任务失败或需要升级版本时手动重启任务。<sup><a data-type="noteref" href="ch18-zh.html#id2634" id="id2634-marker">18</a></sup>这种抽象默认隐藏底层实现细节（用户需要时仍可查看），从而简化了成功使用系统所需的心智模型。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Control: Direct and Indirect" data-type="sect2"><div class="sect2" id="ch18_control_direct_and_indirect">
+<h2>控制：直接和间接</h2>
+
+<p>园丁可以通过两种方式进行干预来塑造花园中的事物：</p>
+
+<ul>
+<li>
+<p>直接，通过<a data-primary="production platforms" data-secondary="characteristics, direct control compared to indirect control" data-type="indexterm" id="id2635"></a>作用于花园——除去杂草，在计划中描述的精确位置种植一棵树，或修剪树篱</p>
+</li>
+<li>
+<p>间接地，通过改善土壤、确保水源充足，或用花朵吸引传粉者，为花园按<span class="keep-together">特定方式</span>生长创造条件</p>
+</li>
+</ul>
+
+<p>这两种方式的区别，在于实现既定结果所需的精确程度和投入：你无法保证蜜蜂和蝴蝶一定会来到花园，却可以提高它们到访的可能性。同样，用儿童沙铲或许能更精细地塑造花园池塘，但所费力气会远多于使用挖掘机。</p>
+
+<p>同样，我们可以直接或间接影响我们的生产平台。例如，作为直接控制，我们可以将服务配置为以我们所需的任务冗余级别运行，并且平台将相应地更新它。或者，作为间接控制，我们可以编写一个策略，规定生产中运行的所有服务都必须有一个负责任的所有者，并具有适当的值班安排，并将该信息记录在中央数据库中。然而，随着时间的推移，由于组织的变化，我们将不可避免地得到许多服务的信息已经过时的情况，更不用说出于某种原因从未输入过信息的服务了。我们可以尝试通过对照数据库定期审核生产环境的实际状态，来纠正这种<em>漂移</em>。然而，这将需要大量的手动工作，并且一旦审核完成，漂移将再次开始。</p>
+
+<p>尽管可能昂贵，但显而易见的替代方案是自动化。自动检查和执行平台的规则意味着我们不需要直接干预。当我们开始运行接收面向用户的流量的作业时，我们可以首先验证是否存在值班安排。然后还可以检查值班安排本身：是否确实有人值班？其警报路由和升级配置是否符合我们的标准？等等。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Choices and Cognitive Load" data-type="sect2"><div class="sect2" id="ch18_choices_and_cognitive_load">
+<h2>选择和认知负荷</h2>
+
+<p>在生产环境中设置稳健的默认值，并<a data-primary="production" data-secondary="cognitive load, reducing" data-type="indexterm" id="id2636"></a>限制选择范围，可以减少生产平台用户需要理解和做出的决策数量，从而减少认知负荷。例如，限制环境中可接受的语言和依赖关系可以让你集中精力更好地支持首选集，提高系统之间的互操作性，并减少开发人员在使用新服务时可能遇到的陌生程度，但代价是降低灵活性。这种一致性有利于工程师在不同项目间流动，并使得在团队之间移动服务变得更加容易。后者对于 SRE 尤其重要，因为使用与 SRE 已支持的服务截然不同的技术选择的新服务可能会很快导致认知过载。</p>
+
+<p>制定并执行政策——最好自动执行——可以减少所需干预。当所有选项都开放时，每个决定都必须经过全面评审。这既耗时费力，又可能引发不必要的冲突，更重要的是会增加认知负担。如果每个细枝末节都要<a href="https://bikeshed.org">反复争论</a>，就可能忽略大局。为可用选项制定政策，可以腾出认知空间，讨论当前服务及其业务领域中特有而又更微妙、复杂的影响。设立合理且安全的默认值很有价值，因为简单情形无需再咨询专家。团队不必把时间花在争论采用哪种监控工具、该如何配置，而可以讨论哪些 SLO 适合服务，以及它们会如何影响架构设计。消除不必要的选择，能让工作聚焦于更高层次的问题。</p>
+
+<p>当然，任何平台都不能也不应该完全消除选择。不同的系统有不同的需求，一刀切的方法并不适合任何人。目标不是彻底禁止人们选择，而是将次优选择的影响保持在可容忍的水平。</p>
+
+<p>当需要深厚的专业知识和仔细考虑来证明选择其他设置的合理性时，采用强默认值是合理的——例如，大多数服务可能希望使用默认的 JVM 调整，但可能有一些具有不同需求的服务应该使用其他设置。在其他情况下，提供一个小的选项菜单更合适，例如，数据库是否应该位于一个区域内、跨大陆还是全球。当选项的缺点严重超过提供选择的好处时，请彻底删除选项。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incentives Rule Everything Around Us" data-type="sect2"><div class="sect2" id="ch18_incentives_rule_everything_around_us">
+<h2>激励决定我们周围的一切</h2>
+
+<p>没有人会使用你的<a data-primary="production platforms" data-secondary="incentivizing good production practices" data-type="indexterm" id="id2637"></a>生产平台或遵循你的平台政策只是因为<em>你</em>认为这是个好主意。人们是受激励驱动的。你的平台需要与他们的激励措施保持一致，否则不会成功。</p>
+
+<p>一种幼稚的做法可能是制定一项政策，并威胁对任何不遵守规定的人进行惩罚。避免惩罚确实是一种激励，但这种策略通常是以组织的抵制或人们积极尝试玩弄系统为代价的。它通常是低效且不可持续的。</p>
+
+<p>更好的是让遵循良好的生产实践变得简单且明显有益。当工程师看到遵循平台策略或使用平台带来的明显好处时，例如减少运营工作或减少停机，他们会愿意这样做——尤其是如果它很简单的话。</p>
+
+<p>如果你的平台降低了服务的实施成本或处理基础设施的认知负担，工程师就更有可能采用它。这就形成了一个正反馈循环：易于使用的东西将被更频繁地使用并最终成为常态，而难以使用的东西将被避免并最终被放弃。</p>
+
+<p>正如 Daria Barteneva 指出的那样，“SRE 的工作就是改变游戏规则，让好的结果变成理性的结果。”<sup><a data-type="noteref" href="ch18-zh.html#id2638" id="id2638-marker">19</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Paths and Guardrails" data-type="sect2"><div class="sect2" id="ch18_paths_and_guardrails">
+<h2>路径和护栏</h2>
+
+<p>花园通常有小径。有些是铺好的，很容易跟随，旨在让游客快速从一个地方到达另一个地方。另一些则蜿蜒而风景优美：也许是一条崎岖的土路，他们可以沿着这条路行走，享受旅程或风景。甚至可能有一些路径不是为游客设计的，而是为花园的维护者设计的——例如，让他们到达大花坛的中间或进入存储空间。</p>
+
+<p><em>意愿路径</em>是人们实际想走的路线，往往比官方规划的路线更短，或看起来更好走。设计者有时会把这些由使用者自行踩出的非正式路线正规化，使其成为景观中得到正式支持的设施。在生产平台中，意愿路径往往表现为开发人员与用户私下分享的隐性知识，用来说明如何开发和配置系统。平台工程师则可以创建<em>黄金路径</em>，让正确做法<a data-primary="golden path workflows" data-type="indexterm" id="gldnpthwrkflws"></a>简单而明确。</p>
+
+<p><a href="https://oreil.ly/OmOIe">黄金路径</a>由一个受良好支持的通用工作流程模板及其支持文档组成。开始的过程是自助服务和按需的。想要使用该模板的工程师可以立即开始，无需寻求他人的许可或进行广泛的研究。</p>
+
+<p>黄金路径可以存在于许多用例中。典型示例包括 CI/CD 管道或监控和警报模板。因为这样的路径实现了组织的特定需求和机构知识，所以没有两条路径看起来完全相同。</p>
+
+<p>黄金路径带有明确的设计主张：它们提供了如何完成手头任务的明确指示。它们通过在基础设施之上提供一个抽象层来减少用户的认知负担，该抽象层仅公开用户实际必须做出的决策。然而，这种抽象必须始终是透明的，并且不能隐藏底层基础设施，因为在某些时候用户可能需要完全理解如何维护、优化和调试基础设施。这两层之间的间隙越小，过渡就越容易。</p>
+
+<p>黄金路径为开发人员提供了明确的激励措施。它们使入门变得更加容易，并降低了出错的风险（在他们可能不完全理解的领域中做错事），但它们并不妨碍最终掌握基础设施。黄金路径对于 SRE 来说也是可取的，因为它们可以促进服务之间的一致性，从而促进入门、维护和故障排除。它们也为中央治理团队提供了激励，因为它们提供了更新最佳实践指南的中心位置。此外，当政策发生变化时，使用黄金路径的服务之间的一致性简化了在现有生态系统中实施大规模变更的过程。</p>
+
+<p>有时，你<em>不希望</em>人们走进花园里的某些区域——那里或许并不安全，例如悬崖边缘；也可能损害空间本身的价值，例如人们无意中踩进花坛或造成土壤侵蚀。为此可以采用一系列从间接到直接的手段，包括：</p>
+
+<ul>
+<li>
+<p>巧妙地设计景观，以吸引人们对某些方面的关注，同时淡化其他方面<sup><a data-type="noteref" href="ch18-zh.html#id2639" id="id2639-marker">20</a></sup></p>
+</li>
+<li>
+<p>张贴标志引导用户前往下一个目的地或警告不要进入禁区</p>
+</li>
+<li>
+<p>使用短的装饰性围栏来划分花坛或高的护栏，以表明走得更远是不安全的</p>
+</li>
+</ul>
+
+<p class="pagebreak-before less_space">这些在生产平台环境中具有明显的相似之处，其中工具包括：</p>
+
+<ul>
+<li>
+<p>黄金路径和反路径（带有相应的文档）</p>
+</li>
+<li>
+<p>编写代码时在 IDE 中发出的提示和警告</p>
+</li>
+<li>
+<p>在编译时或运行时发出警告，提示并非最佳但尚不危险的状况</p>
+</li>
+<li>
+<p>在编译时<a data-primary="golden path workflows" data-startref="gldnpthwrkflws" data-type="indexterm" id="id2640"></a>或运行时传递的错误，明确防止不安全<span class="keep-together">行为</span></p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Exceptions" data-type="sect2"><div class="sect2" id="ch18_exceptions">
+<h2>例外情况</h2>
+
+<p>生产平台<a data-primary="production platforms" data-secondary="managing exceptions" data-type="indexterm" id="prodplat_manexcpts"></a>为常见问题创建通用解决方案。最好的方案涵盖了各种各样的用例，但没有一个可能满足组织内的<em>每一个</em>需求。总是会有一长串罕见和特殊的案例，这些案例完全合理，但不属于常见案例。</p>
+
+<p>有时，边缘案例可能只是平台设计者忽略的用例。有时，出于技术或业务原因，给定服务需要超出平台范围的高级功能。有时重构现有服务以完全符合平台的成本会非常昂贵。有时，新项目会采用创新方法或使用平台尚不支持的新技术。</p>
+
+<p>如果你的平台无法适应这些例外情况，平台的采用率可能会受到影响，从而破坏其价值主张。如果你强迫组织使用该平台，工程师可能会被迫创造技术债务来解决其局限性，或者更糟糕的是，发现自己无法满足合法的业务需求。</p>
+
+<p>因此，你需要<em>例外通道</em>来处理超出平台一般指导范围的<a data-primary="escape hatches, production platform policy exceptions" data-type="indexterm" id="id2641"></a>合法用例。在最简单的情况下，你需要提供一种机制来覆盖平台默认值或访问通常隐藏在平台抽象背后的基础设施功能。在这些情况下，不遮蔽底层基础设施的透明平台抽象是一个巨大的优势。</p>
+
+<p>同样，你可能需要使用平台范围或建议之外的基础设施、工具或技术，例如不同的数据管理系统或 CI/CD 工具。这些情况应该很少见，但组织的业务需求越广泛、越复杂，出现这些例外的可能性就越大。技术需求可能是由业务领域驱动的，例如当你的平台仅支持关系数据库和 NoSQL 数据库时需要图数据库，或者工程师可能想要尝试一些新的有前途的工具或技术，例如新的编程语言。</p>
+
+<p>这里有一个基本的权衡。一方面，允许太多的多样性和太多的例外会造成不必要的复杂性和不一致，并以昂贵的技术债务的形式出现。另一方面，过于严格的环境会阻碍开发人员的生产力和业务速度，同时鼓励以变通办法的形式出现不同类型的技术债务。</p>
+
+<p>难点在于区分必要、合理的例外与不必要、可能造成损害的偏离。对于风险不高且容易撤销的例外，例如覆盖默认配置，应允许自助处理。对于影响重大的例外，例如采用无法与平台集成的新技术，则建议引入人工评审。应根据反对理由的严重程度，由组织中负责确定风险治理工作优先级和人员投入的人来选择这类例外的审批者。影响局部且有限时，可由本地技术负责人决定；若可靠性、安全性或未来成本面临重大风险，则可能需要中央专家团队批准。必须密切关注这一流程引入的开销，因为在某些情况下，流程成本可能既超过例外本身的价值，也超过政策力求实现一致性所带来的收益。</p>
+
+<p>无论如何，都应能够识别并清点现有例外。这样既能了解某类例外有多普遍，也能跟踪把不必要或过度的豁免迁回合规用法的工作，例如由中央推动大规模变更。这形成了一条重要反馈回路，可用于发现平台缺陷、识别<a data-primary="production platforms" data-secondary="managing exceptions" data-startref="prodplat_manexcpts" data-type="indexterm" id="id2642"></a>误用，并指导平台未来演进。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Feedback" data-type="sect2"><div class="sect2" id="ch18_feedback">
+<h2>反馈</h2>
+
+<p>构建生产<a data-primary="production platforms" data-secondary="user personas, managing feedback from" data-type="indexterm" id="prodplat_usrpers_manfedbk"></a><a data-primary="feedback, production platform users" data-type="indexterm" id="fdbk_prodpltusr"></a>平台的核心是将生产环境视为产品。与任何产品开发一样，反馈循环对于成功至关重要。平台主要面对三类用户角色：开发人员、运维人员和最终用户。</p>
+
+<p>对开发人员而言，易采用性、开发速度和可维护性是最重要的目标。采用率（和弃用率）通常可以直接测量，但未必能揭示背后的原因；开发速度和可维护性则更难衡量。焦点小组和问卷调查有助于弥补这些缺口，通常最好结合定量与定性指标。如上一节所述，统计例外数量也是评估平台内部产品市场契合度的一种方法。还应衡量开发人员为此付出的成本，例如接入所需时间，以及必要样板配置的规模与复杂度。</p>
+
+<p>如果开发人员在生产环境中自行踩出了非正式的意愿路径，就值得追问原因：环境未能充分满足哪些用例？平台是否需要增加或改变什么？</p>
+
+<p>对于运维人员来说，可能是纯粹的系统运维人员、SRE，也可能是开发人员，平台的认知负荷、运维琐事和可操作性是关键。认知负荷很难衡量，但所需的培训量或运维团队可以同时支持的服务数量是合理的指标。工作量可以通过操作时间、故障单和警报量、生产中手动操作的数量以及手动配置或基础设施更改的数量等指标来估算。自我报告的运维人员满意度（例如通过客户满意度 (CSAT) 调查）是另一个重要指标。</p>
+
+<p>开发人员和运维人员的体验都是工程生产力的例子。谷歌已在其他地方更详细地发布了衡量工程生产力的方法。<sup><a data-type="noteref" href="ch18-zh.html#id2643" id="id2643-marker">21</a></sup></p>
+
+<p class="fix_tracking">最后一类角色是最终用户（更宽泛地说，也就是业务侧）。他们关心平台所承载服务的可靠性、交付速度和效率。对可靠性而言，SLO 是大多数 SRE 的首选工具。有时，事件数量和事件总持续时间也是有价值的指标；<sup><a data-type="noteref" href="ch18-zh.html#id2644" id="id2644-marker">22</a></sup>被传呼的频率和救火持续多久都很重要。交付速度可以通过部署频率和变更前置时间衡量，这两项属于广泛使用的<a href="https://dora.dev">DORA 指标</a>。效率对最终用户不那么直观，却同样重要，因为它影响机器资源成本，进而影响服务成本。遗憾的是，衡量成功避免的问题与危机有多大价值非常困难；可以借助替代指标，为决策者作出合理估算。</p>
+
+<p>正如我们从敏捷开发中知道的那样，短而频繁的反馈循环对于构建成功的产品至关重要。将开发人员和运维人员这两类角色的第一手经验融入到生产平台的开发中的一个好方法是让 SRE 参与其中，他们可以担任顾问（请参阅<a data-type="xref" href="ch06-zh.html#ch06_spotify_s_distributed_reliability_engagement_model">“Spotify 的分布式可靠性参与模型”</a>）或自己成为平台工程师。重要的是，他们从客户的角度了解平台用例的广度，而且这些经验必须足够新；否则，你的平台可能会慢慢偏离<a data-primary="production platforms" data-secondary="user personas, managing feedback from" data-startref="prodplat_usrpers_manfedbk" data-type="indexterm" id="id2645"></a><a data-primary="feedback, production platform users" data-startref="fdbk_prodpltusr" data-type="indexterm" id="id2646"></a>用户的需求。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Gardens to Ecosystems" data-type="sect2"><div class="sect2" id="ch18_from_gardens_to_ecosystems">
+<h2>从花园到生态系统</h2>
+
+<p>有些平台太大、太复杂，无法比作能够一览全貌、彻底理解的小花园。<sup><a data-type="noteref" href="ch18-zh.html#id2647" id="id2647-marker">23</a></sup>事实上，我们敢说大多数生产平台可能都属于这一类。相反，我们应该将它们视为<em>生态系统</em>——它们过于庞杂，内部关系和相互依赖太多，按任何合理的标准都不可能被彻底<em>理解</em>。在这种环境中，平台工程师与其比作园丁，不如比作林务员或生态修复科学家：他们熟悉所负责生态系统的许多部分，也充分敬畏其中的涌现特性。</p>
+
+<p>一个关键问题是我们如何判断花园或生态系统（无论是植物的还是合成的）是否健康。在花园里，我们可能会看看植物是否棕色或枯萎，是否有杂草冒出来，<sup><a data-type="noteref" href="ch18-zh.html#id2648" id="id2648-marker">24</a></sup>或者某些植物是否生长过度，给其他植物投下太多阴影。</p>
+
+<p>想一想什么<a data-primary="production platforms" data-secondary="user satisfaction, value of measuring" data-type="indexterm" id="id2649"></a>指标可以告诉你用户是否想要使用你的平台、他们是否乐意这样做以及他们在此过程中是否高效。你能否调查平台的用户，了解他们需要寻求例外的频率，或者发现他们想做但平台不允许他们做的事情？你能测量一下他们完成日常任务需要多长时间，<sup><a data-type="noteref" href="ch18-zh.html#id2650" id="id2650-marker">25</a></sup>例如在平台上启动一个作业，并跟踪随着平台的发展这些指标如何随着时间的推移而变化？考虑从平台及其用户收集的数据：它们是互补的，如果没有两者，你将无法完全了解平台的健康状况。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Platforms as Ecosystems" data-type="sect1"><div class="sect1" id="ch18_platforms_as_ecosystems">
+<h1>平台作为生态系统</h1>
+
+<p><a data-primary="DevOps" data-secondary="shift left principle" data-type="indexterm" id="id2651"></a><a data-primary="shift left" data-type="indexterm" id="id2652"></a>DevOps 的一个关键主题是“左移”<sup><a data-type="noteref" href="ch18-zh.html#id2653" id="id2653-marker">26</a></sup>——在软件开发生命周期的早期解决可靠性、安全性和可测试性等质量属性，以降低在系统设计、代码编写或发布后识别和修复问题的成本。虽然这有助于降低开发和运营系统的总成本，但通常情况下，负责设计和构建系统的人员必须成为这些领域的专家，或者至少咨询其他领域专家，例如 SRE。这引入了一个很可能难以解决的扩展瓶颈。<sup><a data-type="noteref" href="ch18-zh.html#id2654" id="id2654-marker">27</a></sup></p>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Shifting Left and Shifting Down" data-type="sect2"><div class="sect2" id="ch18_shifting_left_and_shifting_down">
+<h2>左移和下移</h2>
+
+<p>与其<a data-primary="shift down" data-secondary="embedding reliability in platforms" data-type="indexterm" id="id2655"></a>要求每个开发团队都精通所有领域，不如提炼出共通的设计模式和需求，交由领域专家解决，再让其他人在各自系统中复用这些能力。这类似于使用共享软件库，而不是让每个团队各写一套字符串处理例程。我们把将可靠性等能力嵌入平台的过程称为<a href="https://oreil.ly/ovgbj">“下移”</a>。如<a data-type="xref" href="#ch18_fig01">图 18-1</a>所示，它能让 SRE 团队把影响力扩展到更广的范围。</p>
+
+<figure><div class="figure" id="ch18_fig01">
+<img alt="“下移”示意图：展示功能开发与质量保障如何在功能开发和平台工程阶段之间转移。" src="assets/sre2_1801.png"/>
+<h6><span class="label">图 18-1。</span>下移</h6>
+</div></figure>
+
+<p>可靠性能力可以自行构建或采购，并在此后不断扩充。与试图一次把过多能力全部塞进平台相比，逐步迭代这些功能更为可取。<sup><a data-type="noteref" href="ch18-zh.html#id2656" id="id2656-marker">28</a></sup>随着新服务接入平台，它们可以直接利用成熟度更高的这些能力。</p>
+
+<p>左移与下移互为补充，并非彼此竞争：我们既希望尽早处理质量属性，<em>也</em>希望以统一方式处理。<em>抽象</em>和<em>耦合</em>（参见<a data-type="xref" href="#ch18_abstractions_and_coupling">“抽象与耦合”</a>）能够把定义明确的部件组合成协调一致的整体，是实现这一目标的工具；即将出版的<a class="orm:hideurl" href="https://learning.oreilly.com/library/view/~/9781098169428"><em>《Google 平台工程》</em></a>会更深入地讨论这一主题。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="Effectiveness" data-type="sect2"><div class="sect2" id="ch18_effectiveness">
+<h2>有效性</h2>
+
+<p>Leah Hargreaves（以 Leah Rivers 的名字发表演讲）和 James Brookbank<a data-primary="Brookbank, James" data-type="indexterm" id="id2657"></a><a data-primary="Rivers, Leah" data-type="indexterm" id="id2658"></a><a data-primary="Hargreaves, Leah" data-type="indexterm" id="id2659"></a>提出了<a data-primary="production platforms" data-secondary="reliability considerations" data-type="indexterm" id="prodplat_relcons"></a>“生态系统有效性区”的概念，按失败后果和质量属性所受监督与保障的程度两个维度区分生态系统类型。<sup><a data-type="noteref" href="ch18-zh.html#id2660" id="id2660-marker">29</a></sup>他们认为，失败后果从轻微走向灾难性时，平台提供的监督与保障程度也应相应提高（<a data-type="xref" href="#ch18_fig02">图 18-2</a>）。</p>
+
+<figure><div class="figure" id="ch18_fig02">
+<img alt="“生态系统有效性区”示意图：失败后果越严重，监督与保障程度越高；图中还展示了人为错误和系统限制过严所带来的风险。" src="assets/sre2_1802.png"/>
+<h6><span class="label">图 18-2。</span>生态系统有效性区</h6>
+</div></figure>
+
+<p>Hargreaves 和 Brookbank 给出了一套从“YOLO”到“有保障（Assured）”的类型划分（<a data-type="xref" href="#ch18_fig03">图 18-3</a>），依据是平台能就自身质量属性向用户提供多大程度的保障。<sup><a data-type="noteref" href="ch18-zh.html#id2661" id="id2661-marker">30</a></sup>这套类型划分有意<em>不</em>采用成熟度模型：“有保障”平台绝不必然优于“引导式”平台。真正的原则是：平台对使用方式施加多强的约束，应与违反约束可能造成的后果相匹配。例如，支撑安全关键型操作的平台，应比只承载可选或边缘活动的平台提供更强保障，因此也保留更少自由度；前者可能属于“工程化”或“有保障”，后者则可能适合“临时式”，甚至“YOLO”。</p>
+
+<figure><div class="figure" id="ch18_fig03">
+<img alt="平台保障级别类型图：从“YOLO”到“有保障”，监督与保障程度随潜在失败后果而提高。" src="assets/sre2_1803.png"/>
+<h6><span class="label">图 18-3。</span>平台保障的类型</h6>
+</div></figure>
+
+<p>Google 采用风险驱动的方法来设计和构建其开发生态系统。<sup><a data-type="noteref" href="ch18-zh.html#id2662" id="id2662-marker">31</a></sup>简而言之，需要更高可靠性的系统应该获得更多投资。在更深层次的设计层面，这意味着将服务所需的质量属性（例如 SRE 的可靠性，以及其他团队的安全性、性能等）与适当的投资水平相匹配，同时考虑到整个生态系统的关键性。不出所料，Google 内部的 SRE 和平台工程角色之间最大的重叠是作为相关工程团队的一部分将可靠性能力构建到我们的平台中。这确保了虽然规模较小和不太关键的应用程序可能没有（或不需要）专门的 SRE 团队，但它们仍然可以利用我们生态系统中内置的可靠性功能。</p>
+
+<p>对于云客户，我们发现他们的平台团队存在非常相似的模式。<sup><a data-type="noteref" href="ch18-zh.html#id2663" id="id2663-marker">32</a></sup>除了产品经理和软件工程师等核心角色之外，平台团队中还经常有 SRE（或整个 SRE 团队，取决于规模）。他们的职责可以涵盖各种各样的活动，从更明显的 SRE 工作（例如定义和管理服务）到不太明显的领域（例如成本管理），因为<a href="https://sre.google/sre-book/eliminating-toil">次线性扩展</a>对于平台<a data-primary="Brookbank, James" data-type="indexterm" id="id2664"></a><a data-primary="production platforms" data-secondary="reliability considerations" data-startref="prodplat_relcons" data-type="indexterm" id="id2665"></a>与 SRE 一样重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Frameworks" data-type="sect1"><div class="sect1" id="ch18_frameworks">
+<h1>框架</h1>
+
+<p>自本书第一版<a data-primary="production platforms" data-secondary="application frameworks" data-type="indexterm" id="prodplat_appfrmwrks"></a><a data-primary="application frameworks, production platforms" data-type="indexterm" id="appfrmwrks_prodplat"></a>出版以来，Google 投入了大量资源，开发并逐步统一生产平台中的通用<em>应用框架</em>。<sup><a data-type="noteref" href="ch18-zh.html#id2666" id="id2666-marker">33</a></sup>如今，开发人员通常不再从零开始开发服务器，而是从框架起步，把业务逻辑接入其中。框架负责管理运行中二进制程序的生命周期，包括初始化、建立通往依赖项的 RPC 通道、身份验证与授权、日志记录和控制平面；开发人员则可以专注于自己最熟悉的业务领域。</p>
+
+<p>使用通用框架有助于把能力下移到共享代码和基础设施中。例如，与其让许多团队各自重新发明带抖动的指数退避，或一次次重新实现请求对冲<sup><a data-type="noteref" href="ch18-zh.html#id2667" id="id2667-marker">34</a></sup>并引入略有不同的缺陷，不如把这些能力纳入框架，由相关专家提供权威实现；理想情况下，其他人从此无需再为其操心。如果这听起来很像软件库，那绝非巧合：框架就是更大尺度的库，凝聚了可靠性、安全性等质量属性专家多年积累的领域知识。各开发团队可以直接依赖这些能力，不必先意识到问题存在，再自行研究解决方案。</p>
+
+<p>Google 几乎所有产品都使用单一共享代码库<sup><a data-type="noteref" href="ch18-zh.html#id2668" id="id2668-marker">35</a></sup>，即 monorepo；Android 和 Chrome 因为是开源项目，构成主要例外。这样既能共享代码，也不必担心各产品采用的库版本逐渐分化：一般来说，所有人都用最新版本构建一切。这就是<em>《Google 软件工程》</em>所说的<a href="https://oreil.ly/rpTV9">“单一版本规则”</a>与<a href="https://oreil.ly/O1wuN">“主干生存（Live at Head）”模式</a>相结合。monorepo 未必适合所有组织，但 Git 子模块等工具也能带来单一版本规则的许多好处，而无需把所有内容集中到同一个代码库。<sup><a data-type="noteref" href="ch18-zh.html#id2669" id="id2669-marker">36</a></sup></p>
+
+<p>框架与单体代码库结合时尤其强大，因为你可以把变更推广到使用该框架的所有系统，通常不必让每个系统的负责人直接参与。例如，如果有一个处理用户身份验证和授权的通用模块，只需修改该模块，再等待各系统构建并发布包含更新的新版本，就能更轻松地把 ACL 存储迁移到新后端。如果框架能够显示生产环境中正在运行哪些模块版本（即<em>内省</em>，<span class="keep-together">参见</span><a data-type="xref" href="#ch18_legibility_and_introspection">“易读性和内省”</a>），就可以判断何时能够安全停用旧的 ACL 存储后端，或帮助团队更有规律地发布系统新版本。<sup><a data-type="noteref" href="ch18-zh.html#id2670" id="id2670-marker">37</a></sup>这种能力与跨整个代码库实施<a href="https://oreil.ly/3kkvX">大规模变更</a>、完成全局清理和迁移的能力相辅相成。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Seeing Like a State Machine" data-type="sect1"><div class="sect1" id="ch18_seeing_like_a_state_machine">
+<h1>像“状态机”一样审视系统</h1>
+
+<p>有了生产<a data-primary="production platforms" data-secondary="monitoring system state" data-type="indexterm" id="id2671"></a><a data-primary="monitoring" data-secondary="system state" data-type="indexterm" id="id2672"></a>平台之后，理解其中各系统的运行状态就十分重要。一方面，要把监控和可观测性工具构建或集成进平台；另一方面，要提高控制面和通信接口的标准化与一致性，例如统一 RPC 接口、过载管理等。借用 James C. Scott 的术语，<sup><a data-type="noteref" href="ch18-zh.html#id2673" id="id2673-marker">38</a></sup>这种通过建立或施加秩序，使系统更容易理解和控制的做法，就是让系统变得<em>可辨识</em>。</p>
+
+<p>Scott 还区分了一般适用于各类系统的通用知识（<em>techne</em>），以及适用于特定系统的实践智慧（<em>metis</em>）。 “下移”的一个基本主张是，把有关如何在生产环境中运行系统的 <em>techne</em> 编码进平台本身，我们可以释放开发人员的注意力，专注于让自己的系统正常工作所需的 <em>metis</em>。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Legibility and Introspection" data-type="sect2"><div class="sect2" id="ch18_legibility_and_introspection">
+<h2>可辨识性与内省</h2>
+
+<p class="fix_tracking">理想情况下，负责在生态系统中运行系统的人员<a data-primary="production platforms" data-secondary="monitoring system state" data-tertiary="making risk legible" data-type="indexterm" id="id2674"></a><a data-primary="monitoring" data-secondary="system state" data-tertiary="making risk legible" data-type="indexterm" id="id2675"></a><a data-primary="system state" data-secondary="monitoring" data-type="indexterm" id="id2676"></a>会积累大量有关如何有效运维系统的知识；这正是主张把 SRE 设为专职角色的重要理由之一。然而，SRE 通常只占组织开发人员的一小部分，若依靠个别 SRE 深入参与并传递知识，往往无法覆盖组织的全部服务。要让整个组织受益于 SRE 长期以来从第一性原理和事件经验中积累的知识，一种办法是把这些知识编码为产品开发人员可采用、也可嵌入平台的政策和最佳实践。但这样一来，产品开发人员要么得执行自己不了解其来源和理由的规定，要么得投入大量时间和精力亲自成为专家。</p>
+
+<p>我们可以让生产环境中的风险变得对组织<em>清晰可辨</em>，从而摆脱这一困境。第一步，是把 SRE 积累的知识写成对生产环境带有明确立场的<em>洞见</em><sup><a data-type="noteref" href="ch18-zh.html#id2677" id="id2677-marker">39</a></sup>，例如：</p>
+
+<ul>
+<li>
+<p>所有面向客户的服务及其依赖项都应在至少两个接入点（PoP）上运行。</p>
+</li>
+<li>
+<p>每个这样的服务都应该有一个警报配置，将警报发送给活跃的团队，而不是石沉大海。</p>
+</li>
+<li>
+<p>每个服务都应该定义 SLO。</p>
+</li>
+<li>
+<p>值班团队的事件负载应低于给定阈值。</p>
+</li>
+</ul>
+
+<p>通过内省生产<a data-primary="production platforms" data-secondary="monitoring system state" data-tertiary="system health" data-type="indexterm" id="id2678"></a><a data-primary="monitoring" data-secondary="system state" data-tertiary="system health" data-type="indexterm" id="id2679"></a>环境以及生产中实际运行的配置（以代码形式签入代码库），遥测系统可以采集反映生产系统状态的数据点或信号，并据此推导出系统所面临生产风险的类型与规模。</p>
+
+<p>这一过程可以概览生产环境中每个系统的健康状况，让系统负责人轻松识别 SRE 建议采用的最佳实践。把这些结果聚合汇总后，还能让组织领导层看到各系统在生产中面临哪些已知可靠性风险。风险对领导层越清晰可辨，他们就越能明智地决定应优先处理什么，以减少组织的技术债务。偿还技术债务的成本本身未必令领导层为难；真正使投资决策变难的，是不确定存在哪些技术债务、风险有多大，以及偿还起来有多困难。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Remediation" data-type="sect2"><div class="sect2" id="ch18_remediation">
+<h2>补救措施</h2>
+
+<p class="fix_tracking">识别出生产环境中的<a data-primary="production platforms" data-secondary="remediating risk" data-type="indexterm" id="id2680"></a><a data-primary="monitoring" data-secondary="system state" data-tertiary="remediating risk" data-type="indexterm" id="id2681"></a><a data-primary="system state" data-secondary="remediating risk" data-type="indexterm" id="id2682"></a>风险来源，并按这些风险对系统登记分类后，就可以开始降低风险。可以采用标准的燃尽流程：为每个系统提交缺陷单，请开发人员采取适当行动。在某些情况下，也可以提出系统配置变更，发送给负责人评审，从而直接补救问题。AI 能力不断增强，也使它有望成为完成这项工作的有力工具。</p>
+
+<p class="fix_tracking">如果我们足够确信所提议的更改是正确的，我们可以自动应用它们。例如，假设每个面向客户的服务及其传递依赖项都应启用过载保护（这是 Google 平台提供的功能，但由于历史原因默认情况下未启用），我们可以识别未受保护的服务，并在代码库中应用相应的更改。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Green Fields and Brown Fields" data-type="sect2"><div class="sect2" id="ch18_green_fields_and_brown_fields">
+<h2>绿地与棕地</h2>
+
+<p>对于绿地系统（即新代码），我们通常可以<a data-primary="production platforms" data-secondary="applying best practices, differences between greenfield and brownfield systems" data-type="indexterm" id="prodplat_appbstprct_grnbrn"></a><a data-primary="greenfield systems" data-secondary="applying best practices, limiting risk" data-type="indexterm" id="grnfld_bstprct_limrsk"></a><a data-primary="brownfield systems" data-secondary="applying best practices, limiting risk" data-type="indexterm" id="brnfld_bstprct_limrsk"></a>通过对系统配置设置断言来落实最佳实践和政策，使不合规的变更根本无法提交到生产配置代码库。这样可以防止新系统复制同一种风险。</p>
+
+<p class="fix_tracking">但对现有的棕地系统，我们往往希望区别对待。推出新的最佳实践和政策时，大概不应突然禁止这些系统修改生产配置；更合适的做法是让它们逐步达到合规状态，推进速度应体现我们认为该政策对降低风险有多重要。</p>
+
+<p>新增最佳实践合规检查时，通常应默认豁免现有系统，不强制它们立即合规。应把豁免集中保存在配置代码库中，例如为每个系统建立一个结构化文件，并记录豁免理由以及适用时的到期时间。例如，可以按如下方式豁免 Shakespeare 服务的部分合规检查：</p>
+<pre translate="no">[
+    {
+        "exemption":{
+            "policy":"//policy/release/schedule/daily-releases",
+            "service":[
+                "shakespeare/search",
+                "shakespeare/frontend"
+            ],
+            "bug":123456789,
+            "validUntil":"2038-01-19 03:14:06 (UTC)",
+            "reason":"LEGACY",
+            "comments":["Shakespeare is timeless."],
+        }
+    },
+    {
+        "exemption":{
+            "policy":"//policy/location/colocate-storage-with-serving",
+            "service":[
+                "shakespeare/storage"
+            ],
+            "bug":123456789,
+            "validUntil":"2030-06-30 00:00:00 (UTC)",
+            "reason":"CAPACITY",
+            "comments":[]"Frontend cache is currently sufficient for SLO.",
+                "No need to replicate on-disk everywhere.  Revisit periodically."
+        }
+    }
+]</pre>
+
+<p class="fix_tracking">这种做法降低了政策推广成本，因为合规成本可以推迟到系统维护者更方便承担的时候——他们或许想在自己负责的多个系统中一次落实该政策，也可能正忙于开发大家公认更紧迫的功能。平台工程师可以根据生产环境需要多快收敛，调整棕地系统的宽容程度；这就是生产最佳实践的最终一致性。可选做法包括：</p>
+
+<ul>
+<li>
+<p>无限期允许暂不合规。</p>
+</li>
+<li>
+<p>允许暂不合规，但须定期审查，并由<span class="keep-together">管理层</span>接受相应风险。</p>
+</li>
+<li>
+<p>系统发生任何实质性变更时，要求其合规。</p>
+</li>
+<li>
+<p>要求在截止日期前完成合规。</p>
+</li>
+</ul>
+
+<p>这些例外必须登记归档，并以组织能够清楚理解的方式呈现，组织才能对现有系统带来的风险作出明智决策。这样便可判断是否值得投入资源消除风险，还是任由现有的不合规状态继续存在，等系统被替换时自然消失。<sup><a data-type="noteref" href="ch18-zh.html#id2683" id="id2683-marker">40</a></sup></p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch18_conclusion">
+<h1>结论</h1>
+
+<p>构建有效平台的过程就是产品管理。</p>
+
+<p>对每一个使用生产环境的人来说，它都是一项产品。因此，应把组织的生产生态系统作为需要认真思考和主动管理的对象，而不是任由过去的选择不断给它增加负担。</p>
+
+<p>对 SRE 而言，精心打造的平台是把影响力扩展到整个组织的终极杠杆。把核心可靠性原则直接“下移”到平台后，SRE 就不必逐一教每个开发团队落实运维最佳实践，因而不会成为规模扩展的瓶颈。平台转而提供可在服务之间建立一致性的黄金路径，显著减轻 SRE 在接手、维护和排查陌生系统时的认知负担。集中形成的一致性也让大规模可靠性更新更容易推广到整个生态系统。归根结底，生产平台默认提供基线可靠性，使 SRE 不必反复重造基础能力，而能把专业知识用于复杂且具有领域特性的挑战，进而加快功能交付。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2597"><sup><a href="ch18-zh.html#id2597-marker">1</a></sup>它也是某个特定组织的产物；该组织有自己的流程和文化，而组织本身同样是一个系统。</p><p data-type="footnote" id="id2598"><sup><a href="ch18-zh.html#id2598-marker">2</a></sup>对于广度优先的 SRE 团队来说尤其如此；请参阅<a data-type="xref" href="ch07-zh.html#ch07_the_what_impact">“‘什么’：影响”</a>。</p><p data-type="footnote" id="id2601"><sup><a href="ch18-zh.html#id2601-marker">3</a></sup>有关 Google 平台工程实践的深入讨论，请参阅 James Brookbank、Leah Hargreaves 和 Salim Virji（编辑），<a class="orm:hideurl" href="https://www.oreilly.com/library/view/platform-engineering-at/9781098169428/"><em>Google 的平台工程</em></a>（O’Reilly，即将出版）。</p><p data-type="footnote" id="id2602"><sup><a href="ch18-zh.html#id2602-marker">4</a></sup>例如，负责支持 Google 搜索等外部产品的 SRE 团队。</p><p data-type="footnote" id="id2603"><sup><a href="ch18-zh.html#id2603-marker">5</a></sup>横向 SRE 团队支持数十个服务是很常见的，每个服务可能由许多微服务组成，同时为更多服务提供共享平台服务。</p><p data-type="footnote" id="id2606"><sup><a href="ch18-zh.html#id2606-marker">6</a></sup>回想一下<a href="https://www.hyrumslaw.com">海勒姆定律</a>：“只要 API 用户足够多，无论契约承诺了什么，系统的一切可观察行为都会有人依赖。”</p><p data-type="footnote" id="id2610"><sup><a href="ch18-zh.html#id2610-marker">7</a></sup>参见 Hyrum Wright、Titus Winters 和 Tom Manshreck（编）<a href="https://oreil.ly/wpysH">第 8 章</a>，<a class="orm:hideurl" href="https://www.oreilly.com/library/view/software-engineering-at/9781492082781/"><em>《Google 软件工程：从编程中汲取的经验教训》</em></a>（O’Reilly，2020）。</p><p data-type="footnote" id="id2612"><sup><a href="ch18-zh.html#id2612-marker">8</a></sup>例如 <a href="https://www.openpolicyagent.org">Open Policy Agent</a>。</p><p data-type="footnote" id="id2615"><sup><a href="ch18-zh.html#id2615-marker">9</a></sup>系统是否应该对第三方开放或关闭（通常称为“围墙花园”）超出了本章的范围。</p><p data-type="footnote" id="id2617"><sup><a href="ch18-zh.html#id2617-marker">10</a></sup><em>偶生复杂性</em>由实现方式或工具引入；与之相对的<em>本质复杂性</em>不可约简，是待解决问题所固有的。参见弗雷德·布鲁克斯，<a href="https://oreil.ly/TWIFD">“没有灵丹妙药——软件工程的本质与偶然”</a>，载<em>《IFIP 第十届世界计算机大会论文集》</em>（1986）：1069–76；和伊恩·邓肯，<a href="https://oreil.ly/eNqRk">“偶然还是必要？理解软件设计的复杂性”</a>，工程博客，2025 年 5 月 26 日。</p><p data-type="footnote" id="id2620"><sup><a href="ch18-zh.html#id2620-marker">11</a></sup>例如，参见 Dan Hon 对 <a href="https://oreil.ly/-FJBG">Bluesky</a> 的观察。</p><p data-type="footnote" id="id2625"><sup><a href="ch18-zh.html#id2625-marker">12</a></sup>参见斯塔福德·比尔，<em>公司的大脑</em>（Allen Lane，1972）和<em>企业之心</em>（Wiley，1979）。</p><p data-type="footnote" id="id2626"><sup><a href="ch18-zh.html#id2626-marker">13</a></sup>参见 Donella Meadows，<em>系统思考</em>（切尔西绿色出版社，2008 年）。</p><p data-type="footnote" id="id2627"><sup><a href="ch18-zh.html#id2627-marker">14</a></sup>同上。</p><p data-type="footnote" id="id2628"><sup><a href="ch18-zh.html#id2628-marker">15</a></sup>参见 W. Ross Ashby，<em>控制论导论</em>（John Wiley and Sons，1956）。</p><p data-type="footnote" id="id2629"><sup><a href="ch18-zh.html#id2629-marker">16</a></sup>Lisanne Bainbridge，“自动化的讽刺”，<em>Automatica</em> 19，第 6 期（1983）：775—779。</p><p data-type="footnote" id="id2633"><sup><a href="ch18-zh.html#id2633-marker">17</a></sup>James Brookbank、Leah Hargreaves 和 Salim Virji 即将出版的<em>《Google 平台工程》</em>对此有更详细的介绍。</p><p data-type="footnote" id="id2634"><sup><a href="ch18-zh.html#id2634-marker">18</a></sup>Borg 与开源<a href="https://kubernetes.io">Kubernetes 系统</a>非常相似。</p><p data-type="footnote" id="id2638"><sup><a href="ch18-zh.html#id2638-marker">19</a></sup>请参阅 Daria Barteneva 在 SREcon26 Americas 上的演讲<a href="https://oreil.ly/uSE1b">“可靠性均衡：SRE 影响力背后的隐藏剧本”</a>。</p><p data-type="footnote" id="id2639"><sup><a href="ch18-zh.html#id2639-marker">20</a></sup>例如，迪士尼主题公园使用被称为“隐退绿”（Go Away Green）和“融景蓝”（Blending Blue）的绿、蓝色调，让电线、设备箱和支撑结构融入绿化与天空，使游客保持沉浸感。参见 John Hench，<em>设计迪士尼：想象工程和表演艺术</em>（迪士尼版，2003 年）。</p><p data-type="footnote" id="id2643"><sup><a href="ch18-zh.html#id2643-marker">21</a></sup>参见 Wright 等（编）<a href="https://oreil.ly/57CMn">第 7 章</a>，<em>《Google 软件工程：从编程中汲取的经验教训》</em>。</p><p data-type="footnote" id="id2644"><sup><a href="ch18-zh.html#id2644-marker">22</a></sup>另请参见 Štěpán Davidovič，<a href="https://sre.google/resources/practices-and-processes/incident-metrics-in-sre"><em>SRE 事件指标：批判性评估 MTTR 等指标</em></a>（O’Reilly，2021）。</p><p data-type="footnote" id="id2647"><sup><a href="ch18-zh.html#id2647-marker">23</a></sup>不过，不妨想想：即使一座小花园，真的能够被<em>完全</em>理解吗？</p><p data-type="footnote" id="id2648"><sup><a href="ch18-zh.html#id2648-marker">24</a></sup>当然，所谓杂草，不过是长在你不希望它出现之处的植物。</p><p data-type="footnote" id="id2650"><sup><a href="ch18-zh.html#id2650-marker">25</a></sup>或者甚至弄清楚如何完成这些任务。</p><p data-type="footnote" id="id2653"><sup><a href="ch18-zh.html#id2653-marker">26</a></sup>更多内容参见 Wright 等（编）第 1 章的<a href="https://oreil.ly/Ol_cL">“左移”一节</a>，<em>《Google 软件工程》</em>。</p><p data-type="footnote" id="id2654"><sup><a href="ch18-zh.html#id2654-marker">27</a></sup>参见 Wright 等（编）第 1 章的<a href="https://oreil.ly/gXtzw">“无法扩展的政策”一节</a>，<em>《Google 软件工程》</em>。</p><p data-type="footnote" id="id2656"><sup><a href="ch18-zh.html#id2656-marker">28</a></sup>James Brookbank 和 Steve McGhee，<a href="https://sre.google/resources/practices-and-processes/enterprise-roadmap-to-sre"><em>企业 SRE 路线图：如何构建并维持 SRE 职能</em></a>（O’Reilly，2022），第 31—32 页。</p><p data-type="footnote" id="id2660"><sup><a href="ch18-zh.html#id2660-marker">29</a></sup>Leah Rivers 和 James Brookbank 在 PlatformCon NYC（2025）发表的演讲<a href="https://oreil.ly/Xd35f">“下移：平台工程实用指南”</a>。</p><p data-type="footnote" id="id2661"><sup><a href="ch18-zh.html#id2661-marker">30</a></sup>这些属性也常被称为“非功能属性”，以区别于描述系统业务逻辑预期行为的功能属性。</p><p data-type="footnote" id="id2662"><sup><a href="ch18-zh.html#id2662-marker">31</a></sup>参见 Christoph Kern，<a href="https://oreil.ly/SHtMb">“软件安全的开发者生态系统”</a>，<em>Communications of the ACM</em> 67，第 6（2024）：52—60。</p><p data-type="footnote" id="id2663"><sup><a href="ch18-zh.html#id2663-marker">32</a></sup>根据<a href="https://oreil.ly/VGGIA">团队拓扑</a>，平台团队是“一组其他类型的团队，提供引人注目的内部产品以加速开发人员的交付。”</p><p data-type="footnote" id="id2666"><sup><a href="ch18-zh.html#id2666-marker">33</a></sup>参见 Chris Nokleberg 和 Brad Hawkes，<a href="https://oreil.ly/sS6Vj">“最佳实践：应用程序框架”</a>，<em>ACM Queue</em> 18，第 6（2021）：52—77。</p><p data-type="footnote" id="id2667"><sup><a href="ch18-zh.html#id2667-marker">34</a></sup>参见 Jeffrey Dean 和 Luiz André Barroso，<a href="https://oreil.ly/vtiUU">“规模化系统中的长尾效应”</a>，<em>Communications of the ACM</em> 56，第 2（2013）：74—80。</p><p data-type="footnote" id="id2668"><sup><a href="ch18-zh.html#id2668-marker">35</a></sup>参见 Rachel Potvin 和 Josh Levenberg，<a href="https://oreil.ly/hUWkc">“为什么 Google 在单个存储库中存储数十亿行代码”</a>，<em>Communications of the ACM</em> 59，第 7（2016）：78—87。</p><p data-type="footnote" id="id2669"><sup><a href="ch18-zh.html#id2669-marker">36</a></sup>参见 Wright 等（编）<a href="https://oreil.ly/JmDf_">第 16 章关于 monorepo 的讨论</a>，<em>《Google 软件工程》</em>。</p><p data-type="footnote" id="id2670"><sup><a href="ch18-zh.html#id2670-marker">37</a></sup>设置“构建期限”，禁止运行某个日期之前构建的二进制文件，可以迫使问题得到处理，使迁移工作变得可控；Google <a data-primary="production platforms" data-secondary="application frameworks" data-startref="prodplat_appfrmwrks" data-type="indexterm" id="id2684"></a><a data-primary="application frameworks, production platforms" data-startref="appfrmwrks_prodplat" data-type="indexterm" id="id2685"></a>通常使用六个月的期限。</p><p data-type="footnote" id="id2673"><sup><a href="ch18-zh.html#id2673-marker">38</a></sup>James C. Scott，<em>《国家的视角：那些试图改善人类状况的项目为何失败》</em>（Yale University Press，1998）。另见 Laura Nolan，<a href="https://oreil.ly/ld__d">“像国家一样审视 SRE：作为高度现代主义的站点可靠性工程”</a>，<em>;login:</em>，2021 年 4 月 28 日。</p><p data-type="footnote" id="id2677"><sup><a href="ch18-zh.html#id2677-marker">39</a></sup>这些见解需要所有者、解释和定期重新考虑；随着产品、客户期望、能力和成本的发展，洞察背后的原因和权衡可能而且确实会随着时间的推移而改变。</p><p data-type="footnote" id="id2683"><sup><a href="ch18-zh.html#id2683-marker">40</a></sup>这意味着我们无需投入任何精力去修改<a data-primary="production platforms" data-secondary="applying best practices, differences between greenfield and brownfield systems" data-startref="prodplat_appbstprct_grnbrn" data-type="indexterm" id="id2686"></a><a data-primary="greenfield systems" data-secondary="applying best practices, limiting risk" data-startref="grnfld_bstprct_limrsk" data-type="indexterm" id="id2687"></a><a data-primary="brownfield systems" data-secondary="applying best practices, limiting risk" data-startref="brnfld_bstprct_limrsk" data-type="indexterm" id="id2688"></a>系统来使其合规，而这往往很有吸引力。</p></div></div></section></body></html>
