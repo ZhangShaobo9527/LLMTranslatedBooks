@@ -1,0 +1,500 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>可靠性的价值</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 2. The Value of Reliability" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch02">
+<h1><span class="label">第 2 章 </span>可靠性的价值</h1>
+
+
+<p class="byline">作者：Ben McCormack、Brian Kudzia、David Huska、Jose Andrade<br/>
+<span class="keep-together">Garrett Holthaus 参与撰写</span></p>
+
+<p>技术服务能否平稳且持续地运行，并不是可有可无的小事，而是企业成功的关键因素。本章将从一个常被忽视的角度讨论站点可靠性工程（Site Reliability Engineering，SRE）：它是组织的一项商业<em>投资</em>。实施 SRE 固然会产生业务成本，但这项投资能够带来可观且可衡量的回报。我们将说明风险管理、设定服务性能目标、减少重复劳动、提升系统可见性和流程自动化等 SRE 原则，如何既避免代价高昂的服务中断，又提高整个组织的效率并推动创新。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Why SRE Is Right for Google" data-type="sect1"><div class="sect1" id="ch02_why_sre_is_right_for_google">
+<h1>为什么 SRE 适合 Google</h1>
+
+<p>传统上，工程<a data-primary="Google" data-secondary="SRE approach" data-type="indexterm" id="gogl_sreappr"/>团队会将软件开发与运维分开。这种组织方式往往效果不佳，因为运维团队与软件团队难以协调稳定性和功能交付速度。代码被“扔过墙”交给另一方，发生故障时双方相互指责。运维团队还容易陷入让人反复执行重复任务的困境：员工得不到成就感，企业效率也很低。</p>
+
+<p>过去二十年间，DevOps 和 SRE 等实践应运而生，力图改变这种局面。与传统运维团队相比，我们认为它们是开发和运行系统的更好方式。</p>
+
+<p>Google 拥有深厚的工程文化，我们首先从软件视角看待大规模系统的运行难题。以严谨的工程方法和自动化解决大规模运维挑战，是我们<span class="keep-together">理念的核心。</span></p>
+
+<p>需要说明的是，Google 并非所有系统都由 SRE 团队管理；有些系统由软件工程（SWE）团队运行和管理（参见<a data-type="xref" href="ch07.html#ch07">第 7 章</a>）。但对关键任务服务，我们采用 SRE 方法。本书之后还会反复讨论 SRE 为什么适合 Google；简而言之，是因为 SRE 把运维管理视为软件问题，而不是靠人力解决的问题。过去，为应对增长，企业只能不断招聘人员，处理越来越多的手工重复任务。SRE 则认识到，大规模系统的可靠性、可用性和可扩展性工程是一门独立的专业；做好这项工作，组织就能突破上述限制。</p>
+
+<p>此外，SRE 也为关注可靠性和可扩展性的工程师提供了一条富有成就感的职业道路。由于重视软件工程，SRE 自然会让软件实现高度自动化，而不是要求人频繁进行手工干预。这能培养深厚的系统设计专长，也帮助工程师理解如何优化大规模系统及其架构。其他方法可能让各团队自行选择减少多少琐事，结果软件团队仍可能精疲力竭；SRE 则明确识别、度量并管理琐事（参见<a data-type="xref" href="ch13.html#ch13">第 13 章</a>）。（SRE 将<a data-primary="toil" data-type="indexterm" id="id1071"/>琐事定义为手工、重复、可自动化、偏战术且通常缺乏持久价值的工作。简单说，这类工作无法给人带来成就感，更适合交给软件解决。）</p>
+
+<p>优化也是 SRE 成为 Google 组织战略重要组成部分的另一关键原因。借助 SRE，我们能够集中关键运维职能，并在团队间统一工具。这套共享基础可以提升效率，让所有团队都能受益于其他 SRE 团队形成并<a data-primary="Google" data-secondary="SRE approach" data-startref="gogl_sreappr" data-type="indexterm" id="id1072"/>不断完善的最佳实践。</p>
+<div class="fix_tracking" data-type="note" epub:type="note"><h6>提示</h6>
+<p>如需进一步了解 SRE 在关键大规模系统的设计、部署和维护中扮演的角色，请收听 <a href="https://sre.google/prodcast/#season3-episode8">DNS</a> 或 <a href="https://sre.google/prodcast/#season3-episode10">Maglev</a> 单集，它们出自 Google 的 SRE 播客 <em>Prodcast</em>。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Value of SRE" data-type="sect1"><div class="sect1" id="ch02_the_value_of_sre">
+<h1>SRE 的价值</h1>
+
+<p>采用 SRE 来<a data-primary="value of SRE" data-type="indexterm" id="sre_val"/>持续管理技术环境，是一项重大承诺。对许多组织而言，这意味着改变工作方式，并随之调整团队结构和实践。在推动如此重大的转型之前，必须考虑需要争取哪些不同的利益相关方，并清楚理解 SRE 的价值。这些利益相关方从客户到首席财务官（CFO），还包括所有与可靠性团队协作的内部团队（另见<a data-type="xref" href="ch07.html#ch07">第 7 章</a>）。</p>
+
+<p>SRE 以工程为驱动力并注重效率，使组织在扩大服务及配套运维规模时，成本的增长速度低于服务规模的增长速度。我们称之为<a data-primary="sublinear scaling" data-type="indexterm" id="id1073"/><em>次线性扩展</em>模型。团队开始采用保护错误预算等 SRE 核心策略后，服务可靠性往往会由团队内部自行调节，而不再依赖外部强制。长期来看，这会减少运维琐事，腾出时间投入下一个重要目标。随着团队不断学习和成熟，人员管理方面的琐事也会减少。管理者和工程师因而不必反复处理重复工作造成的问题，可以专注于更有价值、能推动组织前进的任务。</p>
+
+<p>下面进一步比较<a data-primary="ops teams, compared to SRE" data-type="indexterm" id="id1074"/>传统运维团队与 SRE 的关键差异。运维团队通常首先受到稳定性目标的激励，往往会以牺牲变更速度为代价。SRE 则用错误预算平衡可靠性与功能投入，使 SRE 团队和开发团队围绕共同目标协作。SRE 对产品成功负责，并帮助拆除传统业务、运维和开发团队之间那堵无形的墙。传统运维团队主要依靠系统管理员技能，SRE 成员还具备软件工程能力，能够将工程原则用于解决运维问题。因此，SRE 与开发团队往往能建立牢固的协作关系，共担责任，共享目标。</p>
+
+<p>本章余下内容将讨论 SRE 创造的价值如何惠及组织内不同的利益相关方，以及处于不同发展阶段的组织所获得的价值有何不同。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To Customers" data-type="sect2"><div class="sect2" id="value-to-customers">
+<h2>对客户的价值</h2>
+
+<p>客户<a data-primary="customers, value of SRE to" data-type="indexterm" id="cust_sre_valto"/>希望系统不仅可靠易用，还能不断演进和更新，满足他们当前及未来的需求。SRE 的两项关键原则——<em>接受风险</em>以及<em>在风险与业务目标之间取得平衡</em>——为管理这些经常彼此冲突的需求提供了成熟方法。</p>
+
+<p>作为工程师，我们有时会沉迷于精确定义：这是服务等级协议（SLA）还是服务等级目标（SLO）？我们主要遵循 SRE 原则还是 DevOps 原则？</p>
+
+<p>明确具体概念固然有益，但有时会让我们忽视所有生产服务运行和交付团队最重要的职责：为他人提供服务。正是在这一职责上，SRE 能够在用户需要的功能与系统稳定性之间发挥关键的平衡作用。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1075">
+<h5>以用户为中心，其他一切纷至沓来</h5>
+<p>2001 年，Google 成立三年后进入高速增长期。Larry Page 和 Sergey Brin 编写了一套工程优先的准则，用来稳固公司文化，并在组织急剧扩张期间指导决策。下面这条当时是、现在仍是第一条准则：</p>
+
+<blockquote>
+<p>从一开始，我们就专注于提供尽可能出色的用户体验。无论是在设计新的互联网浏览器，还是细调首页外观，<em>我们都会竭尽全力，确保最终服务的是你</em>，而不是我们的内部目标或利润。我们的首页界面清晰简洁，页面瞬间即可加载。搜索结果中的位置从不出售给任何人；广告不仅会被清楚标明，而且内容相关、不扰人。当我们开发新工具和应用时，我们相信它们应当足够好用，让你根本无须考虑还可以怎样重新设计。
+</p>
+<p data-type="attribution">Google，<a href="https://oreil.ly/i_RL9">《我们确信的十件事》</a>（着重号为本书所加）</p>
+</blockquote>
+</div></aside>
+
+<p>实现这一目标，首先要保证应用或服务可用。应用一旦不可用，就无法履行功能，也就无法服务客户或用户。可靠服务的其他品质，例如运行迅速、结果正确，同样会影响用户对其价值的感受。</p>
+
+<p>因此，服务可靠性并非一项可选功能，也不是应当尽可能压低的成本。可靠性本身就是关键功能，理应得到相应重视。产品具有多少其他功能或能力都不重要：系统一旦停机，用户就用不了它们！从广义上说，可靠性是承载一切功能的基础。</p>
+
+<p>运行可靠的系统绝不等于追求 100% 的正常运行时间；后者几乎总是错误的目标。SRE 的一项关键职责，是为每个系统定义并交付恰当的可靠性水平。极高可靠性需要付出代价：把稳定性推到极致，会限制新功能的开发速度和产品交付用户的速度，还会显著增加成本，进而减少团队有能力提供的功能数量。SRE 力求在低可靠性风险、快速创新目标和服务高效运行之间取得平衡，从而让用户对功能、服务和性能的整体满意度达到最佳。</p>
+
+<p>成熟企业的客户通常会对其服务可靠性有所期待。即使心中没有明确的 SLO，客户一般也希望服务在需要时可用，并且运行顺畅、结果正确。服务做不到这些，就会造成可衡量的不满，体现在客户满意度（CSAT）、净推荐值以及客户支出等指标上。本书介绍的所有 SRE 实践都有助于达到客户期望的高可靠性。由于 SLO 非常重要，我们专门用<a data-type="xref" href="ch08.html#ch08">第 8 章</a>讨论它：如何定义良好的 SLO，以识别和量化客户<a data-primary="customers, value of SRE to" data-startref="cust_sre_valto" data-type="indexterm" id="id1076"/>期望，并让这些期望成为工程流程的核心。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To the CFO" data-type="sect2"><div class="sect2" id="value-to-the-cfo">
+<h2>对 CFO 的价值</h2>
+
+<p>企业会谨慎管理和控制<a data-primary="CFOs, value of SRE to" data-type="indexterm" id="id1077"/>成本。在增长型企业中，CFO 希望支出增速低于营业收入增速；在业务稳定的企业中，重点则转为持续优化成本。</p>
+
+<p>SRE 理念的核心认识是：机器速度快、成本低，而人的速度较慢，却因创造力和解决问题的能力而珍贵得多。SRE 重视重复手工作业的自动化以及工具和流程的精简，这是实现业务规模增长远超成本增长的关键，也就是实现次线性扩展。</p>
+
+<p>软件是我们拥有的最强大财务杠杆之一。设计良好、维护得当且正确部署的代码，可以一次又一次运行，新增成本微乎其微。SRE 的<em>消除琐事</em>和<em>自动化</em>原则能降低技术系统的运行与管理成本。正确运用这些原则，可以通过次线性扩展为组织创造战略性财务价值；对任何希望可持续增长的企业而言，这一点都至关重要。</p>
+
+<p>Google 将 SRE 服务集中管理，也让所有团队都能分享多应用共用服务的改进成果。负载均衡就是很好的例子：人们熟悉并使用的绝大多数 Google 服务——搜索、地图、YouTube 等——都受益于由 SRE 运行和管理的同一个全球负载均衡平台。简单说，效率提升由所有人共享。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To Other Internal Technical Teams" data-type="sect2"><div class="sect2" id="value-to-other-internal-technical-teams">
+<h2>对其他内部技术团队的价值</h2>
+
+<p>SRE 团队不会在组织内<a data-primary="internal technical teams, value of SRE to" data-type="indexterm" id="inttechtms_sre_valto"/>孤立运作，而是与产品、安全、客户服务等许多团队合作（参见<a data-type="xref" href="ch07.html#ch07">第 7 章</a>）。</p>
+
+<p>采用 SLO 等客观的成功衡量标准，可以让产品开发团队和基础设施团队更好地协调。SRE 经常与产品负责人合作，把业务目标转化为明确的可靠性目标，并在权衡需求、取舍不同方案时，就风险和可行性提供建议。<a href="https://oreil.ly/CieQT">2021 年 DevOps 研究与评估（DORA）报告</a>发现，“擅长现代运维实践的团队，报告软件交付与运维（SDO）绩效更高的可能性是其他团队的 1.4 倍，报告业务成果更好的可能性则是 1.8 倍。”<sup><a data-type="noteref" href="ch02-zh.html#id1078" id="id1078-marker">1</a></sup></p>
+
+<p>沟通改善后，组织能够更准确地理解业务目标，并给出更现实、更可实现的成果。这不仅可以提高交付速度，让开发人员更满意，也有助于与业务目标形成更好的一致性，最终提升客户满意度。它还能降低风险和中断严重程度，让运维人员更满意。反过来，实现可靠性目标和预期成果，也有助于塑造业务并确保其沿正确方向发展。可以把 SRE 看作一种以可靠性原则凝聚整个组织的方式。</p>
+
+<p>更好的沟通和对生产结果更明确的关注，可以同时提升效率与成效。SRE 拥有深厚的生产环境专长，程度通常超过开发团队能够合理积累的水平，因此能帮助开发团队取得更大成功。开发人员不必再为生产环境和如何达到可靠性目标过度分心，认知负担随之降低，时间也能得到更有效的利用。把<a data-primary="internal technical teams, value of SRE to" data-startref="inttechtms_sre_valto" data-type="indexterm" id="id1079"/>更多精力投入业务逻辑后，他们能以更少的琐事交付质量更高的产品，满足更严格的标准。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To Organizational Culture" data-type="sect2"><div class="sect2" id="value-to-organizational-culture">
+<h2>对组织文化的价值</h2>
+
+<p>SRE 最重要的<a data-primary="organizational culture" data-secondary="SRE" data-type="indexterm" id="orgcultr_sre_valto"/>组成部分之一是它的文化，而这种文化存在于更广泛的组织文化之中。无论从员工的工作表现还是在组织内的任职时间等指标来看，SRE 文化往往都会对整体文化产生积极影响（参见<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。</p>
+
+<p>组织一旦决定实施 SRE，整体文化<em>必然</em>受到影响。应急响应、可观测性、变更管理、容量规划和跨团队协调等 SRE 实践，对组织来说可能是新事物，而且影响不只限于工程部门。例如，计划中的销售或营销活动可能影响用户数量时，相关团队必须及时沟通，因为使用量大幅增加通常需要更多计算能力。</p>
+
+<p>正确实施 SRE，必须营造优先保障心理安全的环境。例如，无责复盘能让团队成员从事故中学习；下次出现类似情况时，他们就可以在问题扩大之前将其解决。这种思维方式会让组织受益，系统可靠性也会逐步提高。不过，要做出这些决定，必须得到领导层的充分支持。</p>
+
+<p>决定实施 SRE 时，评估现有组织文化会很有帮助，尤其要以开放心态和对机会的热情来开展评估。SRE 落地以后，其文化会持续改善沟通、加快决策、明确规则并提高系统可靠性，而可靠性正是最终的核心目标。</p>
+
+<p>要成功实施并维持<a data-primary="organizational culture" data-secondary="SRE" data-startref="orgcultr_sre_valto" data-type="indexterm" id="id1080"/>可靠性文化，领导者不可或缺。他们需要理解 SRE 的价值，支持以数据为依据的工程决策，还要能够影响并非由自己直接管理的团队。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To Business Growth" data-type="sect2"><div class="sect2" id="value-to-business-growth">
+<h2>对业务增长的价值</h2>
+
+<p>SRE 通过保障创收服务的可靠性，直接<a data-primary="business growth, value of SRE" data-type="indexterm" id="id1081"/>推动业务增长。即使面对意外或极端情况，可扩展的系统和敏捷的运维也是支撑业务快速增长的必要条件。以 COVID-19 疫情期间的 Google Meet 为例：视频会议成为帮助用户工作并保持联系的重要工具，封控初期 Meet 承载的视频通话量暴增。所需资源的增长并不在计划之内，但得益于产品底层的可靠性战略，Google 仍然满足了用户需求。这对 Google 和 Meet 用户都是重大成功，也说明预先准备好的可靠性战略能够加快开发和部署，增强关键产品迅速上市的能力，形成显著的竞争优势（参见<a data-type="xref" href="ch15.html#ch15_case_study_throwing_the_plan_out_the_window_google_meet_during_covid_19">“案例研究：抛开计划（COVID-19 期间的 Google Meet）”</a>）。</p>
+
+<p>这个例子体现了 SRE 的核心价值：即使系统承受压力，也要确保关键系统可靠、可用。对于面向客户的服务，可以用客户是否满意、是否继续使用甚至推荐服务来衡量成功。对于不直接创收的内部应用，只要它对核心业务运营不可或缺，可靠性仍然至关重要。</p>
+
+<p>SRE 的可靠性目标与用户期望直接相关。因此，必须了解未满足这些期望会造成多少收入和声誉损失。准确掌握用户期望，既能让 SRE 投入恰当的工作量来保障系统可靠性，也能成为证明 SRE 自身价值的数据依据。定义 SLO 有助于团队把这些系统期望转化为有意义的工作流程（参见<a data-type="xref" href="ch08.html#ch08">第 8 章</a>）。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Within the SRE Team" data-type="sect2"><div class="sect2" id="ch02_within_the_sre_team">
+<h2>SRE 团队内部</h2>
+
+<p>必须重点考虑的一件事，是低劣的服务质量会怎样影响员工和团队士气。<a data-primary="value of SRE" data-startref="sre_val" data-type="indexterm" id="id1082"/><a data-primary="SRE teams" data-type="indexterm" id="id1083"/>一周内第三次半夜被叫醒，对谁都不是愉快的经历，会给个人和团队带来真实的人身影响。在 SRE 文化中，人被视为最重要的资源。系统发生故障时，解决问题的负担往往落在少数员工身上。本周第十次手工重启某个进程，就是一种看似简单却会严重消耗团队精力的琐事。SRE 的一项重要工作是度量并量化琐事；识别出来后，SRE 会花相当多的时间用自动化消除它们（如前所述，在 Google，我们的目标是让 SRE <em>至少</em>用 50% 的时间从事工程工作；详见<a data-type="xref" href="ch06.html#ch06_on_call_considerations">“值班注意事项”</a>）。减少琐事能够降低管理开销和重复错误，改善团队文化，从而减少职业倦怠、提升士气和生产力（参见<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>）。</p>
+
+<p>在 Google，如果某个应用持续无法达到 SLO，SRE 可以拒绝继续替开发团队承担责任。如果事故告警（也叫“page”<sup><a data-type="noteref" href="ch02-zh.html#id1084" id="id1084-marker">2</a></sup>）过于频繁地发给值班工程师，以至于损害团队健康和正常运作，SRE 可以把“pager”交还给开发团队。这是一项强有力的制衡手段，能让开发和运维就约定的服务可靠性水平达成一致。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Cost of Unreliable Systems" data-type="sect1"><div class="sect1" id="ch02_the_cost_of_unreliable_systems">
+<h1>不可靠系统的代价</h1>
+
+<p>没有发生的问题，其价值很难量化。去年你<em>没有</em>遭遇多少次停电和车辆故障？这些未发生的事故又让你<em>免于</em>承担多少总成本？可靠性下降造成的代价因行业以及组织的规模和成熟度而异，但其中仍有一些普遍规律。</p>
+
+<p>可靠性之所以至关重要，是因为它反映了用户对服务的期望：只有满足这些期望，服务才会被认为可靠。达不到期望就会破坏信任，而信任十分脆弱，失去后很难重建。与此同时，在组织内部，即使中等程度的中断也可能让功能开发完全停顿，因为工程师都要投入缓解和修复工作。仅这两项后果，就足以让企业陷入竞争劣势。本节可以视为对<em>缺少</em>可靠系统所需代价的分析。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Direct Costs" data-type="sect2"><div class="sect2" id="ch02_direct_costs">
+<h2>直接成本</h2>
+
+<p>可靠性故障会给企业带来急性和慢性的直接财务后果，例如商品或服务未能售出导致收入损失、修复问题产生额外支出、声誉受损等。这些成本因行业、企业不同而异，甚至还会随一年中的时段或一天中的时间变化。</p>
+
+<p>更重要的是，在竞争环境中，客户拥有选择权。如果你的服务不可用或表现不符合预期，他们可能直接转向竞争对手。你很可能不仅失去当时那一笔交易，也会失去这些客户未来的业务。这称为客户<a data-primary="churn" data-type="indexterm" id="id1085"/><em>流失</em>。</p>
+<div data-type="note" epub:type="note"><h6>提示</h6>
+<p><a href="https://oreil.ly/BRecP">Google 的研究</a>表明，如果页面加载时间超过三秒，53% 的访问者会放弃正在执行的任务。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Opportunity Costs" data-type="sect2"><div class="sect2" id="ch02_opportunity_costs">
+<h2>机会成本</h2>
+
+<p>不投资<a data-primary="opportunity costs, unreliable systems" data-type="indexterm" id="id1086"/>可靠性，工程资源就可能被用于被动修复中断和事故，而不是开发新功能或运维工具。这会妨碍主动改进，并形成事事被动应对的文化。</p>
+
+<p>如果企业内部服务不可用，可能有数百乃至数千名员工无法工作。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1087">
+<h1>停机的高昂代价：真实案例</h1>
+<p>一位 Google 员工曾在另一家公司运行和<a data-primary="downtime, cost of" data-type="indexterm" id="id1088"/>管理企业资源规划（ERP）/财务系统，他讲述了下面这段经历：</p>
+<blockquote>
+<p>有一天，我们的主要财务系统发生严重中断。由于备份脚本执行失败，系统连续两天不可用。直接后果是，中断期间我们不得不让大约 400 名财务员工回家，因为他们工作所需的系统无法使用。</p></blockquote>
+
+<p>粗略计算即可看出此次中断的直接成本：</p>
+
+<ul>
+<li><p>生产力损失：400 × 2 = 800 个工作日</p></li>
+<li><p>每名员工的每日完全成本：325 美元</p></li>
+<li><p>中断的直接成本（生产力损失）：260,000 美元</p></li>
+</ul>
+
+<p><em>注意：这里仅计算了可直接统计的成本，未计入财务团队为追赶进度而增加的工作等。</em></p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Increased Toil" data-type="sect2"><div class="sect2" id="ch02_increased_toil">
+<h2>琐事增加</h2>
+
+<p>如果没有 SRE 通过自动化消除手工重复任务的<a data-primary="toil" data-secondary="increased in unreliable systems" data-type="indexterm" id="id1089"/>努力，运维工作就会变成一连串繁重耗时的任务。部署和配置新的基础设施与服务、例行容量规划、日志维护等工作，本可由机器更快、更准确地完成。让人来做，就是把宝贵的工程时间浪费在临时的一次性方案上。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reduced Velocity" data-type="sect2"><div class="sect2" id="ch02_reduced_velocity">
+<h2>速度下降</h2>
+
+<p>人很宝贵，<a data-primary="feature velocity, reduction in unreliable systems" data-type="indexterm" id="id1090"/>机器很便宜。SRE 认识到这一原则，鼓励工程师专注于软件设计等创造性工作，并在必要时处理服务中断。如果工程师不断被拉去做运维任务，他们宝贵的创造力就无法用于工具、自动化和其他系统改进的新方案。发布会因此变慢，功能交付速度也会下降。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Retrofitting" data-type="sect2"><div class="sect2" id="ch02_retrofitting">
+<h2>事后补救</h2>
+
+<p>当服务或系统被广泛使用并发展得庞大复杂时，<a data-primary="retrofitting" data-type="indexterm" id="id1091"/>可靠性故障的代价通常才会变得明显。因此，组织往往等问题积重难返后，才有动力补做可靠性建设。这样做并非不可能，但比从一开始就把可靠性内建于系统复杂得多，成本也高得多。SRE 对可靠性工程的重视，旨在阻止早期运维和架构决策的复合影响，避免问题根深蒂固，变得更难修正且修正过程更具破坏性。在关键服务开发和架构决策的早期就让 SRE 参与，可以降低长期实施最佳实践的成本。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Penalties" data-type="sect2"><div class="sect2" id="ch02_penalties">
+<h2>违约赔偿</h2>
+
+<p>大多数软件即服务（SaaS）产品都要求提供商在未履行合同承诺时赔偿客户。Google Cloud Services 提供的<a data-primary="financial impact, reduction in unreliable systems" data-type="indexterm" id="id1092"/><a href="https://oreil.ly/NmWvQ">服务等级协议（SLA）</a>就是一例。这意味着，面向客户的服务达不到 SLA 时，通常会直接造成财务损失。</p>
+
+<p>Google 对外承诺的 SLA 以内部服务等级目标（SLO）为基础。SLO 是可度量的可靠性目标，会根据业务需求设定和调整。关于 SLO 的设计、实施和使用方法，请参见<a data-type="xref" href="ch08.html#ch08">第 8 章</a>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Cost to Manage" data-type="sect2"><div class="sect2" id="ch02_cost_to_manage">
+<h2>管理成本</h2>
+
+<p>有服务运行和管理<a data-primary="management costs, unreliable systems" data-type="indexterm" id="id1093"/>经验的读者，会了解管理不可用事件的总体成本。作者们的共同经验表明，停机会产生 100 到 1000 倍的扩散成本：重要系统停机 1 小时，可能需要付出 100 到 1000 工时的管理成本。<a data-type="xref" href="#ch02_table_01">表 2-1</a>给出了一个成本明细示例。</p>
+<table id="ch02_table_01">
+<caption><span class="label">表 2-1 </span>管理一小时停机所需工时示例</caption>
+<thead><tr><th>管理行动</th><th>成本（工程师工时）</th></tr></thead>
+<tbody>
+<tr><td><p>运维团队直接处理中断</p></td><td><p>5–10</p></td></tr>
+<tr><td><p>事故后审查、时间线分析、补救行动（跟踪缺陷）</p></td><td><p>10–20</p></td></tr>
+<tr><td><p>内部沟通、中断情况介绍与讨论</p></td><td><p>20–50</p></td></tr>
+<tr><td><p>落实修复事项</p></td><td><p>100</p></td></tr>
+<tr><td><p>客户沟通</p></td><td><p>100</p></td></tr>
+</tbody>
+</table>
+
+<p>除表中所列成本外，还会产生其他后续成本。例如，大多数公司会在重大停机后放慢软件发布速度，进而影响产品路线图。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="System Atrophy over Time" data-type="sect2"><div class="sect2" id="ch02_system_atrophy_over_time">
+<h2>系统随时间衰退</h2>
+
+<p>任何应用都不是孤岛，<a data-primary="system atrophy, unreliable systems" data-type="indexterm" id="id1094"/>其运行环境也不会一成不变。服务必须变更，因此中断和补救是正常现象，应当有所预期。</p>
+
+<p>如果不投资和改进系统，一切都会随时间逐渐衰退。去年只需小修的缺陷，今年可能变成重大项目，因为原本简单的修复现在要求同时更新多个其他系统。SRE 会结合整体业务目标，有意识地识别这些潜在风险并确定其优先级。</p>
+
+<p>在复杂系统中，工程师尝试变更却以意外方式失败时，往往会感到震惊。最糟糕的情况下，工程师会开始害怕这些应用，于是不再变更，问题也就不断恶化，整个系统陷入恶性循环（作者的亲身经历见下面的边栏）。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1095">
+<h1>技术债的累积伤害</h1>
+<p>一家 SaaS 初创公司曾在三四年内飞速<a data-primary="technical debt" data-secondary="cumulative effect of" data-type="indexterm" id="id1096"/>增长，收入连续多年增长 200%。公司把业务增长置于后端环境治理、补丁更新等工作之上。</p>
+
+<p>但持续不断的停机最终开始消磨客户的耐心，这家初创公司渐渐背上了“不可靠”的名声。</p>
+
+<p>最后，整个运维团队不得不全员投入，用 12 个月逐一梳理所有系统，补齐基础治理欠账。经过这些努力，全球正常运行时间从 99.84% 提高到 99.999%，也就是从每月停机一小时降至每月仅停机数秒。</p>
+
+<p class="less_space pagebreak-before">工程团队向 CEO 提交方案，请其批准解决问题所需的计划维护量时，发生了下面的对话：</p>
+<blockquote>
+<p><em>CEO：</em>方案看起来合理，我们会在 Z 阶段完成。<br/>
+<em>运维负责人：</em>抱歉，英文字母已经不够我们给这份恢复计划的各阶段命名了。</p></blockquote>
+</div></aside>
+
+<p>系统衰退通常表现为手工绕过措施越来越多，或停机与性能下降程度高于预期。SRE 重视 SLO 和减少琐事，通常会持续改善或修复这些状况，从而降低成本并提高服务质量。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Patterns of SRE for Different Organizations" data-type="sect1"><div class="sect1" id="ch02_patterns_of_sre_for_different_organizations">
+<h1>不同组织的 SRE 模式</h1>
+
+<p>你需要多高的可靠性？只有先认真回答这个问题，SLO 和其他预期可靠性指标才能成为有效的规划与运维工具。答案因组织而异，也会随内外部因素不断变化，但衡量价值的方式始终相同：在构建和维护可靠系统的收益与成本之间取得平衡。</p>
+
+<p>确定可靠性价值不存在放之四海而皆准的量化模型，因为不同组织对业务风险和运维成本的估值不可能完全相同。不过，处于相近领域和发展阶段的组织，面对的内外部市场与技术力量也相似，因此往往会以相似方式评估可靠性。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Early-Stage and Smaller Organizations" data-type="sect2"><div class="sect2" id="ch02_early_stage_and_smaller_organizations">
+<h2>早期和小型组织</h2>
+
+<p>理想情况下，组织从开发和运维生命周期<a data-primary="small organizations, SRE practices" data-type="indexterm" id="smlorgs_sreprct"/><a data-primary="early-stage organizations, SRE practices" data-type="indexterm" id="esorgs_sreprct"/><a data-primary="organizations" data-secondary="maturity level and SRE practices" data-type="indexterm" id="orgs_matorg_sreprct"/>之初就应考虑可靠性，并尽早将其融入流程。以后扩展已有的可靠性结构，远比从无到有地引入一套结构成本更低、干扰更小。</p>
+
+<p>小型和早期组织的资源通常有限，可能会暂缓可靠性以及安全等其他事项，以便集中力量快速开展早期开发。这种理由很诱人：先全力让产品上市，可靠性以后再说。但恰恰是在这个阶段，少量 SRE 实践投入的实施成本最低，长期回报却最高。</p>
+
+<p>下面这些 SRE 实践相对简单，实施成本也不高，却能立刻改善系统可靠性；它们还能保持功能发布平稳、频繁且可预测，从而长期维持开发速度。</p>
+
+<section data-pdf-bookmark="Automated unit and integration test coverage" data-type="sect3"><div class="sect3" id="ch02_automated_unit_and_integration_test_coverage">
+<h3>自动化单元测试与集成测试覆盖</h3>
+
+<p>缺陷发现得越早，修复成本就越低，能够造成的损害也越小。自动化测试在开发人员工作站上发现缺陷时，修复成本可以接近于零。同一个缺陷一旦进入生产环境，由此造成的中断、数据损坏和其他问题，代价可能高得令人痛苦。</p>
+</div></section>
+
+<section data-pdf-bookmark="Automated continuous integration/continuous deployment pipeline" data-type="sect3"><div class="sect3" id="ch02_automated_ci_cd_pipeline">
+<h3>自动化持续集成/持续部署流水线</h3>
+
+<p>让软件从编写到部署之间的所有步骤实现自动化、可重复且结果确定，可以显著降低把问题变更带入生产环境的风险（参见<a data-type="xref" href="ch18.html#ch18">第 18 章</a>）。在 Google，进入生产环境的变更是引发中断的最大一类原因。手工部署到生产环境不仅耗时多到难以承受，还极易出错，无法接受。CI/CD 通常会强制实施本节讨论的许多最佳实践，或将其设为默认能力，并让这些实践很容易融入所有软件开发和部署流程。</p>
+</div></section>
+
+<section data-pdf-bookmark="Observability" data-type="sect3"><div class="sect3" id="ch02_observability">
+<h3>可观测性</h3>
+
+<p>实施高质量服务监控可能成本不低，但要及时了解用户遇到的问题，并在中断期间有效行动，它不可或缺。为整个服务配备良好的检测手段，对调试和故障排查很重要，但目标并不是让工程师一直盯着仪表板。应让机器监视服务，只在出现问题时通知宝贵的工程师。告警要可操作，并能反映糟糕的用户体验，这样工程师收到告警后，投入的时间才有价值。良好的监控加上精心选择的服务可靠性指标，构成 SLO 的基础，使组织能够明智决定工程资源应投向何处。参见<a data-type="xref" href="ch09.html#ch09">第 9 章</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident response process" data-type="sect3"><div class="sect3" id="ch02_an_incident_response_process">
+<h3>事故响应流程</h3>
+
+<p>在组织内维持一套有效的事故响应体系，是一项价值非常明确的最佳实践。中断成本每分钟都在增长，因此，一套经过演练的简单体系只要能缩短中断时间、降低严重程度，就会立即为组织带来可衡量的价值。响应体系不必复杂：只要明确响应人员角色、能够有效缓解中断，并记录有关中断的关键信息，使工程团队可以防止同一故障模式再次发生，就已经足够。中断解决后，通过无责事后总结推动渐进式工程改进也同样重要。参见<a data-type="xref" href="ch10.html#ch10">第 10 章</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Design review" data-type="sect3"><div class="sect3" id="ch02_design_review">
+<h3>设计评审</h3>
+
+<p>关注可靠性的设计评审不必成为拖慢发布的繁重流程。它的目标恰恰相反：趁问题还容易快速、低成本修正时尽早发现，从而长期维持发布速度。流程可以非常简单，比如在例行工程会议上花几分钟分析和讨论拟议的服务变更，重点寻找潜在的可靠性风险。在这个阶段投入时间考虑故障域隔离、冗余、限流、回滚和数据恢复等最佳实践，可以处理早期故障和技术债的常见来源。更稳定的发布速度以及更少、更轻的中断，会让这项投入获得<a data-primary="small organizations, SRE practices" data-startref="smlorgs_sreprct" data-type="indexterm" id="id1097"/><a data-primary="early-stage organizations, SRE practices" data-startref="esorgs_sreprct" data-type="indexterm" id="id1098"/>数倍回报。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Growing and Mature Organizations" data-type="sect2"><div class="sect2" id="ch02_growing_and_mature_organizations">
+<h2>成长中和成熟的组织</h2>
+
+<p>前面介绍的小型及早期组织的所有收益，同样适用于<a data-primary="growing organizations, SRE practices" data-type="indexterm" id="grwlorgs_sreprct"/><a data-primary="mature organizations, SRE practices" data-type="indexterm" id="matorgs_sreprct"/>更成熟的组织；只是在这些组织中，持续扩展和高效资源管理更加重要。随着组织成长，下面这些原因说明了为什么应继续发展 SRE。</p>
+
+<section data-pdf-bookmark="Strategic engineering decisions" data-type="sect3"><div class="sect3" id="ch02_strategic_engineering_decisions">
+<h3>战略性工程决策</h3>
+
+<p>SLO 不只是代表用户对服务可靠性期望的目标，还是一种沟通工具。组织内不同部门有着不同的激励因素，SLO 代表它们之间的共同约定，因此是组织制定战略决策、决定如何投入工程时间和资源的关键。成熟组织拥有许多服务，SLO 能提供有效确定工作优先级所需的数据，确保工程师专注于业务最关键服务最重要的特性。有些服务值得付出更高成本来提高可靠性，另一些服务则以成本较低的可靠性水平就足以完成使命。这种有意识的资源分配能优化工程预算，避免在影响较小的领域浪费精力，也让组织摆脱被动应对中断和工程问题所造成的限制，继续成长。</p>
+</div></section>
+
+<section data-pdf-bookmark="Managing complexity" data-type="sect3"><div class="sect3" id="ch02_managing_complexity">
+<h3>管理复杂性</h3>
+
+<p>成熟系统会随时间积累复杂性，潜在缺陷、过时依赖项和陈旧配置也会增加中断风险。这些问题当然可能引发灾难性中断，但复杂性也往往会增加并放大各种小问题；这些问题叠加后会挤占工程资源，推高运维成本。SRE 通过标准化和自动化，主动防止并减少这种有害的技术债，使系统更易管理、更容易理解，最终降低运行和维护成本。</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident response" data-type="sect3"><div class="sect3" id="ch02_incident_response">
+<h3>事故响应</h3>
+
+<p>高效、有效的事故响应对大型成熟组织尤其有价值。最明显的原因是，这类组织通常处理规模更大、价值更高的交易，因此每一秒中断的成本都更高。成熟组织通常也更受媒体关注，公众对其可靠性的要求高于初创公司，所以围绕中断的负面报道往往会被放大。有效事故响应对大型组织最容易被低估的好处，或许是明确的角色分工能让中断处理保持顺畅。规模越大，复杂性越高；缺乏组织、充满临时行动与沟通的响应过程很容易陷入混乱，阻碍服务恢复。参见<a data-type="xref" href="ch10.html#ch10">第 10 章</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Centrally maintained tools" data-type="sect3"><div class="sect3" id="ch02_centrally_maintained_tools">
+<h3>集中维护的工具</h3>
+
+<p>在 Google 这样的大型组织中，SRE 自动化可能会演进为集中式基础设施或平台，为组织内许多乃至全部工程团队的常见基础设施需求提供标准、可靠的解决方案。开发团队因此可以专注各自的业务方案，提高组织整体效率。标准化还会改善事故响应，因为组织各处的响应人员都已熟悉相关基础设施；如果组织不同部门<a data-primary="growing organizations, SRE practices" data-startref="grwlorgs_sreprct" data-type="indexterm" id="id1099"/><a data-primary="mature organizations, SRE practices" data-startref="matorgs_sreprct" data-type="indexterm" id="id1100"/><a data-primary="organizations" data-secondary="maturity level and SRE practices" data-startref="orgs_matorg_sreprct" data-type="indexterm" id="id1101"/>各自维护不同工具，就未必能做到这一点。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="What to Consider When Adopting SRE" data-type="sect1"><div class="sect1" id="ch02_what_to_consider_when_adopting_sre">
+<h1>采用 SRE 时需要考虑什么</h1>
+
+<p>无论规模大小，每个<a data-primary="adopting SRE" data-type="indexterm" id="sre_adopt"/>组织采用 SRE 的方式和历程都不相同。各自的起点、优先事项和期望终点均有差异。因此，规划 SRE 历程时需要问自己几个关键问题：</p>
+<dl>
+<dt>你面临的最大运维挑战是什么？</dt>
+<dd>
+<p>如果没有先理解或至少识别问题，就把 SRE（或任何其他实践）当成一把“锤子”，希望用它解决大量问题，成功的可能性很低。花些时间找出过去一两个季度最主要的几个症结：中断是否频繁或严重？部署是否推出缓慢或经常需要回滚？高琐事负担是否造成积压长期无人处理？团队是否动力不足或精疲力竭？实践能否随规模扩展而持续？可靠性和性能是否达不到客户期望？后续章节介绍的最佳实践将帮助你解决这些问题。</p>
+</dd>
+</dl>
+<dl class="less_space pagebreak-before">
+<dt>你有哪些可用资源？</dt>
+<dd>
+<p>拥有兼具软件工程和运维技能的工程师，是 SRE 的基础。如果目前没有这样的人才，你是否准备好招聘和/或培训？压力升高时，你的文化是否会退回到下意识的权宜修补？还是愿意投入必要的工程时间和资源来构建工具与自动化，并处理事后总结所发现的中断根因？</p>
+</dd>
+<dt>能否从小处着手？</dt>
+<dd>
+<p>不必一次就让整个组织全部改用 SRE 实践。即使只为一项关键服务——或最能从中受益的服务——实施 SLO、可操作告警和减少琐事等基础实践，也能成为试验场，帮助 SRE 在组织内赢得更广泛的支持。</p>
+</dd>
+<dt>风险有多大？</dt>
+<dd>
+<p>要确定风险，就必须量化服务可靠性低下给业务带来的成本。无论是流式传输视频、处理零售交易还是支持医疗操作，每项服务都有用户，用户也都对它抱有一定的可靠性期望。如何理解并量化这些期望，以及服务低于或超过期望时该怎么做，是<a data-type="xref" href="ch08.html#ch08">第 8 章</a>的主题。</p>
+</dd>
+<dt>用户交互具有什么性质？</dt>
+<dd>
+<p>系统不可用时，查询或购买等用户交互会永久丢失，还是用户或下游客户端会直接重试？非常短暂的中断通常比持续时间长的中断危害小得多，即便前者相对频繁也是如此，因为多数用户会再试一次（但冲动购买或限时抢购等情况并非总是如此）。中断持续越久，用户重试的意愿往往越低，因此中断成本会随时间增长。</p>
+
+<p>演唱会门票或“开门抢购”商品等需求极高、供应极少的场景中，即使服务发生中断，也很可能仍有足够需求确保所有商品最终售出。企业或许不会立即遭受财务损失，但客户认为自己被剥夺了机会而产生的不满，可能造成严重的声誉损害。</p>
+</dd>
+<dt>时间是否是重要因素？</dt>
+<dd>
+<p>有些组织每年、每月甚至每天都有业务关键时段，可靠性的价值会在这些时段急剧上升，因为此时发生故障造成的财务或声誉影响最大。确保关键服务在这些时段正常运行，是组织的头等要务。最坏情况下，如果服务仍然失败，尽快将<a data-primary="adopting SRE" data-startref="sre_adopt" data-type="indexterm" id="id1102"/>其恢复就成为最高优先级。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="value-conclusion">
+<h1>结语</h1>
+
+<p>站点可靠性工程的原则与实践，能为规模和发展阶段不同的组织带来可衡量的收益。采用 SRE 实践可以减少系统停机造成的高昂损失，直接改善财务表现，但它更广泛的商业优势不那么显而易见。SRE 把工程原则用于运维，使服务能够高效扩展，减少持续且昂贵的手工干预，从而释放宝贵的工程时间。技术团队因此可以专注于按可预测进度交付创新方案，而不再被修补和中断吞噬精力。组织应把 SRE 视为一项商业投资：它既优化运维支出，也夯实运维和基础设施基础，从而支撑组织的战略目标。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1078"><sup><a href="ch02-zh.html#id1078-marker">1</a></sup> Dustin Smith，<a href="https://oreil.ly/1StXt">《2021 Accelerate State of DevOps 报告讨论职业倦怠和团队绩效》</a>，Google Cloud 博客（2021）。</p><p data-type="footnote" id="id1084"><sup><a href="ch02-zh.html#id1084-marker">2</a></sup>如今，Google 的工程师会在移动设备上收到事故告警；但最初告警发送到实体寻呼机（pager），这个名称也就沿用至今。</p></div></div></section></body></html>
