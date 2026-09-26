@@ -1,0 +1,523 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>从事件中学习</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 11. Learning from Incidents" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch11">
+<h1><span class="label">第 11 章　</span>从事件中学习</h1>
+
+
+<p class="byline">作者：James Brookbank、Michelle Brush、Sue Lueder 和 Tim Falzone<br/>
+
+<span class="keep-together">以及 Garrett Holthaus</span></p>
+
+<p>要让大规模运行的系统保持可靠，停机就不能只被视为需要妥善解决的故障；它还是不可多得的学习机会。十多年来，Google 的站点可靠性工程实践与文化一直支持我们从实际发生以及险些发生的系统故障中持续、反复地学习。SRE 的这一基本方面强调无责事后复盘、心理安全、协作和管理层支持，目的是理解事情为何发生、改进整个系统，并从每次停机中获得最大收益。</p>
+
+<p>本章将介绍事件分析中历久弥新的核心原则，并深入说明过去十年间我们对这些原则的理解和运用发生了怎样的演变。你将看到，我们如何完善实践、运用先进工具，并加深对人为因素的认识，从而通过事件学习构建更具韧性、更稳健的服务。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="Principles and Practices" data-type="sect1"><div class="sect1" id="ch11_principles_and_practices">
+<h1>原则与实践</h1>
+
+<p>初版 <a href="https://sre.google/sre-book">《SRE》</a>和
+<a href="https://sre.google/workbook/postmortem-culture"><em>《站点可靠性工作手册》</em>第 10 章</a>介绍了 Google 如何依靠根深蒂固的无责事后复盘文化<a data-primary="incidents" data-secondary="blameless postmortems" data-type="indexterm" id="id1867"/><a data-primary="blameless postmortems" data-type="indexterm" id="id1868"/><a data-primary="learning" data-secondary="incident postmortems" data-type="indexterm" id="id1869"/>从事件中学习，以及其中的关键原则和实践。十年过去，从失败中学习仍是构建和运行韧性系统的核心。本节将回顾事件分析与事后复盘的这些基础经验，包括如何将其落实为日常实践。在此基础上，我们还会探讨过去十年中实践、工具和认识的演进与进步，说明我们把事件转化为宝贵经验的方法如何逐渐成熟。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Foundations" data-type="sect2"><div class="sect2" id="ch11_foundations">
+<h2>基础原则</h2>
+
+<p>本书第一版的<a href="https://sre.google/sre-book/postmortem-culture">第 15 章</a>介绍了无责事后复盘文化的原则基础。下面这些基本理念至今依然适用：</p>
+<dl>
+<dt>优先从失败中学习</dt>
+<dd>
+<p><a data-primary="incidents" data-secondary="postmortems" data-tertiary="principles" data-type="indexterm" id="id1870"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="principles" data-type="indexterm" id="id1871"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="principles" data-type="indexterm" id="id1872"/>事后复盘的主要目标，是总结关键经验并将其沉淀到组织中，从而最大限度地发挥一次事件的价值。无论是由于影响范围大、持续时间长、监控失效，还是产生了级联副作用，任何值得采取补救措施的事件都提供了学习机会。为此，事后复盘最不可或缺的内容包括：</p>
+
+<ul>
+<li>
+<p>事件的<em>关键事实</em>，例如时间线、相关活动和参与人员</p>
+</li>
+<li>
+<p><em>影响分析</em>，说明哪些客户、用户或系统因事件而出现服务降级</p>
+</li>
+<li>
+<p>导致事件发生的<em>促成因素</em>，例如偏差、活动或数据</p>
+</li>
+<li>
+<p><em>经验总结</em>，把事件经过与领域专家的<span class="keep-together">分析</span>综合起来</p>
+</li>
+</ul>
+
+<p>这些内容共同体现了组织从事件这笔计划外投入中获得的回报，并为提升韧性的行动计划提供依据。</p>
+</dd>
+<dt>强调无责</dt>
+<dd>
+<p>无责是 Google 事后复盘文化的核心原则。事件审查必须着眼于理解系统性原因，而不是追究个人责任。这种做法是保障心理安全和有效学习的基础。关于无责文化的详细讨论，请参阅<a data-type="xref" href="ch04-zh.html#ch04">第 4 章</a>。</p>
+</dd>
+<dt>协作与团队合作</dt>
+<dd>
+<p>复杂系统由相互依赖的大型团队共同打造。当系统以意想不到的方式失效时，各团队必须合作找出众多促成因素，并共同设计纠正措施。贯穿事后复盘过程的这种协作会推动未来韧性的提升，因为团队合作本身就能增强团队应对今后事件的能力。</p>
+</dd>
+<dt>管理层支持、可见性与激励</dt>
+<dd>
+<p>领导者决定组织的基调和优先事项。当领导者以身作则践行无责与支持，并提高事后复盘和事件学习计划的可见度时，个人和团队就会把这些活动置于日常事务之上，进而增强系统韧性。围绕撰写事后复盘和完成高优先级行动项建立制度化激励，还能进一步彰显这项工作的影响和重要性。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Operationalizing the Principles" data-type="sect2"><div class="sect2" id="ch11_operationalizing_the_principles">
+<h2>将原则落到实处</h2>
+
+<p><em>《站点可靠性工作手册》</em>重点介绍了一些具体活动和行为，用于把无责事后复盘<a data-primary="incidents" data-secondary="postmortems" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1873"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1874"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="operationalizing the principles" data-type="indexterm" id="id1875"/>与学习文化落实到实际工作中。其中包括：</p>
+<dl>
+<dt>全面研究事件</dt>
+<dd>
+<p>鉴于相关系统十分复杂，完整记录与事件有关的日志、事件和活动至关重要。详细的时间线能帮助我们找出未来尽早发现并预防类似事件的机会。此外，一次事件往往由多个因素共同促成。要制定有效的纠正措施，就必须识别这些因素，其中也包括塑造了事前经过和事件响应本身的社会结构与行为。</p>
+</dd>
+<dt>避免评判</dt>
+<dd>
+<p>归根结底，推动这些事后复盘实践的是人，因此必须处理任何会侵蚀心理安全的行为和沟通方式。采用开放且不带评判的问题，才能得到更好的分析。例如，不要问“你为什么觉得部署这段代码没问题？”这类容易让人产生防备的问题。可以改问：“当时情境中的哪些因素，让部署这段代码看起来是最佳选择？”这样，当事人就有机会说明系统或组织的哪些特点影响了自己的决定。</p>
+</dd>
+<dt>事件缓解与预防</dt>
+<dd>
+<p>有时必须在不稳定的系统上先做快速或临时修复，以争取时间构建合适的一整套修复方案和工具。但如果这些权宜之计保留太久，可能滋生更严重的脆弱性、缺陷和事件。一份稳健的事件后行动计划，不仅要考虑如何预防、发现或缓解今后的同类事件，还要探索降低影响或更深层次的干预措施，为系统注入更强韧性。</p>
+</dd>
+<dt>完成行动项</dt>
+<dd>
+<p>可靠地执行缓解和预防计划，不仅能使系统更加稳定、更具韧性，也能增强大家对整个事后复盘流程的信心。应明确每个行动项的负责人，并通过激励让其优先完成这些事项。确保团队有足够精力实施变更也同样关键。这样才能保证修复方案稳健，避免匆忙打补丁反而引入更多脆弱性。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>传播与共享</dt>
+<dd>
+<p>让事后复盘及后续行动计划清晰可见、易于获取，可以使其影响超越直接参与的团队。Google 每周发送经过筛选整理的停机报告，每半年还会面向全公司发布名为 <em>Google’s Greatest Hits</em> 的通讯。这些报告包含事后复盘链接，确保 Google 从这项工作中获得的经验能够传播到 SRE 团队之外。</p>
+</dd>
+</dl>
+
+<p>正是这些可衡量、可观察的活动，让基础原则变得具体清晰，并确保它们在工程团队演进和成长的过程中延续下去。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Evolving the Learning from Incident Practices" data-type="sect2"><div class="sect2" id="ch11_evolving_the_learning_from_incident_practices">
+<h2>事件学习实践的演进</h2>
+
+<p class="fix_tracking">无责事后复盘文化和<a data-primary="incidents" data-secondary="postmortems" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="incid_pstmrt_sts"/><a data-primary="postmortems" data-secondary="incidents" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="pstmrt_inc_sts"/><a data-primary="learning" data-secondary="incident postmortems" data-tertiary="sociotechnical system" data-type="indexterm" id="lrn_incpst_sts"/><a data-primary="sociotechnical systems" data-secondary="incidents" data-type="indexterm" id="sts_inc"/>事件学习的原则与实践，奠定了如今 Google SRE 全面持续学习的基础。得益于这个稳定基础，各团队不断调整和演进，以扩大实践覆盖面、提高效率。本节将详细介绍其中一些进展。许多进展都源于一种日益深入的认识：提高可靠性不仅涉及软件和硬件，也涉及系统中的人。研究事件时，我们用<em>社会技术系统</em>这一术语把人的因素也纳入其中。在实践中，这意味着重点关注以下方面：</p>
+<dl>
+<dt>更深入的社会技术系统分析与学习</dt>
+<dd>
+<p>Google SRE 已逐步把安全科学以及系统与控制理论应用到实践中。<sup><a data-type="noteref" href="ch11-zh.html#id1876" id="id1876-marker">1</a></sup>这种系统思维使我们能够正视系统固有的复杂性，覆盖从软件服务器和客户端应用，到数据中心、网络和容量系统的各个层面。多种互为补充的方法和实践为它提供支持，其中包括：</p>
+
+<ul>
+<li>
+<p>系统理论过程分析（System-Theoretic Process Analysis，STPA）<sup><a data-type="noteref" href="ch11-zh.html#id1877" id="id1877-marker">2</a></sup></p>
+</li>
+<li>
+<p>基于系统理论的因果分析（Causal Analysis based on Systems Theory，CAST）<sup><a data-type="noteref" href="ch11-zh.html#id1878" id="id1878-marker">3</a></sup></p>
+</li>
+<li>
+<p>记录事件的完整“故事”，发挥叙事作为学习载体的力量</p>
+</li>
+<li>
+<p>记录并分析详细的沟通日志</p>
+</li>
+<li>
+<p>与事件响应人员开展开放讨论，理解他们的心智模型和决策过程</p>
+</li>
+</ul>
+</dd>
+<dt>独立而全面的评估</dt>
+<dd>
+<p>许多团队会<a data-primary="incident analysis" data-type="indexterm" id="id1879"/>指定一名独立的事后复盘负责人，由未参与该事件的人开展公正分析。此人负责收集信息、推动分析，并确保从整体上审视事件。为此，往往需要访谈那些参与了停机前和停机期间各项决策的人。全面分析的目标，是找出事件各个方面的促成因素，包括硬件或软件开发、系统运行、事件发现与响应过程中所作的决定。负责人不会把某个决定单独挑出来判定为错误，而是以无责方式记录当时有哪些因素使这个决定看起来合理。要做好这项工作，必须特别注意避免结果偏差和后见之明偏差。前者是只根据结果评价决策，而不看当时推理是否合理；后者则是假定那些只有事后才显而易见的事情，本来就能提前知道。事后复盘负责人还会考察哪些方面做得正确，并设法确保今后能够持续采取这些正确做法。</p>
+</dd>
+<dt>在无责与负责之间取得平衡</dt>
+<dd>
+<p>在<a data-primary="blamelessness" data-secondary="balancing with accountability" data-type="indexterm" id="id1880"/>事后复盘过程中，Google 会确保最了解事件前因、相关决策和当时情境的人参与分析与补救。更重要的是，我们会<em>邀请</em>并<em>赋权</em>那些参与了事件促成决策的人，让他们发现改进机会并负责交付解决方案。这样，学习讨论中就不再充斥指责和归罪，同时也强调了人的参与对增强系统韧性至关重要。这种做法不是因所谓的错误惩罚当事人，而是请他们参与改进系统的工作，有时称为<a href="https://oreil.ly/89N63"><em>恢复性问责</em></a>。它是真正学习和改进的必要条件，有助于在不牺牲心理安全的前提下建立负责文化。<sup><a data-type="noteref" href="ch11-zh.html#id1881" id="id1881-marker">4</a></sup></p>
+</dd>
+<dt>以客户为中心</dt>
+<dd>
+<p>过去十年，Google Cloud 已成为 Google 的一项关键业务，因此客户成功也成为事件学习中的核心考量。事后复盘会纳入全面的客户影响分析，记录事件期间与客户的沟通，分析客户是否有可用的临时规避方案，并寻找改善整体客户体验的机会。补救<a data-primary="postmortems" data-secondary="remediation plans" data-type="indexterm" id="id1882"/><a data-primary="remediation plans, postmortems" data-type="indexterm" id="id1883"/>计划会说明如何更好地衡量、预防和降低客户影响，以及如何改善客户沟通、增强客户信心。这提高了客户对 Google Cloud 可靠性的信任，也为客户带来了更好的业务成果。<a data-type="xref" href="#ch11_case_studies">“案例研究：巴黎数据中心停机”</a>展示了这种做法。</p>
+</dd>
+<dt>分层审查</dt>
+<dd>
+<p>当事件事后复盘在组织的多个层级开展审查时，组织<a data-primary="organizational learning, layered postmortem reviews" data-type="indexterm" id="id1884"/>学习就能更加深入。Google 团队优先采用以下最佳实践：</p>
+
+<ul>
+<li>
+<p><em>同级审查</em>：独立审查者评估事后复盘，确保经验总结和行动计划能够降低未来影响，例如更早发现问题、缓解影响或使沟通更加顺畅。</p>
+</li>
+<li>
+<p><em>团队审查</em>：团队审查事后复盘，找出可以通过更广泛的重构或更好的设计实践来降低复杂度的领域。</p>
+</li>
+<li>
+<p><em>组织内传播</em>：在整个组织中分享事后复盘和最佳实践，可以增进对相邻系统行为的了解，并提高可靠性。</p>
+</li>
+<li>
+<p><em>管理层审查</em>：高级领导者以无责方式持续审查可靠性趋势、高影响事件和成功发布，以监测社会技术系统，并示范能够强化安全文化的行为。</p>
+</li>
+</ul>
+</dd>
+<dt>改进事后复盘自动化</dt>
+<dd>
+<p>过去<a data-primary="automation" data-secondary="incident postmortems" data-type="indexterm" id="id1885"/>十年间，SRE 团队用于管理和研究事件的系统变得更加成熟、互联和自动化。与此同时，我们仍强调由人主导，对事件响应和缓解过程中出现的模式与反模式进行更深入的讨论和研究。这些进展让 SRE 能够收集复杂系统行为的关键数据，并结合对人类行为的洞察。进而，我们可以开展范围更广的社会技术系统分析，获得更深刻的认识，并制定更持久有效的缓解计划。Google 的 AI 工具（例如 Gemini Notebook）也带来了新的能力和自动化手段，进一步增强了事件学习。例如，可以向一个 Gemini Notebook 实例提供大量事后复盘文档，然后询问 AI：某项拟议的设计变更是否原本能够避免其中一些<a data-primary="incidents" data-secondary="postmortems" data-startref="incid_pstmrt_sts" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="id1886"/><a data-primary="postmortems" data-secondary="incidents" data-startref="pstmrt_inc_sts" data-tertiary="sociotechnical system applied to learning" data-type="indexterm" id="id1887"/><a data-primary="learning" data-secondary="incident postmortems" data-startref="lrn_incpst_sts" data-tertiary="sociotechnical system" data-type="indexterm" id="id1888"/><a data-primary="sociotechnical systems" data-secondary="incidents" data-startref="sts_inc" data-type="indexterm" id="id1889"/>事件。</p>
+</dd>
+</dl>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Theoretical Research in the Field of Safety Science" data-type="sect1"><div class="sect1" id="ch11_theoretical_research_in_the_field_of_safety_science">
+<h1>安全科学领域的理论研究</h1>
+
+<p>一直以来，Google 都采用非常扎实的<a data-primary="learning" data-secondary="approach to learning from incidents" data-type="indexterm" id="lrn_applrninc"/><a data-primary="incidents" data-secondary="approach to learning from" data-type="indexterm" id="incid_applrn"/>韧性工程方法。<sup><a data-type="noteref" href="ch11-zh.html#id1890" id="id1890-marker">5</a></sup>不过，这些方法主要来自经验学习和实践探索。当某种情境需要采用不同方法时，我们常会借助外部研究者的成果，阐明为什么要以某种方式行事的底层理论，以及特定团队或情境可以采取哪些不同做法。需要注意的是，这些理念并没有统一应用于整个 Google SRE。各团队会根据具体情况和需要，选择最适合解决当前问题的理论。这体现了这样一种思想：“所有模型都是错的，但有些模型很有用。”<sup><a data-type="noteref" href="ch11-zh.html#id1891" id="id1891-marker">6</a></sup></p>
+
+<p>对于简单系统，从事件中学习意味着拆解并理解各个组件及其故障状态。但系统规模达到一定程度后，就不再是简单的线性链条，而会变得更加复杂。组件之间的相互作用会催生新的、往往不可预测的系统级行为；即使所有组件都完全按设计运行，这些相互作用仍可能导致停机。<em>复杂自适应系统</em>（complex adaptive system，CAS）的概念有助于<a data-primary="complex adaptive system" data-see="CAS" data-type="indexterm" id="id1892"/><a data-primary="CAS (complex adaptive system)" data-type="indexterm" id="id1893"/>我们理解这些交互。CAS 由许多彼此连接、相互作用的组件和主体组成，其中包括软件、硬件和人的因素；它们会根据彼此及环境的变化调整自身行为。要应对复杂行为和涌现行为，<a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_applrninc" data-type="indexterm" id="id1894"/><a data-primary="sociotechnical systems" data-type="indexterm" id="id1895"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="incid_applrn" data-type="indexterm" id="id1896"/>我们需要采用系统思维。<sup><a data-type="noteref" href="ch11-zh.html#id1897" id="id1897-marker">7</a></sup></p>
+
+<p>以下各节选取了一些 Google SRE 团队采用的相关科学研究、模型和框架。如前所述，各团队会根据自身的具体情境和需要，决定应用哪些概念。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Swiss Cheese Model" data-type="sect2"><div class="sect2" id="ch11_swiss_cheese_model">
+<h2>瑞士奶酪模型</h2>
+
+<p><a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Swiss cheese model" data-type="indexterm" id="id1898"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Swiss cheese model" data-type="indexterm" id="id1899"/><a data-primary="CAS (complex adaptive system)" data-secondary="Swiss cheese model" data-type="indexterm" id="id1900"/>CAS 事件分析中历史最悠久的概念之一，是由<a data-primary="Reason, James T." data-type="indexterm" id="id1901"/> James T. Reason 提出的瑞士奶酪模型。该模型解释了显性故障与潜在故障的组合如何相互作用，形成最终导致停机的涌现条件。<sup><a data-type="noteref" href="ch11-zh.html#id1902" id="id1902-marker">8</a></sup>Google 的一些安全团队也常把它用作<a data-primary="defense in depth" data-secondary="Swiss cheese model" data-type="indexterm" id="id1903"/>纵深防御概念。重要的是，每一片“奶酪”都混合了技术组件和人为因素。把这个模型用于事件发现，还能覆盖险情。例如，只剩最后一层防线尚未失守，或者因为无关原因而影响较小。在事后复盘中，我们不仅考察哪里做对了、哪里做错了，还要找出哪些地方只是运气好。与航空等领域一样，对险情的分析和主动改进有助于我们确定优先事项，在类似事件发生前采取行动。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk Management in a Dynamic Society" data-type="sect2"><div class="sect2" id="ch11_risk_management_in_a_dynamic_society">
+<h2>动态社会中的风险管理</h2>
+
+<p>在 <a data-primary="Rasmussen, Jens" data-type="indexterm" id="id1904"/>Jens Rasmussen 的风险管理模型中，持续存在的<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="risk management" data-type="indexterm" id="id1905"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="risk management" data-type="indexterm" id="id1906"/>经济压力和可靠性压力共同形成一种稳定流动、而非静止稳定的状态。<sup><a data-type="noteref" href="ch11-zh.html#id1907" id="id1907-marker">9</a></sup></p>
+
+<figure><div class="figure" id="ch11_fig01">
+<img alt="Jens Rasmussen 风险管理模型示意图：追求效率和最少投入的压力会把绩效推向可接受绩效的边界，形成“布朗运动”。" src="assets/sre2_1101.png"/>
+<h6><span class="label">图 11-1　</span>存在强烈梯度时，行为很可能向可接受绩效的边界迁移</h6>
+</div></figure>
+
+<p>在这个模型中，事件发生在可接受绩效的边界附近，误差范围可能使其略高或略低。等事件真正发生时，我们已经进入“救火”阶段。因此，需要持续开展“防火”工作，把系统推离边界。为改善安全文化，SRE 会把事后复盘与 STPA 等主动工具结合使用；后者可在系统故障发生前预判风险，详见<a data-type="xref" href="ch12-zh.html#ch12">第 12 章</a>。<sup><a data-type="noteref" href="ch11-zh.html#id1908" id="id1908-marker">10</a></sup></p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A Tale of Two Safeties" data-type="sect2"><div class="sect2" id="ch11_a_tale_of_two_safeties">
+<h2>两种安全观</h2>
+
+<p>理解<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="lrn_app_safiii"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="inc_app_safiii"/><a data-primary="Safety I system" data-type="indexterm" id="sfti"/><a data-primary="Safety II system" data-type="indexterm" id="safii"/>社会技术系统的另一个关键视角，是更清楚地区分系统理论上的运行方式与实际运行方式。<a data-primary="Hollnagel, Erik" data-type="indexterm" id="id1909"/>Erik Hollnagel <a href="https://oreil.ly/vcENY">指出</a>，人们在理论上可以设想许多防止问题发生的办法；然而在实践中，即使设置了所有计划中的防线，问题仍然会发生。这时，就必须依靠人的适应能力和灵活性来维持系统运行。外界常通过<em>安全 II</em>（与安全 I 相对）方法讨论这种差异。安全 I 侧重设法防止坏事发生。安全 II 则把系统的正常运行视为技术组件与人不断因应变化所作调整的共同结果。它把思维方式从追究事情为何出错，转向确保正确的事情更有可能发生。<sup><a data-type="noteref" href="ch11-zh.html#id1910" id="id1910-marker">11</a></sup></p>
+
+<p>一线人员对具体系统的专业经验，是这一过程不可或缺的一环。因此，Google 有一项值得强调的默认做法：团队既构建也运行自己管理的服务，从而积累本系统的一线实践经验。系统之所以能够可靠运行，是因为人们具有灵活性并能持续适应变化，而不是因为系统经过完美设计、足以杜绝故障。前文提到了 STPA 等主动方法；灾难韧性测试（Disaster Resilience Testing，DiRT）等工作也能帮助 Google 更好地保障系统有效运行，而不是等事件发生后再被动应对。另一个主动方法的例子，是我们投入资源构建通用缓解措施，用来<a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_safiii" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="id1911"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_safiii" data-tertiary="Safety I and Safety II systems" data-type="indexterm" id="id1912"/><a data-primary="Safety I system" data-startref="sfti" data-type="indexterm" id="id1913"/><a data-primary="Safety II system" data-startref="safii" data-type="indexterm" id="id1914"/>应对常见故障模式。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="How Complex Systems Fail" data-type="sect2"><div class="sect2" id="ch11_how_complex_systems_fail">
+<h2>复杂系统如何失效</h2>
+
+<p>Richard Cook <a data-primary="Cook, Richard" data-type="indexterm" id="id1915"/><a data-primary="CAS (complex adaptive system)" data-secondary="failure considerations" data-type="indexterm" id="cas_fcons"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="failure in complex systems" data-type="indexterm" id="lrn_app_fics"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="failure in complex systems" data-type="indexterm" id="inc_app_fics"/>认为，CAS 的失效方式不同于简单系统。<sup><a data-type="noteref" href="ch11-zh.html#id1916" id="id1916-marker">12</a></sup>他的研究中有几项关键观察与 SRE 尤其相关，值得特别指出：</p>
+<dl>
+<dt>复杂系统会以降级模式运行，并具有多层韧性机制。</dt>
+<dd>
+<p>鉴于 Google 的体量和规模，可以合理假定：无论在什么时候，我们的系统总有一些组件处于降级状态。例如，
+<a href="https://oreil.ly/MRGB-">Colossus</a>
+承载着数 EB 的磁盘存储。在任何时刻，其中一些磁盘已经故障、正在等待更换，另一些则濒临故障。这个例子表明，复杂系统的故障模式并非非黑即白，而是分布在一条连续谱上。既然降级是常态，各种韧性机制就必须协同工作，防止整个系统失效。</p>
+</dd>
+<dt>持续变化会增加系统复杂度。</dt>
+<dd>
+<p>大型系统本身就带有风险，因为各个组件的变化可能组合在一起，形成意想不到的涌现特性。<sup><a data-type="noteref" href="ch11-zh.html#id1917" id="id1917-marker">13</a></sup>这些系统在持续使用的同时也持续变化，因此无论从空间还是时间上，都不可能把系统组件完全隔离开。例如，Google 的系统时刻都在让生产环境与单体代码库的当前状态保持一致。<sup><a data-type="noteref" href="ch11-zh.html#id1918" id="id1918-marker">14</a></sup></p>
+</dd>
+<dt>可靠性和其他质量属性（例如性能、安全性）具有很高优先级。</dt>
+<dd>
+<p>系统故障影响巨大，而人们对系统质量的期望又很高，因此我们的系统设置了多重故障防线和许多自动干预机制。这样一来，通常需要多个系统组件接连失效，才会造成灾难性后果。然而，由于系统不存在稳定不变的状态，这样的多重故障始终可能发生。因此，质量投入必须具有很高优先级，但其投资回报从本质上又无法预测。所以，这类投入的目的与其说是实现某项具体成果，不如说是<a data-primary="CAS (complex adaptive system)" data-secondary="failure considerations" data-startref="cas_fcons" data-type="indexterm" id="id1919"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_fics" data-tertiary="failure in complex systems" data-type="indexterm" id="id1920"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_fics" data-tertiary="failure in complex systems" data-type="indexterm" id="id1921"/>管理风险。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Four Concepts for Resilience" data-type="sect2"><div class="sect2" id="ch11_four_concepts_for_resilience">
+<h2>韧性的四个概念</h2>
+
+<p>我们管理 <a data-primary="CAS (complex adaptive system)" data-secondary="resilience" data-type="indexterm" id="cas_resil"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="resilience" data-type="indexterm" id="lrn_app_resil"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="resilience" data-type="indexterm" id="inc_app_resil"/>CAS 的方法，有一个基础是安全 II 对复杂系统的不同思考方式。David Woods 提出的“优雅可扩展性”或“持续适应能力”可以用来描述这种思路。<sup><a data-type="noteref" href="ch11-zh.html#id1922" id="id1922-marker">15</a></sup>这个视角强调，我们不应只关注如何增加系统冗余或提高系统稳健性。</p>
+
+<p>如前所述，我们的许多系统长期处于降级状态，因此会明确地为系统设计优雅降级能力。如果做得好，系统就能调动余力，应对意料之外的故障模式，这与优雅可扩展性的概念一致。但系统也可能迅速失去补偿能力，继而发生级联故障。系统可以暂时容忍多个独立组件故障而不发生停机，可一旦超过某个临界点，就会突然不堪重负。网络停机常遵循这种模式：个别接入点（Point of Presence，PoP）离线后，流量会被重新路由以维持服务；然而，当离线数量达到临界值时，只要再发生一个故障，全球网络就可能突然下线。</p>
+
+<p>我们的许多平台既要支持大量已知的现有用例，也要支持未知的未来用例，因此必须具备一定程度的持续适应能力。核心计算平台 Borg 已持续演进二十多年，其社会技术结构不断适应远超最初设计范围的新挑战。我们起初并非有意遵循这一原则，但所采用的方法与持续适应能力的概念高度一致：使用假设和使用情境既未知、也不可完全预知；问题出现时由人来适应和弥补；系统则不断根据更大生态中其他互联系统进行<a data-primary="CAS (complex adaptive system)" data-secondary="resilience" data-startref="cas_resil" data-type="indexterm" id="id1923"/><a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_resil" data-tertiary="resilience" data-type="indexterm" id="id1924"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_resil" data-tertiary="resilience" data-type="indexterm" id="id1925"/>调整。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Engineering a Safer World" data-type="sect2"><div class="sect2" id="ch11_engineering_a_safer_world">
+<h2>构建更安全的世界</h2>
+
+<p>对于复杂的社会技术系统，以线性事件链为基础的传统事故因果模型可能并不适用。另一种方法是采用系统理论，例如 <a data-primary="Leveson, Nancy" data-type="indexterm" id="id1926"/>Nancy Leveson 提出的<a data-primary="Systems-Theoretic Accident Model and Processes (STAMP) causality model" data-type="indexterm" id="id1927"/><a data-primary="STAMP (Systems-Theoretic Accident Model and Processes) causality model" data-type="indexterm" id="id1928"/>系统理论事故模型与过程（Systems-Theoretic Accident Model and Processes，STAMP）因果模型。<sup><a data-type="noteref" href="ch11-zh.html#id1929" id="id1929-marker">16</a></sup>STAMP 提供了深入分析系统的技术，例如用于回顾性事件分析的 CAST，<sup><a data-type="noteref" href="ch11-zh.html#id1930" id="id1930-marker">17</a></sup>以及用于主动危害分析的 STPA。<sup><a data-type="noteref" href="ch11-zh.html#id1931" id="id1931-marker">18</a></sup>在<a data-type="xref" href="ch12-zh.html#ch12">第 12 章</a>中，我们会结合实际案例更详细地讨论 STAMP、STPA 和 CAST。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Paris Data Center Outage" data-type="sect1"><div class="sect1" id="ch11_case_studies">
+<h1>案例研究：巴黎数据中心停机</h1>
+
+<p>本章前面<a data-primary="learning" data-secondary="approach to learning from incidents" data-tertiary="Paris Data Center outage" data-type="indexterm" id="lrn_app_pdco"/><a data-primary="incidents" data-secondary="approach to learning from" data-tertiary="Paris Data Center outage" data-type="indexterm" id="inc_app_pdco"/><a data-primary="Paris Data Center outage case study" data-type="indexterm" id="pdco"/><a data-primary="outages" data-secondary="Paris Data Center case study" data-type="indexterm" id="out_pdco"/>概述了 Google 在整个 SRE 组织中推广的最佳实践。这里的案例研究展示了这些实践在真实情境中的运用，以及它们对我们自身社会技术系统产生的影响。</p>
+
+<p>2023 年 4 月，Google 经历了一次持续一整天的大规模停机，影响了 Google Cloud 的大部分服务。事件源于巴黎数据中心一条冷却管道漏水；<sup><a data-type="noteref" href="ch11-zh.html#id1932" id="id1932-marker">19</a></sup>该数据中心支撑着 Google Cloud 的 europe-west9 区域。这次事件提供了重要的学习机会：我们不仅要研究如何处理和预防漏水，还要思考各项 Cloud 产品如何改善对数据中心事件的整体响应。本案例将从客户沟通和事件响应的角度，介绍我们如何开展事件学习，重点关注 Google Compute Engine 产品受到的影响及其响应。</p>
+
+<p>事件得到缓解后，事后复盘立即启动。为了确保事件分析无责、迅速而全面，我们请一位未参与响应、但非常熟悉相关组织和系统的资深技术负责人主笔撰写事后复盘。这样也让响应人员获得了迫切需要的休息。负责人获准访问所有聊天室、工作文档、监控仪表板和事件记录，以便开展全面分析，并访谈了响应人员、客户支持工程师和技术负责人。</p>
+
+<p>为了更好地理解客户和响应人员的经历，负责人首先整理了事件时间线，记录最初发现漏水、邀请各类专家参与、实施不同缓解措施以及与外部客户沟通的时间。随后，团队以这条时间线为基础，与响应人员和客户支持工程师讨论哪些方面做得好、哪些方面出了问题，以及哪些地方只是运气好。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Timeline" data-type="sect2"><div class="sect2" id="ch11_timeline">
+<h2>时间线</h2>
+
+<p>以下时间均为美国太平洋时间（PT）。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Tuesday, 25 April 2023" data-type="sect3"><div class="sect3" id="ch11_tuesday_25_april_2023">
+<h3>2023 年 4 月 25 日，星期二</h3>
+
+<p>16:46 — europe-west9-a 可用区上方开始漏水。</p>
+
+<p>17:25 — 第一条自动告警触发，表明受影响区域内有一些机器正在离线。工程师在几分钟内确认了告警并开始调查。</p>
+
+<p>17:31 — 数据中心运维人员发现机房漏水并通知工程师。漏水将严重影响支撑 europe-west9-a 可用区的一个集群。（“集群”是指一组服务器，以及为其提供网络、供电和冷却的配套设备。）</p>
+
+<p>18:30 — Google 逐步关闭该集群中的 Google Compute Engine（GCE）虚拟机实例，防止漏水以不可控的方式中断客户工作负载。</p>
+
+<p>18:37 — 作为预防措施，工程师提前关闭了支撑该集群的所有网络、存储及其他设备。</p>
+
+<p>19:00 — Google 在 Cloud 状态信息中心发布了一则较为含糊的外部事件摘要：“我们正在调查一个影响 europe-west9-a 可用区内多项 Cloud 服务的问题。”</p>
+
+<p>19:14 — 在发生漏水的建筑内检测到烟雾。</p>
+
+<p>19:17 — Google 响应人员呼叫一名 Cloud 产品沟通负责人加入。此人的职责是在停机期间针对具体产品与客户沟通，以确保后续客户沟通更加详细、及时。</p>
+
+<p>19:42 — Google 响应人员完成了受影响集群的远程断电。</p>
+
+<p>19:45 — 联系当地消防部门。</p>
+
+<p>20:00 — 消防部门抵达现场，接管建筑火灾的事件指挥工作。</p>
+
+<p>20:08 — Google 响应人员获悉电池室发生火灾。他们意识到，消防部门很可能为了安全灭火而切断建筑供电，包括备用电源。</p>
+
+<p>20:16 — Google 响应人员评估认为，如果建筑失去供电，很可能会影响整个区域。事件指挥官决定把一些关键服务迁出该建筑。响应人员开始准备并执行必要步骤。</p>
+
+<p>22:45 — 建筑消防系统的供水耗尽。消防部门下令切断建筑供电。此时 SRE 意识到，已经来不及把所有关键服务迁出建筑，于是与更多专家讨论替代缓解措施。</p>
+
+<p>23:04 — 根据消防负责人命令，europe-west9 三栋建筑中的一栋开始紧急断电。此时，区域 Spanner 失去法定人数。（Spanner<sup><a data-type="noteref" href="ch11-zh.html#id1933" id="id1933-marker">20</a></sup> 是 Google 的全球分布式数据库。Compute Engine 使用 Spanner 存储各个 Cloud 区域的数据。）这意味着服务无法再读写该区域的数据。</p>
+
+<p>由于一个软件设计缺陷，这进一步导致某些会扇出执行跨区域查询的 API 方法发生全球性停机。</p>
+
+<p>23:37 — 响应人员尝试用一种已知的通用缓解措施处理 API 方法问题，但未能成功。</p>
+
+<p>23:46 — 响应人员通过头脑风暴列出一批潜在缓解措施。他们评估后认为，只有三种方案能在数小时内安全实施并完成测试。事件指挥官让三名响应人员分别行动，并行实现这三种方案。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Wednesday, 26 April 2023" data-type="sect3"><div class="sect3" id="ch11_wednesday_26_april_2023">
+<h3>2023 年 4 月 26 日，星期三</h3>
+
+<p>00:52 — 电池室的消防系统恢复工作。</p>
+
+<p>03:10 — 新实施的第一项缓解措施准备就绪，响应人员将其部署。另两种方案继续推进，作为第一种方案失败时的后备选择。</p>
+
+<p>03:23 — 新实施的第二项缓解措施准备就绪。响应人员做好部署准备，以防前一项措施无效。</p>
+
+<p>03:38 — 已部署的缓解措施奏效，解决了 API 方法不可用的全球性问题。这意味着停机影响被限制在单一区域内。</p>
+
+<p>03:46 — Google 在 Cloud 状态信息中心发布了事件的详细说明。</p>
+
+<p>04:11 — 据报告，电池室火灾已被扑灭。</p>
+
+<p>04:17 — 数据中心运维人员开始逐步为建筑内未受火灾或漏水影响的集群恢复供电，服务团队因而得以开始恢复服务。</p>
+
+<p>04:40 — 第一个集群完全恢复供电。</p>
+
+<p>07:24 — 第二个集群完全恢复供电。</p>
+
+<p>此时，Compute Engine 等待它的所有依赖项恢复上线。</p>
+
+<p>12:47 — 区域 Spanner 恢复法定人数，内部 Spanner 操作重新开始。服务可以再次读写区域数据存储。</p>
+
+<p>13:00 — 消防部门确认电池温度已经稳定，大部分消防人员撤离。</p>
+
+<p>14:42 — Compute Engine 的最后一个依赖项恢复上线。Compute Engine 响应人员按照操作手册启动所有服务。</p>
+
+<p>19:00 — Google Compute Engine 控制平面服务在该区域的所有可用区恢复。europe-west9-a 中未受漏水影响的集群全部恢复运行。受漏水影响的那个 europe-west9-a 集群因烟熏损坏而无法重新通电。烟熏损坏十分严重，最终整个集群被停用。在停用前，我们对集群进行了清理，并完整恢复了该可用区的全部数据。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Interviews" data-type="sect2"><div class="sect2" id="ch11_interviews">
+<h2>访谈</h2>
+
+<p>为了完整记录各方经历，事后复盘负责人联系了多位事件参与者，听取他们各自的看法，其中既包括客户代表，也包括参与事件响应的工程师。</p>
+
+<p>从客户的角度看，这次停机最令人沮丧的有两点：恢复供电后服务仍花了很长时间才恢复（从 07:24 到 19:00，接近 12 小时），以及面向客户的沟通迟缓、未能提供有效帮助。客户认可 Google 对情况保持透明，但认为沟通本可以更快、更主动、更准确。产品沟通负责人也表示，要兼顾准确性、精确程度和速度非常困难。停机进入这一阶段时，可用信息有限，响应人员的认识又在不断变化；很难持续分清哪些已经确定，哪些仍只是推测。例如，停机期间产品沟通负责人使用了“进水”这个说法，后来却转移了公众注意力，还成了多家新闻媒体和社交媒体用户调侃的素材。</p>
+
+<p>响应人员认为，可选择的缓解措施很有限，而且已有措施生效太慢。这迫使他们在这场事关重大的事件中临时开发解决方案，进一步增加了压力。响应人员指出，此次响应的规模和复杂程度已经逼近现有事件管理结构的极限。总事件指挥官要对整场停机负责，范围从数据中心运维一直覆盖到众多受影响的 Google Cloud 产品。这位指挥官缺少针对各项产品作出决策所需的背景信息，也常常不知道相应产品的决策者是谁。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Analysis" data-type="sect2"><div class="sect2" id="ch11_analysis">
+<h2>分析</h2>
+
+<p>事后复盘负责人找出了 Compute Engine 特别需要改进的三个关键领域：<sup><a data-type="noteref" href="ch11-zh.html#id1934" id="id1934-marker">21</a></sup>响应结构、客户沟通和通用缓解措施。</p>
+
+<p>在响应结构方面，最大的缺口来自 Google 系统的高度复杂性：即使单项产品也有多套值班轮换。停机期间，会根据需要逐步呼叫许多轮值人员加入响应。例如，Compute Engine 的控制平面、数据平面和硬件各有一套值班轮换，因为三者需要不同的专业知识。由于此次停机情况复杂，三类响应人员都必须参与，但谁应该为整个产品作出决策并不明确。这里缺少一个角色。</p>
+
+<p>在客户沟通方面，收集具体情况、核实信息和审核措辞耗费了时间，延误了向客户传递信息。此外，审核也没有发现一些明显错误。例如，我们面向公众的状态信息中心一度称 us-east1 受到影响，事实却并非如此。不仅如此，当我们尝试主动联系客户，帮助他们执行临时规避方案（例如故障切换到另一个区域，或在新的可用区恢复工作负载）时，才发现并没有现成的大规模客户联络流程，只得在停机期间临时摸索。</p>
+
+<p>最后，在通用缓解措施方面，有几种现有方案并不适合这次特定停机。而且，已有的通用措施生效速度也比预期慢：我们需要它们在几分钟内奏效，实际却要数小时。响应人员随机应变，当场想出了许多办法，但在这样的停机过程中开发和测试缓解措施终究十分缓慢。</p>
+
+<p>尽管存在上述问题，从事件中学习并不只是找出停机期间哪里出了错；识别<em>哪些地方做对了</em>同样至关重要，这样才能确保正确做法延续下去。例如，呼叫产品沟通负责人协助沟通，确实使我们的客户沟通从含糊、迟缓且基本无用，转变为更加具体、及时。此外，在停机过程中的多个关键时刻，都有经验丰富的事件响应人员挺身而出，在需要时作出艰难决定。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Action Items" data-type="sect2"><div class="sect2" id="ch11_action_items">
+<h2>行动项</h2>
+
+<p>事后复盘负责人与不同团队共同制定行动项，以应对这些挑战。例如，在大规模停机中，即使已有一名负责整个事件的中央事件指挥官，为各项产品指定产品级事件指挥官、管理本产品的整体响应仍然合理。此次停机后，Compute Engine 立即设立了产品级事件响应值班轮换，由最有经验的 SRE 组成，在发生较大规模停机时加入并负责管理。</p>
+
+<p>此外，我们还采取了多项行动来改进通用缓解措施。我们缩短了重大供电事件中关闭并恢复集群所需的时间。停机期间实施的一项通用缓解措施——隐藏区域——被做成了安全、可重复使用的工具。最后，各团队分析了未能奏效的通用缓解措施并加以改进，使其能够应对巴黎事件及更多类似情境。我们还认识到，要让这些措施有效，就需要定期测试可能用到它们的场景。因此，我们扩充了灾难恢复演练集合，纳入更多会使用这些缓解措施的场景。</p>
+
+<p>我们认为，让产品沟通负责人加入是此次响应中做对的一件事，因此决定把它变成固定做法。现在，所有重大停机都会自动呼叫产品沟通负责人，以确保尽早有人处理对外沟通。我们还创建了操作手册和沟通模板，以便行动更快、表述更明确。最后，我们正式建立了客户联络流程，确保需要时能够再次执行。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Outcome" data-type="sect2"><div class="sect2" id="ch11_outcome">
+<h2>结果</h2>
+
+<p>以 Google 的规模，集群级故障发生得比我们希望的更频繁。我们围绕巴黎停机开展的所有学习工作都带来了回报，包括：</p>
+
+<ul>
+<li>
+<p>缩小这类停机的影响半径</p>
+</li>
+<li>
+<p>缩短关闭和恢复集群所需的时间</p>
+</li>
+<li>
+<p>提高沟通速度和质量</p>
+</li>
+</ul>
+
+<p>2025 年 3 月，us-east5-c 中的一个集群断电。这一次，我们避免了全球乃至区域级影响。各团队响应、分诊、调查并解决停机总共用了 6 小时 10 分钟；相比耗时超过 11 小时的巴黎停机，这是巨大进步。响应人员表示，他们感受到的压力小了很多，自主掌控感则强了许多。Google 崇尚持续改进，因此我们既承认还想做得更好，也会庆祝每一次渐进式胜利。</p>
+
+<p>最重要的是，从巴黎停机中学习让我们明白：赋权于人，使其能在正确的时间做正确的事并让行动奏效，是可靠性的关键。我们没有只关注预防故障，而是考虑如何通过赋予<a data-primary="learning" data-secondary="approach to learning from incidents" data-startref="lrn_app_pdco" data-tertiary="Paris Data Center outage" data-type="indexterm" id="id1935"/><a data-primary="incidents" data-secondary="approach to learning from" data-startref="inc_app_pdco" data-tertiary="Paris Data Center outage" data-type="indexterm" id="id1936"/><a data-primary="Paris Data Center outage case study" data-startref="pdco" data-type="indexterm" id="id1937"/><a data-primary="outages" data-secondary="Paris Data Center case study" data-startref="out_pdco" data-type="indexterm" id="id1938"/>参与者自主权来降低影响、建立韧性。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch11_conclusion">
+<h1>总结</h1>
+
+<p>Google 不断演进无责事后复盘实践，既吸收内部经验带来的洞察，也借鉴业界研究成果。多年来，我们拓展了方法，对沟通和响应进行了更多分析。我们也强烈鼓励大家审视范围更广的社会技术系统，理解系统中的哪些因素让某些决定在当时看来是正确的。通过这种整体方法，我们在软件开发实践、沟通流程和响应结构中发现了许多意想不到的改进机会。为了持续改善事件学习方式，我们鼓励团队尝试安全科学、复杂性理论和韧性工程等领域的不同方法。由于领导层支持这项实践并投入资源，团队能够获得时间开展分析并实施拟议的补救措施。</p>
+
+<p>无论团队采用哪种具体方法，真正把重点放在从事件中<em>学习</em>，而不只是修复出错之处，都是建设健康 SRE 文化最关键的要素。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1876"><sup><a href="ch11-zh.html#id1876-marker">1</a></sup> Tim Falzone 和 Ben Treynor Sloss，<a href="https://oreil.ly/OLrkl">《Google SRE 的演进：使用 STAMP 提高 Google 生产系统的韧性》</a>，载于 <em>;login:</em>，2024 年 12 月。</p><p data-type="footnote" id="id1877"><sup><a href="ch11-zh.html#id1877-marker">2</a></sup> Nancy G. Leveson 和 John P. Thomas，<a href="https://oreil.ly/AcM1f"><em>《STPA 手册》</em></a>，2018 年。</p><p data-type="footnote" id="id1878"><sup><a href="ch11-zh.html#id1878-marker">3</a></sup> Nancy G. Leveson，<a href="https://oreil.ly/PSOfw"><em>《CAST 手册：如何从事件和事故中学到更多》</em></a>，2019 年。</p><p data-type="footnote" id="id1881"><sup><a href="ch11-zh.html#id1881-marker">4</a></sup> “恢复性问责”这一概念与 Sidney Dekker 在其著作 <em>《公正文化：平衡安全与问责》</em>（CRC Press，2007 年）中介绍的理念非常相似。</p><p data-type="footnote" id="id1890"><sup><a href="ch11-zh.html#id1890-marker">5</a></sup> Erik Hollnagel、David D. Woods 和 Nancy Leveson 编，<em>《韧性工程：概念与准则》</em>（CRC Press，2007 年）。</p><p data-type="footnote" id="id1891"><sup><a href="ch11-zh.html#id1891-marker">6</a></sup> 引自 George E. P. Box，<a href="https://oreil.ly/4Om3h">《科学与统计》</a>，<em>《美国统计协会杂志》</em>第 71 卷第 356 期（1976 年）：791–99。</p><p data-type="footnote" id="id1897"><sup><a href="ch11-zh.html#id1897-marker">7</a></sup> 关于系统思维的更多内容，请参阅 Donella Meadows 的 <em>《系统之美：决策者的系统思考》</em>（Chelsea Green Publishing，2008 年）。</p><p data-type="footnote" id="id1902"><sup><a href="ch11-zh.html#id1902-marker">8</a></sup> J. Reason，<a href="https://oreil.ly/rAF01">《潜在人为失误对复杂系统崩溃的作用》</a>，<em>《伦敦皇家学会哲学汇刊》</em> B 辑：生物科学，第 327 卷第 1241 期，“危险情境中的人为因素”（1990 年 4 月 12 日），第 475–484 页。</p><p data-type="footnote" id="id1907"><sup><a href="ch11-zh.html#id1907-marker">9</a></sup> Jens Rasmussen，<a href="https://oreil.ly/c7osQ">《动态社会中的风险管理：一个建模问题》</a>，<em>《安全科学》</em>第 27 卷第 2–3 期（1997 年）：183–213。</p><p data-type="footnote" id="id1908"><sup><a href="ch11-zh.html#id1908-marker">10</a></sup> Nancy G. Leveson 和 John P. Thomas，<a href="https://oreil.ly/AcM1f"><em>《STPA 手册》</em></a>，2018 年。</p><p data-type="footnote" id="id1910"><sup><a href="ch11-zh.html#id1910-marker">11</a></sup> Erik Hollnagel 等，<a href="https://oreil.ly/HznNU">《从安全 I 到安全 II：白皮书》</a>，2015 年。</p><p data-type="footnote" id="id1916"><sup><a href="ch11-zh.html#id1916-marker">12</a></sup> Richard I. Cook，<a href="https://oreil.ly/YPCOI">《复杂系统如何失效》</a>，芝加哥大学，1998 年。</p><p data-type="footnote" id="id1917"><sup><a href="ch11-zh.html#id1917-marker">13</a></sup> 另见<a href="https://oreil.ly/LcZnk">合成谬误</a>。</p><p data-type="footnote" id="id1918"><sup><a href="ch11-zh.html#id1918-marker">14</a></sup> 参见 Rachel Potvin 和 Josh Levenberg，<a href="https://oreil.ly/Zc5hQ">《Google 为什么把数十亿行代码存放在单一代码库中》</a>，<em>《ACM 通讯》</em>第 59 卷第 7 期（2016 年）：78–87。</p><p data-type="footnote" id="id1922"><sup><a href="ch11-zh.html#id1922-marker">15</a></sup> David D. Woods，<a href="https://oreil.ly/n6ZHe">《韧性的四个概念及其对韧性工程未来的启示》</a>，<em>《可靠性工程与系统安全》</em>，2015 年。</p><p data-type="footnote" id="id1929"><sup><a href="ch11-zh.html#id1929-marker">16</a></sup> Nancy Leveson，<em>《构建更安全的世界：将系统思维应用于安全》</em>，MIT Press，2011 年。</p><p data-type="footnote" id="id1930"><sup><a href="ch11-zh.html#id1930-marker">17</a></sup> Nancy G. Leveson，<a href="https://oreil.ly/PSOfw"><em>《CAST 手册：如何从事件和事故中学到更多》</em></a>，2019 年。</p><p data-type="footnote" id="id1931"><sup><a href="ch11-zh.html#id1931-marker">18</a></sup> Nancy G. Leveson 和 John P. Thomas，<a href="https://oreil.ly/AcM1f"><em>《STPA 手册》</em></a>，2018 年。</p><p data-type="footnote" id="id1932"><sup><a href="ch11-zh.html#id1932-marker">19</a></sup> 完整详情请参阅官方对外发布的<a href="https://oreil.ly/HQmun">事件报告</a>。</p><p data-type="footnote" id="id1933"><sup><a href="ch11-zh.html#id1933-marker">20</a></sup> James C. Corbett 等，<a href="https://oreil.ly/V6Xb1">《Spanner：Google 的全球分布式数据库》</a>，载于 <em>ACM Transactions on Computer Systems（TOCS）</em>，2013 年。</p><p data-type="footnote" id="id1934"><sup><a href="ch11-zh.html#id1934-marker">21</a></sup> 整场停机还涉及许多其他领域，其中包括一些专门针对数据中心因素的内容。</p></div></div></section></body></html>
