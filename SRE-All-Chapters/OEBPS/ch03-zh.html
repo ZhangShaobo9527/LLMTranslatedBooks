@@ -1,0 +1,388 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>生产环境的发展趋势</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 3. Trends in Production" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch03">
+<h1><span class="label">第 3 章　</span>生产环境的发展趋势</h1>
+
+
+<p class="byline">作者：Derek Remund、Garrett Plasky 和 Roman Seibel<br/>
+
+<span class="keep-together">以及 David Grizzanti、Faraz Khan、Nick Soda、Oleg Klyudt、</span>
+<span class="keep-together">Pereira Braga、</span>Pim van Pelt、
+<span class="keep-together">Saurabh Phaltane、</span>
+<span class="keep-together">Garrett Holthaus 和 Carmela Quinito</span></p>
+
+<p>本书第一版于 2016 年出版时，Google 的生产基础设施与其他企业存在显著差异。我们当时考察了 Google 的生产环境，也讨论了整个行业正在显现的趋势。此后，容器化的全面普及、以用户为中心的可观测性以及通用生产平台等理念，广泛而根本地改变了现代软件规模化运行所必须具备的基本条件。</p>
+
+<p>Google 成立的时机以及此后的增长速度，可能使其率先开发了许多技术和模式；这些技术和模式后来被广泛采用，至少也被认可为行之有效的方法。然而，这场巨变在很大程度上应归功于全球各行各业无数工程师的共同努力。我们值得回顾这段演进：它既标志着我们已经走了多远，也预示着未来将走向何方。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Cloud Computing Era" data-type="sect1"><div class="sect1" id="ch03_the_cloud_computing_era">
+<h1>云计算时代</h1>
+
+<p>云计算<a data-primary="cloud computing" data-type="indexterm" id="cldcomp"/>已经成为长期存在的现实，这一点毋庸置疑。对于完成转型的组织而言，云计算消除了许多传统难题，例如服务器采购周期、本地可用能源的限制，以及围绕稀缺硬件资源展开的零和博弈。然而，从物理约束转向逻辑约束并非包治百病。相反，它带来了新的运维挑战，包括把容量规划转化为财务工程问题、通过托管服务提升抽象边界，以及共享状态成为必需。</p>
+
+<p>公有云的弹性让组织能够以过去无法实现的速度扩展，但要成功应对这一范式转变，仅仅迁移工作负载还不够；还必须调整 SRE 的核心工具与方法，使其适应成本不断变化、控制平面外部化的新世界。尽管 Google 的诞生早于我们今天所熟知的云计算，但可以说，它从一开始就具备云计算思维。</p>
+
+<p>管理大型分布式系统所面临的挑战，在不同行业和垂直领域中普遍存在；只是故障模式已经改变，从局部硬件故障转向共享状态与全局控制平面中复杂的涌现性故障。即便如此，SRE 确保系统可靠且可扩展的核心使命<a data-primary="cloud computing" data-startref="cldcomp" data-type="indexterm" id="id1103"/>并未改变。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Capacity Management 2.0" data-type="sect2"><div class="sect2" id="ch03_capacity_management_2_0">
+<h2>容量管理 2.0</h2>
+
+<p><a data-primary="cloud computing" data-secondary="capacity management" data-type="indexterm" id="id1104"/><a data-primary="capacity management" data-type="indexterm" id="id1105"/><a data-primary="financial management, capacity planning" data-type="indexterm" id="id1106"/>容量规划的本质已经从瀑布式硬件采购，演变为持续进行的财务工程。长期规划关注的不再是硬件实际到货日期，而是如何审慎支出：针对已知的流量高峰（如黑色星期五和网络星期一）确保即时（JIT）弹性，而不是为了这些高峰在一年余下的 51 周里背负闲置的资本性支出（CapEx）<a data-primary="CapEx (capital expenditure)" data-type="indexterm" id="id1107"/>。</p>
+
+<p>如果缺乏谨慎管理，组织往往会发现，自己只是用高度波动的<a data-primary="operating expenditure (OpEx)" data-type="indexterm" id="id1108"/><a data-primary="OpEx (operating expenditure)" data-type="indexterm" id="id1109"/>运营支出（OpEx）替代了可预测的 CapEx。由此催生了<a data-primary="FinOps (financial operations)" data-type="indexterm" id="id1110"/> FinOps，<sup><a data-type="noteref" href="ch03-zh.html#id1111" id="id1111-marker">1</a></sup>这门实践把自动化、以客户为中心的监控等 SRE 理念应用于可靠性、容量和成本三者的交汇处。在这一框架下，SRE 通过明确权衡成本与可用性来管理容量：一方面考虑长期承诺的稳定性，另一方面利用折扣很高但本质上随时可能消失的竞价实例。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Managed Services and Open Standards" data-type="sect2"><div class="sect2" id="ch03_managed_services_and_open_standards">
+<h2>托管服务与开放标准</h2>
+
+<p><a data-primary="cloud computing" data-secondary="managed services" data-type="indexterm" id="id1112"/><a data-primary="managed services" data-type="indexterm" id="id1113"/>托管服务的大量涌现——包括但不限于基础设施即服务（IaaS）、平台即服务（PaaS）、函数即服务（FaaS）和数据库即服务（DBaaS）——推动抽象边界不断上移。如今，SRE 可以把磁盘固件、虚拟机管理程序补丁、基础数据库引擎等基础设施原语的整个运维生命周期交给云提供商。这使团队能够把工程精力重新集中到更高层次的可靠性问题、架构稳健性，以及其业务逻辑特有的复杂故障模式上。</p>
+
+<p>Kubernetes 和 OpenTelemetry 等<a data-primary="cloud computing" data-secondary="open standards" data-type="indexterm" id="cldcmp_opstnd"/><a data-primary="open standards" data-type="indexterm" id="opstnds"/>开放标准进一步加速了这一进程，让行业更接近“一次编写，随处运行”的理想。遵循这些标准，SRE 就能降低一部分供应商锁定风险；当成本或可靠性要求<a data-primary="cloud computing" data-secondary="open standards" data-startref="cldcmp_opstnd" data-type="indexterm" id="id1114"/><a data-primary="open standards" data-startref="opstnds" data-type="indexterm" id="id1115"/>发生变化时，仍可灵活地在不同提供商和产品之间迁移工作负载。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shared State" data-type="sect2"><div class="sect2" id="ch03_shared_state">
+<h2>共享状态</h2>
+
+<p>云原生<a data-primary="cloud computing" data-secondary="shared state" data-type="indexterm" id="id1116"/><a data-primary="shared state" data-type="indexterm" id="id1117"/><a data-primary="troubleshooting" data-secondary="shared state" data-type="indexterm" id="id1118"/>要求我们以一种新的心智模型排查问题：共享状态。服务<a data-primary="services" data-secondary="shared state" data-type="indexterm" id="id1119"/>发生故障时，人们首先问的不再只是“我的代码改了什么？”，还会问“问题在你那边，还是在我这边？”要适应这种转变，组织必须把供应商视为合作伙伴，而服务等级协议（SLA）仅仅是起点。成功的合作关系优先考虑一体化运维，并依赖组织与云提供商之间共享的上下文。合作的具体形式各不相同，但通过客户专属服务健康状况仪表板和集成遥测来共享状态，正是快速兴起的趋势之一。云提供商的控制平面实际上成为组织自身基础设施的延伸，因此，在传统供应商关系中并非必需的透明度和状态共享变得更加重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Infrastructure Trends" data-type="sect1"><div class="sect1" id="ch03_infrastructure_trends">
+<h1>基础设施趋势</h1>
+
+<p>十年前，<a data-primary="infrastructure" data-secondary="trends" data-type="indexterm" id="infrstr_trnds"/>生产环境还是一个“虚拟机优先”的世界。尽管业界已经开始考虑<a data-primary="VMs (virtual machines)" data-type="indexterm" id="id1120"/><a data-primary="virtual machines (VMs)" data-type="indexterm" id="id1121"/>容器，计算的基本单元仍然是虚拟机（VM），而且往往像宠物一样被长期、精心地管理。<sup><a data-type="noteref" href="ch03-zh.html#id1122" id="id1122-marker">2</a></sup>基础设施是一座僵硬的堡垒。资源配置依靠错综复杂的配置管理脚本完成，这些脚本试图让一组彼此独立的虚拟机器变得井然有序。可靠性与这些机器及其连接通道的健康状况密不可分；静态防火墙和负载均衡器都需要人工协调。</p>
+
+<p>以 2016 年典型的企业部署为例：应用运行在一组特定的 VM 上，存储要么直接挂载在本地，要么通过复杂的存储区域网络（SAN）映射。这些子系统是专有且由特定供应商提供的，由不同专业角色分别管理；各角色的职能重叠很少，通常也没有人对整个生产系统承担全局责任。网络、存储或计算出现问题时，必须由具备相应技能的人员专门处理。一旦底层硬件故障，这座堡垒也就随之坍塌。运维工程师主要与配置漂移以及长寿命有状态实例的脆弱性作斗争，而在可观测性较差的环境中，用于理解和排查故障的工具还相当基础。</p>
+
+<p>过去十年见证了架构从<em>以服务器为中心</em>到<em>以工作负载为中心</em>的根本转型。云计算的兴起使这一转型成为可能——也有人会说，它迫使我们必须转型。我们告别堡垒模式，转向更具流动性、更加解耦的系统；生产环境的标准单元也从 VM 转向容器化微服务和短暂存在的函数。这不只是封装方式的变化，更是可靠性基本单元的改变。</p>
+
+<p>这十年出现了三项关键的架构解耦：</p>
+<dl>
+<dt>计算抽象</dt>
+<dd>
+<p>编排器<a data-primary="compute abstraction" data-type="indexterm" id="id1123"/>把关注点从“服务器在哪里”转向“工作负载需要什么”。基础设施变成了一个（看似）可弹性伸缩的资源池。例如，现代流媒体服务不再管理某台视频编码服务器，而是管理一组编码任务。这些任务可以突发扩展到数千个临时容器；工作完成或需求下降后，容器会自动缩减甚至消失，无需人工干预。</p>
+</dd>
+<dt>存储与计算分离</dt>
+<dd>
+<p>处理能力与数据持久化之间的绑定<a data-primary="storage-compute separation" data-type="indexterm" id="id1124"/>被打破。传统的单体数据库越来越多地被分布式、全局一致的系统取代，数据独立于查询引擎而存在的架构也得到广泛采用。现代数据仓库就是典型例子：你可以扩展计算资源，在数秒内扫描 PB 级数据，然后彻底关闭计算资源，而数据仍以经济高效的方式保存在底层对象存储中。这种解耦消除了早期生产系统饱受困扰的预分配成本。在过去，工程师必须主动为特定应用规划存储容量，并不断应对利用率不足和空间耗尽的问题；后者甚至可能导致整个服务瘫痪。</p>
+</dd>
+<dt>软件定义的连接</dt>
+<dd>
+<p>网络<a data-primary="software-defined connectivity" data-type="indexterm" id="id1125"/>从基于静态 IP 的路由，演进为由身份驱动、由软件定义的数据平面。内核级可扩展性的进步把操作系统从黑盒变成了可检测、可观测的环境。如今，大规模平台可直接在主机的特权执行层中进行复杂的数据包过滤和可观测性处理，从而实现更快、更安全的部署周期。它们既避开了传统网络栈的开销和对供应商或操作系统级补丁的依赖，又获得了集中控制能力。网络不再只是“管道”，而是应用自身一个主动、可观测并能执行策略的层。</p>
+</dd>
+</dl>
+
+<p>展望未来几年，我们预计应用与其执行环境还会进一步解耦。业界正在迈向通用运行时：可移植、沙箱化且高效的代码，能够在从大型数据中心到个人设备和<span class="keep-together">资源受限的</span>边缘硬件这一连续谱上的各种执行环境中运行。这种执行模型依靠标准化接口提供占用极少资源的隔离计算，并延伸了容器的原则与优势。</p>
+
+<p>两项新兴约束正在塑造这一技术转变：</p>
+<dl>
+<dt>数字主权</dt>
+<dd>
+<p>工作负载<a data-primary="digital sovereignty" data-type="indexterm" id="id1126"/>越来越多地受到<em>地缘归属（geopatriation）</em>要求的约束，即<a data-primary="geopatriation" data-type="indexterm" id="id1127"/>在不同区域之间动态划分系统，以满足复杂的监管和数据驻留要求。对 SRE 而言，这意味着要管理一个碎片化的全球格局：同一项服务可能存在于 10 个不同的司法管辖区，而每个地区都有自己的合规和驻留要求。</p>
+</dd>
+<dt>自主自优化</dt>
+<dd>
+<p>我们已经看到系统开始朝资源感知方向发展<a data-primary="autonomous self-optimization" data-type="indexterm" id="id1128"/>，并预计未来的生产系统将利用具备推理能力的控制循环来理解高层意图。届时，无需 SRE 有意识地调节扩缩容策略，系统会自行在应用性能与能源可用性、单位经济性等实时变量之间取得平衡。系统可能自动把非紧急后台任务迁移到资源充足的数据中心，也可能限制性能，以确保支出不超过特定预算。</p>
+</dd>
+</dl>
+
+<p>对于下一代 SRE，挑战<a data-primary="infrastructure" data-secondary="trends" data-startref="infrstr_trnds" data-type="indexterm" id="id1129"/>将从资源分配转向策略治理。这个角色的职责不再是维持堡垒屹立不倒，而是定义高层约束，使自优化的地理分布式系统能够自行保持平衡。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Evolution of Production Platforms" data-type="sect1"><div class="sect1" id="ch03_the_evolution_of_production_platforms">
+<h1>生产平台的演进</h1>
+
+<p>过去，开发与生产之间的接口<a data-primary="production platforms" data-secondary="evolution" data-type="indexterm" id="id1130"/><a data-primary="platforms" data-seealso="production platforms" data-type="indexterm" id="id1131"/>主要由人工把守的关卡界定。生产环境是一块受保护的领地，主要通过工单请求和人工交接才能进入。即便存在平台，它们往往也只是由定制脚本和静态文档拼凑而成的零散集合。对 2010 年的工程师来说，配置一项服务通常意味着向服务台队列提交请求，然后等待数天甚至数周，由专业运维团队手动配置一块虚拟化硬件资源。</p>
+
+<p>在那个时代，平台并不是开发者可以用来把功能送入生产环境的产品。发布是一套复杂而漫长的流程，既要依赖纸面运行手册，也伴随着严重的运维摩擦。以运维为中心的角色往往充当人肉桥梁，用人工操作弥补标准化工具的缺失，确保软件能够撑过进入生产环境的转换过程。由此形成了一堵“困惑之墙”：开发者理解代码，运维人员理解环境，但双方都无法统一掌握系统的健康状况。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Rise of the Self-Service Ecosystem (2016–2026)" data-type="sect2"><div class="sect2" id="ch03_the_rise_of_the_self_service_ecosystem_2016_2026">
+<h2>自助服务生态系统的兴起（2016—2026 年）</h2>
+
+<p>接下来的十年里，平台转变为一种可以作为产品使用的综合系统：它接收（编译后的）代码和配置指令等输入，再把它们部署到生产环境。随着系统日益复杂，如果每位开发者都必须精通整个基础设施栈，那么“谁构建，谁运行”的模式显然无法持续。为了降低不断上升的认知负担，组织开始转向内部开发者平台。</p>
+
+<p>这一转变意味着走向<a data-primary="production platforms" data-secondary="evolution" data-tertiary="golden path" data-type="indexterm" id="id1132"/><a data-primary="golden path workflows" data-type="indexterm" id="id1133"/><em>黄金路径（golden path）</em>：用标准化、自动化的工作流隐藏底层复杂性，同时内置安全保障和文档，并能抵御拼写错误等无意失误。开发者的主要接口不再是工单，而变成自助服务门户或一组统一 API。可以把它想象成自动售货机：开发者选择一个预配置模板，其中包含操作系统、Web 服务器、运行时环境、应用框架和数据库；平台则交付一个可直接投入生产的实例，并默认配备监控、安全日志和备份策略。</p>
+
+<p>这个时代也改变了治理的基本单元。我们不再逐一审计人的操作，而是转向构建系统性的护栏。运维角色逐渐转变为今天所理解的 SRE，其职责范围重新聚焦于平台架构，把可靠性和安全性直接嵌入共享底座。平台将这些运维问题<em>左移</em>，使开发者能够更快行动，却不会增加灾难性故障的风险。可靠性不再是发布周期末尾才检查的项目，而成为平台自身的一项基础属性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Trend Toward Intent-Based Coordination Systems" data-type="sect2"><div class="sect2" id="ch03_trend_towards_intent_based_coordination_systems">
+<h2>转向基于意图的协调系统</h2>
+
+<p>展望眼前的未来<a data-primary="production platforms" data-secondary="evolution" data-tertiary="intent-based coordination" data-type="indexterm" id="prodplat_evolv_inbsd"/>，也就是本书出版后的几年，我们已经看到平台开始从一组“自动售货机”式服务，演进为更一体化的协调层。业界正开始试验基于意图的模式，重点从选择具体实现细节转向声明期望状态。在这种模型中，工程师不必手动配置每项扩缩容策略或数据库类型，而是可以定义更宽泛的目标，例如某个区域的延迟目标或严格的预算约束。随后，平台通过层级选择、资源隔离、工作负载迁移或性能限流等机制，让这些目标与可用基础设施相协调。</p>
+
+<p class="less_space pagebreak-before">目前有三个新兴重点领域正在塑造这一转变：</p>
+<dl>
+<dt>自适应信号过滤</dt>
+<dd>
+<p>为了对抗现代遥测中铺天盖地的噪声<a data-primary="adaptive signal filtering" data-type="indexterm" id="id1134"/>，人们越来越倾向于放弃静态仪表板，转而使用能够根据当前运维上下文确定信息优先级的界面，例如上下文感知的调试器和分析工具。目标是在任一时刻，只呈现人类决策所必需、最能反映系统状态的关键信号，从而进一步缩短诊断时间。</p>
+</dd>
+<dt>嵌入式监管逻辑</dt>
+<dd>
+<p>随着<a data-primary="embedded regulatory logic" data-type="indexterm" id="id1135"/><a data-primary="regulations" data-secondary="embedded regulatory logic" data-type="indexterm" id="id1136"/>全球格局日益碎片化，未来的平台预计会把合规和数据驻留规则直接纳入部署工作流。这样一来，法律和地理约束不再是事后补充，而成为系统意图的基础组成部分。</p>
+</dd>
+<dt>资源与可持续性约束</dt>
+<dd>
+<p>我们看到一种新趋势<a data-primary="resource constraints, platform evolution" data-type="indexterm" id="id1137"/><a data-primary="sustainability constraints" data-type="indexterm" id="id1138"/>：碳强度、能源成本和可用性被视为首要工程约束。这预示着未来的平台可能根据能源可用性或各地区不断变化的电力成本，协助重新平衡工作负载。</p>
+</dd>
+</dl>
+
+<p>这意味着，SRE 的角色可能很快就会从构建黄金路径，转向定义指导平台决策的约束和目标函数；换言之，转向高层策略治理。在这种视角下，成功与否不再主要取决于单个组件的正常运行时间，而更多取决于平台能否在日益<a data-primary="production platforms" data-secondary="evolution" data-startref="prodplat_evolv_inbsd" data-tertiary="intent-based coordination" data-type="indexterm" id="id1139"/>多变的全球环境中保持稳定平衡，兼顾性能、成本与合规。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="From Components to Context" data-type="sect1"><div class="sect1" id="ch03_from_components_to_context">
+<h1>从组件转向上下文</h1>
+
+<p>把基础设施交给<a data-primary="cloud computing" data-secondary="shift of infrastructure to" data-type="indexterm" id="id1140"/>公有云提供商，自然会改变系统的诊断范围。当企业不再拥有底层原语时，可观测性的焦点就会从单个组件的内部健康状况，转向分布式服务之间可观察到的交互。成功的组织会正视这一变化，并据此转变自己看待可观测性工具、流程乃至文化的方式。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Mythical Single Pane of Glass" data-type="sect2"><div class="sect2" id="ch03_the_mythical_single_pane_of_glass">
+<h2>神话般的单一视图</h2>
+
+<p>所谓“单一视图”——用一个工具<a data-primary="cloud computing" data-secondary="open standards" data-type="indexterm" id="id1141"/><a data-primary="open data standards" data-type="indexterm" id="id1142"/>统管一切——对大多数组织来说仍然遥不可及。现实是，多供应商、多云的格局必然需要多个专业化视图。趋势已经从寻找唯一工具，转向采用 OpenTelemetry 等开放数据标准，让各种遥测数据能够在不同“视图”之间流动而不丢失上下文。不过，这些标准仍相对年轻。虽然它们让问题更容易解决，但平台之间的上下文丢失依然存在。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Distributed Tracing as a Critical Primitive" data-type="sect2"><div class="sect2" id="ch03_distributed_tracing_as_a_critical_primitive">
+<h2>将分布式追踪作为关键原语</h2>
+
+<p>在云原生<a data-primary="cloud computing" data-secondary="distributed request tracing" data-type="indexterm" id="id1143"/><a data-primary="distributed request tracing" data-type="indexterm" id="id1144"/><a data-primary="observability" data-secondary="distributed request tracing" data-type="indexterm" id="id1145"/>世界里，即使是简单的三层应用，一次请求也可能流经十几个彼此独立的服务边界。因此，分布式请求追踪正从高级功能变成基础要求。在这样的分布式系统中，如果没有追踪和上下文传播，要找出请求失败的诱因会困难得多。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Quality over Quantity" data-type="sect2"><div class="sect2" id="ch03_quality_over_quantity">
+<h2>质量胜于数量</h2>
+
+<p>云规模数据摄取变得轻而易举<a data-primary="observability" data-secondary="system health" data-type="indexterm" id="id1146"/><a data-primary="SLOs (service level objectives)" data-secondary="system health" data-type="indexterm" id="id1147"/><a data-primary="system health" data-type="indexterm" id="id1148"/>，也带来了一个常见陷阱：误以为指标越多，结果就越好。随着生产系统日益复杂，监控它们的系统在许多方面也不得不变得更复杂。如果工程师没有着眼于对系统的整体理解，就很容易迷失在信号的海洋中。因此，现代可观测性策略把 SLO 作为反映系统健康状况的首要信号，只有在诊断目标违约时才按需深入查看更详细的指标。</p>
+
+<p>现代可观测性平台解决吞吐量和存储挑战的方式，与云计算解决基础设施扩展问题颇为相似，但管理<a data-primary="high-cardinality data" data-type="indexterm" id="id1149"/><a data-primary="observability" data-secondary="high-cardinality data" data-type="indexterm" id="id1150"/>高基数数据<sup><a data-type="noteref" href="ch03-zh.html#id1151" id="id1151-marker">3</a></sup>仍是一项关键能力。扩展时序数据库（TSDB）已经变得更容易，但不受管控的基数可能造成代价高昂的意外、误解和用户体验下降，因此仍需持续投资这些平台。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Democratization of Access" data-type="sect2"><div class="sect2" id="ch03_democratization_of_access">
+<h2>访问能力的普及</h2>
+
+<p>如今，开发者、产品经理甚至业务分析师都可以利用同一套遥测数据作出有依据的<a data-primary="observability" data-secondary="value of open approach to" data-type="indexterm" id="id1152"/><a data-primary="cloud computing" data-secondary="observability, value of open approach to" data-type="indexterm" id="id1153"/>决策。甚至可以说，可观测性已经进入普及化时代，而自助服务平台和云计算功不可没。反过来，把遥测访问封闭在孤岛中，仍是一种顽固的反模式，它由过去的社会技术规范演变而来。围绕可观测性数据筑起的孤岛会造成信息不对称，通常导致团队绩效下降。过去，规避风险的安全策略或许要求设置这些边界；但现代身份感知访问控制已经无处不在，因此可以在不牺牲安全性的前提下采取更开放的可见性策略。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Organizations Rethinking Reliability" data-type="sect1"><div class="sect1" id="ch03_organizations_rethinking_reliability">
+<h1>组织重新思考可靠性</h1>
+
+<p>几十年来，传统企业的可靠性重心<a data-primary="metrics" data-secondary="defining reliability" data-type="indexterm" id="met_defrel"/>一直是基础设施本身。主流理念非常直接：只要服务器在运行、网络通道畅通、数据库能够响应，系统就是可靠的。我们在硬件层构建大量冗余，执着于组件可用性达到“五个九”，并以单台机器的正常运行时间来定义成功。</p>
+
+<p>正如前文所述，这种以基础设施为中心的观点，往好处说已经过时，往坏处说则会主动造成危害。企业组织正在加速转型，不再只关注底层基础设施的韧性，而是衡量真实用户体验的质量。这并非仅仅改变措辞，而是现代分布式架构的复杂性所带来的现实需要。这种复杂性往往只是互联网规模造成的，并非任意设计决策的结果；如今它已成为常态，而非例外。过去十年里，业界已经响应了这种演进要求。</p>
+
+<p>这种视角变化要求组织严格重新评估用于定义可靠性的指标。过去，企业对可靠性的讨论主要围绕两个源自<a data-primary="business continuity and disaster recovery (BC/DR) programs" data-type="indexterm" id="id1154"/><a data-primary="BC/DR (business continuity and disaster recovery) programs" data-type="indexterm" id="id1155"/>业务连续性与灾难恢复（BC/DR）领域的缩写展开：</p>
+<dl>
+<dt>恢复时间目标（RTO）</dt>
+<dd>
+<p>发生故障后，系统必须以多快的速度<a data-primary="Recovery Time Objectives (RTOs)" data-type="indexterm" id="id1156"/><a data-primary="RTOs (Recovery Time Objectives)" data-type="indexterm" id="id1157"/>恢复？</p>
+</dd>
+<dt>恢复点目标（RPO）</dt>
+<dd>
+<p>发生故障时，可以接受多少<a data-primary="Recovery Point Objectives (RPOs)" data-type="indexterm" id="id1158"/><a data-primary="RPOs" data-see="Recovery Point Objectives" data-type="indexterm" id="id1159"/>数据丢失？</p>
+</dd>
+</dl>
+
+<p>RTO 和 RPO 对灾难性场景至关重要：如果整个数据中心都被烧毁，你当然必须知道自己的 RPO。然而，作为衡量现代软件系统运维可靠性的首要指标，RTO 和 RPO 已经越来越力不从心。这些传统指标假设故障只有两种状态：系统要么“正常”，要么“宕机”，而“宕机”就是需要恢复的灾难。现代分布式系统很少以这种二元方式失效，它们会遭遇<em>灰色故障</em>：暂时性<a data-primary="binary failures" data-type="indexterm" id="id1160"/><a data-primary="gray failures" data-type="indexterm" id="id1161"/>性能下降、高分位延迟突增，或者只有特定功能受损的局部服务降级。对于“10% 的用户感觉系统慢了 30%”这种情况，RTO 根本无法描述。</p>
+
+<p>这些旧方法还是被动响应，而不是主动预防。RTO 就像一只只有灾难发生后才开始计时的秒表，衡量的是组织救火的能力。现代 SRE 试图把工作左移，在风险演变成需要恢复的事件之前，利用错误预算进行管理。为此，我们不能依赖与用户意图脱节的指标。RTO 和 RPO 是面向业务的汇总指标，却几乎无法帮助我们判断是否满足了用户隐含和明确的期望。它们通常由历史惯例和组织政治决定，而不是产品、工程与运维团队共同努力的结果。</p>
+
+<p>这种转型并不容易。它要求 SRE 深入理解业务领域，与产品负责人密切合作，找出对用户真正重要的事项，并实现更复杂的检测手段。但它带来的回报十分可观。把可靠性指标与用户体验而非基础设施韧性对齐后，SRE 团队便不再只是保护基础设施，也开始保护这些系统本应提供的业务价值。组织正在认识到这一现实，而且趋势仍在加速。衡量和报告 SLO 的能力，已经成为<a data-primary="metrics" data-secondary="defining reliability" data-startref="met_defrel" data-type="indexterm" id="id1162"/>现代生产平台的一项基本要求。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Google’s Production Environment" data-type="sect1"><div class="sect1" id="ch03_google_s_production_environment">
+<h1>Google 的生产环境</h1>
+
+<p>Google 最初设计<a data-primary="infrastructure" data-secondary="Google production infrastructure" data-type="indexterm" id="infrs"/><a data-primary="Google" data-secondary="production infrastructure" data-type="indexterm" id="gogl_infrastr"/>生产环境时，采用了与传统硬件管理截然不同的方法：把庞大的异构机器集群视为一个统一的计算资源池。如<a data-type="xref" href="#ch03_fig01">图 3-1</a>所示，这台仓库级计算机的核心<a data-primary="Borg (cluster operating system)" data-type="indexterm" id="id1163"/><a data-primary="cluster operating systems, Borg" data-type="indexterm" id="id1164"/>是 <em>Borg</em>，<sup><a data-type="noteref" href="ch03-zh.html#id1165" id="id1165-marker">4</a></sup>一种将单台机器抽象掉的集群操作系统。Borg 不为特定任务分配专用硬件，而是管理由多个<em>任务（task）</em>组成的<em>作业（job）</em>，自动完成调度、资源分配和故障恢复。</p>
+
+<p>这种抽象也延伸到存储和网络，其中包括<a data-primary="Colossus (cluster-level file system)" data-type="indexterm" id="id1166"/><a data-primary="cluster-level file systems, Colossus" data-type="indexterm" id="id1167"/> <em>Colossus</em><sup><a data-type="noteref" href="ch03-zh.html#id1168" id="id1168-marker">5</a></sup>（集群级文件系统）和 <a data-primary="Spanner (globally consistent database)" data-type="indexterm" id="id1169"/><a data-primary="databases, Spanner" data-type="indexterm" id="id1170"/><em>Spanner</em><sup><a data-type="noteref" href="ch03-zh.html#id1171" id="id1171-marker">6</a></sup>（全局一致数据库）等系统。它们提供高层 API，掩盖了物理磁盘故障以及跨全球网络复制数据的底层复杂性。为了大规模处理<a data-primary="Bigtable (distributed storage system)" data-type="indexterm" id="id1172"/><a data-primary="storage systems" data-type="indexterm" id="id1173"/>结构化数据，Google 使用 <em>Bigtable</em>。<sup><a data-type="noteref" href="ch03-zh.html#id1174" id="id1174-marker">7</a></sup>它是一种分布式多维有序映射，能够以低延迟在数千台普通服务器上处理 PB 级数据。对于大型、不可变的二进制对象，工程师使用 <a data-primary="Blobstore" data-type="indexterm" id="id1175"/><em>Blobstore</em>。它利用集群存储层的底层效率，为图像、视频等非结构化数据提供简化的存取接口。</p>
+
+<figure><div class="figure" id="ch03_fig01">
+<img alt="Google 存储栈核心组件示意图，展示 Blobstore、Spanner 和 Bigtable 如何与 Colossus 交互以存储字节数据。" src="assets/sre2_0301.png"/>
+<h6><span class="label">图 3-1　</span>Google 存储栈的核心组件</h6>
+</div></figure>
+
+<p class="fix_tracking">为了驾驭这种流动的环境，SRE 依靠由复杂网络栈连接起来的稳健<a data-primary="service-oriented architecture" data-type="indexterm" id="id1176"/>面向服务架构。任务随时可能在机器之间移动，因此系统通过<a data-primary="gRPC (language-agnostic data exchange)" data-type="indexterm" id="id1177"/><a data-primary="Protocol Buffers, language-agnostic data exchange" data-type="indexterm" id="id1178"/> <a href="https://grpc.io"><em>gRPC</em></a> 和 <a href="https://protobuf.dev"><em>Protocol Buffers</em></a> 标准化通信，确保高效且与语言无关的数据交换。为了在大规模环境下维持性能<a data-primary="Global Software Load Balancer (GSLB)" data-type="indexterm" id="id1179"/><a data-primary="GSLB (Global Software Load Balancer)" data-type="indexterm" id="id1180"/>，<em>全局软件负载均衡器</em>（GSLB）<sup><a data-type="noteref" href="ch03-zh.html#id1181" id="id1181-marker">8</a></sup>从地理 DNS、服务和远程过程调用（RPC）三个层级引导流量，既确保用户请求由最近的可用数据中心处理，也防止任何单一集群过载。</p>
+
+<p>支撑这套基础设施的还有 <a data-primary="Piper" data-type="indexterm" id="id1182"/><em>Piper</em>，<sup><a data-type="noteref" href="ch03-zh.html#id1183" id="id1183-marker">9</a></sup>这是一套强调速度与一致性的“单体仓库（monorepo）”源代码版本控制系统。工程师在共享代码库中工作，每项变更部署前都要经过严格的自动化测试和同行评审。基础设施及服务配置文件与服务源代码一起存储在 Piper 中，践行基础设施即代码理念。<sup><a data-type="noteref" href="ch03-zh.html#id1184" id="id1184-marker">10</a></sup></p>
+
+<p class="pagebreak-before less_space">持续集成流水线<a data-primary="continuous integration pipelines" data-type="indexterm" id="id1185"/>利用生产集群的庞大算力并行运行测试，常常能实现测试通过即推送部署。通过把这种标准化开发生命周期与 <a data-primary="Monarch" data-type="indexterm" id="id1186"/><em>Monarch</em><sup><a data-type="noteref" href="ch03-zh.html#id1187" id="id1187-marker">11</a></sup> 提供的深度可观测性相结合——Monarch 是一套行星级监控系统——SRE 能够高可靠地管理数千项服务，把单个硬件故障视为日常事件，而不是紧急事故。</p>
+
+<p>关于 Google 生产基础设施的更详细讨论，请参阅<a href="https://sre.google/sre-book/production-environment">本书第一版第 2 章</a>。这里，我们将把 Google 生产环境的演进作为案例，说明本章描述的各种趋势。过去十年，整个行业迅速采用云计算和容器编排；与此同时，Google 自身的生产环境也经历了并行而自然的演进。从内部开发者平台的兴起到数字主权的要求，许多全行业趋势都直接反映<a data-primary="Google" data-secondary="production infrastructure" data-startref="gogl_infrastr" data-type="indexterm" id="id1188"/><a data-primary="infrastructure" data-secondary="Google production infrastructure" data-startref="infrs" data-type="indexterm" id="id1189"/>在以 Google 规模运行系统时不断变化的现实之中。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Platformization" data-type="sect2"><div class="sect2" id="ch03_platformization">
+<h2>平台化</h2>
+
+<p>正如业界已经转向自助服务生态系统<a data-primary="Google" data-secondary="production infrastructure" data-tertiary="platformization" data-type="indexterm" id="id1190"/><a data-primary="platformization" data-type="indexterm" id="id1191"/>（<a data-type="xref" href="ch18.html#ch18">第 18 章</a>），Google 也基本告别了因产品而异的定制架构。如今，Google 的大多数生产服务都运行在标准化平台上。为了克服管理大量独特且彼此割裂的系统所带来的局限，Google 推出了 <a data-primary="P2020 Google platform program" data-type="indexterm" id="id1192"/><em>P2020</em> 平台计划，旨在把不同的孤立运维活动整合为标准化举措。P2020 对 CI/CD 和可观测性等关键功能执行一致的标准，建立通用模式，使 SRE 能够支持远多于以往的系统。</p>
+
+<p>与这些标准协同工作的还有 <a data-primary="developer platform, Boq" data-type="indexterm" id="id1193"/><a data-primary="Boq (developer platform)" data-type="indexterm" id="id1194"/><em>Boq</em> 等平台。Boq 是一个综合性的内部开发者平台，可自动配置和部署 Borg 应用。它覆盖服务器的端到端生命周期，包括服务设计、开发、测试和生产维护。通过对服务开发方式实施一套严格的一致性要求，Boq 在严格遵循既定最佳实践的同时，显著加快了开发速度。</p>
+
+<p>虽然 gRPC 和 Protocol Buffers 仍是这些分布式微服务的基础管道，但 Boq 和 P2020 等平台为过载管理、重试和缓存等常见运维问题提供挂钩，从而抽象掉这些复杂性，并提供黄金路径，让开发者在不损害可靠性的前提下更快行动。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Digital Sovereignty and Embedded Compliance" data-type="sect2"><div class="sect2" id="ch03_digital_sovereignty_and_embedded_compliance">
+<h2>数字主权与嵌入式合规</h2>
+
+<p>全行业正在转向<a data-primary="geopatriation" data-secondary="digital sovereignty" data-type="indexterm" id="id1195"/><a data-primary="regulations" data-secondary="digital sovereignty" data-type="indexterm" id="id1196"/><a data-primary="digital sovereignty" data-type="indexterm" id="id1197"/><a data-primary="compliance, trends" data-type="indexterm" id="id1198"/>地缘归属和严格的监管合规。这些监管要求包括《通用数据保护条例》（GDPR）、《数字服务法》（DSA）、《数字市场法》（DMA），以及不断演变的<a href="https://oreil.ly/7thtc">主权云要求</a>，它们<a data-primary="sovereign cloud requirements" data-type="indexterm" id="id1199"/>迫使 Google 大幅改变生产环境的管理方式。这些法规不仅要求严格分离物理和逻辑数据，还要求增强审计能力并实施严格的内容审核控制。为满足这些要求，合规工作已经左移，直接嵌入部署流水线。</p>
+
+<p>如今，运维团队高度依赖策略即代码和可观测性工具，以确保法律与地理约束被视为系统的基础意图。策略即代码机制自动验证基础设施定义，可观测性工具则监控系统是否遵守策略框架。这些调整至关重要：它们使 Google 能够证明合规性，同时维持用户信任以及跨服务的数据完整性。</p>
+
+<p>与此同时，传统网络边界的消解，使身份成为首要安全边界，并推动各类系统广泛采用零信任架构，正如 Google 的 <a href="https://oreil.ly/jh61E">BeyondCorp 系列出版物</a>所述。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The AI Infrastructure Explosion" data-type="sect2"><div class="sect2" id="ch03_the_ai_infrastructure_explosion">
+<h2>AI 基础设施爆发式增长</h2>
+
+<p>现代生产环境中最显著的变化，或许是人工智能的全面融入<a data-primary="AI (artificial intelligence)" data-secondary="integration into infrastructure" data-type="indexterm" id="ai_intinf"/><a data-primary="infrastructure" data-secondary="AI integration" data-type="indexterm" id="infrst_integr"/><a data-primary="production infrastructure" data-secondary="AI integration" data-type="indexterm" id="prodinf_aiintgrt"/>（<a data-type="xref" href="ch20.html#ch20">第 20 章</a>）。在生成式 AI 空前普及的推动下，Google 的基础设施正在应对前所未有的需求。截至 2026 年年中，Google 所有 AI 产品界面每月处理的 AI token 超过 3.2 千万亿个。AI 加速器的使用量在 24 个月内激增至 15 倍，迫使数据中心适应 TPU 和 GPU 快速迭代、跨越多代的生命周期，同时为利用神经处理单元（NPU）战略转向边缘计算做好准备。<sup><a data-type="noteref" href="ch03-zh.html#id1200" id="id1200-marker">12</a></sup></p>
+
+<p>当然，AI 不只是运行<em>在</em>基础设施上的工作负载，它也已成为基础设施<em>的</em>操作者（<a data-type="xref" href="ch21.html#ch21">第 21 章</a>）。Google 利用 ML 模型分析海量遥测数据，预测即将发生的硬件故障、优化硬件资源分配并检测零日漏洞；与此同时，DeepMind AI 持续微调数据中心冷水机组和服务器风扇转速，以提高能源效率<sup><a data-type="noteref" href="ch03-zh.html#id1201" id="id1201-marker">13</a></sup>并减少碳足迹。<sup><a data-type="noteref" href="ch03-zh.html#id1202" id="id1202-marker">14</a></sup></p>
+
+<p>Google 的生产环境不仅在内部使用 AI，还通过我们的 <a data-primary="AI (artificial intelligence)" data-secondary="production pipeline, stages" data-type="indexterm" id="ai_prodpip_stgs"/><a data-primary="production pipeline, AI" data-type="indexterm" id="id1203"/>AI 生产流水线支持 AI/ML 模型的开发、部署和管理。这条流水线对提升效率和交付 AI 驱动的服务至关重要，包括以下阶段：</p>
+<dl>
+<dt>数据摄取与处理</dt>
+<dd>
+<p>稳健的<a data-primary="data ingestion" data-type="indexterm" id="id1204"/><a data-primary="data processing" data-type="indexterm" id="id1205"/>流水线为 ML 训练收集、清洗并转换各种数据集。数据的质量和规模至关重要，因此需要对 PB 级信息执行高级验证、去重和特征工程。</p>
+</dd>
+<dt>模型训练与实验</dt>
+<dd>
+<p>这一阶段利用<a data-primary="model training" data-type="indexterm" id="id1206"/>分布式计算，通过 TensorFlow 和 JAX 等框架训练复杂的 ML 模型。它包括反复进行超参数调优、神经架构搜索（例如 <a href="https://oreil.ly/ZEc6E">AutoML</a>）和 A/B 测试，以便在部署前优化性能。</p>
+</dd>
+<dt>模型部署与服务</dt>
+<dd>
+<p>训练完成的<a data-primary="model deployment" data-type="indexterm" id="id1207"/><a data-primary="deployments" data-secondary="models" data-type="indexterm" id="id1208"/>模型使用高效基础设施进行部署，以大规模提供低延迟预测。关键实践包括模型版本控制、在线 A/B 测试和金丝雀部署，从而保证可靠性并尽量减少干扰。</p>
+</dd>
+<dt>可观测性与维护</dt>
+<dd>
+<p>持续<a data-primary="observability" data-type="indexterm" id="id1209"/><a data-primary="maintenance" data-type="indexterm" id="id1210"/>监控已部署的 AI 模型，可以发现数据漂移或模型衰退等异常。自动化系统会触发告警和重新训练，确保模型持续保持准确性与适应能力。</p>
+</dd>
+</dl>
+
+<p>这些阶段共同构成运维骨干<a data-primary="AI (artificial intelligence)" data-secondary="integration into infrastructure" data-startref="ai_intinf" data-type="indexterm" id="id1211"/><a data-primary="infrastructure" data-secondary="AI integration" data-startref="infrst_integr" data-type="indexterm" id="id1212"/><a data-primary="production infrastructure" data-secondary="AI integration" data-startref="prodinf_aiintgrt" data-type="indexterm" id="id1213"/>，使 Google 能够把 AI 从实验阶段可靠地扩展到生产就绪状态。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch03_conclusion">
+<h1>结语</h1>
+
+<p>本章讨论的趋势共同推动了技术加速演进。无论是基于意图的控制循环、内部开发者平台、无处不在的可观测性，还是主动式可靠性风险管理，如今的生产环境都与短短十年前大不相同。虽然有些组织才刚刚启程，但更多组织已经顺应这些趋势，完成了生产环境的演进。</p>
+
+<p>许多组织面对的挑战各有特点，却又大同小异；最终，它们汇聚到一组共同模式上，以应对规模、复杂性和持续变化带来的要求。就像生物演化（以及生产事故）一样，很难把这种现象归因于某个单一因素，但包括本书第一版在内的一些因素无疑发挥了重要作用。这种趋同，以及归根结底的这本书，讲述的正是 SRE 第二个十年的故事。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1111"><sup><a href="ch03-zh.html#id1111-marker">1</a></sup> FinOps 是一种把技术、财务和业务结合起来的运维框架与文化转型。</p><p data-type="footnote" id="id1122"><sup><a href="ch03-zh.html#id1122-marker">2</a></sup> 参见 Betsy Beyer 等人的<a href="https://oreil.ly/ftqYs">《更多创新，更少琐事》</a>，<em>;login:</em>，第 41 卷第 3 期（2016 年）：44—48 页。</p><p data-type="footnote" id="id1151"><sup><a href="ch03-zh.html#id1151-marker">3</a></sup> 在可观测性领域，高基数数据是指包含大量且可能没有上限的唯一值的字段，例如不同的用户 ID 或请求 ID。</p><p data-type="footnote" id="id1165"><sup><a href="ch03-zh.html#id1165-marker">4</a></sup> Abhishek Verma 等人，<a href="https://oreil.ly/eBiRL">《使用 Borg 在 Google 进行大规模集群管理》</a>，收录于<em>第十届欧洲计算机系统会议（EuroSys）论文集</em>，2015 年。</p><p data-type="footnote" id="id1168"><sup><a href="ch03-zh.html#id1168-marker">5</a></sup> Eric Ma，<a href="https://oreil.ly/ZAFf3">《Colossus：Google 的下一代分布式文件系统》</a>，<em>SysTutorials</em>，2012 年 11 月 29 日。</p><p data-type="footnote" id="id1171"><sup><a href="ch03-zh.html#id1171-marker">6</a></sup> James C. Corbett 等人，<a href="https://oreil.ly/eXVRE">《Spanner：Google 的全球分布式数据库》</a>，<em>《ACM 计算机系统汇刊》（TOCS）</em>，第 31 卷第 3 期（2013 年）：1—22 页。</p><p data-type="footnote" id="id1174"><sup><a href="ch03-zh.html#id1174-marker">7</a></sup> Fay Chang 等人，<a href="https://oreil.ly/i9Slo">《Bigtable：面向结构化数据的分布式存储系统》</a>，收录于<em>第七届操作系统设计与实现研讨会（OSDI）论文集</em>，2006 年。</p><p data-type="footnote" id="id1181"><sup><a href="ch03-zh.html#id1181-marker">8</a></sup> Danielle E. Eisenbud 等人，<a href="https://oreil.ly/wUsC7">《Maglev：快速可靠的软件网络负载均衡器》</a>，收录于<em>第十三届 USENIX 网络系统设计与实现研讨会（NSDI）论文集</em>，2016 年。</p><p data-type="footnote" id="id1183"><sup><a href="ch03-zh.html#id1183-marker">9</a></sup> Rachel Potvin 和 Josh Levenberg，<a href="https://oreil.ly/4e4Dl">《Google 为何在单一仓库中存储数十亿行代码》</a>，<em>《ACM 通讯》</em>，第 59 卷第 7 期（2016 年）：78—87 页。</p><p data-type="footnote" id="id1184"><sup><a href="ch03-zh.html#id1184-marker">10</a></sup> Kief Morris，<a class="orm:hideurl" href="https://www.oreilly.com/library/view/infrastructure-as-code/9781098114664/"><em>《基础设施即代码》</em></a>，第 2 版（O’Reilly，2020 年）。</p><p data-type="footnote" id="id1187"><sup><a href="ch03-zh.html#id1187-marker">11</a></sup> Colin Adams 等人，<a href="https://oreil.ly/j2xq7">《Monarch：Google 的行星级内存时序数据库》</a>，收录于<em>《VLDB Endowment 论文集》</em>，2020 年。</p><p data-type="footnote" id="id1200"><sup><a href="ch03-zh.html#id1200-marker">12</a></sup> Parthasarathy Ranganathan 和 Amin Vahdat，<a href="https://oreil.ly/DKQX0">《敏捷 AI 架构：面向智能时代的可替换数据中心》</a>，<em>Google Cloud 博客</em>，2025 年 10 月 14 日。</p><p data-type="footnote" id="id1201"><sup><a href="ch03-zh.html#id1201-marker">13</a></sup> Varun Mehra 和 Raiden Hasegawa，<a href="https://oreil.ly/ifQpo">《利用 Google 数据中心的需求响应支持电网》</a>，<em>Google Cloud 博客</em>，2023 年 10 月 4 日。</p><p data-type="footnote" id="id1202"><sup><a href="ch03-zh.html#id1202-marker">14</a></sup> Amin Vahdat 和 Jeff Dean，<a href="https://oreil.ly/oMxG9">《Google 的 AI 消耗多少能源？我们算了一笔账》</a>，<em>Google Cloud 博客</em>，2025 年 8 月 21 日。</p></div></div></section></body></html>
