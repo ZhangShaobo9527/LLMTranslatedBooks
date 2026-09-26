@@ -1,0 +1,1846 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>测试</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第 14 章　测试" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch14">
+<h1><span class="label">第 14 章　</span>测试</h1>
+
+
+<p class="byline">作者：Aman Shaikh、Elliot Williams、Forrest Seiwald、
+<span class="keep-together">Joanna Wijntjes、</span>Joon Lee、Niall Richard Murphy、Nicholas Crespi、
+<span class="keep-together">Thomas C. Hubschman、</span>
+<span class="keep-together">以及 Yuri Grinshteyn</span><br/>
+
+<span class="keep-together">Alex Perry、Max Luebbe 和 Carmela Quinito 参与撰写</span></p>
+
+<p>1882 年，本杰明·布鲁斯特<a data-primary="Brewster, Benjamin" data-type="indexterm" id="id2094"/>在耶鲁大学的一份学生杂志上写道：“理论上，理论与实践并无二致；实践中却并非如此。”这句话堪称对测试为何存在的最佳概括。它也点明了为什么在今天这个庞大分布式系统、复杂生产环境，以及由 AI 编写或与 AI 相关的软件迅速普及的时代，测试比以往任何时候都更重要：没有测试，这一切都无从谈起。</p>
+
+<p>你过去接触测试，很可能主要是在软件开发生命周期（SDLC）的语境下：它位于部署之前，也就是新软件交付用户之前。尽管这种情况正在迅速变化，但测试的这一<a data-primary="testing" data-secondary="traditional role" data-type="indexterm" id="id2095"/>传统角色<em>可能</em>仍是今天最常见的用法。传统做法会安排某种测试流程，有时由人工执行，有时自动执行，而且往往充当准入关卡：软件只有通过测试才能部署。人们认为测试可以在一定程度上保证软件正常工作；也有证据表明，错误发现得越早，修复成本就越低，对客户也越有利。<sup><a data-type="noteref" href="ch14-zh.html#id2096" id="id2096-marker">1</a></sup>类似地，人们通常认为：错误修复后，测试通过，软件发布（或者说“逃进”）生产环境，所有人便可以松一口气。不用说，现实要复杂得多。</p>
+
+<p>本章以布鲁斯特的这句话开篇，是因为测试背后的一个关键思想并未得到足够关注，而它恰好为理解测试提供了一个有用的整体框架：<em>测试是对完全准确的世界模型的替代</em>。假如我们能完全准确地模拟现实，只需搭好模拟环境并运行，就能判断软件是否安全，那么测试便没有存在的必要。因此，可以把测试看作一个过程：通过它，我们确定自己对世界的模型——主要是心智模型，也包括系统中的模型——究竟有多不准确。软件是否含有缺陷显然是这个世界模型的一部分；但对今天的大型软件系统而言，软件所依赖的种种假设，同样决定了它会如何失效。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="测试基础" data-type="sect1"><div class="sect1" id="ch14_testing_basics">
+<h1>测试基础</h1>
+
+<p>测试显然<a data-primary="testing" data-secondary="test types" data-type="indexterm" id="id2097"/>是一个非常宽广的领域。出于多方面原因，本章无法穷尽其内容，但仍有必要介绍一些基础知识。</p>
+
+<p>首先是术语。测试分为不同类型；并非每种类型都有严格定义，彼此有时也会重叠，但区分它们仍然有用。<a data-type="xref" href="#ch14_table_01">表 14-1</a>概述了本章将讨论的类型。当然，除此之外还有<em>许多</em>其他类型。</p>
+<table id="ch14_table_01">
+<caption><span class="label">表 14-1　</span>基本测试类型</caption>
+<thead>
+<tr>
+<th>测试类型</th>
+<th>领域</th>
+<th>目的</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>单元测试</p></td>
+<td><p>同一代码库中的函数</p></td>
+<td><p>在功能范围内测试你对自己函数如何工作的假设。</p></td>
+</tr>
+<tr>
+<td><p>集成测试</p></td>
+<td><p>跨代码库</p></td>
+<td><p>测试不同组织（使用不同世界模型）编写的类或长执行链之间的相互交互。</p></td>
+</tr>
+<tr>
+<td><p>系统测试</p></td>
+<td><p>跨其他软件系统</p></td>
+<td><p>测试多个交互软件系统的复杂性。</p></td>
+</tr>
+<tr>
+<td><p>故障注入、韧性测试与混沌工程</p></td>
+<td><p>跨子组件或外部依赖</p></td>
+<td><p>测试系统对组件、子组件、假设等故障的响应。</p></td>
+</tr>
+<tr>
+<td><p>生产测试</p></td>
+<td><p>生产（运行时测试）</p></td>
+<td><p>测试系统在运行时如何应对生产中的实际问题。这是前一表条目更一般的情况。</p></td>
+</tr>
+<tr>
+<td><p>智能体测试</p></td>
+<td><p>软件开发智能体</p></td>
+<td><p>改进并引导智能体软件开发。</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>有些测试类型更贴近代码层面，有些则作用于系统或环境层面。SRE 虽然会接触这个谱系的两端，但通常更关注系统和环境这一端。另一个维度是测试环境与生产环境的接近程度。如今，许多组织会在预发布环境或<a data-primary="testing" data-secondary="environment for" data-type="indexterm" id="tstng_env"/><a data-primary="environments" data-secondary="testing" data-type="indexterm" id="env_tst"/>质量保证（QA）环境中测试，以免故障影响真实用户。<a data-type="xref" href="#ch14_table_01">表 14-1</a>所列的所有测试类型<em>都可以</em>在预发布、QA 或类似环境中进行，不过故障注入在生产环境中开展往往更有价值。</p>
+
+<p class="fix_tracking">话虽如此，有一个极其重要的运动主张在生产环境中测试（TiP）<a data-primary="testing in production (TiP)" data-type="indexterm" id="id2098"/><a data-primary="TiP (testing in production)" data-type="indexterm" id="id2099"/>，承认如果大多数测试方法在某种意义上是现实世界的代理，有时它们是无效的代理，那么接近现实世界的最好方式就是在生产环境中测试。根据这种观点，人们直接推送到生产环境，但方式是经过特定控制的，这样对用户的伤害<a data-primary="testing" data-secondary="environment for" data-startref="tstng_env" data-type="indexterm" id="id2100"/><a data-primary="environments" data-secondary="testing" data-startref="env_tst" data-type="indexterm" id="id2101"/>有限，并且你会得到关于推送结果的良好反馈。</p>
+
+<p>我们稍后会详细介绍这些内容，但我们想先说明，测试是SDLC的一个阶段，SRE或更广泛的生产工程深度参与其中。我们可能不在功能开发中进行测试驱动开发（TDD）（虽然我们中有些人在做），但我们经常被发现写测试、运行测试、担心并修复测试覆盖率的漏洞、思考如何有效运行预发布环境，以及总体上将测试作为保护用户最有效的技术之一。我们还通过测试来更广泛地理解系统可能经历的故障类型，从而了解系统的韧性。与另一个TDD类比，这就是测试驱动部署！</p>
+
+<p>本章其余部分将介绍 Google SRE 如何看待测试，希望能为你制定自己的测试方法提供参考。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试模型" data-type="sect2"><div class="sect2" id="ch14_models_of_testing">
+<h2>测试模型</h2>
+
+<p>从简化的心智模型开始你的<a data-primary="testing" data-secondary="models, hierarchy of tests" data-type="indexterm" id="tst_mod_hiertst"/><a data-primary="hierarchy of tests" data-type="indexterm" id="hiertst"/><a data-primary="models" data-secondary="hierarchy of tests" data-type="indexterm" id="mods_hiertsts"/>测试之旅会很有帮助（<a data-type="xref" href="#ch14_fig01">图 14-1</a>）。在这个“测试金字塔”框架中，传统软件测试从单元测试开始。更复杂的功能的测试随后分阶段叠加。从这个意义上说，该模型代表了从功能局部到系统范围的测试光谱，我们逐步引入复杂性。</p>
+
+<figure><div class="figure" id="ch14_fig01">
+<img alt="软件测试层级图：底部为单元测试，顶部为故障注入，展示复杂度如何逐步增加。" src="assets/sre2_1401.png"/>
+<h6><span class="label">图 14-1。</span>测试的层级结构</h6>
+</div></figure>
+
+<p>这个模型虽然是有用的概念指南，却也存在重要缺陷。尤其要注意，它表达的是<em>依赖关系</em>的层级，而不是<em>价值</em>的层级；它也没有讨论生产环境测试（TiP）与其他方法之间的取舍。较新的模型，例如<a href="https://oreil.ly/5CMpq">“测试奖杯”</a>，往往认为集成测试比单元测试更有价值，并强调 TiP，尤其重视金丝雀测试。此外，韧性测试虽然有其独特之处，也可以理解为一种系统测试。最后，单元测试的数量通常最多，但越往层级上方，测试耗费的实际时间和总体资源通常越多。从这个意义上说，图形的表面积<a data-primary="testing" data-secondary="models, hierarchy of tests" data-startref="tst_mod_hiertst" data-type="indexterm" id="id2102"/><a data-primary="hierarchy of tests" data-startref="hiertst" data-type="indexterm" id="id2103"/><a data-primary="models" data-secondary="hierarchy of tests" data-startref="mods_hiertsts" data-type="indexterm" id="id2104"/>可以反向代表复杂度。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="定义的测试类型" data-type="sect2"><div class="sect2" id="ch14_test_types_defined">
+<h2>测试类型的定义</h2>
+
+<p>本节将进一步解释<a data-primary="tests" data-secondary="types" data-type="indexterm" id="tsts_typs"/>前文引入的一些术语，以便后续讨论建立在共同理解之上。测试的每个方面都很重要，但本章将重点讨论与 SRE 最相关的内容。这意味着有些足以单独写成一本书的主题只能一带而过，希望这样取舍的理由不言自明。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="单元测试" data-type="sect3"><div class="sect3" id="ch14_unit_tests">
+<h3>单元测试</h3>
+
+<p>最小<a data-primary="unit tests" data-type="indexterm" id="id2105"/>且最简单的软件测试形式是单元测试。它评估一个可分离的软件单元，比如类或函数，独立于包含它的更大单元。这些测试非常简单、数量众多，理想情况下运行速度很快，这样每次更改后都能快速运行。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="集成测试" data-type="sect3"><div class="sect3" id="ch14_integration_tests">
+<h3>集成测试</h3>
+
+<p>软件组件组装成更大的组件后，也要<a data-primary="integration tests" data-type="indexterm" id="id2106"/>接受验证测试。集成测试涵盖的行为范围很广，从一个类层级、多个相互协作的类层级，到与外部依赖的交互，都可能包含在内。在这一阶段，测试往往需要接入有状态数据库等复杂组件。通常无需引入完整的外部系统，而是<em>进行依赖注入</em>，借助 <a href="https://dagger.dev">Dagger</a> 等工具，用行为经过精确定义（且范围有限）的轻量级模拟对象替代外部调用。</p>
+
+<p>集成测试的复杂度低于系统级测试，但高于单元测试，同时能带来很高的价值。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="系统测试" data-type="sect3"><div class="sect3" id="ch14_system_tests">
+<h3>系统测试</h3>
+
+<p>系统测试是一种<a data-primary="system tests, types" data-type="indexterm" id="systst_typ"/>大规模测试，将属于特定组件的所有内容整合起来，例如已通过集成测试的服务器，并验证其端到端功能。亚型包括：</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="烟雾测试" data-type="sect4"><div class="sect4" id="ch14_smoke_tests">
+<h4>烟雾测试</h4>
+
+<p>烟雾测试<a data-primary="smoke tests" data-type="indexterm" id="id2107"/>验证系统最简单的“正常路径”能否端到端运行。例如，用户能登录吗？主页能渲染吗？这个名称来自硬件测试：最简单的测试自然是通电，看看<a href="https://oreil.ly/nP5Iv">魔法烟雾</a>会不会冒出来。烟雾测试并不追求全面，只求快速给出通过或失败的结果。若测试失败，需要调查的调用链或系统范围也相对较小。这类测试常用于验证关键用户旅程（CUJ），详见<a data-type="xref" href="ch08-zh.html#ch08">第 8 章</a>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="性能测试" data-type="sect4"><div class="sect4" id="ch14_performance_tests">
+<h4>性能测试</h4>
+
+<p>确认基本正确性后，下一步通常是通过<a data-primary="performance tests" data-type="indexterm" id="id2108"/>性能测试验证系统在整个生命周期内是否始终处于可接受的性能范围。软件、软件依赖和资源需求都会变化，因此必须测试系统，确保没有引入逐步累积的性能退化。每次发布损失几毫秒非常常见，于是年初响应耗时 50 毫秒的操作，到年底可能已需要 250 毫秒。</p>
+
+<p>性能测试（以及其他类型的测试）也可以在单元测试层面进行，而非系统测试层面，但这里我们不展开。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="回归测试" data-type="sect4"><div class="sect4" id="ch14_regression_tests">
+<h4>回归测试</h4>
+
+<p>回归测试<a data-primary="regression tests" data-type="indexterm" id="id2109"/>旨在防止已经修复的缺陷悄然重返代码库。这需要记录以往遇到的缺陷，并为其编写测试。回归测试常见于业务领域，因为问题本身容易让开发者反复落入同一种陷阱——例如，电商系统中先打九折还是先减 10 美元，结果并不相同<a data-primary="system tests, types" data-startref="systst_typ" data-type="indexterm" id="id2110"/>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="韧性测试" data-type="sect3"><div class="sect3" id="ch14_fault_injection_tests">
+<h3>韧性测试</h3>
+
+<p>韧性测试<a data-primary="fault injection testing" data-type="indexterm" id="id2111"/><a data-primary="resilience testing" data-type="indexterm" id="id2112"/>直接模拟基础设施或代码的故障。这些测试旨在验证系统是否能够承受计算、网络、存储及其他关键需求的损失，如数据依赖。有时被称为混沌工程，它们测试系统的整体运行，通常在生产环境中。故障注入测试是一种韧性测试。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="生产测试" data-type="sect3"><div class="sect3" id="ch14_production_tests">
+<h3>生产测试</h3>
+
+<p>“生产测试”<a data-primary="production tests" data-type="indexterm" id="prodtst"/>并不是指在生产环境中运行单元测试（尽管从物理或逻辑上说，你或许确实能这样做），而是指在生产环境中测试软件的某个方面。一般而言，其他测试形式都假定采用或极大受益于<a href="https://oreil.ly/0qst5">封闭测试</a>，即有意让测试与实际运行环境和客户隔离。这种做法需要权衡，但主要优点是：完全可复现的测试环境会产生确定性结果，便于调试。生产测试则有意反其道而行之：测试的不是输入输出均受到严密控制的理想化流程，而是非常接近、甚至等同于实际服务过程的全部复杂性。</p>
+
+<p>生产测试与实时生产系统交互，而不是与封闭测试环境中的系统交互。许多技术都可归入这一范畴（尤其是在生产环境中开展的混沌工程），但其常见形态可能更接近黑盒监控（详见本书第一版<a href="https://sre.google/sre-book/monitoring-distributed-systems">第 6 章</a>）。生产测试对可靠运行生产服务至关重要；与单元测试不同，它实际驻留并运行在生产环境中，因此通常是 SRE 特别关注的事项。</p>
+
+<p>金丝雀测试<a data-primary="production tests" data-startref="prodtst" data-type="indexterm" id="id2113"/>是一类非常重要、也可能最常见的生产测试。<a data-type="xref" href="#ch14_advanced_testing">“高级测试”</a>一节会详细讨论。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="其他类型的测试" data-type="sect3"><div class="sect3" id="ch14_other_kinds">
+<h3>其他类型的测试</h3>
+
+<p>我们之前提到，还有许多其他测试类型，我们不会详细介绍。我们这里会简单介绍其中几个，让你熟悉相关术语。</p>
+
+<p><em>模糊测试</em>是向系统提供<a data-primary="fuzzing" data-type="indexterm" id="id2114"/>刻意构造的畸形输入或随机输入，以检查系统能否安全处理。对于会处理个人身份信息（PII）的系统，通常不应在生产环境中开展此类测试，因为测试数据与 PII 混杂会让任何情况都变得异常复杂。如需进一步了解，可以使用 Google 公开提供的模糊测试平台 <a href="https://oreil.ly/1IRCu">OSS-Fuzz</a>。</p>
+
+<p><em>属性测试</em>与我们后面提到的形式方法密切相关<a data-primary="property testing" data-type="indexterm" id="id2115"/>（参见<a data-type="xref" href="#ch14_formal_methods">“形式方法”</a>）。你不是为单个输入指定预期输出，而是指定了所有输入都应成立的通用性质，测试框架生成大量案例来验证这些特性。例如，你不只是通过单元测试检查列表<code translate="no">[3, 1, 2]</code>是否被排序为<code translate="no">[1, 2, 3]</code>，而是指定输出已排序，并且是输入的置换。</p>
+
+<p><em>变异测试</em>故意<a data-primary="maturation testing" data-type="indexterm" id="id2116"/>变异代码中的小部分（例如，将<code translate="no">==</code>替换为<code translate="no">!=</code>），以检查测试用例是否检测到由此产生的错误。</p>
+
+<p>此外，还有多种方法可测试内存安全、并发和运行时隔离等语言特有属性是否正确，包括死锁检测和静态分析。不过，越来越多的开发者试图直接使用内置特性让这类错误根本无法发生的语言，从源头避开问题。这正呼应了 Yaron Minsky 的格言：“<a href="https://oreil.ly/RF__u">让非法状态无法表示</a>。”系统层面的类似趋势可见于 Peter Sperl 的<a href="https://oreil.ly/oPP4k">《无需失效即可缓存整个系统》</a>：它把组件划分为有状态组件和无状态或只读组件，从而缩小测试面，并让整个系统<a data-primary="tests" data-secondary="types" data-startref="tsts_typs" data-type="indexterm" id="id2117"/>更易于推理。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试入门" data-type="sect2"><div class="sect2" id="ch14_getting_started_with_testing">
+<h2>测试入门</h2>
+
+<p>如果你想知道该如何着手测试，或者如何采用一种从未尝试过的测试方式，本节正适合你。若想深入了解，Hyrum Wright、Titus Winters 和 Tom Manshreck 合著的 <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/software-engineering-at/9781492082781/"><em>Software Engineering at Google</em></a><a data-primary="Wright, Hyrum" data-type="indexterm" id="id2118"/><a data-primary="Winters, Titus" data-type="indexterm" id="id2119"/><a data-primary="Manshreck, Tom" data-type="indexterm" id="id2120"/>（O'Reilly，2020）全面介绍了 Google 的测试实践。也可以参阅 James A. Whittaker、Jason Arbon 和 Jeff Carollo 合著的 <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/how-google-tests/9780132851572/"><em>How Google Tests Software</em></a><a data-primary="Whittaker, James A." data-type="indexterm" id="id2121"/><a data-primary="Arbon, Jason" data-type="indexterm" id="id2122"/><a data-primary="Carollo, Jeff" data-type="indexterm" id="id2123"/>（Addison-Wesley Professional，2012），不过该书年代要早得多。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试基础设施与最佳实践" data-type="sect3"><div class="sect3" id="ch14_test_infrastructure_and_best_practices">
+<h3>测试基础设施与最佳实践</h3>
+
+<p>测试基础设施<a data-primary="testing" data-secondary="infrastructure" data-type="indexterm" id="id2124"/><a data-primary="infrastructure" data-secondary="tests" data-type="indexterm" id="id2125"/>对于比纯单元测试更复杂的工作是必需的，当然也需要版本控制源代码。一旦源码控制到位，最佳实践建议连续构建系统是下一步——你可以每次提交代码时构建软件并运行测试。</p>
+
+<p>以集中式——或至少易于复现的——方式开展这些工作有许多<a data-primary="testing" data-secondary="best practices" data-type="indexterm" id="id2126"/>好处，其中之一是便于把测试失败当作头等大事。在 Google，我们采用<a href="https://oreil.ly/DnZ-l">基于单体代码库主干工作的开发实践</a>，因此一旦出现破坏性变更，立即通知工程师并优先修复最为合适；其他环境可能有不同约束。我们强烈建议认真对待失败的测试，理由很多，良好的软件工程纪律当然是其中之一。从生产角度看，发生生产事故、安全问题或类似事件时，往往需要迅速、干净地重新构建。能够快速完成构建并部署到生产环境，是一项很有价值的能力。</p>
+
+<p>另一项最佳实践是让大多数测试在封闭环境中运行，确保测试既依赖一组稳定的依赖项，又不存在副作用风险。<sup><a data-type="noteref" href="ch14-zh.html#id2127" id="id2127-marker">2</a></sup>真正的封闭环境不进行网络调用，输入完全确定（输出通常也确定，但并非总能保证），依赖项集合也受到控制。并非所有测试都能或都应该这样运行，例如针对真实生产状态的测试就不适合；但在调试和提高可复现性时，这种技术很有助于减少挫折和困惑。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="配置基础" data-type="sect3"><div class="sect3" id="ch14_configuration_basics">
+<h3>配置基础</h3>
+
+<p class="fix_tracking">你或许已经熟练实践<a data-primary="configuration" data-secondary="testing considerations" data-type="indexterm" id="conf_tstcons"/><a data-primary="testing" data-secondary="configuration considerations" data-type="indexterm" id="tst_configcons"/><a href="https://oreil.ly/_MEjt">配置即代码</a><a data-primary="config as code" data-type="indexterm" id="id2128"/>，即配置应当像代码一样受到管理。不过仍有必要强调：配置引发故障的危险丝毫不亚于代码，在某些情境下甚至更大。创建或修改生产<span class="keep-together">环境</span>就是一例，一次失误就可能抹掉整个环境。代码中常有 <code translate="no">if</code> 语句为危险或新代码路径把关，而一条匆忙执行的 <code translate="no">terraform apply</code> 却可能立即应用基础设施变更。Google 许多与配置有关的故障都记录在公开的 SRE 资料中，例如<a href="https://sre.google/workbook/postmortem-culture">卫星磁盘擦除故障</a>、<a href="https://oreil.ly/Dy4Vm">整个 Web 被标记为恶意软件的问题</a>、<a href="https://oreil.ly/RxW8o">2020 年 OAuth 故障</a>和 <a href="https://oreil.ly/qDnk6">2021 年网络故障</a>，这里只列举几例。</p>
+
+<p>既然配置至少需要与代码同等的谨慎，我们引入配置的四个不变量，称为<a data-primary="VOIS framework (configuration principles)" data-type="indexterm" id="id2129"/>VOIS框架：</p>
+<dl>
+<dt>版本化</dt>
+<dd>
+<p>配置必须<a data-primary="versioned configuration" data-type="indexterm" id="id2130"/>版本化且源代码控制。应该能够识别出某个特定版本，并在不同版本之间流畅切换。</p>
+</dd>
+<dt>可观测</dt>
+<dd>
+<p>配置必须<a data-primary="observability" data-secondary="configuration" data-type="indexterm" id="id2131"/>可观察。理论上可以知道在特定环境或上下文中运行的版本，最好无需查看配置文本。</p>
+</dd>
+<dt>独立</dt>
+<dd>
+<p>配置必须能够独立于代码进行更改。配置和代码应当彼此分离，并且二者的不同版本应能相互组合测试。</p>
+</dd>
+<dt>安全</dt>
+<dd>
+<p>安全默认设置必须是明确的。默认配置版本应当是安全的（尽管可能仅限于特定的二进制版本）。</p>
+</dd>
+</dl>
+
+<p class="fix_tracking">这些原则结合起来，既支持生产系统的管理者希望看到的行为，也能防止他们不愿看到的行为。具体而言，如果配置<em>无法</em>版本化，你会不断困惑于线上运行的究竟是什么、为何如此，并不可避免地在最糟糕的时刻临时拼凑配置。如果配置不可观测，你甚至无法完成最基本的判断——确认触发不良状态的特定因素是否已经进入生产——而只能整体更新生产环境，这往往会引发更多故障。如果配置不能独立于二进制程序变更，就无法测试部分行为、软启动新功能等。如果没有安全的默认值，在认知负荷或时间压力极大时，你就无法采用安全、低成本的措施（例如<a href="https://oreil.ly/F334I">通用缓解措施</a>）；而这种能力非常有用。</p>
+
+<p class="pagebreak-before less_space">如今很少有人需要<em>彻底</em>从零开始；即使确实如此，也有许多成熟方案能让系统具备版本化、可观测、独立和安全这些特性。任何基于 <a href="https://oreil.ly/YC3qr">GitOps</a>、至少采用 CI/CD 与版本控制的方案，都能提供前两项特性，不过若想不查看配置文本也能了解实际配置，仍需借助可观测性工具。第三、第四项更多取决于内部纪律。软件必须以合理方式处理配置；当代码期望的条件不成立时，也应作出稳健、克制的响应。例如，旧版配置被误用于启动二进制程序，导致后端不可达时，程序不应失控。同时确保二进制程序和配置的主干（或其他指定分支）均处于安全状态，也意味着<a data-primary="testing" data-secondary="configuration considerations" data-startref="tst_configcons" data-type="indexterm" id="id2132"/><a data-primary="configuration" data-secondary="testing considerations" data-startref="conf_tstcons" data-type="indexterm" id="id2133"/>可以迅速恢复服务。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="配置测试" data-type="sect4"><div class="sect4" id="ch14_configuration_tests">
+<h4>配置测试</h4>
+
+<p>说完配置原则，你可能还会思考<a data-primary="testing" data-secondary="configuration tests" data-type="indexterm" id="id2134"/><a data-primary="configuration" data-secondary="tests" data-type="indexterm" id="id2135"/>配置究竟该测试什么、如何测试。与本章开头的测试模型类似，配置测试也大致可以分成以下层级：</p>
+
+<ul>
+<li>
+<p><em>语法测试</em>通常<a data-primary="syntax testing" data-type="indexterm" id="id2136"/>速度快、成本较低；在紧急情况下，人们往往顾不上语法是否正确，此类测试尤其有价值。大多数格式都有现成的验证工具，例如 <em>yamllint</em>、<em>jsonlint</em> 等。这里需要考虑检查发生在哪个阶段。如果只在合并前运行，它能捕捉大多数问题，却可能漏掉紧急变更，因为紧急情况下常会跳过合并前检查。一种可行方案是提供紧急发布工具，尽量不妨碍发布操作，同时仍强制执行语法检查、日志记录等有用措施。</p>
+</li>
+<li>
+<p><em>语义测试</em>比语法测试<a data-primary="semantic testing" data-type="indexterm" id="id2137"/>更复杂、成本也更高，但它的价值恰恰在于能发现纯语法检查无法捕捉的问题。检查边界条件往往很有用：哪些值以前不是零，现在却被设成了零？某个值是否变成了原来的 300 倍？是否暴露了新的服务或端口？现有配置方法，尤其是继承链或处理链很长的方法，可能很难完成这些检查。因此出现了一种实践：先用“中立”语言表达策略，再将其具体化为受管系统所需的语言。我们见过用于这一目的的系统包括 Open Policy Agent，也有许多内部自研方案；可以说 Terraform 也源于类似诉求。</p>
+</li>
+<li>
+<p><em>动态测试</em>类似于集成测试或系统测试<a data-primary="dynamic testing" data-type="indexterm" id="id2138"/>，会把更广泛的依赖栈纳入测试。遗憾的是，可用方案往往比较零散。有些工具支持类似 <code translate="no">--dry-run</code> 的功能：解析配置并执行除正式生效之外的所有步骤，但很多工具并不支持。此时可以构建一个封闭环境，使用新配置启动工具，再运行几个端到端探测（相当于执行 <code translate="no">GET /</code> 或 <code translate="no">SELECT 1+1</code>）。要让这些测试比单独运行 <code translate="no">terraform plan -detailed-exitcode</code> 更有价值，就必须让更广泛的系统参与其中。另一种可行方法是在预发布环境中测试——这本质上与封闭测试相反。许多组织则直接在生产环境中测试，以免承担维护独立测试环境的成本。</p>
+</li>
+</ul>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="配置漂移" data-type="sect4"><div class="sect4" id="ch14_configuration_drift">
+<h4>配置漂移</h4>
+
+<p>快速变化的生产环境中，一个重大风险是<a data-primary="configuration" data-secondary="drift" data-type="indexterm" id="id2139"/>配置漂移，即生产环境的实际状态与已提交状态不一致。它之所以危险，是因为违反了 VOIS 框架中的“安全”原则：线上状态与存储状态发生分离后，我们便无法确定哪一个才正确。当前生产状态完全可能并不安全，只是尚未暴露问题。（已提交状态也可能不安全，同样只是尚未暴露问题。）</p>
+
+<p>处理配置漂移有多种办法。对于只专注于实现一个狭窄目标（通常与交付有关）的小团队，或者协调成本极高的团队，一种起步方案是暂缓分离配置与代码，先把二者捆绑一段时间。我们并不推荐这样做，既因为前述原因，也因为它会积累技术债务；但它确实能防止生产环境发生漂移。如果组织内部能力更强，可以在生产状态与已提交状态出现差异时告警。不过，大多数工作环境最终都会积累出配置领域的“间歇性失败测试”；若对这种现象养成有意视而不见的习惯，我们认为风险很高。</p>
+
+<p>工具的状态既可能是阻碍也是帮助。如果你的可观测性工具不成熟或不够完善，实现哪怕是最简单的检测机制（例如通过CI/CD、合并前测试、Terraform 计划等实现的<code translate="no">--dry-run</code>式命令行标志）也能<em>一些</em>可观测性，而不是没有。最后，在能力上限下，可以有一个自动对账系统，推送更新而不是针对差异发出警报。谷歌的配置管理系统足够复杂，这使得这成为净收益，尽管全球范围内直接将破碎状态推送到生产环境时存在常见问题。许多GitOps风格的系统可以处理推送任务——例如ArgoCD——但要回到测试，确保变更安全通常依赖于合并前的测试，而非合并后的测试。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="优先考虑什么" data-type="sect3"><div class="sect3" id="ch14_what_to_prioritize">
+<h3>优先考虑什么</h3>
+
+<p>SRE 往往无法从项目一开始就<a data-primary="testing" data-secondary="prioritization considerations" data-type="indexterm" id="tst_prior"/>参与。当代码已经存在——无论仍是原型，还是已经进入生产——我们应如何确定测试优先级？可以考虑以下问题：</p>
+
+<ul>
+<li>
+<p>你能根据重要性对代码库或系统组件的部分进行堆栈排名吗？</p>
+</li>
+<li>
+<p>某些函数或类是关键任务吗？例如，涉及计费的代码通常需要正常工作，且此类代码通常可以干净利落地与系统其他部分分离。</p>
+</li>
+<li>
+<p>其他团队正在针对哪些API进行集成？</p>
+</li>
+<li>
+<p>你是在针对哪些 API 进行集成？</p>
+</li>
+</ul>
+
+<p>与其花大量时间决定要测试什么，通常不如直接开始。几乎任何非单元测试最终都会覆盖多种系统交互，因此常常能比预期更快地<a data-primary="testing" data-secondary="prioritization considerations" data-startref="tst_prior" data-type="indexterm" id="id2140"/>获得可观回报。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="例外情形测试" data-type="sect3"><div class="sect3" id="ch14_testing_by_exception">
+<h3>例外情形测试</h3>
+
+<p>建立强大<a data-primary="testing" data-secondary="regression test suite" data-type="indexterm" id="id2141"/>测试文化<sup><a data-type="noteref" href="ch14-zh.html#id2142" id="id2142-marker">3</a></sup>的一种方法是：对于每个已报告且其修复结果可以通过测试验证的缺陷，都创建一个测试用例。采用这种方法时，新测试起初会失败，因为缺陷尚未修复；修复完成后测试通过，你也由此踏上构建完整回归测试套件的道路。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="监控预发布环境" data-type="sect3"><div class="sect3" id="ch14_monitoring_pre_production">
+<h3>监控预发布环境</h3>
+
+<p>通过<a data-primary="tests" data-secondary="creating from monitoring alerts" data-type="indexterm" id="id2143"/>测试或一系列测试并不一定能证明所有方法都有效，但失败的测试证明并非所有功能都有效。</p>
+
+<p>监控系统能够发现缺陷，但发现速度受制于报告管道的响应速度。也可以把测试理解为用于生产前阶段的监控。若不知道该创建哪些测试，可以查看监控系统关注的条件，并尝试把它们转化为测试（通常是集成测试或系统级测试）。重点不是寻找“每秒请求数为零”在测试中的对应项，而是模拟会触发该告警的条件。</p>
+
+<p>例如，若监控系统会在某个第一方或第三方 API 的错误率超过阈值时告警，那么一种有用的集成测试是模拟该 API，并人为让它以相同错误率响应，以证明系统仍能作出合理反应。若系统做不到，你便直接看到了将测试前移的好处。另一个好处是：如果这项测试<em>已经存在</em>，生产告警触发时，你可以先研究测试中的系统行为，更快形成排障假设。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="高级测试" data-type="sect1"><div class="sect1" id="ch14_advanced_testing">
+<h1>高级测试</h1>
+
+<p>以下各节讨论超出基础范畴的测试类型。它们大多比简单的单元测试更复杂、要求更高或更难实施，有些甚至比复杂的系统级测试还难，但对于那些简单测试无能为力的事项，它们能增强我们对可靠性的信心。我们会重点介绍一种愈发重要的生产环境测试（TiP）子类型——金丝雀发布，也会涉及 Google 的灾难恢复方法、故障注入或韧性测试、面向客户端的测试，以及重要性和适用范围都在增长的形式方法。最后还会简要介绍智能体测试。它仍是一门新兴学科，但在 AI 软件开发可能以两种意义上的“不可靠”方式构建软件的世界里，或许极其重要。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="金丝雀测试" data-type="sect2"><div class="sect2" id="ch14_canaries">
+<h2>金丝雀测试</h2>
+
+<p>“金丝雀<a data-primary="canary testing" data-type="indexterm" id="cantst"/><a data-primary="testing" data-secondary="canary tests" data-type="indexterm" id="tsts_canars"/>”一词源于“煤矿中的金丝雀”：过去，人们会用活鸟检测有毒气体，以免井下工人中毒。金丝雀歌唱需要体力（也需要氧气）；一旦它停止鸣叫，矿工便会迅速撤离，同时把鸟带走。</p>
+
+<p class="fix_tracking">金丝雀测试会先把一小部分服务器升级到新版本或新配置，再让它们进入<em>观察期</em>：承载生产流量，同时接受细致监控。如果没有出现意外偏差，发布便继续进行，其余服务器也会逐步升级。<sup><a data-type="noteref" href="ch14-zh.html#id2144" id="id2144-marker">4</a></sup>如果出现问题，已修改的服务器可以迅速回退到已知良好状态。Google 把这段观察期称为“烘焙二进制程序”。金丝雀测试也可以看作门槛较低的用户验收测试，或类似 A/B 测试的受控实验：它是在生产环境中比较不同版本是否表现一致，而不是检查单个版本内部的一致性。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="金丝雀测试特别有价值的场景" data-type="sect3"><div class="sect3" id="ch14_where_canaries_are_particularly_valuable">
+<h3>金丝雀测试特别有价值的场景</h3>
+
+<p>金丝雀发布属于<a data-primary="production testing" data-secondary="canary tests" data-type="indexterm" id="prodtst_canrtst"/>生产环境测试，因此带来的洞见不同于<a data-primary="hermetic tests" data-type="indexterm" id="id2145"/>封闭测试；后者大多聚焦代码变更后的阶段。单元测试、集成测试和系统测试用于确认某项性质在特定软件范围内成立，而金丝雀测试所利用的事实是：软件在生产环境中运行时，会以概率方式接触到世界模型未曾涵盖的条件。其中有些条件来自软件依赖，但最重要的是用户行为，因为用户行为不存在有效的封闭测试替代方案。任何面向用户的机器学习功能尤其如此：用户行为既会受模型影响，也会反过来影响模型，因此金丝雀测试在这些场景中格外重要。</p>
+
+<p>虽然生产配置通常保存在源代码控制仓库中，但通常与开发者的源代码分开存储。因此，软件测试基础设施往往无法看到生产配置。即使两者位于同一仓库中，配置管理的更改也会在分支或隔离目录树中进行，测试自动化通常会忽略这些。这意味着如果存在金丝雀环境，它实际上是两者之间的第一个整合测试，同时风险更高，也是<a data-primary="production testing" data-secondary="canary tests" data-startref="prodtst_canrtst" data-type="indexterm" id="id2146"/>测试的绝佳场所。</p>
+
+<p><a href="https://sre.google/sre-book/testing-reliability">本书第一版第 17 章</a>从数学角度讨论了金丝雀测试，可供参考。<a href="https://sre.google/workbook/canarying-releases"><em>站点可靠性工作手册</em>第 16 章</a>也提供了更多细节。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="金丝雀分析" data-type="sect3"><div class="sect3" id="ch14_canary_analysis_software">
+<h3>金丝雀分析</h3>
+
+<p>金丝雀发布通过程序化分析生产环境中的变更，力求减少有问题的发布。它不是监控工具，更适合看作一种 A/B 对比工具：比较两个样本群体，并检测特定指标是否发生回归。</p>
+
+<p>金丝雀化是一个持续的过程：所有处理的请求和任务都会被输入一个评估机制，该机制对汇总数据进行统计测试。从这个意义上说，每个请求都是对后续评估新版本是否看起来不比现状差的输入。</p>
+
+<p class="fix_tracking">Google 的系统提供开箱即用的默认测试功能，用于查找崩溃、RPC 错误等常见问题。这些默认项覆盖最常见的风险，几乎不增加用户操作成本，也几乎不影响吞吐量，却能提高发布安全性。<sup><a data-type="noteref" href="ch14-zh.html#id2147" id="id2147-marker">5</a></sup>我们把这项功能与发布软件等其他工具集成，尽可能覆盖标准软件发布流程。此外，SRE 和开发者还会扩展默认分析，<a data-primary="testing" data-secondary="canary tests" data-startref="tsts_canars" data-type="indexterm" id="id2148"/><a data-primary="canary testing" data-startref="cantst" data-type="indexterm" id="id2149"/>评估各项服务特有的行为。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section class="pagebreak-before less_space" data-pdf-bookmark="紧急部署测试" data-type="sect2"><div class="sect2" id="ch14_testing_for_emergency_rollouts">
+<h2>紧急部署测试</h2>
+
+<p>过去，业界有时会抵制测试，因为人们认为<a data-primary="testing" data-secondary="overcoming resistance" data-type="indexterm" id="tsts_ovrcmgrst"/>测试在开发团队与生产变更之间设置了一道僵化流程。<sup><a data-type="noteref" href="ch14-zh.html#id2150" id="id2150-marker">6</a></sup>解决办法很多，常见做法之一是设置“破窗”机制，绕过发布测试，以便更快地把新构建部署到生产环境（通常用于缓解故障）。</p>
+
+<p>当然，这种变通方法的缺点是，由于快速操作而产生的错误，可能直到真实用户被生产监控检测出来后才会显现出来。例如，在大型代码库中，<a href="https://oreil.ly/S1F8m">一个问题的修复有时会引入另一个问题</a>，<a href="https://oreil.ly/ipWhX">有时需要快速推送另一个修复</a>，依此类推。如果你的测试基础设施支持，一种应对方法是保持测试运行，将早期推送事件与待处理测试事件关联，并尽快将任何有问题的测试反向注释。这样，一个有缺陷的手动推可以很快接着另一个，希望是更少缺陷的手动推。如果你经常手动推，可以考虑让破碎玻璃机制自动执行一些相关的释放测试，这样你就不会陷入<a data-primary="testing" data-secondary="overcoming resistance" data-startref="tsts_ovrcmgrst" data-type="indexterm" id="id2151"/>未经测试的手动推举引发未经测试的手动推举的无休止循环。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="灾难恢复与韧性" data-type="sect2"><div class="sect2" id="ch14_disaster_recovery_and_resilience">
+<h2>灾难恢复与韧性</h2>
+
+<p>本章其余部分主要聚焦于相对小规模的测试，既有合并前的软件环境（即单元测试）或合并后的生产环境（如金丝雀）。但有一类非常重要的测试既不是上述两者：灾难恢复。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="DiRT简介" data-type="sect3"><div class="sect3" id="ch14_introduction_to_dirt">
+<h3>DiRT简介</h3>
+
+<p>Google 的 DiRT 项目——Kripa Krishnan 曾于 <a href="https://oreil.ly/IXB0K">2012 年在 <em>ACM Queue</em> 撰文介绍</a>——是一项业务连续性、风险管理和灾难恢复计划<a data-primary="DiRT (Disaster Resilience Testing)" data-type="indexterm" id="dirtovrvw"/><a data-primary="testing" data-secondary="DiRT (Disaster Resilience Testing)" data-type="indexterm" id="tstng_dirt"/>，突出特点是高度重视实际行动和生产环境验证。许多其他业务连续性与灾难恢复（BC/DR）计划<a data-primary="business continuity and disaster recovery (BC/DR) programs" data-type="indexterm" id="id2152"/><a data-primary="BC/DR (business continuity and disaster recovery) programs" data-type="indexterm" id="id2153"/>主要致力于列举、衡量和汇总风险，这并非没有道理：这项工作本身就很困难，也具有重要的合规和组织价值。DiRT 同样开展这些工作，但还始终不懈地强调实际验证。</p>
+
+<p class="pagebreak-before less_space">在早期，DiRT是一年一度的活动，范围为一周，这大概是全公司范围测试关键业务连续性的合适规模。这并不总是在同一周发生，实际选定的那一周也不是事先广泛知道的。这是有意为之，以保留真实灾难中可能出现的某种奇袭元素。</p>
+
+<p>该项目同时包含自上而下和自下而上的部分。早期，自上而下的部分会设定全局主题，以考察特定能力。各团队再把这些全局优先事项与自身的具体需求结合起来，制定测试计划。测试从偏理论的提问（“如果……你会怎么办？”）一直延伸到高度实操的演练（“拆除数据中心 X 的生产部署，在数据中心 Y 无停机重建”）。团队通常按时区、负责的系统等自然边界分成两组，由双方互相主持测试。测试结果会汇总起来，用于确定团队和公司整体的优先事项。自上而下的主题测试经常会揭示意外问题，因此 DiRT 结束后的工作重点并不总能预先判断。</p>
+
+<p>总体而言，该程序在根除并至少部分解决了那些可能在重大灾难后影响公司实际运营能力的积累依赖方面做得很好：那些纠缠且与故障相关但本不该存在的系统，无法实施的恢复计划，以及依赖山景城单个工程师工作站的核心工作流， 加州。运营几年后，DiRT的影响力扩大。作为成功的衡量标准，谷歌能够在都柏林成功运行一周，而山景城几乎完全缺席了连续性决策。（然而，随着公司后来大幅发展，这变得越来越困难。）</p>
+
+<p>DiRT大幅简化了流程，做了三件事，使灾难恢复和韧性测试<a data-primary="resilience testing" data-type="indexterm" id="id2154"/>易于操作且相关：</p>
+<ol>
+<li>
+<p>它不仅将其视为合规的练习，更视为一项本质上带来更好技术和组织系统改进的活动。</p>
+</li>
+<li>
+<p>它与每个团队的优先事项相连接，而不是完全由上而下驱动。</p>
+</li>
+<li>
+<p>它通过广泛的内部营销和不断强调可靠性价值的信息激励了人们。</p>
+</li>
+
+</ol>
+
+<p>最终，DiRT从每年举办一次的大爆炸式活动转向持续项目，但它仍是谷歌运作的核心部分。该项目的经验教训持续影响谷歌如何在不稀释关键可靠性的前提下实现增长。它还影响了谷歌云对客户及其依赖基础设施可靠性的看法。</p>
+
+<p>如果你想尝试大规模灾难恢复测试，最好从包含类似元素的项目开始：自上而下<em>和</em>自下而上，终端团队混合演练但肯定包含“实弹射击”，内部<a data-primary="DiRT (Disaster Resilience Testing)" data-startref="dirtovrvw" data-type="indexterm" id="id2155"/><a data-primary="testing" data-secondary="DiRT (Disaster Resilience Testing)" data-startref="tstng_dirt" data-type="indexterm" id="id2156"/>营销强调成就价值。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="服务级测试建模" data-type="sect3"><div class="sect3" id="ch14_modelling_service_level_tests">
+<h3>服务级测试建模</h3>
+
+<p>DiRT 为我们提供了一个框架，用来理解如何在完整服务或系统层面开展测试，以及应该测试什么，而不是只考虑单元测试之类的局部测试。</p>
+
+<p>在这种情况下，确实很难判断该从哪里入手。<a data-type="xref" href="#ch14_table_03">表 14-2</a>给出了我们用于<a data-primary="DiRT (Disaster Resilience Testing)" data-secondary="service-level resilience testing" data-type="indexterm" id="dirt_serlevres"/><a data-primary="service-level resistance testing" data-type="indexterm" id="servlvltst"/><a data-primary="testing" data-secondary="service-level resilience" data-type="indexterm" id="tstng_servlvlresil"/>服务级韧性与测试的分类模型，可以作为一份有用的参考清单。它概述了运行系统所需的各个可靠性维度，并列举了验证每个维度的具体测试。（有关韧性工程的深入讨论，请参阅<a data-type="xref" href="ch17-zh.html#ch17">第 17 章</a>。）</p>
+<table class="white1" id="ch14_table_03">
+  <caption><span class="label">表 14-2　</span>服务级韧性测试</caption>
+  <thead>
+    <tr>
+      <th>维度</th>
+      <th>子维度</th>
+      <th>测试描述</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Capacity and stability resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>容量与稳定性韧性</strong></td>
+      <td>容量变动</td>
+      <td>测试系统对服务节点丢失、冷启动以及紧急调整/启动的响应情况</td>
+    </tr>
+    <tr>
+      <td class="stripe1">过载/负载削减</td>
+      <td class="stripe1">测试系统在压力下的负载削减机制</td>
+    </tr>
+
+    <!-- Data resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>数据韧性</strong></td>
+      <td>备份与恢复</td>
+      <td>验证从备份中恢复数据的能力</td>
+    </tr>
+    <tr>
+      <td>数据损坏识别与恢复</td>
+      <td>测试识别和恢复丢失或损坏数据的流程</td>
+    </tr>
+    <tr>
+      <td class="stripe1">复制/一致性测试</td>
+      <td class="stripe1">验证跨区域/区域的数据复制是否正确且符合一致性要求</td>
+    </tr>
+
+    <!-- Infrastructure resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="4"><strong>基础设施韧性</strong></td>
+      <td>网络降级</td>
+      <td>模拟组件或区域之间网络状况（高延迟、抖动、丢包、DNS问题）</td>
+    </tr>
+    <tr>
+      <td>网络隔离/分区</td>
+      <td>模拟区域之间或区域内的网络隔离。</td>
+    </tr>
+    <tr>
+      <td>数据中心电力/制冷/访问中断</td>
+      <td>执行与物理数据中心测试相关的演练，包括冷却、接入和电力</td>
+    </tr>
+    <tr>
+      <td class="stripe1">硬件耗尽</td>
+      <td class="stripe1">模拟关键物理资源（CPU、内存、磁盘输入输出、磁盘空间、可用硬件）无法维护生产系统的情景（例如疫情或禁运）</td>
+    </tr>
+
+    <!-- Dependency resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="4"><strong>依赖韧性</strong></td>
+      <td>第三方供应商依赖</td>
+      <td>测试对外部API、SaaS提供商或供应商服务的故障或性能下降的韧性，包括超时、重试和断路器的测试</td>
+    </tr>
+    <tr>
+      <td>依赖失效</td>
+      <td>当非关键依赖失效时，验证系统行为（或在必要依赖失效时系统正常失效/退化）</td>
+    </tr>
+    <tr>
+      <td>降级依赖</td>
+      <td>测试系统即使依赖的服务器和系统性能下降和/或运行于SLO阈值，仍能达到性能目标</td>
+    </tr>
+    <tr>
+      <td class="stripe1">在SLO运行以验证客户端性能</td>
+      <td class="stripe1">测试显示，当我们的系统表现非常接近定义的SLO时，使用其服务的客户端系统也能实现其性能目标</td>
+    </tr>
+
+    <!-- Failure handling and recovery -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>故障处理与恢复</strong></td>
+      <td>系统 SPOF/故障切换</td>
+      <td>模拟被识别为潜在“单点故障”的组件故障，以确认缓解策略（冗余、故障转移）的有效性</td>
+    </tr>
+    <tr>
+      <td>回滚</td>
+      <td>测试安全快速地将应用二进制文件、配置或基础设施变更恢复为先前已知良好状态的能力</td>
+    </tr>
+    <tr>
+      <td class="stripe1">错误与无效数据容忍</td>
+      <td class="stripe1">测试系统处理注入错误、错误数据或模糊测试的能力</td>
+    </tr>
+
+    <!-- Operational resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="3"><strong>运营韧性</strong></td>
+      <td>事件管理演练</td>
+      <td>模拟事件以测试团队的响应流程、沟通、升级路径及工具的使用情况</td>
+    </tr>
+    <tr>
+      <td>系统特定紧急操作</td>
+      <td>测试处理已知系统级紧急情况的具体程序</td>
+    </tr>
+    <tr>
+      <td class="stripe1">操作手册执行与验证</td>
+      <td class="stripe1">测试已记录操作程序的清晰度、准确性和有效性</td>
+    </tr>
+
+    <!-- Configuration and change resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>配置与变更韧性</strong></td>
+      <td>紧急配置更改</td>
+      <td>测试配置变更的流程（审批、执行、验证、回滚）</td>
+    </tr>
+    <tr>
+      <td class="stripe1">发布与变更管理</td>
+      <td class="stripe1">围绕金丝雀发布和功能标志推出的测试流程，以及检测和快速响应变更带来的问题的能力</td>
+    </tr>
+
+    <!-- Business continuity -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>业务连续性</strong></td>
+      <td>业务流程</td>
+      <td>测试系统故障对关键业务流程的影响以及继续运营的能力</td>
+    </tr>
+    <tr>
+      <td class="stripe1">团队韧性/员工SPO</td>
+      <td class="stripe1">测试关键人员缺席的韧性（交叉培训，值班轮换测试）</td>
+    </tr>
+
+    <!-- Observability and tooling resilience -->
+    <tr>
+      <td class="stripe1 white1" rowspan="2"><strong>可观察性与工具韧性</strong></td>
+      <td>工具故障</td>
+      <td>当主要监控、警报、部署或管理工具不可用时，测试运行能力</td>
+    </tr>
+    <tr>
+      <td class="stripe1">监控与警报</td>
+      <td class="stripe1">验证已触发相应警报且监控相关数据点</td>
+    </tr>
+
+    <!-- Security resilience -->
+    <tr>
+      <td class="stripe1 white1"><strong>安全韧性</strong></td>
+      <td class="stripe1">恶意中断</td>
+      <td class="stripe1">测试与恶意内部人员有关的风险</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>每次开展 DiRT 测试，常见结论之一都是现有监控不足以发现随之而来的问题。因此，“可观测性与工具韧性”中的“监控与告警”几乎总能提供值得调查的线索。过去还有一项引人注目的测试：在某个访问内部事故管理系统可以说比任何时候都重要的时期，故意停用该系统。Google 员工对此的适应能力<span class="keep-together">出人意料地强</span>。相比之下，停用内部文档渲染和更新服务的测试只维持了几个小时，就不得不恢复服务。多数人可能原本会作出相反预测；DiRT 又一次以相对较低的成本带来了宝贵经验。</p>
+
+<p><a data-type="xref" href="#ch14_table_03">表 14-2</a>可与本书第一版附录B<a href="https://sre.google/sre-book/service-best-practices">一同阅读，帮助集思广益测试方案</a>。几乎可以肯定，通过这种测试，你会发现一些你之前不知道的事情。问题在于如何管理风险、扩大项目规模、<a data-primary="DiRT (Disaster Resilience Testing)" data-secondary="service-level resilience testing" data-startref="dirt_serlevres" data-type="indexterm" id="id2157"/><a data-primary="service-level resistance testing" data-startref="servlvltst" data-type="indexterm" id="id2158"/><a data-primary="testing" data-secondary="service-level resilience" data-startref="tstng_servlvlresil" data-type="indexterm" id="id2159"/>并设计出有结构的应对这些教训的方法。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="面向客户端的变更监管" data-type="sect1"><div class="sect1" id="ch14_client_focused_change_supervision">
+<h1>面向客户端的变更监管</h1>
+
+<p>Google 的分布式系统中有一类常见问题<a data-primary="client-focused change supervision" data-type="indexterm" id="id2160"/><a data-primary="testing" data-secondary="client-focused change supervision" data-type="indexterm" id="id2161"/>：二进制程序或配置发布后，调用链中的依赖服务发生回归。这类问题很难被传统的、基于金丝雀分析的发布监管发现，因为回归只会在上游或下游服务中显现。</p>
+
+<p>为了在整个调用栈中开展金丝雀分析，我们构建了一套名为“面向客户端的变更监管”的系统。本节介绍它的工作原理。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="发布示例" data-type="sect2"><div class="sect2" id="ch14_example_bad_rollout">
+<h2>发布示例</h2>
+
+<p>设想一个<a data-primary="client-focused change supervision" data-secondary="rollout example" data-type="indexterm" id="cfcs_rolotex"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="rollout example" data-type="indexterm" id="tst_cfcs_roex"/><a data-primary="canary testing" data-secondary="rollout example" data-type="indexterm" id="cantst_rolutex"/>由前端和后端作业组成的简单服务。如<a data-type="xref" href="#ch14_fig02">图 14-2</a>所示，一个有缺陷的二进制版本（222）正在后端作业的某个任务上进行金丝雀测试。</p>
+
+<figure><div class="figure" id="ch14_fig02">
+<img alt="服务示意图：一个前端连接两个后端任务，任务 0 运行正在进行金丝雀测试的有缺陷二进制版本 222，任务 1 运行版本 111。" src="assets/sre2_1402.png"/>
+<h6><span class="label">图 14-2。</span>后端版本有缺陷的服务示例</h6>
+</div></figure>
+
+<p>目前，后端正在进行中期推送（从版本111到版本222），但前端还没有更新以处理新数据。</p>
+
+<p class="pagebreak-before less_space">用户第一次向前端发出请求时，请求被路由到版本 222。前端无法理解返回的数据，于是向用户返回错误；用户随即重试。这一次，请求被路由到版本 111，一切正常。<a data-type="xref" href="#ch14_fig03">图 14-3</a>展示了这一流程。</p>
+
+<figure><div class="figure" id="ch14_fig03">
+<img alt="请求流程图：请求从前端流向运行不同二进制版本的两个后端任务，并显示成功与失败的路由。" src="assets/sre2_1403.png"/>
+<h6><span class="label">图 14-3。</span>采用面向客户端的变更监管时的请求流程</h6>
+</div></figure>
+
+<p>前端已有统计 RPC 错误次数的指标，如<a data-type="xref" href="#ch14_table_04">表 14-3</a>所示。</p>
+<table id="ch14_table_04">
+<caption><span class="label">表 14-3　</span>RPC 指标在示例前端的计数</caption>
+<thead>
+<tr>
+<th>指标名称</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><code translate="no">/rpc/count</code></p></td>
+<td><p><code translate="no">2</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/error_count</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+</tbody>
+</table>
+
+<p>后端服务本身一直成功返回，因此看不出继续发布有什么问题。前端指标虽然报告错误，但这些错误与前端服务近期的任何变更都不相关。颇具讽刺意味的是，如果后端遵循逐步扩大范围的发布最佳实践，那么在全部请求中，初始错误率很可能也非常低。因此，问题可能要等发布推进很久之后才会被发现，既扩大影响，也延长检测和修复时间。</p>
+
+<p class="pagebreak-before less_space">现在设想一下，如果这些指标还会报告每个请求经过的后端版本，如<a data-type="xref" href="#ch14_table_05">表 14-4</a>所示。</p>
+<table id="ch14_table_05">
+<caption><span class="label">表 14-4　</span>按后端版本归因的 RPC 指标计数</caption>
+<thead>
+<tr>
+<th>指标名称</th>
+<th>服务</th>
+<th>二进制版本</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><code translate="no">/rpc/attributed_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">111</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_error_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">111</code></p></td>
+<td><p><code translate="no">0</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">222</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+<tr>
+<td><p><code translate="no">/rpc/attributed_error_count</code></p></td>
+<td><p><code translate="no">backend</code></p></td>
+<td><p><code translate="no">222</code></p></td>
+<td><p><code translate="no">1</code></p></td>
+</tr>
+</tbody>
+</table>
+
+<p>现在问题会很快被发现，因为222版本的错误率很高。调试也更简单，因为版本间的清晰区分使得快速识别问题所在。</p>
+
+<p>在这种情况下，只需在RPC响应中添加版本元数据即可。但如果问题出现前有多次服务器跳转，或者前端不是后端的唯一用户，会发生什么？你怎么做到这些而不每次都得重新发明轮子？面向客户端的变更监管可以让你以可扩展的方式<a data-primary="client-focused change supervision" data-secondary="rollout example" data-startref="cfcs_rolotex" data-type="indexterm" id="id2162"/><a data-primary="testing" data-secondary="client-focused change supervision" data-startref="tst_cfcs_roex" data-tertiary="rollout example" data-type="indexterm" id="id2163"/><a data-primary="canary testing" data-secondary="rollout example" data-startref="cantst_rolutex" data-type="indexterm" id="id2164"/>应对这些挑战。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="实现" data-type="sect2"><div class="sect2" id="ch14_implementation">
+<h2>实现</h2>
+
+<p>面向客户端的变更监管实现起来有多复杂，取决于你希望覆盖的服务范围。本节说明如何把版本元数据归入 <a data-primary="RPCs (Remote Procedure Calls)" data-secondary="exporting version metadata" data-type="indexterm" id="rpc_resp_expvrsmetdat"/>RPC 响应，并由客户端将其导出。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="简单方法" data-type="sect3"><div class="sect3" id="ch14_the_simple_approach">
+<h3>简单方法</h3>
+
+<p>第一步<a data-primary="client-focused change supervision" data-secondary="implementation" data-type="indexterm" id="id2165"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="implementation" data-type="indexterm" id="id2166"/>是在 RPC 响应中同时提供版本信息，包括二进制程序以及所使用的数据或配置版本。最简单但通用性最低的办法，是修改所有接口（RPC 请求和响应），在消息正文中显式加入这些元数据。这样做需要更新全部接口定义，工作量很大，但确实可行。更易扩展、更通用的办法是借助旁路元数据（例如 gRPC 元数据<sup><a data-type="noteref" href="ch14-zh.html#id2167" id="id2167-marker">7</a></sup>），随响应一起传递版本元数据。这种做法其实相当直接，几乎不需要修改客户端或服务器，也是我们采用的方案。</p>
+
+<p>服务器端的改动很简单：让所有作业在RPC响应中添加版本元数据。在客户端，跟踪出站RPC并从响应中提取版本元数据。对于每一个外呼请求，记录信息并增加相关指标。</p>
+
+<p>为了确保这种设置在谷歌范围内通用，我们实现了服务器端和客户端的修改作为RPC拦截器。如果你能拦截或通过Envoy或同等软件控制流量，类似的方法也是可能的。现在任何服务都可以包含这些拦截器，并立即导出可用于门禁部署的指标。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="处理多跳" data-type="sect3"><div class="sect3" id="ch14_handling_multiple_hops">
+<h3>处理多跳</h3>
+
+<p>在 Google，服务<a data-primary="client-focused change supervision" data-secondary="tracking through multiple hops" data-type="indexterm" id="id2168"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="tracking through multiple hops" data-type="indexterm" id="id2169"/>很少简单到只有一个前端和一个后端。真正出错的服务往往与变更发生的位置相隔数跳，因此必须确保元数据能够传播到需要它的地方。这个问题有几种解决办法。</p>
+
+<p>第一种选择很简单：对每个入站RPC，跟踪其生成的相关出站RPC。你需要一种方法来追踪哪些出站RPC与入站RPC相关，并将它们的归属元数据附加到服务器的元数据旁边。这种方法允许你跟踪请求在返回客户端前经过的每个依赖的版本。不过使用这种方法时要小心，因为每跳一次都会让响应扩展增加。</p>
+
+<p>还可以添加生存时间（TTL）字段来扩展这一方案。每台服务器可自行决定元数据应沿调用栈向上传播多远。每当一个出站 RPC 完成，服务器就把响应扩展中各版本的 TTL 减一；TTL 归零时便删除相应元数据。这种方案通常已经够用，但需要手动配置每台服务器。</p>
+
+<p>更稳健的方法是实现服务的逻辑分组。通过为每个请求附加标明服务器所属服务的元数据，可以确保版本元数据在离开服务并到达客户端之前被保留。同样，这种解决方案需要一定的配置和服务器知识，但魔术数字更少。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="归因指标" data-type="sect3"><div class="sect3" id="ch14_attribution_metrics">
+<h3>归因指标</h3>
+
+<p>首先要考虑希望衡量哪些指标。Google 对这一过程采用通用设计，因此重点提供全局普遍有用的数据，例如 RPC 错误率和延迟；这些指标开箱即用。</p>
+
+<p>拦截器方案的一项优势是易于扩展。我们虽然聚焦普遍适用的指标，但要扩展拦截器、基于这些数据<a data-primary="RPCs (Remote Procedure Calls)" data-secondary="exporting version metadata" data-startref="rpc_resp_expvrsmetdat" data-type="indexterm" id="id2170"/>导出自定义指标，也相当直接。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="利用这些数据" data-type="sect2"><div class="sect2" id="ch14_using_this_data">
+<h2>利用这些数据</h2>
+
+<p>实施<a data-primary="client-focused change supervision" data-secondary="metrics discoverability" data-type="indexterm" id="id2171"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="metrics discoverability" data-type="indexterm" id="id2172"/>面向客户端的变更监管后，客户端便会导出你希望用于服务金丝雀发布的指标。下一个挑战是可发现性：如何确保后端服务器的发布流程能找到并使用相关指标？</p>
+
+<p>最简单的解决方案是手动配置所有已知客户端。这在小型环境中有效，但当服务中有大量依赖（如我们的服务）或没有严格的新依赖配置流程（例如客户端注册）时，维护起来会变得繁琐。</p>
+
+<p>在这些情况下，需要一种降低人工维护负担的方案。理想状态下，系统应自动发现这些指标，并把它们纳入金丝雀发布配置。</p>
+
+<p>我们的方案利用了这样一个事实：所有指标数据都收集在 Google 的监控时序数据库 Monarch<sup><a data-type="noteref" href="ch14-zh.html#id2173" id="id2173-marker">8</a></sup> 中，而且指标天然包含其来源服务。我们每天运行一条流水线，生成适当的服务器—客户端映射，再自动据此生成金丝雀分析检查。使用 Prometheus 等公开监控系统也能构建类似方案。更高级的技术则可以利用 OpenTelemetry 数据，按需逐跳构建调用图。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="这种方法的挑战" data-type="sect2"><div class="sect2" id="ch14_challenges_with_this_approach">
+<h2>这种方法的挑战</h2>
+
+<p>我们已经确认，<a data-primary="client-focused change supervision" data-secondary="challenges" data-type="indexterm" id="id2174"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="challenges" data-type="indexterm" id="id2175"/>对 Google 而言，面向客户端的变更监管所带来的可靠性收益超过新增成本。不过，不能忘记它确实有成本：每个 RPC 请求都要携带元数据，这可能只是微小开销，也可能是显著负担；每个请求还会运行一个拦截器，如果不谨慎，成本可能很高。</p>
+
+<p>最后，这种做法可能产生基数极高的指标，即指标标签会形成大量唯一组合。在我们的一些服务中，每项指标经常超过 5,000 个唯一条目。这并不意外，因为每项归因指标都要跟踪所有下游服务及其版本。基数越高，存储指标所需的内存越多，采集所耗费的时间和处理能力也越大。可以通过审慎选择指标标签，并随服务增长持续监控基数来缓解这一问题。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="谷歌实现的优势" data-type="sect2"><div class="sect2" id="ch14_benefits_realized_by_google">
+<h2>谷歌实现的优势</h2>
+
+<p>过去，发布失败导致所依赖的服务或依赖自身的服务宕掉，往往要到事后复盘时才会受到关注<a data-primary="client-focused change supervision" data-secondary="benefits" data-type="indexterm" id="id2176"/><a data-primary="testing" data-secondary="client-focused change supervision" data-tertiary="benefits" data-type="indexterm" id="id2177"/>。如今，我们有仪表板跟踪被变更监管成功拦截的发布。内容安全平台就是取得成效的领域之一。</p>
+
+<p>这个系统服务于许多不同需求的客户，而各团队对成功的定义差异很大。我们不再让每个客户都收到每个版本的警报，而是允许他们自行定义属性指标，并将其整合进我们发布的金丝雀化流程中。现在，当某个变更意外影响到客户端的集成时，我们可以阻止发布，防止它扩散得太远。</p>
+
+<p>最近，我们发现某项后端服务发布会导致一个客户端集成把该客户 99% 的内容标记为违规，而原比例仅为 1%。结合变更监管与金丝雀分析，我们在它影响大量用户之前拦截了这次发布。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="故障注入测试" data-type="sect1"><div class="sect1" id="ch14_fault_injection_testing">
+<h1>故障注入测试</h1>
+
+<p>如果系统注定偶尔会<a data-primary="fault injection testing" data-type="indexterm" id="id2178"/><a data-primary="testing" data-secondary="fault injection" data-type="indexterm" id="id2179"/>失败——据我们所知，事实正是如此——那么最好的应对之一，就是吸取教训，改善相关系统和人员今后的处境。<a data-type="xref" href="ch11-zh.html#ch11">第 11 章</a>对此有详细讨论；这是 SRE 实践的关键环节。</p>
+
+<p>成熟的事故后评审流程会提炼事故中的关键教训，针对主要促成因素开展预防工作，从而增强系统韧性和人员能力。事实上，在一个理想化的假想世界里，即使长期只做这一件事，我们也会不断消除越来越多故障背后的根本促成因素，并渐近地逼近完美可靠性。</p>
+
+<p>现实中，大多数系统变化太快，仅靠这种评审并不可行；而且它本质上主要是被动响应。虽然后续产出之一是预防工作，但通常要等我们发现系统中此前未知的问题之后，预防工作才会发生。故障注入——也称混沌工程、韧性工程等——试图以主动方式解决这一局限。通过有意、受控地让系统承受故障，我们可以提前探索故障空间，不必等生产环境教会我们系统会怎样失败，就能帮助系统改进。<sup><a data-type="noteref" href="ch14-zh.html#id2180" id="id2180-marker">9</a></sup></p>
+
+<p>测试改进和更广泛测试系统的方式之一是让系统遭遇故障——即底层基础设施或依赖性出现问题——并观察其行为。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="传统测试的局限性" data-type="sect2"><div class="sect2" id="ch14_limits_of_traditional_testing">
+<h2>传统测试的局限性</h2>
+
+<p>生产系统<a data-primary="testing" data-secondary="traditional, limitations" data-type="indexterm" id="id2181"/>似乎有无穷无尽的故障点。它们运行在分布式基础设施上，依赖众多外部服务，还会遭遇形形色色的中断：网络延迟、服务器宕机、磁盘故障、数据损坏、配置错误、热点、致命查询，以及其他各种级联故障。传统测试并不是为了主动揭示系统遇到这些意外故障时会如何反应而设计的。它或许能告诉你一切正常时系统是否工作，却不能说明问题出现时系统有多大韧性。这个缺口让关键弱点一直潜伏到真实事故发生，进而造成代价高昂的停机和潜在的声誉损失。</p>
+
+<p>SRE 的职责是测试系统承受外部故障的能力，并确保系统持续健康。即使经过精心设计，系统仍可能失败；当系统足够庞大或复杂时，失败最终必然发生。故障注入是检验生产就绪度的重要手段。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="为什么要用故障注入？" data-type="sect2"><div class="sect2" id="ch14_why_fault_injection">
+<h2>为什么要用故障注入？</h2>
+
+<p>故障注入<a data-primary="fault injection testing" data-secondary="usefulness" data-type="indexterm" id="id2182"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="usefulness" data-type="indexterm" id="id2183"/>测试是一种有意识的尝试，旨在以安全、受控的方式破坏系统，提前吸取教训，增强系统韧性。故障注入测试无需等待事件暴露弱点，而是能够模拟各种故障场景——从网络断电、高延迟到资源耗尽和进程崩溃——然后分析系统的响应。</p>
+
+<p>故障注入对 SRE 团队尤其有用，因为它能帮助发现传统测试遗漏的隐蔽问题（例如竞态条件），并验证恢复机制是否按预期工作。例如，许多 Google 服务使用一项通用拼写检查服务，帮助用户写出格式良好的文本。对客户端服务而言，它应当只是可选的软依赖：即使拼写检查服务离线，文档也仍应能成功保存和读取，只是没有拼写检查结果。负责该服务的 SRE 团队编写了一个每晚运行的测试，向调用拼写检查服务的 RPC 注入错误和高延迟，以确保它始终是软依赖。测试会验证超时和错误是否得到正确处理；在这个例子中，就是确保即使不做拼写检查，文档也能在延迟限制内保存。测试结束后，所有变更都会还原，以免每晚积累残留状态。</p>
+
+<p>通过自动故障注入进行测试，验证了服务消费者在普通和故障注入情况下都能成功运行。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="故障注入测试入门" data-type="sect2"><div class="sect2" id="ch14_getting_started_with_fault_injection_testing">
+<h2>故障注入测试入门</h2>
+
+<p>为服务规划故障<a data-primary="fault injection testing" data-secondary="test design" data-type="indexterm" id="fit_tstdsgn"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="test design" data-type="indexterm" id="tst_fltinj_desgn"/>注入测试时，一个实用的起点是采用“以 Z 衡量时，工作流 X 能够抵御故障 Y”这一表述，其中：</p>
+
+<ul>
+<li>
+<p>X 是你希望测试其可靠性的用户旅程、流程或交互。</p>
+</li>
+<li>
+<p>Y是你将引入的特定故障——例如网络丢包、数据库延迟或基础设施故障。</p>
+</li>
+<li>
+<p>Z 是你将使用的可靠性度量——例如用户的错误率、延迟或数据新鲜度。</p>
+</li>
+</ul>
+
+<p>这种方法会为制定测试计划提供具体的思考领域和待回答问题。先明确希望评估可靠性的哪个方面，也就是生产环境发生故障时，用户应该获得怎样的体验。理想情况下用户完全不会察觉，但系统或许尚未具备实现这一目标的韧性。应谨慎选择目标，先聚焦一个依赖关系已知的非关键组件，再注入错误或延迟并监控结果。若要积累经验，可以先在预发布或开发环境中测试；但生产环境测试的价值高得多，因此应计划最终迁移到生产环境，以发现真正影响用户的问题。当然，在生产环境测试时，必须始终把安全放在首位，并设置防护措施以尽量降低风险。</p>
+
+<p>设计测试时，可以从以往的故障或事故中寻找思路。例如，服务曾因无法正确处理数据库连接中断而发生故障，后来又增加了冗余机制，就可以编写测试，验证这项改进是否按预期解决问题。其他常见故障包括网络中断、资源耗尽和服务依赖退化。起步时不需要复杂工具；即使用 shell 脚本手动停止服务或阻断网络流量，也可能非常有用。之后可以逐步投资自动化和工具，但在初始阶段，一边降低网络容量一边监控系统性能可能就已足够。</p>
+
+<p>务必仔细规划测试。记录测试对象、预期目标、执行方式、结果监控方法，以及判定成功的标准。还必须制定详细的退出方案。计划应由熟练工程师编写，但团队中的任何人都应能轻松执行回滚，让系统恢复稳定状态——绝不能在恢复服务健康状态时手忙脚乱。若测试在预发布环境而非生产环境进行，服务恢复要求可以稍宽松；不过我们的经验表明，凡事先在预发布环境测试会增加大量开销，也会使恢复规程更复杂。因此，预发布测试通常只适合起步阶段，或真正关键、危险的测试。最后还要进行充分评审：测试计划及准备在服务上运行的脚本都应接受同行评审，并酌情邀请下游依赖的所有者和业务利益相关者参加。</p>
+
+<p>准备就绪后，执行测试并记录结果。特别是在刚起步时，结果可能并不显著，测试也常常不会按预期运行。如果服务的每秒查询数（QPS）很低，注入故障可能几乎没有影响；如果在预发布环境而非生产环境测试，也可能因为流量不足而得不到有意义的结果。应把前几次测试视为为下一轮尝试收集信息。完成一系列测试并取得结果后，与团队一起确定下一步。如果测试进展不顺——例如引发故障或没有产生预期效果——不要把结果掩盖起来。<sup><a data-type="noteref" href="ch14-zh.html#id2184" id="id2184-marker">10</a></sup>相反，应公开结果、发现的改进项，并在适当情况下公布为解决问题而计划实施的架构变更设计。定期发布报告，列出全部测试、结果和改进<a data-primary="fault injection testing" data-secondary="test design" data-startref="fit_tstdsgn" data-type="indexterm" id="id2185"/><a data-primary="testing" data-secondary="fault injection" data-startref="tst_fltinj_desgn" data-tertiary="test design" data-type="indexterm" id="id2186"/>，同时肯定团队的工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试基础设施" data-type="sect2"><div class="sect2" id="ch14_testing_infrastructure">
+<h2>测试基础设施</h2>
+
+<p>充分<a data-primary="fault injection testing" data-secondary="infrastructure testing" data-type="indexterm" id="id2187"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="infrastructure testing" data-type="indexterm" id="id2188"/>测试环境隔离，从而验证每个环境能够独立运作的一种方法是通过<a data-primary="network segmentation, fault injection testing" data-type="indexterm" id="id2189"/>网络分段。网络分段是一个统称，用来描述对服务产生负面影响的网络中断;例如，光纤中断导致伦敦的服务无法访问都柏林的数据库。</p>
+
+<p>有许多方法可以隔离网络段，也有许多工具可以帮助。无论你选择哪种方式，开始前一定要确保你随时可以恢复更改。（例如，这可能需要一些工具，在一定保证时间过去后，如果过滤过于严格，可以恢复数据包过滤。）一种普遍可用的故障注入方案无需特殊工具，就是添加一个高度限制的防火墙规则，只允许少量流量到达目标。</p>
+
+<p>另一种可以告诉你系统表现的故障注入测试是资源耗尽<a data-primary="resource exhaustion, fault injection testing" data-type="indexterm" id="id2190"/>：当关键资源短缺时，你的服务表现如何。首先确定目标，可能还包括识别与硬盘交互的服务部分，例如数据库写入函数。然后注入错误，要么使用专门的工具，要么写脚本拦截调用，导致调用失败并返回错误。在这种情况下，健康的服务不应崩溃;应出现正确指示问题的错误信息（例如“磁盘满”），终端用户应收到“数据库级写入失败”的提示，监控应在适当的紧急程度上显示即将发生的SLO违规。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试依赖" data-type="sect2"><div class="sect2" id="ch14_testing_dependencies">
+<h2>测试依赖</h2>
+
+<p class="fix_tracking">故障可能<a data-primary="fault injection testing" data-secondary="service dependencies testing" data-type="indexterm" id="id2191"/><a data-primary="testing" data-secondary="fault injection" data-tertiary="service dependencies" data-type="indexterm" id="id2192"/>源自服务本身（例如缺陷进入了生产环境），也可能源自服务依赖。你的服务或许具备良好的区域或数据中心隔离，但如果某项依赖没有，而它又发生全球性故障，你的服务能否从容处理？测试这类情况的方法与测试自身服务相似：识别潜在问题，并设计测试，在安全条件下模拟故障。你可以访问自己的服务，却未必能访问它所依赖的服务，因此一个好办法是在核心代码层注入故障，<sup><a data-type="noteref" href="ch14-zh.html#id2193" id="id2193-marker">11</a></sup>也就是修改自己的服务以引入故障点。例如，为依赖创建一个返回错误或超时的模拟对象；也可以返回预定义错误响应（如 <code translate="no">504</code>），模拟依赖超时。</p>
+
+<p>如果测试表明依赖故障会使核心服务无法达到 SLO，就需要采取适当的缓解措施（更多内容参见<a data-type="xref" href="ch17-zh.html#ch17">第 17 章</a>）。具体方案取决于相关服务；一个常见例子是存储后端不可用时改为提供图片占位符。请注意，在某些场景中，缓解措施可能不切实际、成本极高，甚至根本不存在。此时，SRE、产品工程师和业务利益相关者必须深入讨论，共同确定正确做法。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="大规模故障建模" data-type="sect2"><div class="sect2" id="ch14_modelling_large_scale_outages">
+<h2>大规模故障建模</h2>
+
+<p>Google SRE 经常使用内部工具 Catzilla<sup><a data-type="noteref" href="ch14-zh.html#id2194" id="id2194-marker">12</a></sup>处理小规模<a data-primary="fault-tolerance simulation, large-scale" data-type="indexterm" id="id2195"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-type="indexterm" id="id2196"/><a data-primary="datacenters, large-scale fault-tolerance scenarios" data-type="indexterm" id="id2197"/>容错场景。Catzilla 选取一组支持故障注入的目标服务，指示它们返回 RPC 错误或模拟延迟的 RPC 调用，从而把 RPC 错误和延迟注入服务依赖。</p>
+
+<p>然而，对于像数据中心宕机模拟这样的大规模事件，使用 Catzilla 是不够的——要识别数据中心中的所有服务太困难，哪怕缺失一项服务也可能使测试场景失效。</p>
+
+<p>为了执行比Catzilla允许的更高保真、更大规模的灾难模拟，我们使用一个特殊的系统守护进程来管理网络配置，以丢弃特定目的地的网络数据包。特定数据中心的所有机器都有这个守护进程，因此我们可以可靠地模拟整个数据中心离线状态。我们也可以在每个服务层面进行模拟，只影响特定目标服务，而非数据中心中所有服务。该技术可用于降低“完全”网络断开的风险，先测试和修复单个服务，或通过仅在发现问题时断开服务来应对观察到的影响，从而实现更快更低的成本迭代。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="形式方法" data-type="sect1"><div class="sect1" id="ch14_formal_methods">
+<h1>形式方法</h1>
+
+<p>形式测试方法<a data-primary="testing" data-secondary="formal methods" data-type="indexterm" id="id2198"/><a data-primary="formal testing methods" data-type="indexterm" id="id2199"/>是一组数学严谨的技术和工具，用于软件和硬件系统的规格、开发、分析和验证。形式方法的核心原则是利用数学和逻辑来建模系统行为，超越自然语言描述和图表固有的不精确性。与传统测试通常只检查系统可能行为的有限子集并难以重现意料之外的边缘情况不同，形式方法提供了一种符号性分析设计中整个状态空间的方法。这种能力使你能够建立各种重要属性，这些属性可以被证明适用于所有可能的输入和条件，为关键系统提供数学安全网。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="使用形式方法" data-type="sect2"><div class="sect2" id="ch14_using_formal_methods">
+<h2>使用形式方法</h2>
+
+<p>理解这些方法能做什么的一种<a data-primary="testing" data-secondary="formal methods" data-tertiary="TLA+" data-type="indexterm" id="tst_frmthd"/><a data-primary="formal testing methods" data-secondary="TLA+" data-type="indexterm" id="frmthd"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-tertiary="formal testing methods" data-type="indexterm" id="tst_lsfts_frmthd"/><a data-primary="TLA+" data-type="indexterm" id="tlapls"/>方法是看一个例子。假设我们看到两个进程试图获得互斥（mutex）——一种著名的分布式系统原语，提供对资源的互斥访问。在最初的做法中，我们决定每个进程通过检查对方进程的标志是否空闲来实现这一点，如果是，则设置自己的标志并获取资源。</p>
+
+<p>为了评估这种方法的<a data-primary="tools" data-secondary="TLA+" data-type="indexterm" id="tol_tlaplus"/>正确性，我们可以使用一种名为TLA+的形式方法工具。<sup><a data-type="noteref" href="ch14-zh.html#id2200" id="id2200-marker">13</a></sup>TLA+ 基于简单的数学（主要<a href="https://oreil.ly/Lcpwl">策梅洛–弗兰克尔集合论</a>）以及一种被称为<a data-primary="Temporal Logic of Actions (TLA)" data-type="indexterm" id="id2201"/><a data-primary="TLA (Temporal Logic of Actions)" data-type="indexterm" id="id2202"/>作用时序逻辑（TLA）的专业逻辑。TLA+ 规范将系统定义为状态机。它由描述有效初始状态集合的公式和一个指定系统可能采取的所有原子步骤（转移）的下一状态关系组成。系统的行为或执行是从初始状态开始的无限序列状态，并且每对连续的状态通过下一状态关系相互关联。时序逻辑算子，如<code translate="no">[]</code>（始终）和<code translate="no">&lt;&gt;</code>（最终），用于指定必须对所有可能行为都成立的属性。</p>
+
+<p>这是我们尝试以TLA+规范形式实现核心方法的尝试：</p>
+
+<pre data-code-language="coq" data-type="programlisting" translate="no"><code class="o">----</code> <code class="n">MODULE</code> <code class="n">NaiveMutex</code> <code class="o">----</code>
+  <code class="n">EXTENDS</code> <code class="n">Integers</code>
+  <code class="n">VARIABLES</code> <code class="n">processState</code><code class="o">,</code> <code class="n">flag</code>
+  <code class="n">vars</code> <code class="o">==</code> <code class="o">&lt;&lt;</code><code class="n">processState</code><code class="o">,</code> <code class="n">flag</code><code class="o">&gt;&gt;</code>
+  <code class="n">Processes</code> <code class="o">==</code> <code class="o">{</code><code class="mi">0</code><code class="o">,</code> <code class="mi">1</code><code class="o">}</code>
+  <code class="n">Other</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code> <code class="mi">1</code> <code class="o">-</code> <code class="n">i</code>
+  <code class="n">Init</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code> <code class="o">=</code> <code class="o">[</code><code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code> <code class="o">|-&gt;</code> <code class="s2">"idle"</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">flag</code> <code class="o">=</code> <code class="o">[</code><code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code> <code class="o">|-&gt;</code> <code class="n">FALSE</code><code class="o">]</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">1</code><code class="o">:</code> <code class="n">check</code> <code class="k">if</code> <code class="n">the</code> <code class="n">other</code> <code class="n">process's</code> <code class="n">flag</code> <code class="k">is</code> <code class="n">free</code>
+  <code class="kn">Check</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"idle"</code>
+      <code class="o">/\</code> <code class="n">flag</code><code class="o">[</code><code class="n">Other</code><code class="o">(</code><code class="n">i</code><code class="o">)]</code> <code class="o">=</code> <code class="n">FALSE</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"set"</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">UNCHANGED</code> <code class="o">&lt;&lt;</code><code class="n">flag</code><code class="o">&gt;&gt;</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">2</code><code class="o">:</code> <code class="k">set</code> <code class="n">our</code> <code class="n">own</code> <code class="n">flag</code>
+  <code class="kt">Set</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"set"</code>
+      <code class="o">/\</code> <code class="n">flag'</code> <code class="o">=</code> <code class="o">[</code><code class="n">flag</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="n">TRUE</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code><code class="o">]</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">Step</code> <code class="mi">3</code><code class="o">:</code> <code class="n">leave</code> <code class="n">critical</code> <code class="n">section</code>
+  <code class="n">Exit</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">==</code>
+      <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code>
+      <code class="o">/\</code> <code class="n">flag'</code> <code class="o">=</code> <code class="o">[</code><code class="n">flag</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="n">FALSE</code><code class="o">]</code>
+      <code class="o">/\</code> <code class="n">processState'</code> <code class="o">=</code> <code class="o">[</code><code class="n">processState</code> <code class="n">EXCEPT</code> <code class="o">![</code><code class="n">i</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"idle"</code><code class="o">]</code>
+  <code class="n">Next</code> <code class="o">==</code>
+      <code class="bp">\</code><code class="n">E</code> <code class="n">i</code> <code class="bp">\</code><code class="k">in</code> <code class="n">Processes</code><code class="o">:</code> <code class="kn">Check</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">\/</code> <code class="kt">Set</code><code class="o">(</code><code class="n">i</code><code class="o">)</code> <code class="o">\/</code> <code class="n">Exit</code><code class="o">(</code><code class="n">i</code><code class="o">)</code>
+  <code class="n">Spec</code> <code class="o">==</code> <code class="n">Init</code> <code class="o">/\</code> <code class="bp">[]</code><code class="o">[</code><code class="n">Next</code><code class="o">]_</code><code class="n">vars</code>
+
+  <code class="bp">\</code><code class="o">*</code> <code class="n">INVARIANT</code><code class="o">:</code> <code class="n">at</code> <code class="n">most</code> <code class="n">one</code> <code class="n">process</code> <code class="k">in</code> <code class="n">the</code> <code class="n">critical</code> <code class="n">section</code>
+  <code class="n">MutualExclusion</code> <code class="o">==</code>
+      <code class="o">~(</code><code class="n">processState</code><code class="o">[</code><code class="mi">0</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code> <code class="o">/\</code> <code class="n">processState</code><code class="o">[</code><code class="mi">1</code><code class="o">]</code> <code class="o">=</code> <code class="s2">"cs"</code><code class="o">)</code>
+<code class="o">====</code></pre>
+
+<p class="pagebreak-before less_space">以下是该规范的人类可读重述：</p>
+
+<ul>
+<li>
+<p>我们从<code translate="no">Init</code>状态开始，有两个过程（0， 1）。过程状态用<code translate="no">processState</code>和<code translate="no">flag</code>变量表示。它们都是<code translate="no">"idle"</code>，且都不愿获得互斥体——每个变量的<code translate="no">flag</code>变量都设置为<code translate="no">FALSE</code>。</p>
+</li>
+<li>
+<p>关于事物如何变化的规则包括：</p>
+
+<ul>
+<li>
+<p>当进程处于<code translate="no">"idle"</code>状态时，它检查另一个进程的<code translate="no">flag</code>是否处于<code translate="no">FALSE</code>，如果是，则转入<code translate="no">"set"</code>状态。</p>
+</li>
+<li>
+<p>当进程处于<code translate="no">"set"</code>状态时，它会将自身<code translate="no">flag</code>设为<code translate="no">TRUE</code>，然后进入临界段（<code translate="no">"cs"</code>）状态。</p>
+</li>
+<li>
+<p>当进程处于<code translate="no">"cs"</code>状态时，它会重置其标志并返回<code translate="no">"idle"</code>。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>仿真的每一步都涉及某个进程采取某个动作（定义为<code translate="no">Next</code>），我们总是从<code translate="no">Init</code>开始，然后绕<code translate="no">Next</code>。</p>
+</li>
+<li>
+<p>关键是<code translate="no">MutualExclusion</code>不变量——我们绝不希望两个过程同时处于临界区。这里可以指定相当复杂的约束，但我们暂时保持简单。</p>
+</li>
+</ul>
+
+<p>我们不会在这里详细介绍TLA+的语法——在线资源可能更适合——但以下Python代码产生了类似的输出，并展示了TLA+的实际作用：</p>
+
+<pre data-code-language="python" data-type="programlisting" translate="no"><code class="kn">import</code> <code class="nn">random</code>
+
+<code class="k">class</code> <code class="nc">NaiveMutex</code><code class="p">:</code>
+    <code class="k">def</code> <code class="fm">__init__</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code> <code class="o">=</code> <code class="p">{</code><code class="mi">0</code><code class="p">,</code> <code class="mi">1</code><code class="p">}</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">processState</code> <code class="o">=</code> <code class="p">{</code><code class="n">i</code><code class="p">:</code> <code class="s2">"idle"</code> <code class="k">for</code> <code class="n">i</code> <code class="ow">in</code> <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">}</code>
+        <code class="bp">self</code><code class="o">.</code><code class="n">flag</code> <code class="o">=</code> <code class="p">{</code><code class="n">i</code><code class="p">:</code> <code class="kc">False</code> <code class="k">for</code> <code class="n">i</code> <code class="ow">in</code> <code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">}</code>
+
+    <code class="k">def</code> <code class="nf">other</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">return</code> <code class="mi">1</code> <code class="o">-</code> <code class="n">i</code>
+
+    <code class="c1"># Step 1: Check</code>
+    <code class="k">def</code> <code class="nf">check</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"idle"</code> <code class="ow">and</code> <code class="ow">not</code> <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="bp">self</code><code class="o">.</code><code class="n">other</code><code class="p">(</code><code class="n">i</code><code class="p">)]:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"set"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># Step 2: Set</code>
+    <code class="k">def</code> <code class="nf">set_flag</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"set"</code><code class="p">:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="kc">True</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"cs"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># Step 3: Exit</code>
+    <code class="k">def</code> <code class="nf">exit</code><code class="p">(</code><code class="bp">self</code><code class="p">,</code> <code class="n">i</code><code class="p">):</code>
+        <code class="k">if</code> <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code><code class="p">:</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">flag</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="kc">False</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="n">i</code><code class="p">]</code> <code class="o">=</code> <code class="s2">"idle"</code>
+            <code class="k">return</code> <code class="kc">True</code>
+        <code class="k">return</code> <code class="kc">False</code>
+
+    <code class="c1"># One nondeterministic step (like Next)</code>
+    <code class="k">def</code> <code class="nf">step</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="n">i</code> <code class="o">=</code> <code class="n">random</code><code class="o">.</code><code class="n">choice</code><code class="p">(</code><code class="nb">list</code><code class="p">(</code><code class="bp">self</code><code class="o">.</code><code class="n">Procs</code><code class="p">))</code>
+        <code class="n">actions</code> <code class="o">=</code> <code class="p">[</code><code class="bp">self</code><code class="o">.</code><code class="n">check</code><code class="p">,</code> <code class="bp">self</code><code class="o">.</code><code class="n">set_flag</code><code class="p">,</code> <code class="bp">self</code><code class="o">.</code><code class="n">exit</code><code class="p">]</code>
+        <code class="n">random</code><code class="o">.</code><code class="n">shuffle</code><code class="p">(</code><code class="n">actions</code><code class="p">)</code>
+
+        <code class="k">for</code> <code class="n">action</code> <code class="ow">in</code> <code class="n">actions</code><code class="p">:</code>
+            <code class="k">if</code> <code class="n">action</code><code class="p">(</code><code class="n">i</code><code class="p">):</code>
+                <code class="k">return</code> <code class="p">(</code><code class="n">i</code><code class="p">,</code> <code class="n">action</code><code class="o">.</code><code class="vm">__name__</code><code class="p">)</code>
+        <code class="k">return</code> <code class="kc">None</code>
+
+    <code class="c1"># Invariant: Mutual exclusion</code>
+    <code class="k">def</code> <code class="nf">mutual_exclusion_holds</code><code class="p">(</code><code class="bp">self</code><code class="p">):</code>
+        <code class="k">return</code> <code class="ow">not</code> <code class="p">(</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="mi">0</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code> <code class="ow">and</code>
+            <code class="bp">self</code><code class="o">.</code><code class="n">processState</code><code class="p">[</code><code class="mi">1</code><code class="p">]</code> <code class="o">==</code> <code class="s2">"cs"</code>
+        <code class="p">)</code>
+
+<code class="n">m</code> <code class="o">=</code> <code class="n">NaiveMutex</code><code class="p">()</code>
+
+<code class="k">for</code> <code class="n">step</code> <code class="ow">in</code> <code class="nb">range</code><code class="p">(</code><code class="mi">50</code><code class="p">):</code>
+    <code class="n">action</code> <code class="o">=</code> <code class="n">m</code><code class="o">.</code><code class="n">step</code><code class="p">()</code>
+    <code class="nb">print</code><code class="p">(</code><code class="n">step</code><code class="p">,</code> <code class="n">action</code><code class="p">,</code> <code class="n">m</code><code class="o">.</code><code class="n">processState</code><code class="p">,</code> <code class="n">m</code><code class="o">.</code><code class="n">flag</code><code class="p">)</code>
+
+    <code class="k">if</code> <code class="ow">not</code> <code class="n">m</code><code class="o">.</code><code class="n">mutual_exclusion_holds</code><code class="p">():</code>
+        <code class="nb">print</code><code class="p">(</code><code class="s2">"Violation!"</code><code class="p">)</code>
+        <code class="k">break</code></pre>
+
+<p>基于系统运行的描述，<a data-primary="TLC model checker" data-type="indexterm" id="id2203"/>TLC模型检查器——作为TLA+工具链的一部分——可以验证预期的不变量。这是一个实用且实用的技巧，可以写下你期望系统如何运作，并观察它的实际运作方式。当不变量被违反时，TLC会停止状态探索，并提供系统在违反时经历的状态序列。这种轨迹可以让你确定不变量被违反的原因，并通过（例如）更新变量、转换定义等来修正规范的问题。</p>
+
+<p class="pagebreak-before less_space">在这种情况下，当我们运行TLC检查器时，它会告诉我们不变量被违反，并打印出导致不变量违背的步骤：</p>
+<pre translate="no">Error: Invariant MutualExclusion is violated.
+Error: The behavior up to this point is:
+State 1: &lt;Initial predicate&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "idle" @@ 1 :&gt; "idle")
+State 2: &lt;Check line 12, col 7 to line 15, col 21 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "set" @@ 1 :&gt; "idle")
+State 3: &lt;Check line 12, col 7 to line 15, col 21 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; FALSE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "set" @@ 1 :&gt; "set")
+State 4: &lt;Set line 18, col 7 to line 20, col 38 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; TRUE @@ 1 :&gt; FALSE)
+/\ pc = (0 :&gt; "cs" @@ 1 :&gt; "set")
+State 5: &lt;Set line 18, col 7 to line 20, col 38 of module NaiveMutex&gt;
+/\ flag = (0 :&gt; TRUE @@ 1 :&gt; TRUE)
+/\ pc = (0 :&gt; "cs" @@ 1 :&gt; "cs")
+13 states generated, 9 distinct states found, 1 states left on queue.
+The depth of the complete state graph search is 5.
+The average outdegree of the complete state graph is 1
+(minimum is 0, the maximum 2 and the 95th percentile is 2).</pre>
+
+<p>第一行最重要：我们期望成立的不变量实际并不成立。TLC 表明，由于“检查后设置”并非原子操作，这项设计存在竞态条件。执行过程如下：状态 1 中，两个进程起初都处于 <code translate="no">'idle'</code>，均不打算获取锁。状态 2 中，进程 0 检查到进程 1 的标志为 <code translate="no">FALSE</code>，于是进入 <code translate="no">"set"</code>。状态 3 中，进程 1 做了同样的事。状态 4 中，进程 0 进入临界区并设置自己的标志。最后在状态 5 中，两个进程都进入了临界区，两个标志也都已设置，此时不变量遭到违反。</p>
+
+<p>为现有软件制定具有代表性的TLA+规范较为困难，但生成式AI工具可以提供帮助，这意味着即使是大型软件系统也能正式验证。启动一个带有正式护栏的复杂新开发软件项目，对可靠性有极大帮助，而且可以自然地从项目开始时常见的<a data-primary="testing" data-secondary="formal methods" data-startref="tst_frmthd" data-tertiary="TLA+" data-type="indexterm" id="id2204"/><a data-primary="formal testing methods" data-secondary="TLA+" data-startref="frmthd" data-type="indexterm" id="id2205"/><a data-primary="testing" data-secondary="large-scale fault-tolerance scenarios" data-startref="tst_lsfts_frmthd" data-tertiary="formal testing methods" data-type="indexterm" id="id2206"/><a data-primary="TLA+" data-startref="tlapls" data-type="indexterm" id="id2207"/><a data-primary="tools" data-secondary="TLA+" data-startref="tol_tlaplus" data-type="indexterm" id="id2208"/>白板会议中流露出来。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="两类形式化验证器" data-type="sect2"><div class="sect2" id="ch14_two_classes_of_formal_verifiers">
+<h2>两类形式化验证器</h2>
+
+<p>存在多种形式验证工具，每种工具都有其优势和局限性。从高层次来看，这些验证器可以分为两类：模型检查器和定理证明器。了解它们相互补充的优缺点，是为特定问题选择合适方法的关键。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="模型检查" data-type="sect3"><div class="sect3" id="ch14_model_checking">
+<h3>模型检查</h3>
+
+<p>正如我们在<a data-type="xref" href="#ch14_using_formal_methods">《使用形式方法》</a>中看到的，模型检查是一种自动化的算法技术，通过对系统模型的状态空间进行详尽探索<a data-primary="verifiers" data-seealso="testing" data-type="indexterm" id="id2209"/><a data-primary="verifiers" data-secondary="model checking" data-type="indexterm" id="id2210"/><a data-primary="model checking verifiers" data-type="indexterm" id="id2211"/>。TLA+ 的 TLC 就是模型检查器的例子。这些验证器使用有限状态模型描述系统，并用线性时间逻辑（LTL）或计算树逻辑（CTL）等时间逻辑表达一个或多个属性。</p>
+
+<p>模型检查最大的优势在于其<a data-primary="automation" data-secondary="model checking" data-type="indexterm" id="id2212"/>自动化：一旦模型和属性定义好，验证过程通常是一个“按钮式”操作。当属性失败时，主要输出是一个反例，即一个具体的执行轨迹，用来展示模型的问题，这对调试非常宝贵。模型检查最大的弱点是状态空间爆炸问题——模型中的状态数量通常会随着变量和并发组件数量的增加呈指数增长，这会迅速使检查器的可用资源不堪重负。这一弱点根本上限制了模型检查只能进行被测系统的“小型”模型，但通常足以验证系统运行中核心或重要的算法方面。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="定理证明" data-type="sect3"><div class="sect3" id="ch14_theorem_proving">
+<h3>定理证明</h3>
+
+<p>相比之下，定理<a data-primary="verifiers" data-secondary="theorem proving" data-type="indexterm" id="ver_tp"/><a data-primary="theorem proving verifiers" data-type="indexterm" id="tpv"/>证明是一个演绎且通常具有交互作用的过程。它涉及使用高度表达的形式逻辑来表示系统及其属性，如高阶逻辑（HOL）或归纳构造演算（CIC）。然后你引导定理证明器构造一个形式化的数学证明，证明系统的规范蕴含所需的性质。由于它依赖于归纳法等数学证明技术，定理证明不受状态空间大小限制，可以用来验证具有无限状态的系统（例如，具有无界数据结构或参数的系统）。所用逻辑也更具表现力，能够表达复杂的数学概念。这种权衡是自动化的显著损失。构建证明需要大量人力和对逻辑及特定定理证明器的深厚专业知识，尽管人工智能的辅助有潜力大大降低这一过程的劳动强度。</p>
+
+<p>这里有一个示例规范，展示了我们之前看到的原生互斥组如何用Rocq<a href="https://oreil.ly/-a9o3">定理证明系统检查</a>：</p>
+<pre translate="no">(* ========================= *)
+(* 1. Processes and States   *)
+(* ========================= *)
+
+Inductive Proc : Type :=
+| P0
+| P1.
+
+Definition other (p : Proc) : Proc :=
+  match p with
+  | P0 =&gt; P1
+  | P1 =&gt; P0
+  end.
+
+Inductive PC : Type :=
+| Idle
+| Want
+| CS.
+
+Record State : Type := {
+  processState : Proc -&gt; PC;
+  flag : Proc -&gt; bool
+}.
+
+(* ========================= *)
+(* 2. Initial State          *)
+(* ========================= *)
+
+Definition init : State :=
+  {|
+    processState := fun _ =&gt; Idle;
+    flag := fun _ =&gt; false
+  |}.
+
+(* ========================= *)
+(* 3. Functional Update      *)
+(* ========================= *)
+
+Definition update_proc
+  {A : Type}
+  (f : Proc -&gt; A)
+  (p : Proc)
+  (v : A)
+  : Proc -&gt; A :=
+  fun q =&gt;
+    match q, p with
+    | P0, P0 =&gt; v
+    | P1, P1 =&gt; v
+    | _, _ =&gt; f q
+    end.
+
+(* ========================= *)
+(* 4. Actions / Transitions  *)
+(* ========================= *)
+
+Definition Check (i : Proc) (s s' : State) : Prop :=
+  processState s i = Idle /\
+  flag s (other i) = false /\
+  processState s' =
+    update_proc (processState s) i Want /\
+  flag s' = flag s.
+
+Definition SetFlag (i : Proc) (s s' : State) : Prop :=
+  processState s i = Want /\
+  flag s' =
+    update_proc (flag s) i true /\
+  processState s' =
+    update_proc (processState s) i CS.
+
+Definition Exit (i : Proc) (s s' : State) : Prop :=
+  processState s i = CS /\
+  flag s' =
+    update_proc (flag s) i false /\
+  processState s' =
+    update_proc (processState s) i Idle.
+
+(* ========================= *)
+(* 5. Next-State Relation    *)
+(* ========================= *)
+
+Definition Next (s s' : State) : Prop :=
+  (exists i, Check i s s') \/
+  (exists i, SetFlag i s s') \/
+  (exists i, Exit i s s').
+
+(* ========================= *)
+(* 6. Mutual Exclusion       *)
+(* ========================= *)
+
+Definition MutualExclusion (s : State) : Prop :=
+  ~ (
+    processState s P0 = CS /\
+    processState s P1 = CS
+  ).
+
+Definition bad_state : State :=
+  {|
+    processState :=
+      fun p =&gt;
+        match p with
+        | P0 =&gt; CS
+        | P1 =&gt; CS
+        end;
+
+    flag := fun _ =&gt; true
+  |}.
+
+(* ========================= *)
+(* 7. Example Theorem        *)
+(* ========================= *)
+
+Theorem bad_state_violates :
+  ~ MutualExclusion bad_state.
+Proof.
+  unfold MutualExclusion.
+  simpl.
+  intro H.
+  apply H.
+  split; reflexivity.
+Qed.
+
+Print bad_state.
+Check bad_state_violates</pre>
+
+<p>待验证的性质以定理形式陈述，由你编写证明，Rocq 检查每一步。因此，这里不会出现 TLC 那样的输出：使用 TLC 时，你向系统描述其工作方式，实际是在探索状态机允许的各种转换，检查不变量是否会被违反；使用 Rocq 时，你则是在构造状态机按预期运行的证明，若无法证明，Rocq 就会报错。下面是 Rocq 定理检查器针对前例给出的输出：</p>
+<pre translate="no">% rocq compile ./badmutex.v
+bad_state =
+{|
+  processState := fun p : Proc =&gt; match p with
+                                  | P0 | _ =&gt; CS
+                                  end;
+  flag := fun _ : Proc =&gt; true
+|}
+     : State
+bad_state_violates
+     : ~ MutualExclusion bad_state
+%</pre>
+
+<p>可以看到，输出说明 <code translate="no">bad_state</code> 违反了 <code translate="no">MutualExclusion</code>。这项工作复杂得多，但<a data-primary="verifiers" data-secondary="theorem proving" data-startref="ver_tp" data-type="indexterm" id="id2213"/><a data-primary="theorem proving verifiers" data-startref="tpv" data-type="indexterm" id="id2214"/>能力也相应更强。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="比较两种方法" data-type="sect2"><div class="sect2" id="ch14_comparing_the_two_classes">
+<h2>比较两种方法</h2>
+
+<p><a data-type="xref" href="#ch14_table_06">表 14-5</a><a data-primary="verifiers" data-secondary="model checking compared to theorem proving" data-type="indexterm" id="id2215"/><a data-primary="theorem proving verifiers" data-secondary="compared to model checking" data-type="indexterm" id="id2216"/><a data-primary="model checking verifiers" data-secondary="compared to theorem proving" data-type="indexterm" id="id2217"/>对这两种范式进行了简明比较。</p>
+<table id="ch14_table_06">
+<caption><span class="label">表 14-5　</span>模型检查与定理证明</caption>
+<thead>
+<tr>
+<th>特征</th>
+<th>模型检查</th>
+<th>定理证明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p>自动化程度</p></td>
+<td><p>全自动</p></td>
+<td><p>交互式，由用户引导</p></td>
+</tr>
+<tr>
+<td><p>状态空间处理</p></td>
+<td><p>有限状态；受状态空间爆炸影响</p></td>
+<td><p>无限状态；使用数学归纳法</p></td>
+</tr>
+<tr>
+<td><p>属性的表达性</p></td>
+<td><p>命题时间逻辑（例如，LTL，CTL）</p></td>
+<td><p>高阶逻辑，依赖类型理论</p></td>
+</tr>
+<tr>
+<td><p>需要用户专业知识</p></td>
+<td><p>较低；工程师容易上手</p></td>
+<td><p>高</p></td>
+</tr>
+<tr>
+<td><p>性质不成立时的主要结果</p></td>
+<td><p>具体反例（用于调试）</p></td>
+<td><p>证明尝试失败（可能存在歧义）</p></td>
+</tr>
+<tr>
+<td><p>成功的主要成果</p></td>
+<td><p>验证该性质在模型中成立</p></td>
+<td><p>可重复使用的数学正确性证明</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>模型检查与定理证明在理论上的区别很明确，但现实中，现代验证工具越来越多地采用混合形式，二者边界也日益模糊。这种融合来自两种方法的互补性：一方的弱点恰好是另一方的强项，于是模型检查的自动化可以与定理证明的表达能力形成强大协同。例如，<a href="https://isabelle.in.tum.de">Isabelle</a> 和 <a href="https://pvs.csl.sri.com">PVS</a> 等现代交互式定理证明器集成了称为决策过程和策略的强大自动推理工具；反过来，TLA+ 等传统模型检查工具也包含 <a href="https://oreil.ly/sH2YJ">TLAPS</a> 这样的定理证明能力。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="测试的形式方法" data-type="sect3"><div class="sect3" id="ch14_formal_methods_for_testing">
+<h3>测试的形式方法</h3>
+
+<p>形式规范为系统所需行为提供客观且机器可读的描述。这解决了测试中的<a href="https://oreil.ly/_2SYd">测试判定问题</a><a data-primary="oracle problem in testing" data-type="indexterm" id="id2218"/><a data-primary="testing" data-secondary="oracle problem" data-type="indexterm" id="id2219"/>，即测试输出是否正确有时很难判断。有了形式模型，便能精确确定任意给定输入的预期结果。</p>
+
+<p>这种协同催生了基于模型的测试（MBT）<a data-primary="model-based testing (MBT)" data-type="indexterm" id="id2220"/><a data-primary="MBT (model-based testing)" data-type="indexterm" id="id2221"/>。在 MBT 中，测试用例不是人工编写，而是由算法根据系统的形式模型生成。<sup><a data-type="noteref" href="ch14-zh.html#id2222" id="id2222-marker">14</a></sup>因此，可以依据状态覆盖、转换覆盖或数据流覆盖等标准，自动创建大型测试套件，系统地覆盖系统行为的各个方面。与人工设计测试相比，这种<a href="https://oreil.ly/7KnYi">自动生成方式可以显著提高测试效率和覆盖率</a>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="谷歌形式方法的使用" data-type="sect2"><div class="sect2" id="ch14_use_of_formal_methods_at_google">
+<h2>谷歌形式方法的使用</h2>
+
+<p>学术界传统应用<a data-primary="testing" data-secondary="formal methods" data-tertiary="at Google" data-tertiary-sortas="Google" data-type="indexterm" id="tst_fmthd_google"/><a data-primary="formal testing methods" data-secondary="at Google" data-secondary-sortas="Google" data-type="indexterm" id="ftmthds_google"/>形式方法时，往往采用全有或全无的方式，似乎只适合航空电子等安全关键领域；我们则采用更务实、也更易扩展的形式验证方法。它并不试图证明 Google 全部基础设施、产品和服务的性质，因为无论从计算还是实践角度看，这都<span class="keep-together">不可行。</span><span class="keep-together">相反，</span>我们把形式方法用于特定子组件。虽然这在一定程度上降低了形式方法的纯粹性，却能提供远强于任何其他测试（包括生产环境测试）的行为保证。</p>
+
+<p>在本节中，我们将介绍一些我们如何利用形式<span class="keep-together">方法的例子。</span></p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="使用P4-BAR验证网络交换机的行为" data-type="sect3"><div class="sect3" id="ch14_verifying_behavior_of_network_switches_using_p4_bar">
+<h3>使用P4-BAR验证网络交换机的行为</h3>
+
+<p>谷歌使用<a href="https://oreil.ly/Sy8zf">P4</a>，一种特定领域的<a data-primary="verifiers" data-secondary="verifying network switches, P4-Bar" data-type="indexterm" id="id2223"/><a data-primary="P4-BAR (P4-Based Automated Reasoning), verifying network switches" data-type="indexterm" id="id2224"/>网络语言，作为自动验证软件定义网络（SDN）交换机行为的方法。这种机器可读的规范语言是基于P4的自动推理（P4-BAR）框架的一部分。<sup><a data-type="noteref" href="ch14-zh.html#id2225" id="id2225-marker">15</a></sup>使用 P4-BAR 使我们能够应对网络交换机中功能速度和可靠性的平衡挑战。</p>
+
+<p>P4-BAR的流程包含三个关键步骤：</p>
+<dl>
+<dt>建模</dt>
+<dd><p>使用 P4 作为规范语言来建模所需的交换机转发 API 及其预期行为</p>
+</dd>
+<dt>基于模型的测试输入生成</dt>
+<dd>
+<p>对 P4 程序进行符号执行和模糊测试，自动生成一套完整的交换机测试输入</p>
+</dd>
+<dt>与模拟结果进行差分测试</dt>
+<dd>
+<p>在实际交换机上运行生成的测试输入，并将交换机的输出与P4程序的模拟进行比较</p>
+</dd>
+
+</dl>
+
+<p>把 P4 程序视为规范，使 P4-BAR 能非常有效地发现缺陷并确保交换机按预期运行。自 2020 年以来，我们借此发现了 300 多个不同的转发缺陷，同时提升了可靠性和功能交付速度。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="硬件设计中的形式验证" data-type="sect3"><div class="sect3" id="ch14_formal_verification_in_hardware_design">
+<h3>硬件设计中的形式验证</h3>
+
+<p>谷歌在其定制硬件设计中使用形式<a data-primary="verification" data-secondary="custom hardware design" data-type="indexterm" id="id2226"/>分析技术，如张量处理单元（TPU）。通过在设计周期早期应用形式验证方法，工程团队可以确保硬件实现符合其架构和微架构规范。这种<span class="keep-together">主动的</span>方法有助于在协议违规、死锁及其他关键功能违规进入物理<span class="keep-together">实施</span>阶段前发现，确保谷歌<span class="keep-together">基础设施的高度可靠性和性能。</span></p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Fiat Cryptography 与 BoringSSL" data-type="sect3"><div class="sect3" id="ch14_fiat_cryptography_and_boringssl">
+<h3>Fiat Cryptography 与 BoringSSL</h3>
+
+<p><a href="https://oreil.ly/Ifaq8">BoringSSL</a> 是<a data-primary="verifiers" data-secondary="Fiat Cryptography" data-type="indexterm" id="id2227"/><a data-primary="Fiat Cryptography" data-type="indexterm" id="id2228"/><a data-primary="BoringSSL" data-type="indexterm" id="id2229"/> Google 为满足内部需求而创建的 OpenSSL 开源分支，保护着 Google Chrome 浏览器和 Android 上的大多数连接。BoringSSL 包含经过形式验证的密码学代码，也就是已经从数学上证明不存在实现漏洞的代码。这些代码使用 MIT 研究人员开发的 <a href="https://oreil.ly/UaH4K">Fiat Cryptography</a> 生成；该系统能够自动生成高度优化且安全的密码学代码，而这类代码传统上要由人工编写。人工方法不仅耗费大量劳动，还容易引入隐蔽缺陷和性能问题，尤其是在针对不同硬件架构调整代码时。Fiat Cryptography 通过自动生成椭圆曲线密码学（ECC）等复杂算法所需的代码，并达到最佳手写代码的性能，解决了这一问题。</p>
+
+<p>Fiat Cryptography 采用形式方法保证所生成代码的正确性。它是多个利用形式方法生成安全密码学代码的系统之一；它不仅编写代码，还同时证明代码在数学上正确，从而有效消除了一类主要<span class="keep-together">安全漏洞来源。</span></p>
+
+<p>这种方法代表了构建安全系统的重要进展。通过自动化代码的构建，还自动化了其正确性的证明，研究人员将此前仅存在少数专家脑海中的过程，变成了系统化且可验证的过程。在像BoringSSL这样的大型软件项目中采用这种经过验证的密码学，标志着行业向关键基础设施使用正式验证软件的更广泛转变，降低了不安全代码带来的风险，使网络对所有人都更加安全。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="使用 Tricorder、Clang-Tidy 和 Clang Static Analyzer 分析 C++ 代码" data-type="sect3"><div class="sect3" id="ch14_analysis_of_c_code_via_tricorder_clangtidy_and_clang_static_analyzer">
+<h3>使用 Tricorder、Clang-Tidy 和 Clang Static Analyzer 分析 C++ 代码</h3>
+
+<p><a href="https://oreil.ly/-OnAf">Tricorder</a> 是 Google 内部的静态<a data-primary="Tricorder" data-type="indexterm" id="id2230"/><a data-primary="verifiers" data-secondary="Tricorder" data-type="indexterm" id="id2231"/>分析平台，会自动对代码库中的代码运行众多分析器。它集成到开发者工作流中，最突出的是直接在代码评审期间展示发现的问题，也会在集成开发环境（IDE）和代码搜索工具中呈现结果。Tricorder 的主要目标是在开发周期早期发现潜在缺陷、风格问题以及偏离最佳实践之处，从而提高代码质量。它会运行数百种分析器，从简单的代码检查器到更深入的分析工具都有，并可按项目配置。</p>
+
+<p class="pagebreak-before less_space"><a href="https://oreil.ly/ym_c3">Clang-Tidy</a> 是一款<a data-primary="Clang-Tidy" data-type="indexterm" id="id2232"/><a data-primary="verifiers" data-secondary="Clang-Tidy" data-type="indexterm" id="id2233"/>开源、基于 Clang 的 C++ 代码检查工具，用于诊断并修复常见编程错误。它覆盖风格违规、接口误用以及静态分析可检测的缺陷。Clang-Tidy 分析抽象语法树（AST），因此比基于正则表达式的检查器精确得多。它发现的问题及建议修复会通过 Tricorder 流水线显示在代码评审阶段。各项目可以自行配置要对代码库运行的 Clang-Tidy 检查集合。</p>
+
+<p><a href="https://clang-analyzer.llvm.org">Clang Static Analyzer</a> 是集成在 Clang<a data-primary="Clang Static Analyzer" data-type="indexterm" id="id2234"/><a data-primary="verifiers" data-secondary="Clang Static Analyzer" data-type="indexterm" id="id2235"/>项目中的工具，会进行更深入、路径敏感的分析，以发现 C++ 代码中更深层的缺陷。典型代码检查器和许多 Clang-Tidy 检查只关注局部模式，而 Clang Static Analyzer 会探索程序执行路径，识别空指针解引用、释放后使用等问题以及其他逻辑错误。其结果也常作为 Clang-Tidy 警告呈现，因此会显示在 Tricorder 中。该工具采用形式方法实现这种深度分析：它使用符号执行探索程序路径，把输入值视为符号而非具体值，因此能同时推理许多可能输入；还使用抽象解释，即对程序语义进行可靠近似的理论，来建立程序状态模型并检查不变量是否成立。通过模拟执行路径并跟踪符号值上的约束，分析器能够发现仅观察局部代码结构无法看出的缺陷。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="智能体测试" data-type="sect2"><div class="sect2" id="ch14_agentic_testing">
+<h2>智能体测试</h2>
+
+<p>这里简要介绍新兴的<a data-primary="testing" data-secondary="agentic" data-type="indexterm" id="tstg_agntc"/><a data-primary="agentic testing" data-type="indexterm" id="agnttstng"/><a data-primary="AI agents" data-secondary="agentic testing" data-type="indexterm" id="aignt_agntst"/>智能体软件开发领域，以及测试可能扮演的角色。由于具体情况很可能迅速变化，我们不会展开太多。智能体软件开发是指使用 AI 智能体（写作本书时通常为大语言模型）编写软件。其实现方式跨度很大：一端是在交互循环中亲自验证智能体生成的每项变更，另一端则只是粗略定义业务目标，再编排一组智能体，由它们自行协调研究、明确目标并完成相应实现。</p>
+
+<p>这个领域变化太快，很难提出在写下之后仍长期适用的建议，更不用说中长期建议。然而，智能体开发目前面对的许多问题，恰好正是测试要解决的：划定可接受与不可接受的行为边界，并在出错时给出明确信号。因此，我们认为测试仍将是管理风险、比较世界模型、防止智能体软件开发出现问题，以及安全扩展既有代码库的重要手段。</p>
+
+<p class="pagebreak-before less_space">模型<a data-primary="evals, model testing" data-type="indexterm" id="id2236"/>领域测试的一个关键环节是使用 <em>eval</em>，即 <em>evaluation</em>（评估）的简称。粗略类比到传统的确定性软件，eval 就像一大组单元测试和集成测试。不过二者有一个关键区别：单元测试规模小，旨在检查范围极窄的功能；eval 通常大得多，而且并非每项 eval 都有能由软件自动核对的客观正确答案，有些甚至<em>需要</em>人工监督。尽管如此，基本思想相同：eval 成功，后续流程才可继续。（有一类重要例外：某些 eval 要求用户像生产环境测试那样直接与软件交互，此时“是否有效”由用户反应来判定。）</p>
+
+<p>作为 SRE，尤其面对软件开发可能失控的环境时，我们倾向于采用如下分层测试方法：</p>
+
+<ul>
+<li>
+<p>第 1 级：经典软件编写</p>
+</li>
+<li>
+<p>第 2 级：智能体生成代码、数据、内容等</p>
+</li>
+<li>
+<p>第 3 级：智能体使用工具</p>
+</li>
+</ul>
+
+<p>下面简要说明各个级别及相应的测试类型与指南。鉴于该领域尚不成熟，其中许多细节可能并不适用于你，或者还没有可复用的解决方案；这意味着可能需要大量专门定制的软件，而这种软件未必有利于可靠性。不过在这种情况下，测试至少能帮助我们为风险划定边界。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="“经典”软件编写（第 1 级）" data-type="sect3"><div class="sect3" id="ch14_classic_software_authoring_level_1">
+<h3>“经典”软件编写（第 1 级）</h3>
+
+<p>智能体测试<a data-primary="testing" data-secondary="agentic" data-tertiary="software authoring level" data-type="indexterm" id="tstg_agntc_sftath"/><a data-primary="agentic testing" data-secondary="software authoring level" data-type="indexterm" id="agnttstng_sftath"/>的第 1 级就是标准测试，但重点是尽实际可能确保软件和配置安全。对智能体软件而言，为核心算法、控制循环等进行某种形式验证尤其有用。这样，如果智能体以破坏核心算法的方式修改软件，问题会立即暴露并可被回退：证明或其他验证会失败，为智能体和测试软件提供易于响应的明确信号。因此，无论核心循环是什么，都不应在长期智能体开发可能产生的半随机变更下显得脆弱。</p>
+
+<p>此级别的测试可能包括：</p>
+<dl>
+<dt>软件</dt>
+<dd>
+<p>类型检查、单元测试、模糊测试、集成测试等。</p>
+</dd>
+<dt>配置</dt>
+<dd>
+<p>模式测试、语法验证等。</p>
+</dd>
+<dt>数据</dt>
+<dd>
+<p>模式测试、来源追踪等。</p>
+</dd>
+<dt>形式方法</dt>
+<dd>
+<p>例如，TLA+、模型检查、定理证明和静态分析</p>
+</dd>
+</dl>
+
+<p>在这种情况下，<a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_sftath" data-tertiary="software authoring level" data-type="indexterm" id="id2237"/><a data-primary="agentic testing" data-secondary="software authoring level" data-startref="agnttstng_sftath" data-type="indexterm" id="id2238"/>数据考虑可能会比非机器学习系统投入更多精力。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="生成代码、数据和内容等的智能体（第 2 级）" data-type="sect3"><div class="sect3" id="ch14_agents_generating_code_data_content_etc_level_2">
+<h3>生成代码、数据和内容等的智能体（第 2 级）</h3>
+
+<p>这是引入代理作为代码生成器的第一步<a data-primary="testing" data-secondary="agentic" data-tertiary="code generator level" data-type="indexterm" id="tstg_agntc_cdgen"/><a data-primary="agentic testing" data-secondary="code generator level" data-type="indexterm" id="agnttstng_cdgen"/>。此时，提示和模型作为独立的产物出现。</p>
+
+<p>通过保持温度、提示、源数据等稳定，并测试结果输出，仍然可以对模型输出进行确定性测试。大多数其他测试都是概率性的——比如内容测试，针对评分标准（是否列出了所有应该提及的内容，而没有提及不该提及的内容？）、脏话或极端情绪检测、个人身份识别（PII）检测等等。</p>
+
+<p>有时我们会用大语言模型评估其他大语言模型的输出。此时应使用多个模型，以降低“不当一致”的风险，也就是智能体并非因为结论正确而彼此赞同。我们还必须持续检查产出质量，尤其是在生产环境中，因为前述方法大多用于生产前阶段。</p>
+
+<p>到了这个阶段，智能体已经开始执行任务，因此应跟踪其成本、延迟和可靠性。这表面上似乎只是元层面的考虑，实际上至关重要；如果智能体的运行高度依赖远程提供商的令牌消耗，就更是如此。</p>
+
+<p>此时一个新兴的危险是漂移：现实与大型语言模型环境、数据、提示等可能逐渐分离。一个密切相关的危险是，不同模型可能有明显的反应倾向，以特定方式（例如谄媚），从而系统性地改变输出，这与过程中的其他随机性完全无关。</p>
+
+<p>关于第 2 级智能体测试的类型和指南，可以考虑以下内容：</p>
+<dl>
+<dt>提示</dt>
+<dd>
+<p>提示跟踪（版本控制）、长度、禁止或强制条款。检查提示变更是否会导致黄金评估集的质量回归。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>模型</dt>
+<dd>
+<p>跟踪模型并纳入版本控制；记录版本（若你不是模型所有者，则在能够确认的范围内）、温度和随机种子。开展小范围确定性测试。使用 Cohen's kappa（衡量评审者一致性的统计量）来校准评审者。</p>
+</dd>
+<dt>可观测性</dt>
+<dd>
+<p>检测模型响应版本与模型请求版本是否一致，并跟踪模型版本。熟悉 <a href="https://oreil.ly/RGlik">OpenTelemetry GenAI 指南</a>，确保所有 OpenTelemetry 属性正确。</p>
+</dd>
+<dt>安全性</dt>
+<dd>
+<p>PII泄漏通过从正则表达式到识别常见格式的机器学习模型等多种技术进行筛查——通常混合系统能产生最佳结果。</p>
+</dd>
+<dt>成本、延迟等等。</dt>
+<dd>
+<p>预算模型——每日和/或按请求计算的预算。决定是开放失败还是关闭失败，并测试执行。同样，延迟预算及相关策略可能涉及切换到另一个（例如本地）模型——测试故障切换至关重要。</p>
+</dd>
+<dt>漂移</dt>
+<dd>
+<p>频繁运行黄金评估以捕捉漂移和倾向变化（这里需要强模型版本化）。</p>
+</dd>
+<dt>质量监测</dt>
+<dd>
+<p>既要运行 eval，也要监控生产环境。可考虑为质量评估的成功与失败定义 SLI，甚至设置<a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_cdgen" data-tertiary="code generator level" data-type="indexterm" id="id2239"/><a data-primary="agentic testing" data-secondary="code generator level" data-startref="agnttstng_cdgen" data-type="indexterm" id="id2240"/>消耗速率告警。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="智能体使用工具（第 3 级）" data-type="sect3"><div class="sect3" id="ch14_agentic_tool_use_level_3">
+<h3>智能体使用工具（第 3 级）</h3>
+
+<p>第 3 级引入了第一层间接性<a data-primary="testing" data-secondary="agentic" data-tertiary="agentic tool use level" data-type="indexterm" id="tstg_agntc_agntol"/><a data-primary="agentic testing" data-secondary="agentic tool use" data-type="indexterm" id="agnttstng_agntol"/>：智能体使用工具完成工作，而工具本身也可能生成软件。因此，工具使用本身需要明确规范、设置防护、持续跟踪并接受监控。人类使用的工具需要测试和故障注入，智能体使用的工具同样如此。</p>
+
+<p>在这一层，智能体内部状态因与工具使用相关而变得更加重要。因此，需要测试智能体能否推进任务（也就是它的<em>轨迹</em>），并跟踪为此付出的成本。还要考虑智能体如何终止，测试它应该终止的条件，以及它能否在未完成任务时给出妥善的答复。</p>
+
+<p class="pagebreak-before less_space">安全始终且无处不在地都很重要，在这里也被重新关注，因为工具的使用使得所谓<a href="https://oreil.ly/xZ4UF"><em>致命三重</em></a>奏——访问私人数据、不可信内容和外部通信——的某些方面变得更容易。</p>
+
+<p>该级别的测试通常分为以下几类：</p>
+<dl>
+<dt>工具</dt>
+<dd>
+<p>工具规格跟踪和测试。工具规格的变化是否会导致黄金评估集的质量回归。检测命名冲突和工具描述重叠、参数测试、工具故障注入、过载行为（如HTTP<code translate="no">429</code>响应）、工具响应异常下的行为。</p>
+</dd>
+<dt>轨迹</dt>
+<dd>
+<p>设置轨迹预算。在静态环境中重放旧场景，同时测量重复次数、执行步数和令牌消耗率；测试达到阈值时能否平稳降级。</p>
+</dd>
+<dt>终止</dt>
+<dd>
+<p>类比于轨迹，设定代理终止策略、升级（如果可能）到人类，以及优雅降级。</p>
+</dd>
+<dt>安全性</dt>
+<dd>
+<p>关注“致命三要素”。根据配置生成能力集合，并与这三个要素对照。尽可能使用最简单的手段实施约束（能不用 AI 就不用 AI）。设置工具调用策略层、包装器检查，以及提示注入或对抗性输入检查。</p>
+</dd>
+</dl>
+
+<p>核心思想是，每一级测试都依赖前一级。一般而言，第 <em>N</em>+1 级的问题很难用第 <em>N</em> 级的方法发现。例如，新模型过度迎合用户很难靠经典单元测试发现；而工具回归最终改变模型能力的运行时安全性，也很难靠 eval 发现。无论这些问题是否容易察觉，两者都很危险<a data-primary="testing" data-secondary="formal methods" data-startref="tst_fmthd_google" data-tertiary="at Google" data-tertiary-sortas="Google" data-type="indexterm" id="id2241"/><a data-primary="formal testing methods" data-secondary="at Google" data-secondary-sortas="Google" data-startref="ftmthds_google" data-type="indexterm" id="id2242"/><a data-primary="testing" data-secondary="agentic" data-startref="tstg_agntc_agntol" data-tertiary="agentic tool use level" data-type="indexterm" id="id2243"/><a data-primary="agentic testing" data-secondary="agentic tool use" data-startref="agnttstng_agntol" data-type="indexterm" id="id2244"/><a data-primary="AI agents" data-secondary="agentic testing" data-startref="aignt_agntst" data-type="indexterm" id="id2245"/>。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="结论" data-type="sect1"><div class="sect1" id="ch14_conclusion">
+<h1>结论</h1>
+
+<p>测试是构建和运行有韧性、可靠的软件系统的关键环节。本章从基础概念入手，介绍了 Google SRE 如何看待测试。规模越大，测试就越复杂，也越需要成熟的分层方法。要理解安全投入与交付速度之间的权衡，既要看到二者存在张力之处，也要看到并不冲突之处；还要针对具体情况审慎选择方法，并认识到情况和方法都可能发生变化。</p>
+
+<p>生成式人工智能的出现并不会让测试变得不那么重要。未来我们会看到更多软件，无论软件由什么生成，都需要测试。事实上，在撰写本文时，代理生成的代码可能需要超出行业常规水平的测试。形式方法在这里可以发挥有用的辅助作用。</p>
+
+<p>生产环境测试的重要性正在上升。随着越来越多缺少人类心智模型支撑的代码被部署到生产环境，以受控方式让软件接受现实检验，很可能成为主要测试方法。从某种意义上说，这就是终极测试。在全面开展生产环境测试前，仍有许多逐步扩大测试规模的办法：可以对简单程序做模糊测试；可以在运行中的二进制程序之间人为制造错误或延迟；也可以向单个依赖注入故障。建立起对整个系统运行方式的信心后，再进一步模拟网络链路乃至整个数据中心消失等大规模事件。</p>
+
+<p>无论起步规模如何、最终扩展到何种规模，在构建可靠系统并尽量降低持续变更带来的不确定性时，测试都是 SRE 工具箱中不可或缺的基础工具。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2096"><sup><a href="ch14-zh.html#id2096-marker">1</a></sup> 仔细考察会发现，这条格言其实颇有微妙之处。例如，<a href="https://oreil.ly/KyNRb">Forrest Shull 等人 2002 年的论文</a>认为，部署后发现严重缺陷的修复成本可达早期修复的 100 倍，而非严重缺陷约为 2 倍；<a href="https://oreil.ly/nn6m7">2017 年的一篇论文</a>中，<a data-primary="Menzies, Tim" data-type="indexterm" id="id2246"/>Tim Menzies 等人则认为，在他们研究的 2006 至 2014 年间 150 多个项目中，这种效应已经消失。</p><p data-type="footnote" id="id2127"><sup><a href="ch14-zh.html#id2127-marker">2</a></sup>参见 Chaitali Narla 和 Diego Salas 的<a href="https://oreil.ly/FchlY">《Hermetic Servers》</a>，Google Testing Blog，2012 年 10 月 23 日。</p><p data-type="footnote" id="id2142"><sup><a href="ch14-zh.html#id2142-marker">3</a></sup>关于这个话题，我们强烈推荐 Mike Bland 于 2014 年 6 月发表的<a href="https://oreil.ly/5kb_D">博客文章《Goto Fail, Heartbleed, and Unit Testing Culture》</a>。</p><p data-type="footnote" id="id2144"><sup><a href="ch14-zh.html#id2144-marker">4</a></sup>一种经验做法是：先让新版本承载 0.1% 的用户流量，此后每 24 小时按数量级扩大范围，同时改变升级服务器所在的地理位置。不过，许多团队会在低比例阶段快速提升（如 0.1% → 1%），在高比例阶段放慢（如 10% → 50% → 80% → 100%，而不是 10% → 100%）。如果流量具有异质性，例如企业客户的流量模式差异很大，就需要更复杂的策略。</p><p data-type="footnote" id="id2147"><sup><a href="ch14-zh.html#id2147-marker">5</a></sup>有关我们所用系统的详细信息，参见 Štěpán Davidovič 和 Betsy Beyer 的<a href="https://oreil.ly/i3Nwt">《Canary Analysis Service》</a>，<em>Communications of the ACM</em> 61 卷第 5 期（2018）：54–62。</p><p data-type="footnote" id="id2150"><sup><a href="ch14-zh.html#id2150-marker">6</a></sup>参见 Diego Lo Giudice 的<a href="https://oreil.ly/M2d-w">《Why Agile Development Races Ahead of Traditional Testing》</a>，<em>ComputerWeekly.com</em>（2013）；以及 Lisa Crispin 的<a href="https://oreil.ly/iEpMA">《How Testing Processes Should Change When You Shift Left》</a>，<em>mabl</em>（2019）。</p><p data-type="footnote" id="id2167"><sup><a href="ch14-zh.html#id2167-marker">7</a></sup>参见 <a href="https://oreil.ly/FLumk">gRPC 指南</a>。</p><p data-type="footnote" id="id2173"><sup><a href="ch14-zh.html#id2173-marker">8</a></sup><a href="https://oreil.ly/tTcaV">Monarch 论文</a>提供了更多细节。</p><p data-type="footnote" id="id2180"><sup><a href="ch14-zh.html#id2180-marker">9</a></sup>需要特别注意：必须测试这些改进，确认它们既能防止问题再次发生，又不会自行引入新问题。</p><p data-type="footnote" id="id2184"><sup><a href="ch14-zh.html#id2184-marker">10</a></sup>参见第一版第12章<a href="https://sre.google/sre-book/effective-troubleshooting/#xref_troubleshooting_negative-results">“负面结果即魔法”</a>。</p><p data-type="footnote" id="id2193"><sup><a href="ch14-zh.html#id2193-marker">11</a></sup>一个例子是<a href="https://oreil.ly/EKkPU">Envoy Gateway 的故障注入</a>。</p><p data-type="footnote" id="id2194"><sup><a href="ch14-zh.html#id2194-marker">12</a></sup>有许多开源和商业化的故障注入工具;最著名的可能是Netflix的<a href="https://oreil.ly/XJ1-d">《混沌猴子</a>》。</p><p data-type="footnote" id="id2200"><sup><a href="ch14-zh.html#id2200-marker">13</a></sup>TLA+ 工具可从 <a href="https://oreil.ly/aOaBK">GitHub</a> 获取。通过一个<a href="https://learntla.com">教程</a>了解更多关于TLA+的信息。</p><p data-type="footnote" id="id2222"><sup><a href="ch14-zh.html#id2222-marker">14</a></sup>MBT与基于性质的检验密切相关，但它是从模型而非不变量生成检验。</p><p data-type="footnote" id="id2225"><sup><a href="ch14-zh.html#id2225-marker">15</a></sup>参见Jonathan DiLorenzo在2025年LDI上的演讲<a href="https://oreil.ly/WGaxA">《基于P4的自动推理（P4-BAR）使用谷歌符号执行》</a>和Kinan Dak Albab等人<a href="https://oreil.ly/Yr8QP">《SwitchV：采用P4模型的自动SDN交换验证》</a>，<em>ACM SIGCOMM 2022会议论文集</em>（2022）：365–379。</p></div></div></section></body></html>
