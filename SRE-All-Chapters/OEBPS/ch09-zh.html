@@ -1,0 +1,1704 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>可观测性与监控</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 9. Observability and Monitoring" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch09">
+<h1><span class="label">第 9 章　</span>可观测性与监控</h1>
+
+
+<p class="byline">作者：Alex Bramley、Amber Hillhouse、Boris Arnoux、
+<span class="keep-together">Brent Bryan、</span> Brian Kudzia、
+David Bayer、Josh Suereth、Jose Andrade、
+<span class="keep-together">Kyusoon Lee、</span> Leland Jefferis、
+Marcin Brodziak、
+<span class="keep-together">Micah Lerner、</span>
+<span class="keep-together">Omer Habas、</span>
+<span class="keep-together">Parker Roth、</span> Pereira Braga、
+Qin Jia、
+<span class="keep-together">Ralf Wildenhues、Raphael Menderico、</span> Stevan Malesevic、
+<span class="keep-together">Yael Evron Sabag、</span>
+<span class="keep-together">Ying Wang</span><br/>
+
+<span class="keep-together">Carmela Quinito 协作</span></p>
+
+<p>近年来，<a data-primary="monitoring" data-secondary="traditional" data-type="indexterm" id="mon_trad"/>监控发生了重大转变。过去，监控的首要目标是细致地收集并存储分布式系统各组件的状态数据。这些组件包括客户端应用、前端界面、后端服务、存储系统、数据管道、硬件基础设施以及其他相互连接的系统。</p>
+
+<p>使用传<a data-primary="troubleshooting" data-secondary="traditional monitoring issues" data-type="indexterm" id="trbsht_tradmon"/>统监控数据排查生产问题，往往过度依赖以下做法：</p>
+<dl>
+<dt class="arabic">组织内部的知识传承</dt>
+<dd>
+<p>关键经验和运维细节主要通过直接交流传递，通常由经验丰富的值班工程师传授给资历较浅的同事。这种方式有利于一对一指导，却难以在大型团队中规模化传播知识；一旦关键人员离职，还可能造成知识流失。</p>
+</dd>
+<dt class="arabic">通过人工关联提出假设</dt>
+<dd>
+<p>事件发生后，工程师需要手动梳理彼此分散的数据点，寻找可能的关联，并对导致事件的深层问题提出假设。这个过程耗时、认知负担重、容易出错，而且会受制于庞大的数据量。</p>
+</dd>
+<dt class="arabic">人工识别干扰信息以排除假设</dt>
+<dd>
+<p>提出假设后，还要进一步人工识别并排除无关信息，也就是那些可能误导调查、使错误假设看似成立的“烟雾弹”。这一关键的筛选过程同样高度依赖个人经验，并可能拖长调查时间。</p>
+</dd>
+<dt class="arabic">得出调查结论</dt>
+<dd>
+<p>事件往往要经过人工分析数据、检验假设并反复修正这一整套艰苦的迭代过程，耗费相当长的时间后才能最终解决。</p>
+</dd>
+</dl>
+
+<p>这些挑<a data-primary="troubleshooting" data-secondary="traditional monitoring issues" data-startref="trbsht_tradmon" data-type="indexterm" id="id1629"/>战背后的根本原因，是遥测信号种类有限，只能呈现局部情况。此类以遥测为中心的监控<a data-primary="telemetry-focused monitoring" data-type="indexterm" id="id1630"/>主要关注时序数据，即持续采集并分析指标，以观察趋势、发现异常和理解系统行为。时序数据虽然构成了监控的基石，其他重要遥测形式却仍彼此孤立、缺乏关联。</p>
+
+<p>监控的“四个<a data-primary="four golden signals of monitoring" data-type="indexterm" id="id1631"/><a data-primary="monitoring" data-secondary="four golden signals" data-type="indexterm" id="id1632"/>黄金信号”——延迟、流量、错误和饱和度——是调查生产故障的起点。然而，这些信号只是关键的初始数据；真正重要的是结合整个技术栈中的其他数据，分析它们之间的相互作用。例如，某个系统的高延迟继而导致客户或下游系统遇到错误，这就是一条很有价值的线索，但仍须放在全栈所有可用信号的整体背景下评估。只有经过这种综合分析，才能查明问题的触发因素，判断它源自上游依赖、下游组件、产品误用，还是其他众多可能情形。监控的真正力量不在单个信号，而在于对所有信号进行整体解读，从而建立完整的系统健康图景，找出可付诸行动的解决<a data-primary="monitoring" data-secondary="traditional" data-startref="mon_trad" data-type="indexterm" id="id1633"/>方案。</p>
+
+<p>近年来，Google 和整个技<a data-primary="monitoring" data-seealso="observability" data-type="indexterm" id="id1634"/><a data-primary="observability" data-seealso="monitoring" data-type="indexterm" id="observ"/>术行业都经历了一次重大范式转变：从传统监控转向一个更先进的概念——<em>可观测性</em>。<a href="https://oreil.ly/a-2hq">结构化事件</a>就是很好的例子。可观测性从根本上改变了我们与复杂系统交互并理解它们的方式，其核心是从尽可能全面的各类<a data-primary="data sources, observability" data-type="indexterm" id="id1635"/>数据源中提取有价值的洞见。这些数据源包括：</p>
+<dl class="pagebreak-before less_space">
+<dt>时序数据</dt>
+<dd>
+<p>随时间推移而采<a data-primary="time-series data, observability" data-type="indexterm" id="id1636"/>集的指标，用于定量呈现系统行为，例如 CPU 利用率和请求延迟。</p>
+</dd>
+<dt>日志</dt>
+<dd>
+<p>对系统内发生的事件进行带时间戳的<a data-primary="logging events" data-type="indexterm" id="id1637"/>详细记录<sup><a data-type="noteref" href="ch09-zh.html#id1638" id="id1638-marker">1</a></sup>，提供细粒度的上下文。其中包括<a href="https://oreil.ly/najXW">宽结构化事件</a>；Google 通过事件日志来采集此类事件。</p>
+</dd>
+<dt>追踪</dt>
+<dd>
+<p>以端到端的方式<a data-primary="traces" data-type="indexterm" id="id1639"/>呈现请求在分布式系统中的完整路径，说明执行流程及潜在瓶颈。</p>
+</dd>
+<dt>持续性能画像</dt>
+<dd>
+<p>实时<a data-primary="continuous profiling, observability" data-type="indexterm" id="id1640"/><a data-primary="profiling, observability" data-type="indexterm" id="id1641"/>分析代码执行情况，找出性能瓶颈和资源消耗模式。</p>
+</dd>
+</dl>
+
+<p>这组丰富的数据通常通过软件插桩采集，OpenTelemetry 和 eBPF 等现代框架与标准为此提供了支持（参见<a data-type="xref" href="#ch09_ingestion_evolution">“数据采集的演进”</a>）。可观测性的关键优势在于：借助一致、全面的插桩，它尽量减少了有效诊断和解决故障所需的先验知识与深入的系统认知。可观测性提供包含上下文的完整系统内部视图，使工程师能够迅速筛除众多潜在的故障假设，更快得出准确结论。</p>
+
+<p>此外，可观测性还在继续演进，早已不再止于收集原始信息。随着数据处理和分析技术日趋成熟，人们越来越重视把洞见转化为更深入的结论。这一演进运用了以下技术：</p>
+<dl>
+<dt>生产知识图谱与资产分类体系</dt>
+<dd>
+<p>以一套规范的生产资产为基础，形成统一的<a data-primary="knowledge graphs" data-type="indexterm" id="knowgrph_obs"/><a data-primary="asset taxonomies, observability" data-type="indexterm" id="assettax_obs"/>生产拓扑视图，涵盖服务组成、依赖关系和所有权模型（参见<a data-type="xref" href="#ch09_fig01">图 9-1</a>）。</p>
+</dd>
+<dt>更好地利用数据湖</dt>
+<dd>
+<p>使用集中式<a data-primary="data lakes, observability" data-type="indexterm" id="id1642"/>存储库保存海量原始数据，从而能够跨不同资产和数据集执行更灵活、更强大的分析查询。</p>
+</dd>
+<dt>AI/ML 辅助的事件调查</dt>
+<dd>
+<p>用于自动化并增强事件调查的工具<a data-primary="AI/ML-assisted incident investigation, observability" data-type="indexterm" id="id1643"/>（参见<a data-type="xref" href="#ch09_from_investigation_to_automatic_mitigation">“从调查到自动缓解”</a>），包括贝叶斯模型等用于概率推断的统计框架，以及对大语言模型（LLM）的探索；后者可用于理解复杂的可观测性数据、识别模式并提出补救策略。</p>
+</dd>
+</dl>
+
+<figure><div class="figure" id="ch09_fig01">
+<img alt="知识图谱显示 YouTube 产品区与产品区 X 之间的连接，并突出标示影响 YouTube 的服务器问题。" src="assets/sre2_0901.png"/>
+<h6><span class="label">图 9-1　</span>知识图谱直观显示：影响 YouTube 产品区（PA）的问题是由产品区 X 中的一台服务器引起的</h6>
+</div></figure>
+
+<p>资产分类体系为知识图谱提供组织原则。分类体系建立分层的类别，使系统资产（如系统、数据库或数据管道）能够归入范围大小不同的类别。例如，可以把静态内容服务器归为“基础设施系统”这一更宽泛类别的子类。</p>
+
+<p>知识图谱通常构建在数据湖之上，为原本未经处理、缺乏区分的数据赋予结构和含义。它充当海量湖中数据集之上的逻辑层或“智能索引”，而不受某种具体物理存储模型的约束。</p>
+
+<p>就可观测性而言，上述转变非常有价值：日志、时序和追踪等原始海量数据可以保存在数据湖中，而知识图谱则提供高效浏览这些数据所需的经过整理的全局视图。调查人员利用图谱中清晰呈现的服务和管道关系，即使不了解中间服务的领域知识，也能迅速判断问题源头及受影响的产品，从而显著<a data-primary="knowledge graphs" data-startref="knowgrph_obs" data-type="indexterm" id="id1644"/><a data-primary="asset taxonomies, observability" data-startref="assettax_obs" data-type="indexterm" id="id1645"/>加快分析。</p>
+
+<p>这一持续演进旨在进一步实现事件响应自动化并提高其智能程度，使其从依赖大量人工分析转向更加主动、具备预测能力的模式，最终打造更具韧性、效率更高的系统。同时，数据湖、知识图谱和资产分类体系也让 AI<sup><a data-type="noteref" href="ch09-zh.html#id1646" id="id1646-marker">2</a></sup> 有望利用这些数据集，通过模型上下文协议（MCP）接口和/或检索增强生成（RAG）来扩展已训练的模型。<sup><a data-type="noteref" href="ch09-zh.html#id1647" id="id1647-marker">3</a></sup></p>
+
+<p>监控的发展推动可观测性从关注服务转向<a href="https://sre.google/resources/practices-and-processes/product-focused-reliability-for-sre">关注产品</a>，重点是理解直接影响客户的信号。了解客户如何与产品交互，比掌握单项服务可用性究竟有几个“9”更重要（参见<a data-type="xref" href="#ch09_customer_centric_monitoring">“以客户为中心的监控”</a>）。</p>
+
+<p>作为一门学科，可观测性始终在系统监控和事件响应领域不断改进。这种发展常体现为新的趋势和迭代，并频繁冠以<a href="https://oreil.ly/B5XFg">“可观测性 2.0”</a>乃至<a href="https://oreil.ly/rIlWo">更高版本</a>之名，代表技术和理念上的进步。</p>
+
+<p>这些进步背后的一个关键目标，是为值班工程师提供更有效、更先进的支持。发生故障时，首要目标是增强工程师理解和诊断系统行为的能力，从而显著缩短缓<a data-primary="time to mitigation (TTM)" data-type="indexterm" id="id1648"/><a data-primary="TTM (time to mitigation)" data-type="indexterm" id="id1649"/>解时间（TTM）。这一事件管理关键指标，是指从以客户为中心的方式检测到问题（参见<a data-type="xref" href="#ch09_customer_centric_monitoring">“以客户为中心的监控”</a>），到问题得到控制或解决所经历的时间。次要目标是缩短事件检测时间（TTD）<a data-primary="time to detect (TTD)" data-type="indexterm" id="id1650"/><a data-primary="TTD (time to detect)" data-type="indexterm" id="id1651"/><a data-primary="incident management" data-type="indexterm" id="id1652"/>，有时甚至能避免客户受到超出 SLA 范围的影响。</p>
+
+<p>因此，TTM 的缩短会直接带来<a data-primary="time to resolve (TTR)" data-type="indexterm" id="id1653"/><a data-primary="TTR (time to resolve)" data-type="indexterm" id="id1654"/>解决时间（TTR）的缩短。加快解决问题的最终收益，是让系统恢复正常运行，使容量、发布周期和系统健康状况重新符合预期。归根结底，可观测性的演进让工程师即便面对系统中断，也能保障业务连续性并维持较高的客户<a data-primary="observability" data-seealso="monitoring" data-startref="observ" data-type="indexterm" id="id1655"/>满意度。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="From Monitoring to Observability: A Modern Approach" data-type="sect1"><div class="sect1" id="from-monitoring-to-observability:-a-modern-approach">
+<h1>从监控到可观测性：现代方法</h1>
+
+<p>成功开展 SRE 实践的关键之一，是能够深入理解系统<a data-primary="observability" data-secondary="modern approach" data-type="indexterm" id="id1656"/>如何运行。在早期阶段，审阅设计文档、与产品开发团队沟通是了解系统的重要途径；但系统进入生产环境后，还需要更多手段来识别潜在问题和实际问题。这正是现代可观测性的用武之地。如今，可观测性不应只告诉你系统是否出了故障，还应说明故障如何发生、为何发生。现代可观测性平台甚至可以预测系统可能在何时发生故障。</p>
+
+<p>随着系统不断演进，这种需求日益迫切。过去的系统较为简单，通常只由少数几个大型单体组件构成，但配置监控仍需投入大量人工。例如，你需要手动配置 Prometheus 之类的系统，指定从哪些服务器抓取时序数据；然后再为每个组件手动创建仪表板，比如数据库一个、中间件一个，客户端行为或许还要再建一个。</p>
+
+<p>现代系统通常复杂得多，基于微服务的架构如今已十分普遍。微服务具有诸多优势，例如发布相互解耦、关注点隔离得更好、容量管理更直接。然而，从可观测性的角度看，这类系统也带来了挑战：为数百乃至数千项服务逐一手动配置仪表板和告警，几乎不可能完成。随着每个请求涉及的组件越来越多，追踪的价值也日益凸显。跟踪请求在各工作负载之间的完整路径，有助于理解系统中的数据流，并准确定位延迟瓶颈等问题。</p>
+
+<p>为了应对这种复杂性，我们发现有效的策略应结合三个关键方面：</p>
+
+<ul>
+<li>
+<p>开箱即用的仪表板</p>
+</li>
+<li>
+<p>智能告警</p>
+</li>
+<li>
+<p>自动缓解</p>
+</li>
+</ul>
+
+<p class="pagebreak-before less_space">下面来看看 Google 如何运用这些策略，为团队提供充分了解其系统所需的数据。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Manual to Out-of-the-Box Dashboards" data-type="sect2"><div class="sect2" id="ch09_from_manual_to_out_of_the_box_dashboards">
+<h2>从手动到开箱即用的仪表板</h2>
+
+<p>在单体架构时代，仪表板<a data-primary="dynamic dashboard templates" data-type="indexterm" id="ddshtmp"/><a data-primary="observability" data-secondary="dynamic dashboard templates" data-type="indexterm" id="obsrv_dyndshtemp"/><a data-primary="dashboards" data-secondary="templates" data-type="indexterm" id="dshbrdtemp_observ"/>占据核心地位，但创建和维护仪表板会产生大量琐事。到了微服务时代，这种负担已令人难以承受。为此，我们构建了一套系统，将仪表板创建过程的大部分工作自动化。</p>
+
+<p class="fix_tracking">我们的内部监控系统 <a href="https://oreil.ly/z2gMQ">Monarch</a> 会自动发现服务。微服务经常复用相同的库（例如 RPC、存储或身份验证库），因此常用时序数据会自动以跨组件一致的方式保留。我们创建了动态仪表板模板，让 SRE 能够查看服务的不同方面（如 RPC 或内存使用情况），并构建了自动判断各服务适用哪些仪表板的系统。这种动态机制使仪表板能够针对用户当前探索的系统上下文和状态提供定制视图。SRE 可以选择自己关心的服务，浏览一组自动生成且都有潜在用途的仪表板。这是我们早期思路的一次重要演进；过去，我们强调的是为每项服务手工精选少数几个关键仪表板。</p>
+
+<p>这种方法还减少了重复建设的仪表板，让复杂故障更容易缓解。多个团队协作排障时，可以查看彼此的系统，并确信所见数据采用一致口径。这样就不会仅仅因为手工创建的仪表板采用了不同的数据格式规范，而出现客户端和服务端数值看似不匹配的情况。此外，公共库的维护者可以提供与库配套的仪表板，确保负责运行服务的 SRE 始终能使用该库所导出的最佳可观测性数据。</p>
+
+<p class="fix_tracking">随着可观测性实践逐渐成熟，我们发现，最棘手的故障通常需要按基数极高的维度拆分时序数据，例如用户名或 IP 地址；这类维度拥有海量唯一值，可能从数百万、数万亿一直到没有上限。这使我们触及监控技术栈的固有局限。一方面，Prometheus 和 Monarch 等指标平台擅长处理结构化、低基数数据，却难以承受数量庞大的高基数时序；另一方面，日志系统虽能捕获这种基数级别的数据，但用它完成事件期间所需的临时分析，速度更慢、成本也更高。高基数数据对于查明复杂故障的诱发因素至关重要，但强行把它纳入指标模型所带来的成本和性能影响，又使保留全部数据变得不切实际。这个问题仍是一项重要且活跃的挑战。我们正在探索兼得二者之长的新方法：既获得高基数数据带来的深入洞见，又不压垮<a data-primary="dynamic dashboard templates" data-startref="ddshtmp" data-type="indexterm" id="id1657"/><a data-primary="observability" data-secondary="dynamic dashboard templates" data-startref="obsrv_dyndshtemp" data-type="indexterm" id="id1658"/><a data-primary="dashboards" data-secondary="templates" data-startref="dshbrdtemp_observ" data-type="indexterm" id="id1659"/>核心系统（参见<a data-type="xref" href="#ch09_high_availability_telemetry_versus_analytics_telemetry">“高可用性遥测与分析型遥测”</a>）。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Static Thresholds to Intelligent Alerting" data-type="sect2"><div class="sect2" id="ch09_from_static_thresholds_to_intelligent_alerting">
+<h2>从静态阈值到智能告警</h2>
+
+<p>采用统一的<a data-primary="observability" data-secondary="intelligent alerts" data-type="indexterm" id="obsrv_intalrt"/><a data-primary="alerts" data-secondary="intelligent" data-type="indexterm" id="alrt_int"/><a data-primary="intelligent alerts" data-type="indexterm" id="intalrt_obsrv"/>仪表板是一个良好的开端，但告警呢？ 我们用仪表板看到的手动配置挑战也在这里适用。 在一个微服务的世界中，为每一个都独立配置告警，有可能产生盲点。这种风险对于基于原因的告警——例如配额和资源使用——来说尤其如此，尽管我们赞成基于SLO的告警，但这些告警仍然有用。 如果当一个微服务机构 已经用完配额时，我们忘了设置告警怎么办？</p>
+
+<p>让我们设想一个例子：我们拥有一套微服务，我们可以为所有服务设定一个静态的门槛，即0.05%的错误。 这个门槛是一种简单但粗糙的解决方案，有了静态的阈值，当只有几个查询失败时，我们冒着被叫醒的低量服务者的风险，同时对高量服务过于宽容，即使低错误率也会影响许多用户。</p>
+
+<p class="fix_tracking">这个例子说明为什么我们开发了使用统计或机器学习的系统，以建立当我们观察到偏离时系统行为和警戒的基线(见<a data-type="xref" href="app07.html#appg">附录G</a>). 这种解决办法更为有力，在“一刀切“的做法与为每个系统的每一方面制定有针对性的告警之间取得良好的平衡。 它超越了本书上一期的简单的“症状戒备“口号，增加了一层智能来确定症状何时是危急的，从而显著地减轻了戒备疲劳。我们为Google的所有服务配置了通用的告警，现在几乎占了我们SRE 处理所有告警的五分之一。 这种自动化让工程师们可以专注于他们最擅长的事情：为独特而复杂的案例和新系统的新行为设置告警。与此同时，共同问题的自动可观测性已成为我们工具包中一个标准的基本部分。</p>
+
+<p>虽然全公司的<a data-primary="horizontal alerts" data-type="indexterm" id="id1660"/>横向告警很强，但我们发现，这种需要在更细粒度的层面上存在。 并非每个服务都使用<a href="https://oreil.ly/DhyoW"> 张量处理单元(TPU)</a>,但对于有这种功能的服务，TPU健康常见的一套告警至关重要。同样，许多服务可能依赖共享认证库或显示地图图块。 这种洞察力促使我们开发了用于建立横向告警的系统，这些告警适用于一个组织的特定<em>子集</em>。 这种设置使维护这些共同组成部分的团队——无论是硬件还是软件——能够自动向所有用户提供专家一级的告警，确保对选择进入生态系统的任何服务进行一致和全面的监控。 虽然可重复使用的告警模板的想法有历史先例(二十年前开发的团队为<span class="keep-together">可重复使用的 </span>告警库),但这一方法已从偶尔改进演变成标准、集中、全组织的战略。</p>
+
+<p>在问题成为重大问题之前得出有意义的结论是现代可观测性的基石。 AI模型可以接受历史数据培训来学习正常行为。当新数据与这种学得的行为相去甚远时，这一动作有助于降低告警噪声并实现能自动调整的动态阈值。预测性监控通过使用AI来预测未来的系统行为(如资源需要或潜在故障),将利用历史数据更进一步，这使得团队能够在问题<a data-primary="observability" data-secondary="intelligent alerts" data-startref="obsrv_intalrt" data-type="indexterm" id="id1661"/><a data-primary="alerts" data-secondary="intelligent" data-startref="alrt_int" data-type="indexterm" id="id1662"/><a data-primary="intelligent alerts" data-startref="intalrt_obsrv" data-type="indexterm" id="id1663"/>发生前主动解决。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="From Investigation to Automatic Mitigation" data-type="sect2"><div class="sect2" id="ch09_from_investigation_to_automatic_mitigation">
+<h2>从调查到自动缓解</h2>
+
+<p>过去，当告警触发时，<a data-primary="mitigations" data-secondary="automatic dashboard creation" data-type="indexterm" id="id1664"/><a data-primary="dashboards" data-secondary="creating automatically" data-type="indexterm" id="id1665"/><a data-primary="alerts" data-secondary="automatic dashboard creation" data-type="indexterm" id="id1666"/> SRE 可以查看少数几个仪表板，以了解发生了什么。 然而，在现代的微服务架构中，故障可能涉及数十个以复杂、相互关联的方式失效的部件，使人工操作方式更加昂贵。 我们的研究表明，SRE遵循了共同的调查模式并经常检查类似的症状：这种方法没有改变，但规模急剧扩大。为了管理这种日益复杂的情况，我们现在将告警触发时检查常见症状的过程自动化。</p>
+
+<p>现在，我们不再让SRE 查看通用仪表板，而是开始创建<em>仪表板，以应对</em>告警。 这些仪表板载有在故障调查期间检查的最常见症状摘要。 使这些检查自动化，特别是如果这些检查是在几百个依赖性的微服务中进行的，则在TTM 上产生显著的节省。 SRE不是从空白页面和一出操作手册开始，而是从我们自动识别出的问题列表开始，这使得它们有一个显著的起步。如果可能的话，我们再进一步提出SRE 可以快速应用的缓解措施，并创建一个定制的、自动生成的操作手册，这是在这次特定情境下告警触发前并不存在的。</p>
+
+<p>为应对警示而创建仪表板是直接应用SRE原则消除琐事，该原则旨在系统地减轻重复作业工作的负担。我们甚至可以更进一步，使<a href="https://oreil.ly/F334I">通用缓解</a>自动化：预先计划好的应对办法，既能解决广泛的问题，又不需要了解目前的具体应对办法。 虽然这些行动一段时间以来一直是SRE工具箱的一部分，但我们对现代监控方法的信心现在使我们能够将其自动化。</p>
+
+<p>如果系统在新发布后检测出统计上显著的误差或延迟上升，可以自动回滚。如果某项服务负载过重，可以自动扩大。如果一个集群出现故障迹象，可以自动将流量从该集群排走。</p>
+
+<p>我们可以通过预测问题和在影响用户之前应用缓解措施来进一步加强这种自动化，从而引导我们走向自愈系统，使智能体主动采取措施维持系统健康而不是恢复系统健康。 例如，可以使用这种方法来要求小幅地增加配额，以应对用户的涌入和资源的预期短缺。 这种设置使工程师摆脱了不断对已知问题作出反应的烦恼，使他们能够集中精力改进系统的结构和可靠性的更基本方面。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Moving Forward" data-type="sect2"><div class="sect2" id="ch09_moving_forward">
+<h2>未来方向</h2>
+
+<p>利用主动的洞察力，动态数据探索，和智能自动化，有助于SRE在系统健康和行为上获得深入的可见性。这一综合方法使我们能够评估该系统是否按照我们的看法运作。 如果不是这样，那又有什么不同呢，我们该怎么办呢？ 这一评价有助于立即采取知情的行动，最终导致更稳定和可靠的服务。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="High-Availability Telemetry Versus Analytics Telemetry" data-type="sect1"><div class="sect1" id="ch09_high_availability_telemetry_versus_analytics_telemetry">
+<h1>高可用性遥测与分析型遥测</h1>
+
+<p><em> 分析型遥测</em> <a data-primary="analytics telemetry" data-type="indexterm" id="id1667"/><a data-primary="observability analytics" data-type="indexterm" id="id1668"/>允许在数据处理中出现可容忍的延迟(秒到分),是<em>可观测性分析</em>——利用全面的洞察力和复杂的分析来提供关键可观测性结果的做法，例如更好地了解系统是如何运作或失败的。相形之下，<em>高可用性遥测</em>侧重于对关键事件的即时反应。这两类遥测对系统的生命周期和反应战略至关重要。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="High-Availability Telemetry" data-type="sect2"><div class="sect2" id="ch09_high_availability_telemetry">
+<h2>高可用性遥测</h2>
+
+<p>高可用<a data-primary="high-availability telemetry" data-type="indexterm" id="havtelem"/><a data-primary="incident mitigation, high-availability telemetry" data-type="indexterm" id="incmit_havtelem"/><a data-primary="mitigations" data-secondary="high-availability telemetry" data-type="indexterm" id="miti_hiavtel"/>度遥测的重点在于能够以最小的延迟提供数据，立即发现和应对业务问题。 这种即时性对维持系统稳定性和可靠性至关重要，因为它直接触发了即时告警并提供了快速缓解事件所需的最新的实时洞见。首要目标是促进迅速、果断地采取行动，使之成为任何有效和时间紧迫的业务战略的基础。</p>
+
+<p>用于高可用性遥测的常用案例包括：</p>
+<dl>
+<dt>控制循环</dt>
+<dd>
+<p>为需要即时反馈的系统提供高可用性控制，如流量管理，负载平衡和网络控制等。</p>
+</dd>
+<dt>告警</dt>
+<dd>
+<p>基数超过预设阈值时触发告警，以促成快速反应</p>
+</dd>
+<dt>故障检测</dt>
+<dd>
+<p>查明和减轻发生的失败</p>
+</dd>
+<dt>安全监控</dt>
+<dd>
+<p>实时发现和应对安全威胁以尽量减少可能的损害</p>
+</dd>
+<dt>探测器</dt>
+<dd>
+<p>通过模拟用户行为，利用合成监控获得关于服务健康的高可用性反馈</p>
+</dd>
+<dt>事件处理</dt>
+<dd>
+<p>提供低相关性数据和告警，以迅速缓解并尽量减少事件的影响和持续时间</p>
+</dd>
+</dl>
+
+<p>高可用性遥测的要求侧重于速度和立即行动：</p>
+<dl>
+<dt>低延迟</dt>
+<dd>
+<p>数<a data-primary="latency" data-secondary="high-availability telemetry" data-type="indexterm" id="lat_hiavtel"/>据必须在最少的延迟情况下，通常是次秒到几秒的情况下被捕获和处理。这对于迅速反馈和对系统的被动控制至关重要。</p>
+</dd>
+<dt>高吞吐量</dt>
+<dd>
+<p>该系统需要持续有效地处理大量数据，以跟上高可用性流动。</p>
+</dd>
+<dt>高可靠性</dt>
+<dd>
+<p>数据管道必须高度可靠，以确保关键告警和控制信号不被错过。</p>
+</dd>
+<dt>简单处理</dt>
+<dd>
+<p>处理应轻而易举，并注重即时的指标和阈值，以便能够<a data-primary="high-availability telemetry" data-startref="havtelem" data-type="indexterm" id="id1669"/><a data-primary="incident mitigation, high-availability telemetry" data-startref="incmit_havtelem" data-type="indexterm" id="id1670"/><a data-primary="mitigations" data-secondary="high-availability telemetry" data-startref="miti_hiavtel" data-type="indexterm" id="id1671"/>对问题迅速作出反应。</p>
+</dd>
+</dl>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>高基数时序的引出、存储和查询对于高可用性系统中的低延迟性和可靠性至关重要，而高可用性系统并非为没有约束的基数的度量而构建的，例如与个人用户或请求挂钩的系统。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Analytics Telemetry" data-type="sect2"><div class="sect2" id="ch09_analytics_telemetry">
+<h2>分析遥测</h2>
+
+<p>分析遥测可<a data-primary="analytics telemetry" data-type="indexterm" id="anatelem"/><a data-primary="incident investigation, analytics telemetry" data-type="indexterm" id="incinv_anatelem"/>以容忍数据处理中更大的延迟，通常从秒到分，有时甚至更长。这种拖延是可以接受的，因为这种遥测形式侧重于提供全面的见解和支持复杂的分析，为长期战略和事件调查提供参考。 这种方法可以进行更复杂的计算和数据汇总，重点是了解系统行为而不是即时反应。</p>
+
+<p>分析遥测常用案例包括：</p>
+<dl>
+<dt>趋势分析</dt>
+<dd>
+<p>确定预测未来潜在问题的长期趋势和模式</p>
+</dd>
+<dt>性能优化</dt>
+<dd>
+<p>确定系统瓶颈和需要逐步改进的领域</p>
+</dd>
+<dt>容量规划</dt>
+<dd>
+<p>根据历史数据和趋势预测未来资源需要</p>
+</dd>
+<dt>事件触发因素分析</dt>
+<dd>
+<p>调查过去的事件，审查详细、汇总的数据，以了解根本原因</p>
+</dd>
+<dt>安全审计</dt>
+<dd>
+<p>分析历史数据，以发现可能未实时发现的安全漏洞或可疑活动</p>
+</dd>
+<dt>商业分析</dt>
+<dd>
+<p>分析业务时序，以了解业绩、确定机<a data-primary="analytics telemetry" data-startref="anatelem" data-type="indexterm" id="id1672"/><a data-primary="incident investigation, analytics telemetry" data-startref="incinv_anatelem" data-type="indexterm" id="id1673"/>会并作出由数据驱动的决定</p>
+</dd>
+</dl>
+
+<p>分析遥测<a data-primary="analytics telemetry" data-secondary="requirements" data-type="indexterm" id="id1674"/>的要求将综合分析置于立即反应之上：</p>
+<dl>
+<dt>数据汇总和储存</dt>
+<dd>
+<p>该系统需要能够汇集并储存大量历史数据，以供长期分析。 这一要求支持趋势分析和容量规划等任务。</p>
+</dd>
+<dt>复杂处理</dt>
+<dd>
+<p>该系统必须具备灵活的数据模型和查询语言，以便能够对高基数数据进行广泛的分析，从安全审计到性能调试，包括复杂的计算，例如应用机器学习模型。</p>
+</dd>
+<dt>可扩展性</dt>
+<dd>
+<p>随着收集更多的数据以供历史分析，该系统必须具有可扩展性，以处理随时间推移而增加的数据量。</p>
+</dd>
+<dt>低成本</dt>
+<dd>
+<p>低成本至关重要，主要是为了支持由高基数指标产生的大量数据，以及希望长期储存这些数据，以促进历史背景和深入理解。</p>
+</dd>
+<dt>数据完整性</dt>
+<dd>
+<p>为了准确的洞察力和全面的离线分析，确保数据的完整性(从系统取回整个数据集的能力)往往优先于实现低延迟。</p>
+</dd>
+</dl>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>分析复杂的故障往往需要用“高基数”的维度来分解遥测(例如：通过客户身份、应用程序版本或会话ID)。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Design Considerations" data-type="sect2"><div class="sect2" id="ch09_design_considerations">
+<h2>设计考量</h2>
+
+<p>前几节概述的高可用性和分析遥测的不同要求，在评价整个监控系统时，需要不同的设计考量。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="High-availability monitoring systems" data-type="sect3"><div class="sect3" id="ch09_high_availability_monitoring_systems">
+<h3>高可用性监控系统</h3>
+
+<p>高<a data-primary="high-availability monitoring systems" data-secondary="design considerations" data-type="indexterm" id="id1675"/><a data-primary="monitoring" data-secondary="high-availability systems" data-tertiary="design considerations" data-type="indexterm" id="id1676"/><a data-primary="system design" data-secondary="high-availability monitoring" data-type="indexterm" id="id1677"/>可用性监控堆栈应尽可能减少依赖性。 例如，Google的每一个服务都依赖于监控。反过来，监控系统应尽量避免依赖同样的服务。 否则，当生产服务出现问题时，监控工作很可能同时减少。 开源解决方案<a href="https://prometheus.io">Prometheus</a>和Google的内部系统<a href="https://oreil.ly/tTcaV">Monarch</a>都是为高可用性监控而设计的系统的例子。</p>
+
+<p>高可用性监控系统应优先考虑最新数据而不是旧数据。 最重要的问题是，所监控的服务是否运行良好<em>,现在</em>。 通过优先考虑最新数据，这些系统避免为采集的数据点建立先进先出（FIFO）模式。 相反，他们可以马上开始提供最新的数据。 如果监控系统宕机，以这种方式设计这个系统可以确保您能以最关键的数据 几乎立刻回到网上。</p>
+
+<p>当需要做出妥协时，放松完整性保障，而不是高可用性。 相对于传统的数据库系统，即使是部分数据对于帮助系统操作员处理紧急情况来说，也是极为重要的。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>对于具有最小I/O延迟性的最佳高可用性遥测，考虑内存，SSD,或低延迟性能力的分层内存架构。通过积极利用索引、对冲<a href="https://oreil.ly/vtiUU">读取</a>以及实现观点，可以进一步改善告警查询的延迟性。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Analytics monitoring systems" data-type="sect3"><div class="sect3" id="ch09_analytics_monitoring_systems">
+<h3>分析监控系统</h3>
+
+<p>分析遥测使用<a data-primary="analytics monitoring systems" data-secondary="design considerations" data-type="indexterm" id="ams_descons"/><a data-primary="monitoring" data-secondary="analytics systems" data-tertiary="design considerations" data-type="indexterm" id="id1678"/><a data-primary="system design" data-secondary="analytics monitoring" data-type="indexterm" id="id1679"/>案例有不同的取舍。为此而建立的系统往往利用为大规模数据储存和分析而设计的技术。 例如，Google Cloud内部，BigQuery等服务被用于分析大量日志数据。</p>
+
+<p>为了实现可接受的低成本，分析遥测存储通常建立在磁盘上廉价存储系统之上。 降采样常常被积极应用于时序数据，以解决费用限制问题。</p>
+
+<p>分析遥测使用案例通常涉及更多的时序数据和更长的数据持续时间，因此处理系统需要被设计成规模处理数据。例如，数据处理引擎需要高级查询优化和规划，以提高查询的可扩展性。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Seamless User Experience" data-type="sect2"><div class="sect2" id="ch09_seamless_user_experience">
+<h2>无缝用户体验</h2>
+
+<p>虽然高可用性<a data-primary="high-availability monitoring systems" data-secondary="user experience considerations" data-type="indexterm" id="id1680"/><a data-primary="monitoring" data-secondary="high-availability systems" data-tertiary="user experience considerations" data-type="indexterm" id="id1681"/><a data-primary="analytics monitoring systems" data-secondary="user experience considerations" data-type="indexterm" id="id1682"/><a data-primary="monitoring" data-secondary="analytics systems" data-tertiary="user experience considerations" data-type="indexterm" id="id1683"/>和分析遥测有不同的要求，但这些系统的用户不需要以不同方式存储、配置和查询。 推荐一个与两个系统互动并为用户提供统一经验的接口。</p>
+
+<p>例如，用户只需将一个单一的客户端库整合到被监控的应用程序中，而库应当使用同样的接口来将时序数据摄入这些系统。它们应当能够通过同一框架和UI一致地配置数据保留参数、告警和其他设置。 用户还应仅与单一查询端点和语言进行交互处理其数据。查询端点应当能够根据时序特征，保留政策，以及其他元数据，将查询传送到相应的存储系统。</p>
+
+<p>尽管后端系统和存储策略不同，但提供单一的客户端采集库，统一的配置框架，以及统一的查询端点，使用户能够与两种类型的遥测进行无缝互动。这种方法确保用户能够获取最新数据，以便立即了解情况，并获取用于深入分析的完整历史记录，而无需在两个不同的系统之间进行管理或切换。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Ingestion Evolution" data-type="sect1"><div class="sect1" id="ch09_ingestion_evolution">
+<h1>数据采集的演进</h1>
+
+<p>可观测性工具是任何生产服务的一个关键考虑因素，作出的决定对全组织都有影响。 本节重点介绍这一工具的一个关键方面：生成和吸收可观测性信号。 过去十年来，这一领域的能力稳步发展。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="To Standardize or Not to Standardize" data-type="sect2"><div class="sect2" id="ch09_to_standardize_or_not_to_standardize">
+<h2>要标准化还是不标准化</h2>
+
+<p>在Google<a data-primary="observability" data-secondary="tooling standardization considerations" data-type="indexterm" id="obsrv_tolstndcons"/><a data-primary="tools" data-secondary="observability, standardization considerations" data-type="indexterm" id="tol_obsrv_stndcons"/>最大的产品(如：Google搜索、YouTube、Google Cloud)中，由于任何大组织正常的分级结构、它所促成的规模经济以及它所确保的认知负载较低，我们对可观测性工具实施一定程度的标准化。 我们还有多个产品SRE 团队，如Waze SRE,它们相当独立地工作，并就自己的可观测性解决方案和工具做出决定。<sup> <a data-type="noteref" href="ch09-zh.html#id1684" id="id1684-marker"> 4 </a> </sup></p>
+
+<p>在我们与Google Cloud客户的合作中，我们在执行可观测性时暴露出许多不同的观点和要求。一些客户正在寻找能解决具体疼痛点的完全管理好的解决方案，而另一些客户则在寻找更通俗，更灵活，更负担得起的平台。</p>
+
+<p>这些意见告诉我们，虽然在可观测性产品方面进展迅速，但各组织通常无法承受适应每个新趋势所需的不断变化。 每项改变都带来打破关键监控的风险，更不用说迁移代码和减少团队的费用了。 在评价新的可观测性产品时，需要问的一些重要问题是：</p>
+
+<ul>
+<li>
+<p>产品得到了多少支持？ 如果是开源库，其社区是否拥有强大的维护记录(即修复bug,回答问题)? 如果它是专有的SaaS产品，供应商是否作出有力承诺，是否有参与的用户基础？</p>
+</li>
+<li>
+<p>产品是否符合行业标准？ 它是否得到一个行业集团的认可，例如云原电子计算基金会(CNCF)?</p>
+</li>
+<li>
+<p>它能否被公司所有平台(如后端，移动和网络)一致地使用？</p>
+</li>
+<li>
+<p>如果不采用新产品将会发生什么？</p>
+</li>
+</ul>
+
+<p>从长远来看，向新的可观察产品迁移是有好处的，但必须认真考虑这方面的努力和相关风险。</p>
+
+<p>基于这些问题，我们所看到的共同模式是要求执行符合开放标准的解决方案，尽可能使用开放源码软件，并注重具体、成熟的技术(如Prometheus)。 为什么？ 这些技术不仅被广泛采用，而且使用开放系统也提供了显著的好处。 未来，通过采用建立在开放标准之上的开源软件，用户将避免再次改变可观测性代理人(不与AI代理人相混淆!),希望是——而且一般是这样。 相反，他们可以将自己的现有代理人指向自己选择的后端。</p>
+
+<p>下一节讨论这样一个开放<a data-primary="observability" data-secondary="tooling standardization considerations" data-startref="obsrv_tolstndcons" data-type="indexterm" id="id1685"/><a data-primary="tools" data-secondary="observability, standardization considerations" data-startref="tol_obsrv_stndcons" data-type="indexterm" id="id1686"/>标准及其提供的好处。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Advent of OpenTelemetry" data-type="sect2"><div class="sect2" id="ch09_the_advent_of_opentelemetry">
+<h2>OpenTelemetry 的兴起</h2>
+
+<p>许多可观测性<a data-primary="observability" data-secondary="OpenTelemetry" data-type="indexterm" id="id1687"/><a data-primary="OpenTelemetry" data-type="indexterm" id="id1688"/><a data-primary="open standards" data-secondary="observability solutions" data-type="indexterm" id="opstnd_obsrvsol"/>系统从两个方面开始：收集日志并尽量从中取出价值，或者进行专门的插桩工作来创建和收集时序。Google自己的可观测性系统开始于自发的，单一的努力。我们了解到，生成和采集数据的成本和复杂性是可观测性方面最有挑战性和持久性的问题之一。 我们决定吸取我国内部制度，人口普查的教训，并与其他主要的可观测性供应商和开源系统合作，形成新的行业标准“OpenTelemetry“.</p>
+
+<p>OpenTelemetry (OTel) 创建时铭记着这些关键原则：</p>
+<dl>
+<dt>开放</dt>
+<dd>
+<p>建立数据格式，使其具有足够的灵活性，在可观察供应商之间交换数据和现有的专有解决方案。</p>
+</dd>
+<dt>可扩展</dt>
+<dd>
+<p>现有的信号应该能够通过OpenTelemetry的协议和工具来流出。任何人都应能够适应或调整开口遥测，以满足其可观测性需要。</p>
+</dd>
+<dt>可关联</dt>
+<dd>
+<p>传统上支离破碎的信号(追踪、时序、日志等)应当容易地加入，以提供新的见解。</p>
+</dd>
+<dt>通用</dt>
+<dd>
+<p>所有系统都需要观察。 OpenTelemetry必须能够升级出(或下)以支持这些系统。</p>
+</dd>
+<dt>松耦合</dt>
+<dd>
+<p>用户可以选择他们需要的OpenTelemetry的哪些组件;</p>
+</dd>
+</dl>
+
+<p>如今，OpenTelemetry 提供四个主要组件来支持遥测采集：<a data-primary="observability" data-secondary="OpenTelemetry" data-tertiary="components" data-type="indexterm" id="obsrv_otel_comp"/><a data-primary="OpenTelemetry" data-secondary="components" data-type="indexterm" id="otel_comp"/>OpenTelemetry 协议（OTLP）、OpenTelemetry Collector、OpenTelemetry API，以及一组针对主流开源组件的开箱即用插桩（参见<a data-type="xref" href="#ch09_fig02">图 9-2</a>）。</p>
+
+<figure><div class="figure" id="ch09_fig02">
+<img alt="OpenTelemetry 组件示意图：经过插桩并使用 API 的应用连接到 OpenTelemetry Collector，再将数据送往可观测性存储；各组件通过 OpenTelemetry 协议通信。" src="assets/sre2_0902.png"/>
+<h6><span class="label">图 9-2　</span> OpenTelemetry 的主要组件</h6>
+</div></figure>
+
+<p>OLTP<a data-primary="observability" data-secondary="OpenTelemetry" data-startref="obsrv_otel_comp" data-tertiary="components" data-type="indexterm" id="id1689"/><a data-primary="OpenTelemetry" data-secondary="components" data-startref="otel_comp" data-type="indexterm" id="id1690"/>支持格式之间的开放数据交换。大多数主要的可观测性销售商和Google Cloud支持这一可观测性数据交换的协议。这种交换由OpenTelemetry Collectioner所增强，这个组件能够创建可观测性信号的管道。收集器作为瑞士陆军的可观测性用刀，允许您与日志文件等现有的可观测性信号和Prometheus指标进行交互并转换为OLTP. 你甚至可以写自己的转换。 这些元素为OpenTelemetry采集提供了核心基础。仅这两部分就为与目的地信号源脱钩提供了价值。</p>
+
+<p>这个基线可以用OpenTelemetry API和插桩组件来扩展。它们被设计成在开发应用时作为依赖物列入，或者在零码插桩的情况下，按照已知的惯例，用可腐蚀信号来增强现有的二进制。通过OpenTelemetry API,您可以开发自己的应用程序，并在框外包含开放可观测性。</p>
+
+<p>但为什么您要使用 <a data-primary="observability" data-secondary="OpenTelemetry" data-tertiary="benefits" data-type="indexterm" id="obsrv_otel_ben"/><a data-primary="OpenTelemetry" data-secondary="benefits" data-type="indexterm" id="otel_ben"/>OpenTelemetry API 和插桩来代替已有的解决方案 ? OpenTelemetry使各种上下文之间的信号具有相关性，并提供三个层次的相关性：</p>
+<dl>
+<dt>运行时</dt>
+<dd>
+<p>了解信号来源于基础设施</p>
+</dd>
+<dt>因果关系</dt>
+<dd>
+<p>通过信号和活动追查身份</p>
+</dd>
+<dt>来源</dt>
+<dd>
+<p>了解信号来源于代码</p>
+</dd>
+</dl>
+
+<p>运行时间相关性通过OpenTelemetry的<em>资源</em>的概念提供。所有信号都必须附加在一个资源上(即数据的来源). 因此，由API或插桩所出出的所有信号将共享一组共同的资源属性(键值对),可以根据这个来源来切分和骰子数据。</p>
+
+<p>通过 OpenTelemetry 的上下文传播，启用了因果关系。 追踪ID被附加在日志和时序的指标上，密钥-值字符串标签也可以通过分布式<a href="https://oreil.ly/XmXoG"><em>行李</em></a>的概念来传播。我们使用行李和上下文来附加跨上下文的时序和事件的标签，比如在HTTP服务器上跟踪每个请求的CPU使用情况，或者理解一个实验如何影响延迟。</p>
+
+<p>源代码关联，至少在今天的“OpenTelemetry“中，主要是通过附加堆栈跟踪和通过一个叫做“a“的概念来记录库或插桩代码的名称。<a href="https://oreil.ly/EXIla">插桩范围</a>。我们仍然主要利用堆栈追踪来驱动一个错误和源代<a data-primary="observability" data-secondary="OpenTelemetry" data-startref="obsrv_otel_ben" data-tertiary="benefits" data-type="indexterm" id="id1691"/><a data-primary="OpenTelemetry" data-secondary="benefits" data-startref="otel_ben" data-type="indexterm" id="id1692"/>码之间的关联。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Case Study: Waze Telemetry over Time" data-type="sect2"><div class="sect2" id="case-study:-waze-telemetry-over-time">
+<h2>案例研究：Waze 遥测的演进</h2>
+
+<p class="fix_tracking">自2008年创立起，受<a data-primary="Waze, telemetry solutions case study" data-type="indexterm" id="id1693"/><a data-primary="observability" data-secondary="solutions case study" data-type="indexterm" id="id1694"/>欢迎的驱动导航应用Waze经历了许多服务端遥测系统的迭代。早期，Waze工程师为将遥测输出到云端而撰写了内部遥测库。后来，OpenCensus库 <sup> <a data-type="noteref" href="ch09-zh.html#id1695" id="id1695-marker"> 5 </a> </sup> 进入了应用程序，首先通过gRPC等第三方库，再通过Waze工程师热切地想为应用程序代码进行修改。Waze目前将其时序转移到了OpenTelemetry,现在人们通常认为这是现代工业标准。预计这一过渡需要一年多的时间。</p>
+
+<p class="fix_tracking">每个新阶段都由可扩展性需求、应用成熟度以及云计算空间中新解决方案的可用性的变化所驱动。 在每个阶段，人们都对新的可观测性特征的可能性感到兴奋，但也对旧系统保持惰性感到兴奋，因为遥测迁移既乏味又有风险。 Waze在使用中还存在多个重叠的遥测系统，给开发者制造了混乱，时间也延长了。一个反复出现的问题是如何以保守的方式进行：是避免不惜一切代价打破告警和仪表板，还是迅速缩短迁移期间的痛苦。 由于移徙情况如此复杂，其费用极高。 然而，收益一旦实现，开发商解锁了更强大的可观测性特性并显著地降低了其维护成本。</p>
+
+<p>这些挑战突出了长期选择正确解决办法的重要性。 如果你的应用处于可观测性很重要的地步，那么选择可观测性产品就应该被当作一个10年的决定，不易被逆转。遥测迁移是漫长而困难的;不仅作出健全的技术决定至关重要，而且你还必须从你的团队那里得到接受，以便协调<a data-primary="open standards" data-secondary="observability solutions" data-startref="opstnd_obsrvsol" data-type="indexterm" id="id1696"/>和有效地开展如此巨大的努力。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Present Challenges and the Future" data-type="sect2"><div class="sect2" id="ch09_present_challenges_and_the_future">
+<h2>当前的挑战与未来</h2>
+
+<p>采用开放标准<a data-primary="observability" data-secondary="platform selection considerations" data-type="indexterm" id="id1697"/>只是选择可观测性应用程序的一个考虑因素。 改变后端同时保持相同的可观测性代理听起来比它容易。例如，每个平台即使在采集OpenTelemetry时，其功能仍然不同，这意味着在考虑一个新的后端时，必须重新配置解决方案，并在痛苦、耗时和昂贵的项目中创造全部迁移资产的努力，如仪表板和告警。 然而，即使设置了这些路障并付出了辛劳，对可观测性平台的投资也非常重要，值得付出努力。 良好的可观测性平台可以更快地实现TD和TTR,这反过来又可以节省真正的资金，从而大大地有利于组织的底线。</p>
+
+<p class="fix_tracking">鉴于对OpenTelemetry(<a href="https://oreil.ly/88l2-">2025年CNCF顶尖项目之一</a>以及Kubernetes)的兴趣迅速增长，我们预计在可观测性方面将继续迅速发展。 我们期望这些改革能促进更方便的融合，提供更多的选择和灵活性，并能够更快地向提供重大定制以及成本效益高的箱外解决方案的平台迁移。 这些进展还将有助于储存和分析不断增加的数据。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Opportunity of eBPF with Observability" data-type="sect2"><div class="sect2" id="ch09_the_opportunity_of_ebpf_with_observability">
+<h2>eBPF 为可观测性带来的机遇</h2>
+
+<p><a href="https://ebpf.io"> 扩展伯克利包过滤器 (eBPF) </a> <a data-primary="Extended Berkeley Packet Filters (eBPF)" data-type="indexterm" id="id1698"/><a data-primary="eBPF (Extended Berkeley Packet Filters)" data-type="indexterm" id="id1699"/><a data-primary="observability" data-secondary="eBPF" data-type="indexterm" id="id1700"/>是一种技术，最初旨在为Linux内核提供自定义程序以进行网络化。自那时以来，它被推广到支持多种用途，包括可观测性。 对于可观测性，eBPF通过利用应用程序与操作系统的互动及其二进制中的符号，提供了观测应用程序内部所需的钩子。例如，eBPF不依靠MySQL数据库的专门配置来使可观测性代理能够收集和采集信号，而是可以附加到本地操作系统内核并收集到相近的指标<em>而无需更改应用程序或需要专门配置</em>.</p>
+
+<p>今天，eBPF在以下可观测性领域显示出了价值：</p>
+
+<ul>
+<li>
+<p>提取不需要磁盘访问的日志(如覆盖率和可追踪项)</p>
+</li>
+<li>
+<p>剖析应用程序(如Parca、OpenTelemetry剖析)</p>
+</li>
+<li>
+<p>计算网络指标(如Cilium/Hubble、Grafana Beyla)</p>
+</li>
+<li>
+<p>分布式追踪( 如 Odigos, DeepFlow)</p>
+</li>
+<li>
+<p>通过请求一级的追踪确定成本归属(如Attrib.io)</p>
+</li>
+</ul>
+
+<p class="pagebreak-before less_space">以eBPF为基础的可观测性最令人兴奋的方面是，安全观察系统有可能无需提前在这些系统上添加插桩或配置。然而，在作出采用决定之前，确保将eBPF的可观测性能力与任何现有的插桩进行彻底的比较。 eBPF提供的业绩和一体化的便利与现有解决办法提供的灵活性和深刻见解之间往往有取舍。 此外，分布式追踪等高级特性可能需要特殊的安全许可，任何基于eBPF的收藏都需要内核级权限才能注册其钩子。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Observability of AI Systems" data-type="sect2"><div class="sect2" id="ch09_observability_of_ai_systems">
+<h2>AI 系统的可观测性</h2>
+
+<p>要说广义的<a data-primary="observability" data-secondary="AI systems" data-type="indexterm" id="id1701"/><a data-primary="AI (artificial intelligence)" data-secondary="observability considerations" data-type="indexterm" id="id1702"/>AI 领域在未来几年乃至几个月内变化迅速，仍属轻描淡写。不过，有一项需求始终明确：必须提高 AI 模型和智能体所执行工作的可观测性。目前，大多数可观测性平台还无法充分满足这一需求。因此，OpenTelemetry 社区正着手解决 AI 智能体的可观测性问题，包括如何正确观测多模态载荷，以及 MCP、A2A 等新协议的行为（参见<a data-type="xref" href="ch20-zh.html#ch20">第 20 章</a>）。</p>
+
+<p>虽然传统的追踪可以回答“人工智能代理人的动机是什么，答案是什么？” 需要更多的信息来了解所提供答复的质量。 我们建议大家密切关注这个空间的演变，因为我们有可能看到整个行业迅速而令人兴奋的发展。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Client-Side Telemetry" data-type="sect1"><div class="sect1" id="ch09_client_side_telemetry">
+<h1>客户端遥测</h1>
+
+<p>客户端监控<a data-primary="client-side telemetry" data-type="indexterm" id="cstel"/>侧重于不可预测的用户互动，与服务监控不同，服务监控通常集中于API请求和容器或二进制的健康。因此，将遥测仪用于获取客户端信号，需要采用新的方法来建立关键用户活动和系统诊断数据的模型和插桩。 事件记录是捕捉用户活动的最常用方法，包括组件和页面负载等渲染事件，以及用户通过点击，刷新和手势参与。</p>
+
+<p>这些基本因素可以模拟关键特征的健康。 例如，如果用户点击部件“foo”, 则预计部件“栏” 将显示相应API 调用的内容。 在没有相应显示“栏”的情况下用“foo”进行观察，是客户功能问题的关键指标。</p>
+
+<p>除了用户活动外，客户端遥测还必须捕捉重要的系统健康信号。 其中包括提供延迟性、启动时间和电池使用等指标，所有这些措施都跟踪应用程序的整体健康状况。 用户活动数据和系统健康信号的结合，使操作者能够检测并调试那些在传统服务端仪表中并不明显的问题。</p>
+
+<p>本节审查客户端遥<a data-primary="client-side telemetry" data-startref="cstel" data-type="indexterm" id="id1703"/>测如何增强可靠性。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>显示错误对话框频率和页面装载成功的信号也证明对产品分析有用。虽然这些以产品为重点的应用不属于这一讨论的范围，但它们通过揭示用户与某一产品的接触以及这种接触如何演变来补充可靠性插桩，这有可能是针对可靠性的改进或退化。</p>
+</div>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Why Client Monitoring" data-type="sect2"><div class="sect2" id="ch09_why_client_monitoring">
+<h2>为什么要监控客户端</h2>
+
+<p>后端监控虽然对诊<a data-primary="client-side telemetry" data-secondary="advantages" data-type="indexterm" id="cstel_adv"/>断内部问题至关重要，但对用户所经历的服务可靠性提供不完全的了解。</p>
+
+<p>客户端监控提供了关键的端到端用户视角。它捕捉到超出您后端系统直接能见度的因素，如网络条件，客户端处理，以及渲染延迟等。</p>
+
+<p>这种端到端视角提供了几个关键优势。值得注意的是：</p>
+<dl>
+<dt>隐藏错误</dt>
+<dd>
+<p>客户端监控发现了一类从后端看不见的用户化故障。您的服务器可能看起来很健康，而用户正在经历诸如：</p>
+
+<ul>
+<li>
+<p>负载平衡器或 DNS 问题</p>
+</li>
+<li>
+<p>过期的 SSL 证书</p>
+</li>
+<li>
+<p>被重试所掩盖的失败( 如果操作需要用户多次尝试)</p>
+</li>
+<li>
+<p>API 协议不匹配，导致客户端数据解析错误或内容渲染错误</p>
+</li>
+<li>
+<p>移动应用程序崩溃</p>
+</li>
+</ul>
+</dd>
+<dt>衡量真正的用户感知延迟</dt>
+<dd>
+<p>客户端监控会捕捉完整的用户等待时间，包括网络延迟，客户端处理，以及任何重试的效果等。</p>
+</dd>
+<dt>支持安全发布</dt>
+<dd>
+<p>客户端监控可直接了解任何变化(后端、客户端或基础设施)对用户的影响，从而能够立即验证和及早发现问题。</p>
+</dd>
+</dl>
+
+<p>YouTube 客户端监控的一个例子是，各团队决定对视频上传的可靠性进行插桩检测。 传统的服务器侧指标一直报告API可用率高，但这种观点与客户报告和用户研究不一致。当团队将插桩从API层移动到客户端设备时，他们发现了一种<a data-primary="client-side telemetry" data-secondary="advantages" data-startref="cstel_adv" data-type="indexterm" id="id1704"/>明显糟糕并需要投资的经验。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="ch09_implementation">
+<h2>实现</h2>
+
+<p>上一节You<a data-primary="client-side telemetry" data-secondary="implementing" data-type="indexterm" id="id1705"/>Tube上传的传闻表明，客户端监控如何能迅速将团队的心态从“万事皆美”转变为“还有什么被打破了？” 在客户端监控下，远程应用程序可能不受贵组织的直接控制。 收集和分析这些应用程序的数据需要采取扩大视野的办法，并注重整体用户经验。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="id1706">
+<h1>收集客户端遥测应优先考虑 <span class="keep-together"> 用户的整体体验 </span></h1>
+<p>收集<em>服务器</em>遥测为<em>透明</em>用户体验。然而，在某些情况下，它可以取出<em> 显著的</em>来计算并处理<em>客户端</em>设备上的遥测数据。因此，收集客户端遥测可以影响用户的经验：</p>
+
+<ul>
+<li>
+<p>用户喜欢他们的<em>电池</em>-有动力设备，可以在没有充电的情况下长时间地继续工作。</p>
+</li>
+<li>
+<p><em> 网络 </em> 连接可能存在或有限，用户不会希望其积极使用的应用程序不得不在遥测流量后排队。</p>
+</li>
+<li>
+<p>用户不会关心每个月使用一次的应用程序，<em>存储</em>设备上留下的空间。</p>
+</li>
+<li>
+<p>遥测数据的传输应符合<em>服务条款</em>。</p>
+</li>
+</ul>
+
+<p>考虑到用户的经验，我们怎样才能从用户的角度获得我们了解服务的可观测性，而不会引起他们不应有的烦恼？</p>
+</div></aside>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Client Telemetry Architecture Overview" data-type="sect2"><div class="sect2" id="ch09_client_telemetry_architecture_overview">
+<h2>客户端遥测架构概览</h2>
+
+<p>从远离您生<a data-primary="client-side telemetry" data-secondary="architecture" data-type="indexterm" id="id1707"/>产网络的设备中采集遥测依赖于服务器侧集和公共API服务的组合，如<a data-type="xref" href="#ch09_fig03"> 图9-3</a>所示。</p>
+
+<figure><div class="figure" id="ch09_fig03">
+<img alt="图表说明客户端遥测采集，显示一个具有应用插桩的客户端设备以及上传器通过互联网通信到一个公共端点，再到一个遥测采集服务，最后到可观测性存储。" src="assets/sre2_0903.png"/>
+<h6><span class="label">图 9-3　</span> 收集客户端遥测</h6>
+</div></figure>
+
+<p>客户端应用程序是收集形成您信号的遥测记录的插桩。插桩库包括一个上传器，通过公共网络将这些记录传送到一个公共端点，再由遥测采集器服务接收。 遥测采集服务可以处理记录，可能将它们翻译为新的数据模型，并将结果根据需要转发给您的可观测性存储系统。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Device considerations" data-type="sect3"><div class="sect3" id="ch09_device_considerations">
+<h3>设备考虑因素</h3>
+
+<p>客户端设备<a data-primary="client-side telemetry" data-secondary="device considerations" data-type="indexterm" id="cstel_arch_dev"/><a data-primary="devices, client telemetry" data-type="indexterm" id="dev_clntel"/>可以采取不同的形式，每个设备在客户端监控系统上呈现出一套略为不同的约束，这将为您的总体可观测性系统设计选择提供信息。例如，手机等手持设备出行。它们可能并不总是与可靠的网络连接。 他们可能进出蜂窝，或者所有的网络接口全部关闭。 当设备可能无法插上时，保持蜂窝或无线网无线电的抽取功率。 车辆可能有一个有时可以利用的蜂窝网络，但有一个恒定的电源。 亭可能同时拥有恒定的电源和始终存在的网络。也许您的用户正在通过浏览器内的网页访问您的主要服务(无论是在移动设备上还是在具有恒定电源和互联网连接的桌面上);虽然大多数浏览器都有API来提供耐用存储，但用户可能注意到增加下载代码的时间来利用每个页面负荷的存储。每一种客户都提出了不同的挑战，减轻这些挑战使插桩库和遥测采集服务更加复杂。</p>
+
+<p>监控移<a data-primary="mobile devices, monitoring" data-type="indexterm" id="id1708"/><a data-primary="monitoring" data-secondary="mobile devices" data-type="indexterm" id="id1709"/>动设备往往依赖断断续续的网络或蜂窝网络，这带来了一系列独特的挑战。 它要求有一个缓冲设备本身数据的战略，导致一系列的设计取舍：</p>
+<dl>
+<dt>批量上传的缓冲</dt>
+<dd>
+<p>为了节省电池和处理不可靠的连接，数据被缓冲并分批发送。这种设置可提高可靠性，但为准确的时间戳提供了数据延缓性和对设备的时钟的依赖性——该时钟不受插桩系统的控制。 分析管道和事件调查往往依赖于这些时间戳并需要处理潜在的时钟偏差。</p>
+</dd>
+<dt>对设备存储的影响</dt>
+<dd>
+<p>缓冲需要存储，这增加了应用程序的资源使用。</p>
+</dd>
+<dt>配额和不可避免的数据损失</dt>
+<dd>
+<p>储存配额对于确保有效和负责任地使用资源至关重要。 但是，在达到配额时，必须放弃一些数据。</p>
+</dd>
+<dt>丢弃数据导致的分析偏差</dt>
+<dd>
+<p>如果丢弃最古老的记录，则放弃记录的选定策略会掩盖事件触发因素，如果丢弃最新记录，则放弃对当前事件的偏见分析。</p>
+</dd>
+<dt>监控数据损失</dt>
+<dd>
+<p>由于数据丢失是预期的结果，考虑让客户端遥测库和上传者报告他们采集并上传的记录的清点，以便在最后分析中建立信心“错误栏”。 包括客户端子系统知道其下降的记录数以及原因，将有助于理解数据损失。当与被摄入和上传的计数相结合时，降序计数有助于确定何时由于出乎意料的原因丢失了数据。</p>
+</dd>
+</dl>
+<div data-type="tip"><h6>提示</h6>
+<p>遥测记录的丢失是不可避免的。 建立量化损失的方法使指标在分析过程中更加有用，并就遥测系统的健康提供可操作的信号。</p>
+</div>
+
+<p>响应方向也可能发生竞态条件。遥测采集器可能刚刚完成将遥测数据提交到所有可观测存储位置，并在客户端设备失去网络连接时编组成功响应，使其无法接收响应。如果连接时间中断，客户端很可能再次上传记录，可能导致重复。在记录一级强制执行幂等性，很可能会增加复杂性并计算系统增长得越大的费用。</p>
+
+<p>每次缓解通常都朝着更积极的用户体验迈出一步，而且往往通过引入新的负面后果而倒退了半步。有些改进没有什么缺点——例如，上传器在试图上传或重试之前，必须考虑到网络的可用性。 这大大降低了Google的遥测记录损失，对用户设备几乎没有负面影响。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>收集客户端遥测是一个优化问题，为用户提供更好的总体经验，并尽可能减少负面影响。</p>
+</div>
+
+<p>改进客户端插桩库和上传器可能对遥测采集器服务和分析管道产生不利影响。 例如，分批处理可能会给分析系统造成重大延误。 如果一个设备失去连通性或故障，那么在遥测采集服务中，间隔几秒钟的事件可能会相去甚远。 这种延迟可以将事件推入后期的分析窗口，可能要求客户端遥测管运行远晚于服务器遥测。</p>
+
+<p>虽然在浏览器中运行的网页可能可以通过浏览器API访问可持久存储，但应用程序所有者可能会决定不利用它们，因为能力需要额外的代码并导致一个更大的库，这需要更长的时间来下载并增加页面渲染延迟。删除可持久存储限制了缓冲事件并将其上传(包括重试)到所显示页面寿命的能力，因此这样的客户端需要以更高的频率上传。在计算和内存资源方面，向遥测采集服务提出的更多请求促使请求费用上升。 对重复请求的担保较少的客户提出的要求，需要在遥测采集服务中给予更优先的考虑，使其更加复杂。 这种考虑并不限于浏览器封装的网页——命令行工具通常运行时间短而间隔不明，直到下次引用为止，鼓励在终止前将上传到最后一次操作。</p>
+
+<p>回到高可用性与分析遥测的区别，如果一个群体的设备数量足够多，客户遥测就有可能将两者相接。 虽然可能存在缓冲和随机错开的上传，数量庞大，但这些接近上传间隔的设备可能足够多，故障信号到达的数量足够允许实时告警。在上传器中将告警遥测分出一个单独的服务层次，有可能改善这些信号的新鲜性，同时将用户体验的影响降到最低。但是，如果一个问题影响到足够小的子集装<a data-primary="client-side telemetry" data-secondary="device considerations" data-startref="cstel_dev" data-type="indexterm" id="id1710"/><a data-primary="devices, client telemetry" data-startref="dev_clntel" data-type="indexterm" id="id1711"/>置，则可能需要采取不同的做法。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Privacy and security in client telemetry collection" data-type="sect3"><div class="sect3" id="ch09_privacy_and_security_in_client_telemetry_collection">
+<h3>客户端遥测采集中的隐私与安全</h3>
+
+<p>公共终点的使<a data-primary="client-side telemetry" data-secondary="privacy and security" data-type="indexterm" id="id1712"/><a data-primary="privacy" data-secondary="client telemetry" data-type="indexterm" id="id1713"/><a data-primary="security" data-secondary="client telemetry" data-type="indexterm" id="id1714"/>用为公共API服务提供了考虑。 终点向世界开放，包括潜在的恶意行为者，因此应当提供保护。 整个遥测系统理论上可以成为一个巨大的分布式拒绝服务(DDoS)大炮指向你的遥测收集器(例如，如果为相撞而收集了堆积追踪，并且该应用有一个零天的bug,导致它在全球以千/百万/十亿个设备崩溃). 该系统应有能力根据需要抽取或减少部分流量，以防止超载。 在遥测采集器服务处拥有采样能力，并传播到客户端，在Google公司被证明是有用的。</p>
+
+<p>客户端遥测有可能直接通过对遥测采集器的认证(如果使用认证)来获取敏感信息，或者无意中通过堆栈追踪等记录来获取。在你对客户端监控的方法中，需要计划并主动处理这一收集工作。 本章后一节将更彻底地探讨隐私和安全考虑。</p>
+
+<p>我们收集遥测的用意符合用户的利益，但客户遥测系统必须遵守应用程序的服务条款以及与用户生成的数据有关的其他管理要求所确定的界限。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling" data-type="sect3"><div class="sect3" id="ch09_scaling">
+<h3>缩放</h3>
+
+<p>随着遥<a data-primary="client-side telemetry" data-secondary="scaling" data-type="indexterm" id="cstel_scl"/><a data-primary="scaling" data-secondary="client telemetry" data-type="indexterm" id="scl_clntel"/>测的宽度增加，生成遥测的装置和用户的数量也增加，客户端监控系统从可扩展性中受益。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Covering different aspects of an application" data-type="sect4"><div class="sect4" id="ch09_covering_different_aspects_of_an_application">
+<h4>覆盖应用的不同方面</h4>
+
+<p>随着应用程序的增长，遥测需要服务于不同的功能(如：追踪，里程碑，延迟，相撞等). 虽然一个共同的物体模型是可能的，但专业化常常被实施。仪表库和上传器必须在单体对象模型，有不同根对象的平行上传器，或者从对象模型中去除API/线程的中央上传器之间选择。分割对象模型会减少相互依赖性，但需要协调。这种脱钩提高了可观测性而不妨碍工程速度。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Covering a user population" data-type="sect4"><div class="sect4" id="ch09_covering_a_user_population">
+<h4>覆盖用户群</h4>
+
+<p>遥测采集器服务通常需要多个过程和机器来保证可靠性和吞吐量，特别是随着用户数量的增加。客户端遥测的缓冲和分批可能会使实时数据提取复杂化并增加成本。视实施情况而定，批次可能会分割用户行程，或者部分行程会丢失或重复。设计遥测记录以减少记录之间的依赖性可以有所帮助，但有可能出现没有达到预期完成状态的缺失行程。</p>
+
+<p>需要快速行动信号的相互依存性通常较低，因此可以使分析程序更慢地处理更相互依赖的记录。 虽然大多数设备经常上传遥测，但是忽略了外接器或者需要在采集器上进行状态化处理会导致一个昂贵而质量低的遥测系统。</p>
+
+<p>由于遥测采集器的服务规模跨越各个过程或地点，对日志损失进行量化变得更加困难和昂贵。</p>
+
+<p>使用主应用程序部署遥测采集服务意味着其可用性与主服务相映射，如果主服务失败(即服务共享命运),则有丢失客户端遥测的风险。如果客户端遥测需要单独的主机名(例如在企业环境中允许上市),则不同的服务部署将产生类似的连通结果。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Scaling to the ecosystem" data-type="sect4"><div class="sect4" id="ch09_scaling_to_the_ecosystem">
+<h4>扩展到整个生态系统</h4>
+
+<p>随着客户遥测系统的规模扩大到许多应用，也引起了更多的关注。在设备上，处理延迟性和在许多应用上上传可能是可取的中央过程。一个关键要求是在使用它运行的应用程序运行时安装，启动和终止这个背景进程的能力，这可能不是启动它的应用程序。一个遥测收集器服务应该提供隔离和分接，这样一个崩溃的应用不会将客户端的遥测遮盖到其他应用上。如果每个app都有自己的一组定向遥测对象模型，有足够的app和/或独立的对象，那么对象定义的综合大小可以大大地提高每个app的二进制大小。为了支持将对象分割到使用它们的应用上，遥测线协议必须提供手段，只允许将特定应用中使用的对象定义纳入该应用的构建<a data-primary="client-side telemetry" data-secondary="scaling" data-startref="cstel_scl" data-type="indexterm" id="id1715"/><a data-primary="scaling" data-secondary="client telemetry" data-startref="scl_clntel" data-type="indexterm" id="id1716"/>中。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="A final thought on client devices" data-type="sect3"><div class="sect3" id="ch09_a_final_thought_on_client_devices">
+<h3>关于客户端设备的最后想法</h3>
+
+<p>由于应用程序或服务提供商通常不控制客户端设备，发布可能会被缓慢采用。某些设备可能永远不会收到更新了插桩或修改了电线协议的最近构建。此外，有些设备可能会有不准确的时钟，导致时间戳远在过去或未来(不过，如果设备上的上传者提供其当前时间的视角，这在某种程度上是可以纠正的)并可能改变中框。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>客户端遥测及其分析因关于被监控实体的元数据而得到加强，如它的构建版本，发布通道，名称，以及它运行的平台(OS和版本，浏览器名称和版本等). 这种元数据使对安装基础的分析能够了解问题的范围。</p>
+</div>
+
+<p class="pagebreak-before less_space">回到YouTube上传的例子，团队面临并克服了本节指出的每一项挑战。它们没有同时应对所有挑战，而是逐步应对，并允许早期和吵闹的信号来指导确定优先事项的工作。 这种逐步提高信号质量以建立用户信任，而不是坚持拥有完美的信号的过程，对于推动接受和采用客户端监控至关重要。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Customer-Centric Monitoring" data-type="sect1"><div class="sect1" id="ch09_customer_centric_monitoring">
+<h1>以客户为中心的监控</h1>
+
+<p>历史上，我们使<a data-primary="monitoring" data-secondary="customer-centric" data-type="indexterm" id="id1717"/><a data-primary="customer-centric monitoring" data-type="indexterm" id="id1718"/>用一种注重系统的监控方法(即插桩单个服务)来测量Google的系统可靠性。这种方法依赖于从服务器侧时序中衍生出来的SLI来跟踪我们与SLO的相遇情况。这些时序虽然有用，但并不总是能完全抓住客户的实际经验，使它们成为用户“满意度”的劣质代理指标，这是在上一章中提出设立SLO的指导原则。 系统聚焦监控的一个常见的故障模式是，从服务器侧时序中衍生出来的SLO可能会显示一个“健康“系统，而它实际上处于客户无法完成关键任务的状态。例如，一个电子邮件服务器似乎运行得完美，但是如果应用程序中的“发送”按钮被禁用，传统的服务器侧时序就不会标出这种关键的用户影响。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Measuring Experienced Reliability" data-type="sect2"><div class="sect2" id="ch09_measuring_experienced_reliability">
+<h2>衡量用户实际体验到的可靠性</h2>
+
+<p>这种理解导致<a data-primary="monitoring" data-secondary="customer-centric" data-tertiary="measuring reliability" data-type="indexterm" id="mon_custcen_rel"/><a data-primary="customer-centric monitoring" data-secondary="measuring reliability" data-type="indexterm" id="custcen_mon_rel"/>我们采用以客户为中心的SLI 和 SLO:一种侧重于在我们的应用程序中直接识别和插桩<a href="https://sre.google/workbook/implementing-slos/#modeling-user-journeys">关键用户行程（CUJ）</a>。 通过这样做，我们发展了(并继续改进)一个强有力的框架，这个框架与我们的可观测性工具充分融合，并使我们能够根据真正重要的：我们的客户实现他们的目标的能力，建立SLI 和 SLO，及时发出告警，并实现系统健康。</p>
+
+<p>在谷歌，我们使<a data-primary="CUJ (critical user journey)" data-secondary="client experience monitoring" data-type="indexterm" id="id1719"/>用CUJ,如<a data-type="xref" href="#ch09_fig04">图9-4</a>,
+<a href="https://sre.google/resources/practices-and-processes/product-focused-reliability-for-sre">深入了解用户需求</a>每个CUJ有两个主要组成部分：a<em>目标</em>(单位：千美元)<em>任务</em>. 目标代表一个用户与一个产品互动的更深层次，根本的原因。这是一份简明、鼓舞人心的声明，另一方面，一项任务描述了用户为实现其目标而采取的具体步骤，经常涉及与产品的直接互动。 用户采取一项或多项行动来完成一个任务，完成一个目标可能需要多个任务。这种结构通过将具体的用户行动(任务)与更有意义的用户需要(目标)联系起来，超越仅仅孤立地分析任务，从而产生丰富的理解。</p>
+
+<figure><div class="figure" id="ch09_fig04">
+<img alt="图表说明关键用户行程的层次，显示目标如&quot;与朋友&quot;的通信方式与任务如&quot;的连接方式，发送电子邮件&quot;,以及类似&quot;点击compose,&quot;的交互方式，然后链接到插桩和服务水平目标。" src="assets/sre2_0904.png"/>
+<h6><span class="label">图 9-4　</span> 一个实例，说明行动、任务和目标如何构成一个CUJ的层次</h6>
+</div></figure>
+
+<p>在定义一个CUJ时，关键是要力求简单。 避免使其过于狭窄，只注重任务，或过于宽泛，使得难以被映射到特定产品上。理想的目标捕捉到用户真正想达到的目标，并且直接与他们对产品的经验相接。</p>
+
+<p>为了有效地将用户的目标和任务与产品联系起来，我们引入了<em>关键用<a data-primary="CUIs (critical user interactions)" data-type="indexterm" id="id1720"/>户交互</em>(CUI). CUI是被认为至关重要的行动，CUI是关键用户行程的基础构件。在CUJ框架内，旅程定义了一类用户，他们的关键目标，以及他们为实现这些目标而承担的任务。如<a data-type="xref" href="#ch09_fig04">图9-4</a>所示，一项任务通常由这些CUI的序列组成。</p>
+
+<p>然而，大量的关键产品行为并不是用户互动的;相反，它涉及产品的稳定状态功能，甚至可能不需要用户直接参与。 例如，“作为一个Google 地图用户，我想听到像<em>的语音提示，在我驾驶时左转叉</em>”。 描述一种基本的产品行为，在通知时不一定涉及直接互动。 为了充分掌握产品功能的规格，并补充其CUJ的列表，我们还采用了<em>功能要求</em>(FRs)和<a data-primary="functional requirements (FRs)" data-type="indexterm" id="frs"/><a data-primary="nonfunctional requirements (NFRs)" data-type="indexterm" id="nfrs"/><em>非功能要求</em>(NFRs)的概念。</p>
+
+<p>FRs可以单独存在或与互动行为联系在一起，以进一步<span class="keep-together">指定意图</span>互动的结果。 例如，FR“如果返回结果，可查询您所在位置与现实世界利益点之间的路由”,可与“在方向搜索框上点击输入”互动链接，以确定预期结果。 NFR是关于系统预期如何运行的断言，并经常作为评估系统的时序的基础。<span class="keep-together">业绩(即，</span>(原始内容存档于2013-10-12). SLIs. 与FR类似，NFR可以独立存在，也可以是<span class="keep-together">关联</span>与特定的相互作用。 这种灵活性允许产品所有人<span class="keep-together">准确的曲调</span>(c) 具体要求其产品的独特需要。 回到我们通过点击 Enter 在一个搜索框中接收搜索结果的例子，一个NFR可以被捆绑在这个交互上<a data-primary="functional requirements (FRs)" data-startref="frs" data-type="indexterm" id="id1721"/><a data-primary="nonfunctional requirements (NFRs)" data-startref="nfrs" data-type="indexterm" id="id1722"/><a data-primary="monitoring" data-secondary="customer-centric" data-startref="mon_custcen_rel" data-tertiary="measuring reliability" data-type="indexterm" id="id1723"/><a data-primary="customer-centric monitoring" data-secondary="measuring reliability" data-startref="custcen_mon_rel" data-type="indexterm" id="id1724"/>,指定路线应该在X毫秒内加载。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Defense in Depth" data-type="sect2"><div class="sect2" id="ch09_defense_in_depth">
+<h2>纵深防御</h2>
+
+<p>在记录了CUJ及其可<a data-primary="monitoring" data-secondary="outage prevention and detection" data-type="indexterm" id="id1725"/><a data-primary="customer-centric monitoring" data-secondary="outage prevention and detection" data-type="indexterm" id="id1726"/>靠性要求之后，我们建议捕捉显示最终用户体验是否有效的遥测(见<a data-type="xref" href="#ch09_implementation">).“执行“</a>),并将这些信号与自动预防和检测机制相连接，这些自动预防和检测机制根据有问题的CUJ行为改变管理行动或告警，如下分节所举例说明。我们希望避免CUJ影响故障，因为这可能会降低用户的信任，并对参与、采用和保留等关键业务指标产生负面影响。</p>
+
+<p>对基于CUJ的自动变化监督和检测能力进行投资，可以更早发现问题，大大减少受影响的用户数量和影响持续时间。</p>
+
+<p>这种积极主动的做法也极大地降低了解决可靠性问题的成本，<span class="keep-together">作为问题</span>软件开发寿命周期(例如：<span class="keep-together">代码提交</span>与生产过程中发现的相比，解决成本要低得多。 例如，自动延缓或回滚推出<span class="keep-together">将会影响</span>如果进一步部署，用户比唤醒待命人员作出反应容易得多。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Automated CUJ change supervision" data-type="sect3"><div class="sect3" id="ch09_automated_cuj_change_supervision">
+<h3>自动监控 CUJ 变更</h3>
+
+<p>自动系统<a data-primary="monitoring" data-secondary="outage prevention and detection" data-tertiary="automated CUJ change supervision" data-type="indexterm" id="mon_opdet_autcuj"/><a data-primary="customer-centric monitoring" data-secondary="outage prevention and detection" data-tertiary="automated CUJ change supervision" data-type="indexterm" id="ccm_opd_acuj"/><a data-primary="CUJ (critical user journey)" data-secondary="automated change supervision" data-type="indexterm" id="cuj_acs"/>不断监视变化，必要时暂停变化，并告警工程师注意即将发生的断裂。 这些系统吸收了CUJ遥测技术，为下列人员在整个开发生命周期提供自动反馈：</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>服务器二进制发布，服务器代码的新版本部署在云中</p>
+</li>
+<li>
+<p>服务器配置，将部署控制服务器行为的新配置值集，独立于服务器二进制本身</p>
+</li>
+<li>
+<p>移动应用程序二进制发布，将应用程序代码的新版本运至移动应用程序商店( 如果其中包含影响用户的问题，这个更改向量尤其具有挑战性，因为我们无法以同样的方式将已发布的应用程序卷回云中服务器)。</p>
+</li>
+<li>
+<p>功能坡道，在其中测试面向部分用户的新功能可能会给用户子群带来问题。</p>
+</li>
+<li>
+<p>数据更新，其中基本信息的变化(如地图数据)引起一个用户化问题</p>
+</li>
+</ul>
+
+<p>在某些情况下，可以绘制出您在生产过程中所监控的相同用户流量图，以便进行预先释放测试，甚至更早地进行转移检测。 早期和自动检测降低了破损的“修复”费用：自动化将更改倒计时，并将错误报告归档，供待命人员进一步调查<a data-primary="monitoring" data-secondary="outage prevention and detection" data-startref="mon_opdet_autcuj" data-tertiary="automated CUJ change supervision" data-type="indexterm" id="id1727"/><a data-primary="customer-centric monitoring" data-secondary="outage prevention and detection" data-startref="ccm_opd_acuj" data-tertiary="automated CUJ change supervision" data-type="indexterm" id="id1728"/><a data-primary="CUJ (critical user journey)" data-secondary="automated change supervision" data-startref="cuj_acs" data-type="indexterm" id="id1729"/>,而不是为紧急生产事件拨打电话。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="CUJ-focused SLOs" data-type="sect3"><div class="sect3" id="ch09_cuj_focused_slos">
+<h3>以 CUJ 为中心的 SLO</h3>
+
+<p>我们还建议实<a data-primary="monitoring" data-secondary="CUJ-focused SLOs" data-type="indexterm" id="mon_cujslo"/><a data-primary="customer-centric monitoring" data-secondary="CUJ-focused SLOs" data-type="indexterm" id="ccm_cujslo"/><a data-primary="CUJ (critical user journey)" data-secondary="CUJ-focused SLOs" data-type="indexterm" id="cuj_cujslo"/>施“SLO“式监控，以发现在推出之后发生的问题。 我们控制范围之外时有变化，触发故障，但我们仍想迅速作出反应，确保及时减缓。 将 CUJ 概念应用于 SLO 一开始听起来可能相当抽象和高层次，但把它们映射回<a data-type="xref" href="ch08-zh.html#ch08"> 第8章</a>中引入的 SLO 和 SLO 的概念上，可以使其更可被取用。CUI和CUJ的分级性质意味着CUJ可以与一个聚合SLO相联，而每个CUI可以促进一个或多个SLO。 目标取自功能性和非功能性要求，SLI基于测量CUI的时序。</p>
+
+<p>综合的SLO可能很快变得复杂，但“坏分钟”办法相对简单，能够很好地理解一个具有许多组成CUI的CUJ的总体可靠性。 最好用一个实例来说明这个方法，让我们来考虑Google 地图的用户，这里可能有大量的相互作用：</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>用户必须能够输入搜索查询并查看一个结果列表，使他们能够发现和决定选项。</p>
+</li>
+<li>
+<p>用户必须能够在地图上平面，点击并缩放，以便了解每个选项的位置，而应用程序则能响应地获取地图数据。</p>
+</li>
+<li>
+<p>在选择目的地后，用户必须能够看到通往自己选择的目的地的路线的选项。</p>
+</li>
+<li>
+<p>一旦选定了一条路线，用户必须能够点击“开始导航”开始旅行。</p>
+</li>
+</ul>
+
+<p>我们可能选择用可用性和从头到尾的SLO来涵盖所有这些相互作用。 然后，我们可以为总的CUJ确定一个SLI,当其任何构成的SLI对某一监控间隔(通常为一分一分，因此为“坏分”moniker)“坏”时，该SLI被认为是“坏的”,SLO目标被表述为这些间隔的一小部分是好的。</p>
+
+<p class="fix_tracking">在复杂的分布式系统中，即使只服务一个CUI也可能涉及多个服务的请求，其中很多服务只会与其他内部服务，而不是终端用户交谈。对CUI所服务内容的了解更难于追偿进一步的请求被推进到服务堆。在极端情况下，一个数据库如何区分一个<code translate="no"> SELECT</code>的请求与另一个请求？ Google选择解决这一问题，将收到的请求与已知的CUI/CUJ连接起来，并通过RPC侧道传送的微量上下文在整个服务堆栈中传播这些信息，如<a data-type="xref" href="#ch09_fig05">图9-5</a>所示。</p>
+
+<p>这个过程允许任何服务导出时序并写入被CUJ元数据标记的日志。以这种方式衡量意味着CUJ只是切分可观测性数据<a data-primary="monitoring" data-secondary="CUJ-focused SLOs" data-startref="mon_cujslo" data-type="indexterm" id="id1730"/><a data-primary="customer-centric monitoring" data-secondary="CUJ-focused SLOs" data-startref="ccm_cujslo" data-type="indexterm" id="id1731"/><a data-primary="CUJ (critical user journey)" data-secondary="CUJ-focused SLOs" data-startref="cuj_cujslo" data-type="indexterm" id="id1732"/>的另一个方面，例如“用户国”或“前端服务组群”可能是。</p>
+
+<figure><div class="figure" id="ch09_fig05">
+<img alt="在&quot;搜索查询所发出&quot;CUI的Google Maps中显示匿名依赖的图表，说明相互关联的服务及其通信路径。" src="assets/sre2_0905.png"/>
+<h6><span class="label">图 9-5　</span> Google 地图上“已发布搜索查询”的匿名依赖</h6>
+</div></figure>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Supporting infrastructure" data-type="sect3"><div class="sect3" id="ch09_supporting_infrastructure">
+<h3>支撑基础设施</h3>
+
+<p>CUJ<a data-primary="monitoring" data-secondary="supporting infrastructure" data-type="indexterm" id="mon_supinf"/><a data-primary="customer-centric monitoring" data-secondary="supporting infrastructure" data-type="indexterm" id="ccm_supinf"/><a data-primary="infrastructure" data-secondary="customer-centric monitoring" data-type="indexterm" id="inf_ccmon"/><a data-primary="CUIs (critical user interactions)" data-secondary="supporting infrastructure" data-type="indexterm" id="cuis_supinf"/><a data-primary="CUJ (critical user journey)" data-secondary="supporting infrastructure" data-type="indexterm" id="cuj_supinf"/>框架的许多创新从根本上要求有一个集中的系统，它可以作为团队存储产品规格的单一真理来源，包括CUJ,CUI,用户目标等等。该系统应与可观测性基础设施的其余部分无缝地相接而成，以便能够对全程路径进行仪表化、收集并进行可视化。 我们强烈建议以库或SDK的形式建立通俗易懂的收养途径，分发遥测及其与CUJ的关联，并使整个组织的工具和基础设施标准化。</p>
+
+<p class="pagebreak-before less_space">正如我们所说的<a data-type="xref" href="ch03-zh.html#ch03">第 3 章</a>以这种方式使基础设施标准化具有较高的前期成本，但随着组织的发展，可以释放出巨大的规模经济。 各小组仍需要开展艰苦工作，为服务确定CUI和CUJ,并出口必要的遥测技术来测量相关的SLO。 但是，如果他们都这样做<em>以同样的方式</em>所有下游基础设施——博客、聚合、可视化等——都可以使用看起来大致相同的投入，运营和维护这些服务的团队可以集中运作，作为整个组织的共享平台。 然后，为这个平台开发出新的可观测性功能，将立即提供给所有使用该功能的团队，使其成为宝贵的增强力量倍增器的手段。 此外，客户团队随后被激励为平台出力，而不是建立自己孤立的能力，这在一段时间内产生了积极的网络效应。这些效益解释了为什么平台工程(讨论于<a data-type="xref" href="ch18-zh.html#ch18">第 18 章</a>)已在整个行业中变得如此受欢迎。</p>
+
+<p>以客户为中心的监控最关键的整合是在跟踪CUJ的系统与使人们能够定义，测量和可视化SLO的工具之间。上一章所描述的Google的SLO寄存器提供了一个分级视图，反映了CUJ及其组件CUI和SLO的结构。在复杂的系统中，大多数CUJ是使用多个框架和产品构建的，这些框架和产品通常由全组织不同的团队拥有。显示这些关联是关键的第一步，如果一个CUJ开始退化，或者在更严重的情况下，当告警被触发。 通过利用追踪路径，工具应促进与正确输入遥测系统建立直接联系，这有助于查明导致CUJ破裂的因素。</p>
+
+<p>我们期望AI的进化将改变SRE,特别是SLO，使<em>AI引导的优化</em>成为<a data-primary="AI (artificial intelligence)" data-secondary="SLO optimizations" data-type="indexterm" id="id1733"/><a data-primary="SLOs (service level objectives)" data-secondary="AI optimizations" data-type="indexterm" id="id1734"/>可能。这些优化包括AI识别关键用户行程，根据系统行为和用户经验设定动态SLO阈值，并通过对特定客户行为模式的高级异常检测提供更精确，可操作的预警。<a data-type="xref" href="#ch09_observability_and_ai">“可观测性和AI“</a>提供更多信息。</p>
+
+<p>为了充分利用这些逐步步骤，实现真正以客户为中心的监控，一个基本要求是建立一个强大的遥测存储系统，支持高基数(见<a data-type="xref" href="#ch09_high_availability_telemetry"> “高可用性遥测”</a>)。 高基数性使AI能够分析用户体验并识别出微妙的异常点所需的详细观点。如果没有储存和查询高颗粒数据的能力，AI在优化SLO和提供优越的客户经验方面的潜力将受到严重限制。这种系统可以跟踪匿名用户会话，互动，以及它们相应的性能度量，提供AI算法需要的丰富的数据集来准确模<a data-primary="monitoring" data-secondary="supporting infrastructure" data-startref="mon_supinf" data-type="indexterm" id="id1735"/><a data-primary="customer-centric monitoring" data-secondary="supporting infrastructure" data-startref="ccm_supinf" data-type="indexterm" id="id1736"/><a data-primary="infrastructure" data-secondary="customer-centric monitoring" data-startref="inf_ccmon" data-type="indexterm" id="id1737"/><a data-primary="CUIs (critical user interactions)" data-secondary="supporting infrastructure" data-startref="cuis_supinf" data-type="indexterm" id="id1738"/><a data-primary="CUJ (critical user journey)" data-secondary="supporting infrastructure" data-startref="cuj_supinf" data-type="indexterm" id="id1739"/>拟用户行为并检测偏差。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="How Customer-Centric Monitoring Improves the User Experience: &#10;A Google Maps Case Study" data-type="sect1"><div class="sect1" id="how-customer-centric-monitoring-improves-the-user-experience:-a-google-maps-case-study">
+<h1>以客户为中心的监控如何改进用户经验：<span class="keep-together"> 谷歌地图案例研究</span></h1>
+
+<p>Google 地图每月通过多种设备和平台为超过 20 亿活跃用户提供服务；要确保这类产品为<a data-primary="Google" data-secondary="Google Maps customer-centric monitoring case study" data-type="indexterm" id="gog_mpsccmon_cstd"/>终端用户带来可靠体验，在技术上面临重大挑战。过去，只监控 RPC 错误和延迟，往往会漏掉直接影响用户体验、细微却严重的故障。例如，服务器可能返回格式错误的数据，导致用户查询得不到任何搜索结果；从 RPC 角度看请求却“成功”了，因此基于 RPC 错误和延迟的监控无法发现这种问题，如<a data-type="xref" href="#ch09_fig06">图 9-6</a>所示。以客户为中心的监控则通过衡量“客户看到非零且有效的结果”这一不变量是否成立来覆盖此类情况，即使服务端 RPC SLO 会把这次交互判为成功。</p>
+
+<figure><div class="figure" id="ch09_fig06">
+<img alt="Google 地图的屏幕截图显示搜索&quot;咖啡&quot;,没有找到结果，突出显示一个问题，即尽管右侧有可见的位置信息，但应用程序返回相关搜索结果的能力。" src="assets/sre2_0906.png"/>
+<h6><span class="label">图 9-6　</span> Google 地图中没有搜索结果</h6>
+</div></figure>
+
+<p class="pagebreak-before less_space">随着时间流逝，我们把CUJ的可靠性融入了为我们组织提供关键特征的工作之中。 在我们开始与产品团队接触时，新的客户端插桩往往发现问题。 最初，我们发展出更好的探测机制，导致人们觉得故障较多，因为这些机制使我们能够抓住一些非常小而微妙的问题，这些问题本来可能还没有被发现。 这些故障也往往使调试和修复费用昂贵。 对于零搜索结果，所有这些因素都导致我们启动“黄码”事件，我们立即停止开发工作并组成一个临时小组来处理一个重要问题。</p>
+
+<p>这项活动的一个关键支柱是建立<a data-type="xref" href="#ch09_defense_in_depth">“深度防御“</a>所描述的基础能力，以便根据是否提高了用户的出乎意料的搜索结果率而改变生产门。 深入防御的安全机制成功地制止了“无搜索结果”问题，使探测工作提前转移。 作为具体的例子，在“黄色代码“之后，在金丝雀过程中，提高了无搜索结果率的服务器推出被自动暂停，从而避免了更普遍的故障。这些能力的成功对我们的执行赞助者和我们自己来说是一个大好时机。 早期自动捕捉问题降低了用户的影响并降低了修复费用，因为很清楚是什么变化造成了问题。</p>
+
+<p class="fix_tracking">“黄色代码”期间部署的 CUJ 变更监督取得成功，改变了我们讨论以用户为中心的可靠性的方式。当我们建议某个团队围绕特定功能投资以客户为中心的监控时，会像强调可靠性一样强调交付能力和速度。我们发现，用“让我们把黄色代码中采用的那套自动变更监督也用到这项新功能上”这样的说法来介绍这类投资时，往往能得到积极<a data-primary="Google" data-secondary="Google Maps customer-centric monitoring case study" data-startref="gog_mpsccmon_cstd" data-type="indexterm" id="id1740"/>回应。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability Data—Value Versus Cost" data-type="sect1"><div class="sect1" id="ch09_observability_data_value_vs_cost">
+<h1>可观测性数据：价值与成本</h1>
+
+<p>在可观<a data-primary="observability" data-secondary="data value versus storage cost" data-type="indexterm" id="id1741"/><a data-primary="data" data-secondary="observability, value versus cost" data-type="indexterm" id="dat_obsrv_valvcst"/>测性数据的价值与存储成本之间取得平衡，是一项<a href="https://oreil.ly/sgFob">关键挑战</a>，在大规模环境中尤其如此。明智的遥测数据保留策略，需要权衡数据价值、存储成本和系统限制。</p>
+
+<p>可观测性数据对于理解系统行为是十分宝贵的，但无限期地保留所有历史数据会消耗大量资源，潜在的影响查询性能，并且可能具有成本高得难以承受。保留时间也是满足隐私和遵守要求的一个关键因素。 制定政策有助于在数据的有用性与保存数据的费用之间取得适当的平衡。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability Data Retention" data-type="sect2"><div class="sect2" id="ch09_observability_data_retention">
+<h2>可观测性数据保留</h2>
+
+<p>资源限制是调<a data-primary="observability" data-secondary="data value versus storage cost" data-tertiary="resource constraints considerations" data-type="indexterm" id="id1742"/>查的一个关键方面。 现代系统通常执行某种形式的配额或限制，并具有收费功能，将成本归责于所监控的产品。 例如，Google Cloud为每个客户提供每个产品和服务的一套配额，以防止人为错误或更邪恶的行为(如比特币开采黑客). 该平台允许客户将元数据值(以<a href="https://oreil.ly/ufqO5">标签形式为</a>或<a href="https://oreil.ly/Ra7Ou">标签</a>)附加到资源中，以核算财务应计和回扣。这种战略有助于为优化数据保留创造直接的财政激励，并可能有助于就基础设施成本作出决定。 存储数据，无论是用于快速访问的内存，磁盘，还是对象存储(如Google Cloud存储),都会产生与存储，处理功率，网络带宽相关的巨大成本，因此找到正确的平衡很重要。</p>
+
+<p>有助于找到这种平衡的技术是确定数据的用途。 数据的直接相关性随着时间推移而减少。 随着数据老化，它可能变得不那么有用，特别是如果很难区分正常的变异和有意义的异常。实时事件响应一般需要最新的高分辨率数据，而长期趋势分析可以使用更低分辨率的数据。某些系统可以提供汇总或下采样的数据，称为<em>预算</em>,可以存储更长时间。预算是“长期查询”,不断生成原始时序的汇总数据。 它们减少了总的数据量，同时也改善了常见分析需要的查询性能。 因此，储存费用会降低，同时保留重要的历史见解。 其他数据集，如跟踪和日志，可能采用一项战略，保留被认为比其他数据长的重要数据。 重要信号可以来自事先获得这些数据或遵守和审计需要。</p>
+
+<p>还需要考虑技术限制。 即使是大型储存系统，在它们能够持有多少数据以及能够如何有效地询问这些数据方面也有有限的限制。 需要指出的是，每个系统都有局限性。 查询极其庞大的数据集可以缓慢而需要大量资源，这可以影响事件期间快速分析数据的能力。各种系统还必须不断扩大规模，以处理不断增加的数据量。 这是一个持续的工程挑战——例如，随着监控数据量的增加，时序数据库可能需要不断的可扩展性改进。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Google’s Strategic Approach to Data Retention" data-type="sect2"><div class="sect2" id="ch09_google_s_strategic_approach_to_data_retention">
+<h2>谷歌的数据保留战略方针</h2>
+
+<p>为了有效地<a data-primary="data" data-secondary="Google approach to retention" data-type="indexterm" id="dat_gogappret"/><a data-primary="Google" data-secondary="data retention approach" data-type="indexterm" id="gog_datretapp"/>平衡这些因素，Google采用了几种技术。所有可观测性数据都有一个有限度的地平线。保存日志可能基于重要性，对于结构化日志，可按群组分列。 根据访问模式，可能会对追踪进行下取样或保留更长时间。 时序保留政策允许最灵活的配置，界定：</p>
+<dl>
+<dt>媒体</dt>
+<dd>
+<p>存储数据的地方</p>
+</dd>
+<dt>保留期限与采样率</dt>
+<dd>
+<p>数据被存储了多久，原始时序往往有很短的内膜地平线，而汇总数据则以更低的频率被保留在磁盘上。</p>
+</dd>
+<dt>各个方面的细节程度</dt>
+<dd>
+<p>汇总的数据可能要少得多，但保留所观测系统的基本行为。</p>
+</dd>
+</dl>
+
+<p>定期对数据进行下采样，或降低频率，并逐步汇总。 取样大大减少了储存费用，同时保持了总体趋势。 我们密切监控采样频率。 用于调查告警和SLO违规行为的关键时序的收集频率较高，而关键时序的取样频率较低。 你可能很少有时序被评价的次数多于每分钟一次，但他们的输入数据可能每秒被收集一次，以捕捉短命问题(如小流量猛增等). 除非在没有更多数据的情况下无法分析问题或其他影响，在这种情况下，你应该更频繁地收集，以便你的团队能够进入最佳的缓解或排除出故障的途径。</p>
+
+<p>各小组积极跟踪其费用和配额使用情况，制定预算，并寻找效率低下的情况来减少开支，同时不损害可观测性。 定期对留用政策进行审查，以确保随着新系统行为的发展，这些政策仍然具有相关性和成本效益。</p>
+
+<p>通过实施这些战略，Google旨在使工程师在系统健康方面获得必要的能见度，从而能够快速诊断和有效应对，同时管理与全球规模的可观测性基础设<a data-primary="data" data-secondary="Google approach to retention" data-startref="dat_gogappret" data-type="indexterm" id="id1743"/><a data-primary="Google" data-secondary="data retention approach" data-startref="gog_datretapp" data-type="indexterm" id="id1744"/>施相关的大量费用。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Horizontal Monitoring Data: A Centralized Approach" data-type="sect2"><div class="sect2" id="horizontal-monitoring-data:-a-centralized-approach">
+<h2>横向监控数据：集中式方法</h2>
+
+<p>在Goo<a data-primary="observability" data-secondary="data value versus storage cost" data-tertiary="Horizontal Monitoring Data" data-type="indexterm" id="obsrv_datvcst_hmd"/><a data-primary="HMD (Horizontal Monitoring Data)" data-type="indexterm" id="hmd"/><a data-primary="Horizontal Monitoring Data (HMD)" data-type="indexterm" id="hormondat"/>gle, 我们对共同时序采取了横向方法，这一战略有助于有效地实施最佳做法，同时仍然为具体服务要求提供定制服务。 基本上，所有广泛使用的监控时序都是通过管理政策集中收集和保留的。 这种办法确保所有服务的数据可得性和可靠性，所有相关的配额和资源需求都得到规划和预算。 因此，新推出的服务即使不是全部也是大部分有用的时序已经妥善收集和保留。 这种情景避免了忘记设置或弄错了的风险，导致成本高或不可靠的监控。</p>
+
+<p>在大多数情况下，HMD收集了分级颗粒的原始时序并保存在存储器中短时间(小时),再在磁盘上保存更长的时间(周). 内存储存费用最高，但它允许在收集后几秒钟内询问最新数据。 内存的短时间范围平衡了根据这种原始数据对预估进行高效评价的需要，基于磁盘的数据相对新鲜，基于内存的存储成本高。根据时序的性质或从哪些实体收集数据，住房和住房部的政策可能有所不同。</p>
+
+<p>HMD为所收集的数据设定了预算。此类预估通常会汇总事故以外的无益细节，如生产工作的许多任务中哪些任务会输出数据。 这种汇总通常可节省数量或更多，并可大大提高互动查询的效率。 HMD通常在内存(小时)中保留预计算数据，在全分钟分辨率(周)时保留磁盘上的数据，在30分钟下取样分辨率(年)时保留磁盘上的数据。这一保留兼顾了生产事故期间有效查询互动图的需要、可用于研究最近故障和写尸检的全解数据以及分析跨年<a data-primary="observability" data-secondary="data value versus storage cost" data-startref="obsrv_datvcst_hmd" data-tertiary="Horizontal Monitoring Data" data-type="indexterm" id="id1745"/><a data-primary="HMD (Horizontal Monitoring Data)" data-startref="hmd" data-type="indexterm" id="id1746"/><a data-primary="Horizontal Monitoring Data (HMD)" data-startref="hormondat" data-type="indexterm" id="id1747"/>趋势的能力。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Adapting for the Future" data-type="sect2"><div class="sect2" id="ch09_adapting_for_the_future">
+<h2>适应未来</h2>
+
+<p>随着时间的推移，保留一些数据的必要性可能会发生变化。 随着软件或使用案例的发展，新的时序可能会被添加(并可能横向保留),而其他时序可能失去重要性。HMD保持关于时序使用的统计数据，并逐步淘汰数月来很少使用或从未使用的时序。时序所有人或利益攸关方可以确保仍然有关键但很少获得的数据。 因此，监控资源被花在最有用的数据上，并在不再需要时用于其他用途。</p>
+
+<p>此外，对于有更具体需要的服务(如合规所需的较长的保留期),服务所有人可以自行设定数据保留期。这涉及使用特定域语言(DSL)为其服务配置保留政策。 通常是为了特定服务的时序，或在某些情况下是为了增加时间分辨率或扩大保留范围。 服务所有人负责确保为这些数据提供足够的监控配额。 如果没有足够的配额，数<a data-primary="data" data-secondary="observability, value versus cost" data-startref="dat_obsrv_valvcst" data-type="indexterm" id="id1748"/>据保留范围可能缩小，或者数据收集可能完全中止。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability Data: Privacy, Compliance &#10;and Security Concerns" data-type="sect1"><div class="sect1" id="ch09_observability_data_privacy_compliance_and_security_concerns">
+<h1>观测数据：隐私、遵守<span class="keep-together">和安全问题</span></h1>
+
+<p>管理可观测性<a data-primary="observability" data-secondary="managing data" data-tertiary="regulatory compliance" data-type="indexterm" id="id1749"/><a data-primary="data" data-secondary="regulatory compliance" data-type="indexterm" id="id1750"/>数据，特别是客户信息，需要严格监管合规，健全数据分类，并遵循逐一设计的原则。这一过程包括在世界各地不同管辖区导航隐私条例，按照敏感性对数据进行分类，以及实施强有力的访问控制。 还必须确保从工作量中的内存数据到输出到其他系统的数据的可观测性堆栈的端到端隐私和安全，同时通过执行集中客户和政策防止过度共享。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Compliance with Regulatory Requirements" data-type="sect2"><div class="sect2" id="ch09_compliance_with_regulatory_requirements">
+<h2>遵守监管要求</h2>
+
+<p>从客户收集或涉及客户的任何数据，包括可观测性数据，都必须遵守安全和隐私遵守条例，例如欧洲联盟的一般数据保护条例和加利福尼亚消费者隐私法。 用户数据还可能受到额外合同义务的约束。 各组织在收集任何用户数据之前审查适用的条例、定期审查条例并视需要更新数据处理政策至关重要。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Data Categorization" data-type="sect2"><div class="sect2" id="ch09_data_categorization">
+<h2>数据分类</h2>
+
+<p>数据<a data-primary="observability" data-secondary="managing data" data-tertiary="data categorization" data-type="indexterm" id="obs_mandat_cat"/><a data-primary="data" data-secondary="categorization" data-type="indexterm" id="dat_cata"/><a data-primary="customer data, managing" data-type="indexterm" id="custdat_man"/>集应当根据其敏感程度进行分类，这种分类应当通过可以处理或存储数据的所有路径来传播。为治理目的将元数据应用于数据是一种基础做法。Google根据是否包含客户数据来注释所有数据，包括可观测性数据。</p>
+
+<p>一般可归结为不含客户数据的可观测性数据的例子包括：</p>
+
+<ul>
+<li>
+<p>内部工作健康指标，如CPU利用率和记录和档案管理利用率</p>
+</li>
+<li>
+<p>内部工作之间RPC的流入/流出率</p>
+</li>
+<li>
+<p>内部工作错误率</p>
+</li>
+<li>
+<p>可用性和耐用性</p>
+</li>
+</ul>
+
+<p>可能包含客户数据的可观测性数据的例子包括：</p>
+
+<ul>
+<li>
+<p>以前收集到的关于客户工作的数据类型</p>
+</li>
+<li>
+<p>特征使用率</p>
+</li>
+<li>
+<p>详细日志(如错误日志、请求日志、审计日志、交易日志)</p>
+</li>
+</ul>
+
+<p>当从客户输入直接收集可观测性数据时，这些数据也被视为客户数据。</p>
+
+<p>在根据客户行为分类汇总数据集时要小心。确保收集的关于总用户行为的数据足够匿名。 仅仅储存没有客户识别资料的数据可能是不够的。 例如，如果每个区域都存储“匿名”使用数据，但某一区域只有一个客户，那么该区域的数据并非匿名数据，因为所有数据都归于该单一客户。</p>
+
+<p>然而，将整个数据集归类为对数据治理敏感的数据集可能会有问题，因为它往往根据数据集中最敏感的数据实施严格的限制。往往需要对具体数据字段进行更分门别类的分类。 例如，谷歌目前将其整个遥测数据集归类为包含客户数据。然而，同一数据集既包括内部计量(即没有客户关联的工作业绩遥测),也包括实际客户数据，没有明显的区分。 这种分类迫使整个存储系统得到最高水平的客户数据分类处理。依靠这些数据的任何工具，如为内部系统提供告警或向已准予查阅其数据的伙伴客户提供强化监控服务的工具，必须遵守与最敏感的客户数据相同的严格标准。</p>
+
+<p>理想的情况是，可观测性工具应该支持精细的访问控制列表(ACLs),允许您控制您数据集特定片段的数据治理。如果它不这样做，考虑用手动将您的数据集分割成单独的可观测性“硬体”( shards, ) , 每一个都有自己的注释和治理水平。 对于遵守欧盟“数字市场法“第5(2)条要求的系统来说，不同数据类型的不同硬块可能是一个硬性要求，该条禁止大公司将个人数据综合跨核心平台服务(如跨<a data-primary="observability" data-secondary="managing data" data-startref="obs_mandat_cat" data-tertiary="data categorization" data-type="indexterm" id="id1751"/><a data-primary="data" data-secondary="categorization" data-startref="dat_cata" data-type="indexterm" id="id1752"/><a data-primary="customer data, managing" data-startref="custdat_man" data-type="indexterm" id="id1753"/>YouTube和Search).</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Compliance by Design" data-type="sect2"><div class="sect2" id="ch09_compliance_by_design">
+<h2>设计合规</h2>
+
+<p>可观测性数<a data-primary="observability" data-secondary="managing data" data-tertiary="regulatory compliance" data-type="indexterm" id="obs_mandat_regcomp"/><a data-primary="data" data-secondary="regulatory compliance" data-type="indexterm" id="dat_comp"/>据应当符合规定，并且通过默认和设计实现安全，特别是在处理客户数据时。 本节将讨论如何在设计过程中主动纳入隐私、安全和合规方面的关切，以避免与数据处理需求根本不符的系统。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Data minimization" data-type="sect3"><div class="sect3" id="ch09_data_minimization">
+<h3>数据最小化</h3>
+
+<p>只收集合法商业目的所需的最低可观测性数据。 定期审核所收集的数据并去除不再需要的信号。在收集客户数据或PII时，应用数据编辑功能来在排除出故障时进一步保护这些数据。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Data locale" data-type="sect3"><div class="sect3" id="ch09_data_locale">
+<h3>数据区域</h3>
+
+<p>有些法域要求，为了储存在某一特定地点而撰写的数据必须留在该地点。 积极考虑如何保证数据在整个生命周期(休息、使用和过境)将留在本区域。 作为一种额外的好处，采用区域模式和全面推广的系统不太容易受到可能导致全球衰退的风险载体的影响。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Data wipeout" data-type="sect3"><div class="sect3" id="ch09_data_wipeout">
+<h3>数据擦除</h3>
+
+<p>与其他存储系统类似，可观测性必须包含删除合法商业目的不再需要的数据的机制。例如，Google Cloud发布特定的<a href="https://oreil.ly/n_jvP">政策来删除数据</a>. 在可观测性情况下，通过对包含客户数据的数据集规定最大限度的保留政策来实施这些政策：</p>
+<dl>
+<dt>追踪和文本日志</dt>
+<dd>
+<p>这些是最敏感的数据，更接近正在执行的单个操作，在有限的保留期后立即被删除。</p>
+</dd>
+<dt>结构化日志</dt>
+<dd>
+<p>如果适当的留存计划证明其需要是合理的，这些保留期可以延长，但需遵守与其他数据相类似的按客户分列的删除政策。</p>
+</dd>
+<dt>时序</dt>
+<dd>
+<p>多种政策可以适用于时序。精细数据限于短的留存期，以满足可观测性需要和其他法律要求。然而，综合起来，匿名数据可以保留更长时间，同时明确说明其业务目的。</p>
+</dd>
+</dl>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Access control" data-type="sect3"><div class="sect3" id="ch09_access_control">
+<h3>访问控制</h3>
+
+<p>控制通过AC<a data-primary="access control, observability data" data-type="indexterm" id="id1754"/>Ls获取可观测性数据至关重要。一个有效的可观测性系统必须平衡数据保护与有效可观测性旅行所需的无障碍性。</p>
+
+<p>设计上的安全性是可观测性系统的建议标准。这一标准涉及根据共同模式和数据分类提供一套默认的ACL. 这些ACL应该可以调整，允许在数据敏感度需要时进行更严格的控制，或者根据客户协议等外部因素进行更松散的控制。为了获取更敏感的数据，ACL可能需要多方批准才能获准访问，以确保只有在有正当理由的情况下才能获取数据。</p>
+
+<p>由于可观测性数据常常在数据集之间相接，重构大型ACL就有可能无意地切断关键接入。 因此，从一开始就设计颗粒式ACL系统是最佳做法。 该系统的设计应容纳越来越多的ACL，而不是在单一的ACL中容纳越来越多的成员，从而最大限度地减少今后造成的风险和复杂性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Encrypted data" data-type="sect3"><div class="sect3" id="ch09_encrypted_data">
+<h3>加密数据</h3>
+
+<p>关键在于<a data-primary="encrypted data, observability" data-type="indexterm" id="id1755"/>加密敏感可观测性数据，包括日志和追踪，云提供商提供自动加密的同时，客户管理的加密密钥(CMEK)给予您对加密密钥的直接控制。这对于满足遵守要求和改善安全十分重要。 对于具有高度敏感数据的服务，建议提供CMEK能力，允许<a data-primary="observability" data-secondary="managing data" data-startref="obs_mandat_regcomp" data-tertiary="regulatory compliance" data-type="indexterm" id="id1756"/><a data-primary="data" data-secondary="regulatory compliance" data-startref="dat_comp" data-type="indexterm" id="id1757"/>客户管理加密自己遥测数据的密钥。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="E2E Observability Privacy and Security Considerations" data-type="sect2"><div class="sect2" id="ch09_e2e_observability_privacy_and_security_considerations">
+<h2>端到端可观测性的隐私与安全考量</h2>
+
+<p>在考虑隐<a data-primary="observability" data-secondary="privacy and security considerations, E2E" data-type="indexterm" id="observ_secpriv_ete"/><a data-primary="security" data-secondary="E2E observability" data-type="indexterm" id="sec_obsrv_ete"/><a data-primary="privacy" data-secondary="E2E observability" data-type="indexterm" id="priv_obsrv_ete"/>私和可观测性的安全性时，必须仔细处理可观测性堆栈所有组成部分的数据。 仅仅注重数据存储可能使几个领域变得脆弱：</p>
+<dl>
+<dt>本地客户端的内存数据</dt>
+<dd>
+<p>可以提取本地客户端内存中的数据。 例如，OpenTelemetry为用户提供了获取内存数据的方法，理论上可以用来重建遥测。</p>
+</dd>
+<dt>通过收集器路由数据</dt>
+<dd>
+<p>从技术上讲，收集者(如OTel收集者)可以检索可观测性数据并将其引向其他来源。</p>
+</dd>
+<dt>大型组织中的过度共享</dt>
+<dd>
+<p>虽然广泛分享遥测数据可以减少大型组织缓解工作的时间，但有可能将数据曝光的范围比必要的范围更广。</p>
+</dd>
+</dl>
+
+<p>其中一些风险可以通过拥有一个可观测性的集中客户端来缓解，例如OTel SDK,它决定了整个公司的政策和支持的功能。使用单一，可核查的SDK为用户提供了数据注释的必要功能，同时帮助执行数据政策。Google还利用了软件供应链核查机制(<a href="https://oreil.ly/156lB">Borg 二进制授权</a>,或BAB),以保证生产二进制来源于可核查的来源，使中央团队能够核查遵守情况并落实允许集中政策执行的机制。理想的情况是，专门小组将监督整个公司的客户发展情况，确保可观测性守则得到彻底审查。</p>
+
+<p class="pagebreak-before less_space">集中政策有助于确保所有客户始终如一地处理数据。 这些可能包括：</p>
+<dl>
+<dt>限制对调试端点的访问</dt>
+<dd>
+<p>每个客户端的调试端点只能由自有团队访问，遵循最少特权的原则。</p>
+</dd>
+<dt>传输中的加密数据</dt>
+<dd>
+<p>客户端之间的通信渠道和集中的可观测性工具应当加密，防止未经授权的客户端撰写可观测性数据。与静态数据一样，考虑将CMEK用于日志和追踪等敏感数据。</p>
+</dd>
+<dt>制品验证</dt>
+<dd>
+<p>BAB,公证人项目，和Sigstore等机制提供了一个将生产二进制与部署的代码和导致特定操作的变化联系起来的可审计记录。</p>
+</dd>
+<dt>握手协议</dt>
+<dd>
+<p>客户端和服务器之间的握手协议可以改善性能并阻止客户端发送数据，如果服务器没有适当的安全保护配置(避免无意中的数据写入).</p>
+</dd>
+</dl>
+
+<p>尽管有严格的控制，但在可观测性系统中意外暴露受保护数据是一种风险。 因此，可观测性解决方案应积极监控写入的数据，发现政策不符合规定，并为数据删除提供快速机制。 定期测试这些解决办法对于确保其有效性、反映备份和其他关键行动的做<a data-primary="observability" data-secondary="privacy and security considerations, E2E" data-startref="observ_secpriv_ete" data-type="indexterm" id="id1758"/><a data-primary="security" data-secondary="E2E observability" data-startref="sec_obsrv_ete" data-type="indexterm" id="id1759"/><a data-primary="privacy" data-secondary="E2E observability" data-startref="priv_obsrv_ete" data-type="indexterm" id="id1760"/>法至关重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Variation-Based Monitoring and Statistics" data-type="sect1"><div class="sect1" id="ch09_variation_based_monitoring_and_statistics">
+<h1>基于差异的监控和统计</h1>
+
+<p>监控系统提供了一个不完善的、抽样的服务健康状况。 我们收集的数据是一组离散的测量数据，我们<em>希望</em>准确代表分布式系统的持续而复杂的现实。统计是正式的数学框架，使我们能够解释这一不完善的数据(帮助我们确保<a href="https://sre.google/sre-book/introduction">希望不是战略</a>).</p>
+
+<p>本节讨论如何从统计角度思考监控数据。 我们将涵盖这些数据的内在局限性，并采用一个基于统计的强大方法来发出告警，从而可大大地改善您的告警系统的信号与噪声之比。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Imperfect Lens of Monitoring" data-type="sect2"><div class="sect2" id="ch09_the_imperfect_lens_of_monitoring">
+<h2>监控这面不完美的透镜</h2>
+
+<p>所有监控数<a data-primary="monitoring" data-secondary="imperfection of" data-type="indexterm" id="id1761"/>据都只是系统状态的不完美表现。 抽样、收集和汇总数据的过程必然涉及信息损失。</p>
+
+<p>考虑请求延迟。 一个服务可能每秒处理上千个请求。衡量和储存每项请求的确切延迟性将极为昂贵。 相反，我们通常使用汇总数据。 一种常见的做法就是用延迟区间对请求分桶来构建直方图。我们正在以完全精确来换取更紧凑、更易处理地代表延迟分配。</p>
+
+<p>时间汇总也是如此。 显示CPU负载每秒比显示每分钟的平均值更精确的视图，但即使每秒的数据也比可能发生在毫秒时间尺度上的利用率快。</p>
+<div data-type="tip"><h6>提示</h6>
+<p>监控数据是一组线索，并不是生产过程中发生的完美记录。统计可以让我们从这些线索中重新描绘出可能的现实。 这种心态的转变对于正确解释监控数据至关重要。</p>
+</div>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Understanding the Limits: Cardinality and Noise" data-type="sect2"><div class="sect2" id="understanding-the-limits:-cardinality-and-noise">
+<h2>理解局限：基数与噪声</h2>
+
+<p>如本章前面所<a data-primary="monitoring" data-secondary="limitations" data-type="indexterm" id="id1762"/>讨论，监控方面最重大挑战之一是管理数据的数量和维度。 对颗粒状的洞察力的渴望，会导致基数的爆炸。例如，如果跟踪请求错误，并按数据中心，集群，工作，RPC方法，和客户端版本来分解，时序的数量可能会变得无法管理。虽然这种详细程度对于临时调试非常宝贵，但对于告警系统来说却是一个并不理想的基础。</p>
+
+<p>想象一个简单的告警规则：“如果任何单一客户端版本的错误数超过每分钟10个。” 如果您拥有上千个客户端版本，其中许多版本的流量非常低，随机起伏会经常触发这一告警。一个在一分钟内只发出20个请求并且经历单一瞬间网络错误的客户端有5%的错误率，这孤立地看可能显得令人震惊。然而，这一事件很可能是统计噪音，而不是一个真正的问题。 一个为这个事件因此被呼叫的工程师会很快学会忽略它，贬低整个告警系统的价值。</p>
+
+<p>此时统计思维变得至关重要。相对于高基数维度的原始计数告警，您必须针对统计上显著的偏差告警。您需要一种方法，可以区分一次偶发抖动的低流量客户端和一个显示其基线错误率小而有意义的增长的高流量客户端。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Alerting with the Binomial Distribution" data-type="sect2"><div class="sect2" id="ch09_alerting_with_the_binomial_distribution">
+<h2>使用二项分布告警</h2>
+
+<p>许多监控中的<a data-primary="monitoring" data-secondary="alerting, binomial distribution" data-type="indexterm" id="mon_alrt_bidist"/><a data-primary="alerts" data-secondary="binomial distribution" data-type="indexterm" id="alrt_bidist"/><a data-primary="binomial distribution, alerting" data-type="indexterm" id="binomdist_alrt"/>事件都可以被模拟为独立尝试的序列，每个事件都有二进制的结果：成败。请求要么成功要么失败。 请求要么够快，要么过慢(与最后期限有关)。 此类事件称为<a data-primary="Bernoulli trial" data-type="indexterm" id="id1763"/><em>伯努利试验</em>。</p>
+
+<p>当我们观察到 <em>n</em> 次这样的试验（例如一分钟窗口内的 <em>n</em> 个请求）时，若每次试验的失败概率 <em>p</em> 保持不变，则失败总数 <em>k</em> 服从二项分布。服务的 SLO 可以为概率 <em>p</em> 提供目标值。例如，可用性 SLO 为 99.9%，意味着目标失败概率为 <em>p</em> = 0.001。</p>
+
+<p>这个统计模型能够区分信号与噪声，只有当我们确信观察到的错误数量源于系统行为变化、而不只是噪声时才发出告警。相比通常过于嘈杂的简单静态阈值（例如“错误数 &gt; 10 就告警”），这种模型有了显著改进。</p>
+
+<p>在实际操作中，<a href="https://oreil.ly/PgAky"> 二项比例置信间隔</a>是您可以用来提出实用告警阈值的工具。根据观测到的试验次数(<em>n</em>)和失败次数(<em>k</em>),这种方法计算出误差概率的置信间隔。</p>
+
+<p>然后告警逻辑变成：</p>
+<ol>
+<li>
+<p>以您的 SLO 为基础，定义您不可接受的错误率，<em> p <sub> slo </sub> </em>。</p>
+</li>
+<li>
+<p>在每次间隔时，要观察请求次数(<em>n </em>)和失败次数(<em>k </em>).</p>
+</li>
+<li>
+<p>计算真实失败率的置信间隔，<em>p </em>。</p>
+</li>
+<li>
+<p>仅当该置信区间的<em>下界</em>大于不可接受的错误率 <em>p<sub>slo</sub></em> 时才通知值班人员。</p>
+</li>
+
+</ol>
+
+<p>当我们能够确信实际错误率差于 SLO 所允许的水平时，这套逻辑才会触发告警。它会自动考虑流量变化，并消除许多由低流量导致的误报。</p>
+
+<p>这个最小化的例子说明了你如何利用统计数据来考虑数据中的不完善之处(在此情况下是有限的样本大小)来推断系统的实际行为。</p>
+
+<p><a data-type="xref" href="#ch09_fig07"> 图9-7 </a> 说明使用来自统计的工具如何能帮助创建更能适应一定的，定义明确的类噪声的规则。它显示错误率(以蓝色表示)如何因噪音而变化并跨越警戒阈值数次而不会引起告警触发。告警实际上是由比较保守的去噪版本的错误率(以绿色表示)所驱动的，用二项分布置信间隔的下端来计算出。当被点起的垂直行上发生统计上显著的行为变化时，去噪的二项分布信号会越过告警阈值并触发告警。</p>
+
+<figure><div class="figure" id="ch09_fig07">
+<img alt="图表以蓝色显示观测到的数据，以绿色显示去噪声信号。 该图说明了去噪声信号如何在垂直线所显示的统计上显著变化时跨越告警阈值，触发了告警。" src="assets/sre2_0907.png"/>
+<h6><span class="label">图 9-7　</span> 以二项分布置信间隔告警</h6>
+</div></figure>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Composing SLOs" data-type="sect2"><div class="sect2" id="ch09_composing_slos">
+<h2>组合 SLO</h2>
+
+<p>我们刚刚提出<a data-primary="monitoring" data-secondary="alerting, binomial distribution" data-startref="mon_alrt_bidist" data-type="indexterm" id="id1764"/><a data-primary="alerts" data-secondary="binomial distribution" data-startref="alrt_bidist" data-type="indexterm" id="id1765"/><a data-primary="binomial distribution, alerting" data-startref="binomdist_alrt" data-type="indexterm" id="id1766"/>的二<a data-primary="SLOs (service level objectives)" data-secondary="composition strategies" data-type="indexterm" id="slo_compstrat"/>元告警策略 侧重于单一服务。 在这里，我们将探索如何在不同的服务中适用类似的原则，特别是人们如何能够根据附属单位提供的保障提出现实的SLO。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Reasoning about dependencies" data-type="sect3"><div class="sect3" id="ch09_reasoning_about_dependencies">
+<h3>依赖关系分析</h3>
+
+<p>当服务称为依赖时，该依赖的性能会直接影响到您满足自己的SLO的能力。 为了为您的服务设定现实的目标，有一个数学模型来解释您依赖的可靠性是有益的。一个常见但有缺陷的捷径是简单地将依赖性的错误预算相加，但这种方法往往不现实。一个更强健的模型是了解您服务的工作流程如何与其依赖关系互动，以及其可靠性如何结合影响您自己。计算取决于依赖本身的可靠性，以及依赖的失败模式之间的关联。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Multiple fail-close dependencies" data-type="sect3"><div class="sect3" id="ch09_multiple_fail_close_dependencies">
+<h3>多个故障即关闭型依赖</h3>
+
+<p>考虑一个服务，通过进行两个相继的呼叫处理用户请求：先是服务B,再是服务C. 用户的请求要成功，对 B 和 C 的调用都必须成功。 这种模式是常见的，例如，在从一个后端读取数据并将其写入另一个后端的服务中。</p>
+
+<p>在此情况下，您的服务是<em>不如</em>任何单一依赖。 链条中的每一项新服务都增加了另一个潜在的失败点。如果服务B的可用率为80%,服务C的可用率为90%,那么您所能达到的最佳可用率仅为72%(假设服务独立失效;参见<a data-type="xref" href="app05.html#appe">附录E</a>) (中文(简体) ). 此计算在您自己的 SLO 上设置了数学上限( 至少为这个简单的图案)。 保证一个比数学上可能高的SLO， 考虑到你的依赖性，无异于注定团队失败。 不过，有些方法可以通过修改服务电话模式来潜在地改善您的服务。 接下来将讨论其中一个案件。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Increasing resilience with hedging" data-type="sect3"><div class="sect3" id="ch09_increasing_resilience_with_hedging">
+<h3>通过请求对冲提高韧性</h3>
+
+<p>有时，依赖性可以被组成来提高容错能力。一个常见的模式是请求对冲，<sup> <a data-type="noteref" href="ch09-zh.html#id1767" id="id1767-marker"> 6</a> </sup>,其中某服务同时向两个或多个后端发送相同的请求并使用第一个成功响应。</p>
+
+<p>如果整个操作只有在<em>两个</em>并行调用失败时才会失败，则综合可用性可以大大高于单个组件。利用先前的服务B(可用率为80%)和服务C(可用率为90%)的例子，平行的对冲策略可以产生98%的理论可用率。这一战略表明，在处理依赖性方面的建筑选择如何会对服务所能提供的可靠性产生重大影响。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The important caveat: Correlation" data-type="sect3"><div class="sect3" id="the-important-caveat:-correlation">
+<h3>重要注意事项：相关性</h3>
+
+<p>这些计算依赖于一个关键假设：即您依赖的失败在统计学上是独立的。在许多现实世界体系中，这种假设并不存在。 依赖可能分享自己的下游依赖(如数据库或锁服务)或基础设施(同一网络结构或数据中心)。 共用部分的失败可能导致两种服务同时失败。 失败中的相关性起着复杂的作用：它们可以使可靠性更差(限制请求对冲的有效性),或改进可靠性(例如，区域<a data-primary="SLOs (service level objectives)" data-secondary="composition strategies" data-startref="slo_compstrat" data-type="indexterm" id="id1768"/>孤立的失败导致抵消故障)。</p>
+
+<p>关于序列和平行(有请求对冲)案例的SLO组成实例，见<a data-type="xref" href="app05.html#appe">附录E</a>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Extending Confidence Intervals to Relative Metrics: &#10;Alerting on Latencies" data-type="sect2"><div class="sect2" id="extending-confidence-intervals-to-relative-metrics:-alerting-on-latencies">
+<h2>将置信间隔扩展到相对度量：<span class="keep-together"> 延迟告警 </span></h2>
+
+<p>迄今讨论的统计<a data-primary="alerting systems, handling relative metrics" data-type="indexterm" id="id1769"/><a data-primary="monitoring" data-secondary="alerting systems, handling relative metrics" data-type="indexterm" id="id1770"/><a data-primary="metrics" data-secondary="relative" data-type="indexterm" id="id1771"/>方法对“好”和“坏”的明确定义，如误差率的指标是强有力的。 但诸如“延迟“之类的指标呢？ 在“缓慢”没有普遍定义的情况下，我们如何发现缓慢的请求？ 任何给定查询的执行时间都取决于许多因素，如数据大小，请求的复杂性，以及整个系统负载等。一秒钟的延迟可能对于简单的渲染来说是好的，但对缓存读取来说是可怕的。固定的阈值(如“查询超过 8 秒就告警”)实际上对发现有意义的实时性能退化毫无用处。</p>
+
+<p>解决办法是从绝对阈值转向相对阈值。而不是问“这个查询慢吗？” 你应该问“这个查询慢于它<em>通常</em>是？” 如果一个在历史上需要6秒左右的查询 突然开始需要更长的时间，你有一个强烈的信号 一个潜在的问题。 这种方法将工作量本身的历史作为动态基线，从而产生实际上隐含的SLO(见<a data-type="xref" href="ch08-zh.html#ch08_implicit_slos">“隐式 SLO”</a>).</p>
+
+<p class="fix_tracking">为了在大型服务的规模上实施这一解决方案，我们把类似的工作量分成了“群组”。 一组是一组预期具有类似性能特征的查询。 例如，我们可以通过RPC方法、客户身份或工作量的一般结构来分组查询。 目标是建立足够大，能够提供稳定统计信号的组群，但能细心地区分真正不同行为的工作量。 如果一个群体太小(工作量太少),那么它很可能具有巨大的性能差异和较低的统计能力。 因此，必须注意选择足够粗粒度、足以应付大部分工作量但足以反映各组之间业绩差异的组别。</p>
+
+<p>一旦界定了组群，我们就使用其历史数据(例如，过去30天中延迟的均值和标准偏差)为每个组制定基线业绩性能画像。 然后，我们可以将新查询的绩效与各自组群的基准进行比较。</p>
+
+<p>这种比较使我们能够建立一个强大的告警系统，通过寻找“过慢的离群值来检测服务倒退。 如果我们突然看到一组人中有相当一部分的查询 所表现的许多标准偏差比历史平均值更差，那就是一个服务倒退的有力指标。</p>
+
+<p>因为这种方法测量的是无单位的相对偏差(通常称为“......”。<em>p</em>不同组别，甚至不同产品和服务之间都有直接的可比性。 这种方法使我们能够建立一个单一、强大的回归探测器，对微妙而广泛的性能退化具有敏感性，而不需要人工<a data-primary="monitoring" data-secondary="alerting systems" data-startref="mon_alrtsys_relmet" data-tertiary="handling relative metrics" data-type="indexterm" id="id1772"/>界定和维持数千个任意延迟阈值。</p>
+
+<p>关于这一专题的更详细讨论，见<a data-type="xref" href="app06.html#appf">附录F</a>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability and AI" data-type="sect1"><div class="sect1" id="ch09_observability_and_ai">
+<h1>可观测性与 AI</h1>
+
+<p>人工智能的迅速发展<a data-primary="AI (artificial intelligence)" data-secondary="proactive monitoring" data-type="indexterm" id="ai_promon"/><a data-primary="proactive monitoring, AI considerations" data-type="indexterm" id="promon_aicons"/><a data-primary="monitoring" data-secondary="AI considerations" data-type="indexterm" id="mon_aicons"/>为解决一些以前不容易解决的商业使用案例提供了一个机会。 在Google，我们的可观测性领域 是这个机会的主要候选者。 我们的系统是复杂的，相互作用网因多层面的复杂性而增加，次级系统之间的依赖性也日益增加。 随着我们用更多的数据来源，如日志和追踪来丰富我们的遥测数据，信号的量正以人类在合理时间范围内不再容易解释传统监控的速度增长。 同时需要提供更高水平的服务质量，以满足客户需要。结果是一个极其丰富和广泛的可观测性数据湖——一个理想的环境，利用AI来得出有意义和可操作的见解。具体地说，AI已经证明在一些关键领域特别有帮助：通过异常检测进行主动监控、减少琐事和产生优化见解。</p>
+
+<p>从历史上看，我们对可观测性的态度是被动的。 我们将创建SLI,定义静态SLO，配置告警，并建造仪表板，以可视化SLO性能。当事件发生时，我们将使用这些预先配置的仪表板进行人工搜索，以寻找催化因素和潜在的缓解。最好的情况是，我们有本可以预见或以前所看到问题的操作手册。 AI使我们能够转向更主动的模式。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI Approaches to Proactive Monitoring" data-type="sect2"><div class="sect2" id="ch09_ai_approaches_to_proactive_monitoring">
+<h2>AI 主动监控方法</h2>
+
+<p>主动监控是一项战略，其重点是在潜在问题造成干扰之前查明并加以解决。 这在很大程度上依赖于异常探测的概念。在实践中，一个事件代表着一个系统偏离正常稳定状态足以造成干扰的情况。通过不断跟踪关键业绩指标并分析异常数据，我们可以采取预防行动来优化性能，增强可靠性并尽量减少故障时间。</p>
+
+<p>AI不依靠人类来预测和预设每起可能出事的静态仪表板(一个不可能的任务),而是可以针对不同的信号产生临时查询，然后可以驱动了解上下文的仪表板。我们的异常探测机制 不断地分析数据，找出可能是一个问题的微妙变化，并向 SRE 团队和我们的告警系统 展现出洞察力，直接指向潜在的触发点。 这些机制使我们能够在早期阶段，往往在任何重大影响发生之前，抓住并减轻所发生的事件。</p>
+
+<p>模型对系统日志的序列进行了微调，因为一次观察一个日志行不能提供足够的上下文来检测异常。生成式 AI模型的多模式能力使我们能够使用监控仪表板的截图并发送到模型中以帮助确定一个问题或发现异常。</p>
+
+<p>反常现象的发现不仅使我们能够积极主动地解决问题，而且还使我们能够找到“大海捞针”——一个小的、具体的、常常是稀有的信息，或者一个庞大的数据集中出乎意料的东西。 例如，我们的人工智能系统可以发现，在特定地理区域内，特定用户任务组群的延迟性有微妙而持续的增长。 这个问题可能是潜在故障的主要指标，在传统的监控系统中，它可能太小而无法引起告警。 当发现异常点时，我们有机会将它与最近的代码部署联系起来，并展示一个直接的洞察力，使SRE 团队能够扭转变化并防止服务中断。</p>
+
+<p>服务监控中的传统问题之一是了解客户的真正期望：</p>
+
+<ul>
+<li>
+<p>从顾客的角度来看，延迟增长何时被认为过高？</p>
+</li>
+<li>
+<p>客户是否看到内置客户端重试中的服务错误 ?</p>
+</li>
+<li>
+<p>顾客在设计时使用的功能是怎样的？</p>
+</li>
+</ul>
+
+<p>AI还赋予我们分析客户来自支持聊天的反馈的能力，甚至追踪社交媒体的投诉。有能力将不同的客户问题与同样的根本问题联系起来，并评估客户情绪以得出问题的严重性，这是非常有力的。 让大家更深入地了解潜在的问题，增加这种新的可观测性信号提供了一个更以客户为中心的监控方法。</p>
+
+<p>因为我们仍处于AI出行的初期阶段，我们的机器协助目前集中于调查阶段。这一阶段让一个人循环，让他们以更有方向和更有效的方式运用判断。SRE的作用正在从数据侦探转向系统战略家。他们不再花时间人工筛选图表，而是侧重于解释人工识别系统概述的见解，作出更接近直接客户结果的更高级别决定。 随着我们模式的成熟及其成果的改进，我们的目标是向自我康复过渡，使AI能够在没有人类干预的情况下自动发现、调查、确定突发因素并减轻问题。 这种过渡与围绕创建<a href="https://saif.google">安全而负责任的AI 系统</a>的工作相配合。要让自愈成为现实，我们需要一个非常有力和非常可靠的解决方案来防止AI模式做<a data-primary="AI (artificial intelligence)" data-secondary="proactive monitoring" data-startref="ai_promon" data-type="indexterm" id="id1773"/><a data-primary="proactive monitoring, AI considerations" data-startref="promon_aicons" data-type="indexterm" id="id1774"/><a data-primary="monitoring" data-secondary="AI considerations" data-startref="mon_aicons" data-type="indexterm" id="id1775"/>出出乎意料的改变。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="AI for Toil Reduction" data-type="sect2"><div class="sect2" id="ch09_ai_for_toil_reduction">
+<h2>用 AI 减少琐事</h2>
+
+<p>大赦国<a data-primary="AI (artificial intelligence)" data-secondary="toil reduction" data-type="indexterm" id="id1776"/><a data-primary="toil" data-secondary="AI considerations" data-type="indexterm" id="id1777"/><a data-primary="monitoring" data-secondary="toil reduction" data-type="indexterm" id="id1778"/>际促成改进的第二个关键领域是减少琐事。 可观测性空间往往需要具备不同配置语言，查询，查询优化的专门知识。与其他代码生成任务类似，LLM可以自动生成配置和查询。例如，LLM现在可以使用自然语言的提示，例如“给我看看所有任务的平均RPC错误率。<em>o</em>正在运行的工作<em>区域1</em>过去24小时，”并生成正确、优化的查询。 这种能力不仅会减少用户的琐事和认知负荷，而且会导致质量更高的结果。</p>
+
+<p>此外，LLM在利用摘要简化复杂数据方面十分出色。 这些摘要可以帮助我们迅速了解事件的目前状况，突出记录中的关键错误，甚至通过总结事件期间采取的行动，提供尸检报告的头条线索。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>我们在哪里与AI的可观测性？ 我们期望，人类通过命令线接口和仪表板与时序和日志查询进行互动的传统监控方法将取而代之的是监控系统的自主代理，以采取主动的自愈行动。</p>
+</div>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch09_conclusion">
+<h1>结论</h1>
+
+<p>通过接受本章中概述的可观测性原则，包括插桩关键用户行程，投资客户端遥测，以及应用先进的统计方法，你能够使工程师不仅能发现被打破的东西，而且能了解原因，甚至能预测未来可能崩溃的东西。这种能力最终为更可靠、更有复原力并最终自愈系统铺平道路，这些系统始终提供尽可能最好的客户经验。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id1638"><sup><a href="ch09-zh.html#id1638-marker">1</a></sup>一些解决方案更广泛地利用事件来代表所有可观测性数据需要，尽管这些需要侧重于增加追踪及其跨度。</p><p data-type="footnote" id="id1646"><sup><a href="ch09-zh.html#id1646-marker">2</a></sup>在整个案文中，“AI”一词被用来代表各种人工智能，包括机器学习技术。</p><p data-type="footnote" id="id1647"><sup><a href="ch09-zh.html#id1647-marker">3</a></sup>RAG是一种技术，它使LLMs能够从外部数据来源(例如搜索，数据库)检索并收录出新的信息。</p><p data-type="footnote" id="id1684"><sup><a href="ch09-zh.html#id1684-marker">4</a></sup>Waze于2013年被Google收购;它建立了组织结构和流程，在收购后得到了维护。</p><p data-type="footnote" id="id1695"><sup><a href="ch09-zh.html#id1695-marker">5</a></sup>OpenCensus是来源于谷歌内部人口普查系统的开源指标和追踪库。它后来与另一个名为“OpenTracing“的项目合并，形成“OpenTelemetry“.</p><p data-type="footnote" id="id1767"><sup><a href="ch09-zh.html#id1767-marker">6</a></sup>杰弗里·迪恩和路易斯·安德烈·巴罗佐<a href="https://oreil.ly/Iqm7X">“平面钉子”</a>, <em>ACM的来文</em>56, 第2号 (2013年2月)：74–80.</p></div></div></section></body></html>
