@@ -1,0 +1,276 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>临界点上的 SRE</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 19. SRE at the Tipping Point" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch19">
+<h1><span class="label">第 19 章　</span>临界点上的 SRE</h1>
+
+
+<p>如今，我们已经可以用口语化的英语指示机器编写代码，完成任意任务。生成的结果虽不完美，但通常已经可用，而且我们预计它只会越来越好。<sup><a data-type="noteref" href="ch19-zh.html#id2689" id="id2689-marker">1</a></sup> 这引出了许多问题。</p>
+
+<p>AI 正在重新定义我们理解和开展软件开发的许多方式，那么 SRE 当前的工作会因此发生怎样的变化？随着开发的底层机制改变，软件的构建、维护和运行方式可能会怎样演变？可靠性和安全性等非功能需求将如何处理，尤其是与生产环境有关的工作将何去何从？换一种说法，如果生成勉强可用的代码行只需微不足道的成本，那么什么会变得昂贵？</p>
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>在本章余下部分，我们用“AI 开发”指 AI 驱动的软件开发，无论是通过命令行工具、编辑器插件、在工作流中直接调用，还是其他方式完成。“AI SRE”则是另一个概念，指借助 AI 开展的生产工程活动；有时，这些活动甚至可能完全由 AI 完成。</p>
+</div>
+
+
+
+
+
+
+<section data-pdf-bookmark="The Software Development Lifecycle" data-type="sect1"><div class="sect1" id="ch19_the_software_development_lifecycle">
+<h1>软件开发生命周期</h1>
+
+<p class="fix_tracking">大规模软件从开发到部署会经历一个生命周期。<a data-primary="SDLC (software development lifecycle)" data-type="indexterm" id="sdlc"/><a data-primary="software development lifecycle" data-see="SDLC" data-type="indexterm" id="id2690"/>各个组织和项目的具体做法虽有不同，但大多数软件工程师都熟悉一种典型模型：它把软件开发划分为若干不同阶段，大致如下（见<a data-type="xref" href="#ch19_fig01">图 19-1</a>）：<span class="keep-together"><em>规划</em> → <em>分析</em> → <em>设计</em> →</span> <em>构建</em> → <em>测试</em> → <em>部署</em> → <em>维护</em>。这是一种分阶段的软件开发生命周期模型。也有一些 SDLC 模型并非线性的；当然，在实际工作中，各阶段通常会彼此重叠。</p>
+
+<figure><div class="figure" id="ch19_fig01">
+<img alt="简单的线性软件开发生命周期示意图，包含规划、分析、设计、构建、测试、部署和维护阶段。" src="assets/sre2_1901.png"/>
+<h6><span class="label">图 19-1　</span>简单的线性软件开发生命周期</h6>
+</div></figure>
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>软件生命周期模型的概念并非与计算机同时诞生，但距今也已有约 60 年。其发展过程中的一个标志性事件，是 1968 年著名的北约软件工程会议；“软件危机”一词正是在那次会议上首次提出。<sup><a data-type="noteref" href="ch19-zh.html#id2691" id="id2691-marker">2</a></sup> 此后开始出现一些简单而合理的早期模型，其中最著名的可能是 <a href="https://oreil.ly/xA0Q5">Royce 于 1970 年提出的瀑布模型</a>。<sup><a data-type="noteref" href="ch19-zh.html#id2692" id="id2692-marker">3</a></sup> 接下来的几十年里，更多模型相继出现，包括<a href="https://oreil.ly/sqfSe">螺旋模型</a>、<a href="https://oreil.ly/I81Dl">精益软件开发</a>、<a href="https://oreil.ly/xVogC">持续交付</a>等。</p>
+</div>
+
+<p>模型会舍弃现实世界的部分细节，把复杂事物表示成较简单、较易推理的形式，使我们能够对现实作出预测并加以检验。归根结底，SDLC 模型的作用，就是省略软件工作具体开展方式中的一些细节，为组织工作提供框架。它帮助我们拆分并管理一项极其复杂的任务。</p>
+
+<p>从 SDLC 中可以提炼出两个简单而有力的观念：</p>
+
+<ul>
+<li>
+<p>工作大体上是<em>串行</em>的。有些阶段应先于另一些阶段完成，以便分离关注点。也就是说，构建时不应还在为测试操心，设计时也不应还在考虑部署问题。</p>
+</li>
+<li>
+<p>过程中会出现<em>循环</em>。也就是说，你可能回到某个先前阶段，再走一遍流程。这一点与维护阶段尤其相关。</p>
+</li>
+</ul>
+
+<p>这两个观念虽然存在一定张力，却共同概括了软件工程中的大量活动：先弄清要做什么，再确定怎么做；完成之后，又重新回到起点。<a data-primary="SDLC (software development lifecycle)" data-startref="sdlc" data-type="indexterm" id="id2693"/></p>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The SDLC and Non-Functional Requirements" data-type="sect2"><div class="sect2" id="ch19_the_sdlc_and_non_functional_attributes">
+<h2>SDLC 与非功能需求</h2>
+
+<p>性能、质量、可靠性、安全性、可测试性等，都是软件重要的<em>非功能需求</em>。<a data-primary="SDLC (software development lifecycle)" data-secondary="nonfunctional and functional requirements" data-type="indexterm" id="id2694"/><a data-primary="nonfunctional requirements (NFRs)" data-secondary="software development" data-type="indexterm" id="id2695"/><a data-primary="functional requirements (FRs)" data-secondary="software development" data-type="indexterm" id="id2696"/>这些属性可能因一行代码的改动而遭到破坏。因此，不能只在某一个阶段保障它们；相关工作必须贯穿多个阶段。</p>
+
+<p>决定一个系统应当达到怎样的可靠性，涉及需求收集和资源优化。与功能需求一样，这些决策会在规划、分析和设计阶段作出。理想情况下，SRE 应在设计阶段就参与进来（见<a data-type="xref" href="ch07-zh.html#ch07">第 7 章</a>），甚至更早。</p>
+
+<p>要构建一个能够达到这些可靠性目标的系统，需要跨越设计、测试和部署阶段开展工作，而这些阶段并不是纯功能需求最关注的环节。SRE 往往会深度参与测试，并且天然与部署和维护工作紧密相连。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The SDLC Under Tension and Transition" data-type="sect2"><div class="sect2" id="ch19_the_sdlc_under_tension_and_transition">
+<h2>承压并转型的 SDLC</h2>
+
+<p>生成基本符合规格的代码，其成本似乎正稳步趋近于零，生成速度也在迅速提升。<a data-primary="SDLC (software development lifecycle)" data-secondary="cost and speed improvements, implications" data-type="indexterm" id="id2697"/>这些趋势意味着什么？</p>
+
+<p>借助 SDLC 的各个阶段，我们可以思考这样一个世界：代码行的产出速度远快于以往，成本也低得多，尽管目前对质量的影响好坏参半。阶段本身没有改变，要满足的需求也还是那些需求；但每个阶段所用的时间缩短了，有时甚至大幅缩短。结果是，整个流程产生了多得多的成果。</p>
+
+<p>软件交付速度和数量的增长令人振奋。不过，我们也发现了一种看似矛盾的现象：在 AI 开发出现之前，每个阶段持续的时间较长，因而留出了更多逐步调整的空间。构建阶段如果持续两周，你可以在构建过程中不断改进；如果只持续两个小时，就没有这样的余地了。</p>
+
+<p>尽早把软件交到客户手中，仍然有助于回答“究竟什么真正有效”之类的许多问题，而且现在可以比以往更快地做到这一点。但这主要有助于验证<em>功能</em>需求，而不是非功能需求。目前产出的代码，可靠性与过去大致相当；事实上，在撰写本书时，有一些<a href="https://oreil.ly/uC2d-">证据表明 AI 生成的代码可靠性更低</a>。因此，缺陷进入生产环境的既有规律并没有改变。换句话说，如果不进一步改变工作方式，可靠性就不会提高。系统很可能仍会出故障，我们也仍然需要修复它们。</p>
+
+<p class="pagebreak-before less_space">这种情况会永远持续下去吗？我们可以假定，AI 生成的软件仍会<a data-primary="AI (artificial intelligence)" data-secondary="software development" data-type="indexterm" id="ai_stwdev"/>存在缺陷：代码不会囊括所有可能的功能、覆盖所有可能的故障情形，也不会毫无差错地实现全部安全要求。当然，AI 的编码能力或许会达到超越人类的水平；但程序能够成功执行并产生预期输出，并不等于它必然安全可靠。此外，训练语料中“功能正确”的软件示例，很可能远多于“功能正确且在生产环境中高度可靠”的示例。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="The Social SDLC" data-type="sect2"><div class="sect2" id="ch19_the_social_sdlc">
+<h2>SDLC 的社会属性</h2>
+
+<p>SDLC 不仅关乎有效交付软件，也同样关乎<a data-primary="SDLC (software development lifecycle)" data-secondary="social interaction during" data-type="indexterm" id="id2698"/>社会互动和共识形成；它还描述了团队之间的沟通路径。在最初几个阶段，这一点表现得很明确。例如，规划和分析主要是代表用户理解某项业务流程、某个问题或某项待完成的工作，几乎总要与人交谈。即使是测试这类高度依赖机械化支持的 SDLC 阶段，也包含社会因素。</p>
+
+<p><a href="https://oreil.ly/7SVgy">康威定律</a><a data-primary="Conway’s law" data-type="indexterm" id="id2699"/>指出，人与人之间的沟通方式会影响软件的结构。AI 开发改变了这一点。要让软件走完整个生命周期，沟通已不再<em>必须</em>在团队或个人之间流转：如今，一个人借助一个智能体，就可能把一份规格说明一路变成生产系统。</p>
+
+<p>尽管我们努力为安全性、可靠性等概念建立客观的定义框架，非功能工作仍然具有很强的社会属性，因为它取决于人们如何看待这些属性，以及愿意为它们作出什么权衡。许多资深 SRE 都曾在事后复盘会上讨论，究竟应该优先保障付费流量还是非付费流量。这类问题没有唯一且客观正确的答案，通常需要会议室里的人达成共识。</p>
+
+<p>在这种情形中引入 AI，<em>可能</em>带来很大改变。仍以前面的场景为例，AI 可以提出一种优先级策略，再由人类批准；也可以把整个排序过程都交给 AI，至于过程是否透明则另当别论；还可以让 AI 重新设计整个系统，从根本上消除排序的必要。过去，社会共识塑造的惯例会贯穿整个 SDLC；AI 辅助的软件工程很可能改变这种状况，生产工作也不例外。我们的工作以惯例和经验法则为基础的程度，往往比自己意识到的更高。我们应当做好准备：AI 辅助的软件开发将以前所未有的严格程度，审视那些沿用已久的工作方式。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Production Work in the Era of AI Dev" data-type="sect1"><div class="sect1" id="ch19_production_work_in_the_era_of_ai_dev">
+<h1>AI 开发时代的生产工作</h1>
+
+<p>SRE 尤其关注<a data-primary="AI (artificial intelligence)" data-secondary="software development" data-startref="ai_stwdev" data-type="indexterm" id="id2700"/><a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-tertiary="effect on production work" data-type="indexterm" id="id2701"/>从测试到部署的过渡。AI 开发让原本彼此分离的活动更容易混合开展，因此我们预计，SDLC 中部署之前的各阶段会被进一步压缩。例如，编写新代码后立即运行单元测试，长期以来都被视为良好实践；许多从业者笃信测试驱动开发（TDD），而更全面的测试则留待稍后进行。然而，为了管理 AI 系统，近乎持续地运行过去成本高昂、消耗大量资源的全系统测试，正逐渐成为最佳实践。许多流程以如此高的速度运行，人类已经无力直接监督，自动化评估因而至关重要。在这样的世界里，构建和测试正在合流。</p>
+
+<p>SDLC 的其他阶段也可能相互融合。例如，在构建过程中获得的知识能够而且应该<sup><a data-type="noteref" href="ch19-zh.html#id2702" id="id2702-marker">4</a></sup>反过来影响人类和智能体如何设计软件，而不再只是设计单向影响构建。以当前方式构造的智能体软件对象，很难满足严格分离不同事物的要求，因此发展方向似乎是把这些活动混合起来。不过，即使代码可以加速产出，部署所形成的硬边界，以及部署出错的后果，都没有改变。组织仍然需要提供优质的用户体验，仍会面临各种潜在风险，可能还负有特定的法律或商业义务，也仍然希望通过软件获利，等等。部署之后的世界并不在意你是否使用了 AI。</p>
+
+<p>既然我们对待生产环境的方式仍然不变，那么改变的究竟是什么？面对这个具有不确定性的未来，下面是我们对可能发生之事的最佳判断。</p>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Rate of Change" data-type="sect2"><div class="sect2" id="ch19_the_rate_of_change">
+<h2>变更速率</h2>
+
+<p>在 AI 开发之下，我们将跨过一个重要的里程碑：<a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-tertiary="effect on resolving production problems" data-type="indexterm" id="sdlc_ai_spdsd"/><a data-primary="AI dev" data-secondary="rate of code change" data-tertiary="effect on resolving production problems" data-type="indexterm" id="aidev_cdchng_prodprbms"/><em>进入生产环境的代码变更速率，很可能会高到人类来不及采取行动。</em></p>
+
+<p>从具体应对手段来看，这种加速会使传统的 cherry-pick 越来越难以用于解决生产问题。这种技术假定开发主干足够稳定，可以从中选择一部分变更，构建定制的二进制文件。然而，主干的变化速度可能快到根本谈不上稳定，使这种做法失去可行性。向前修复可能成为变更生产系统的主要方法；无论由人还是机器执行，回滚都可能越来越难。这与 SRE 的传统偏好正好相反。</p>
+
+<p>关键在于，如果<em>其他一切都不变</em>，你只是把交付速度提高到原来的 10 倍，那么很可能会得到 10 倍的事故、10 倍的子系统异常交互、10 倍的资源耗尽，诸如此类。<sup><a data-type="noteref" href="ch19-zh.html#id2703" id="id2703-marker">5</a></sup> 问题会更多，也会来得更快。如果再用自动化处理简单情况，SRE 遇到复杂棘手问题的频率，很可能会接近过去遇到简单问题的频率。（可是，如果没有先通过简单问题练手，又要怎样学会处理困难问题呢？）</p>
+
+<p>当然，AI 也能在预防方面发挥作用。主动挖掘系统拓扑、源代码、事后报告等材料，从中寻找可全面推广的思路和实际做法，这类项目可能会越来越普遍；它们或许还会结合本书其他章节讨论的方法，例如 STPA。同样，我们可以在人工评审之外，辅以测试框架、评估框架、LLM 交叉评判和直接的用户反馈，<a data-primary="SDLC (software development lifecycle)" data-secondary="AI dev" data-startref="sdlc_ai_spdsd" data-tertiary="effect on resolving production problems" data-type="indexterm" id="id2704"/><a data-primary="AI dev" data-secondary="rate of code change" data-startref="aidev_cdchng_prodprbms" data-tertiary="effect on resolving production problems" data-type="indexterm" id="id2705"/>利用 AI 的稳定作用来帮助管理风险。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Strategic Incoherence and Technical Debt" data-type="sect2"><div class="sect2" id="ch19_strategic_incoherence_and_technical_debt">
+<h2>战略失调与技术债务</h2>
+
+<p>软件的行为产生于服务与系统之间的交互、它们所使用的数据以及用户行为。软件越多，我们看到的这类涌现效应可能也越多，而大多数测试方法并不善于发现它们。当前 AI 开发<a data-primary="AI dev" data-secondary="strategic incoherence, technical debt" data-type="indexterm" id="id2706"/><a data-primary="strategic incoherence" data-type="indexterm" id="id2707"/><a data-primary="technical debt" data-secondary="strategic incoherence" data-type="indexterm" id="id2708"/>产出有一个关键特征，我们称之为<em>战略失调</em>：系统可以完成相当复杂、但只需少量上下文的任务；然而，随着功能一次次扩展，系统整体的一致性往往会下降。一种常见表现是，同一种实现以略有不同的方式在整个代码库中反复出现，违反了<a href="https://oreil.ly/KpRhf">“不要重复自己”原则</a>。而且，这不仅会发生在类级别，也会发生在子系统级别。这里还可能形成负反馈循环：重复越多，系统复杂度越高，最终可能超出上下文窗口的承载能力；在这种条件下，AI 开发便无法取得有意义的进展。这样一来，AI 开发系统可能变成不知疲倦的技术债务制造机，而技术债务往往需要<a href="https://oreil.ly/JeWqE">在生产环境中支付利息</a>。</p>
+
+<p>规格驱动开发之类的方法，可以帮助克服纯粹的局部优化和增量交付。这与人类主导的软件工程并无不同：把总体设计原则、系统架构等记录下来，有助于人类和 AI 系统始终保持方向一致。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Versioning" data-type="sect2"><div class="sect2" id="ch19_versioning">
+<h2>版本管理</h2>
+
+<p>同样，当变更以<em>极高</em>速率应用时，<a data-primary="AI dev" data-secondary="rate of code change" data-tertiary="versioning issues" data-type="indexterm" id="id2709"/><a data-primary="versioning, rapid code change issues" data-type="indexterm" id="id2710"/>依靠版本划分风险的做法会开始失效。等你为 API、二进制文件或线上传输协议选定某个版本时，正在发布的内容可能已经变了。我们也许不得不按请求、按会话或按用户划分版本。“实际运行的究竟是什么？”这样的问题会变得难以回答。依赖稳定版本的生产问题解决技术，也将不再那么适用。在这样的世界里并非无法生存，但要求会非常严苛。</p>
+
+<p>一种思路是重新审视过去处理大规模生产环境的方式。我们曾从一台机器只有正常或宕机两种状态的布尔模型，发展到由成百上千台机器组成的生产环境；其中任何时刻都会有一些机器正常，另一些宕机。我们或许可以用类似方式看待版本：不必让所有事物都处于同一个版本，实际上也很少能做到；但我们必须控制版本转换发生的条件。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Staging and Test Environments" data-type="sect2"><div class="sect2" id="ch19_staging_and_test_environments">
+<h2>预发布与测试环境</h2>
+
+<p>预发布环境<a data-primary="staging environments, production scaling issues" data-type="indexterm" id="id2711"/><a data-primary="test environments, production scaling issues" data-type="indexterm" id="id2712"/>也可能越来越难以表现出足够接近生产环境、因而具有参考价值的行为。如果生产环境不仅规模大幅增长，变更的速率和数量也同步上升——随着已部署软件总量增加，这种情况很常见——那么搭建和维护这些环境可能会变得不可行。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Production Debugging" data-type="sect2"><div class="sect2" id="ch19_production_debugging">
+<h2>生产环境调试</h2>
+
+<p>人们普遍认为，生产环境调试<a data-primary="debugging" data-secondary="production scaling issues" data-type="indexterm" id="id2713"/><a data-primary="production debugging, production scaling issues" data-type="indexterm" id="id2714"/>属于 SRE 的职责范围。如果变更速度继续像现在这样加快，事故处置和信息收集很可能需要大量工具支持。此外，随着已部署软件的数量呈指数增长，我们不能再指望有人读过并审查过代码库中足够多的内容，从而掌握生产调试所需的上下文。相反，我们需要借助工具即时构建这些上下文，通过可能存在信息损失或带有概率性的手段推断发生了什么。我们还需要即时推断预期行为，并且很可能要在底层系统持续变化的同时，通过向前修复使其恢复正确行为。</p>
+
+<p>如果部署速率无限增长，最终完全依靠人工处理就会变得过于困难。然而，目前的工具同样不是为这种规模设计的。到最后，这可能会促使人们建立大量彼此独立的生产环境；当某个环境发生故障，而自动恢复手段全部用尽后，就自动删除并替换它。</p>
+
+<p class="pagebreak-before less_space">从社会和情感层面看，这可能会给 SRE 带来一些负面影响。SRE 的部分职业认同，来自自己能够在高压情境下独立查明问题。不过，借助工具开展调查，或许仍能带来同样的感受。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Incidents" data-type="sect2"><div class="sect2" id="ch19_incidents">
+<h2>事故</h2>
+
+<p>在完整的人工通用智能（AGI）出现之前，<a data-primary="AI dev" data-secondary="incident response issues" data-type="indexterm" id="id2715"/><a data-primary="incident response" data-secondary="increase in system complexity" data-type="indexterm" id="id2716"/>我们预计，预防和应对软件故障仍然离不开人类。首要原因在于，软件故障本质上不可预测，而当前基于词元预测的 AI 技术并不善于处理样本分布之外的情况。只要系统的软件或输入仍在变化，<a href="https://oreil.ly/DcwDk">“未知的未知”这一类事故</a>就会继续存在；如果两者都在变化，情况更是如此。</p>
+
+<p>当前一代 LLM 产生幻觉的概率并非为零，在复杂情境中尤其如此。与此同时，无论自动化系统能力多强，面向公众的服务中断通常都要求由人承担一定责任，并给出可以理解的解释。</p>
+
+<p>事故本身可能也会需要更长时间才能解决，因为系统复杂度增加会形成更长、更复杂的因果链。过去人们开玩笑说，<a href="https://oreil.ly/Efoki">生产故障就像谋杀悬案</a>；照此发展下去，未来更像是多名嫌疑人共同涉案，而不是独狼作案。因此，跟踪生产变更的系统可能会变得更加重要。</p>
+
+<p>另一种可能结果是，事故响应工具在快速解决问题方面过于有效，导致预防工作得不到足够资源。如果故障响应变得足够廉价，组织也可能开始降低对系统性预防的重视，而后者相对更难做到。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Skill Erosion" data-type="sect2"><div class="sect2" id="ch19_skill_erosion">
+<h2>技能退化</h2>
+
+<p>长期不使用的技能，其熟练程度和适用性自然会逐渐下降。<a data-primary="AI dev" data-secondary="skill erosion issues" data-type="indexterm" id="id2717"/><a data-primary="Wheel of Misfortune" data-secondary="skill erosion mitigation" data-type="indexterm" id="id2718"/>我们演练“不幸之轮”是有原因的（见<a data-type="xref" href="ch05-zh.html#ch05">第 5 章</a>）。新的调试工具和更复杂的场景，并不会改变这一点。</p>
+
+<p>同样，如果机器的建议只在一定比例的情况下正确，依赖它就会带来固有的困难，我们可能难以应对。按一下按钮无疑更轻松，但有时也会因此酿成灾难性故障。SRE 往往要处理概率分布尾部那些罕见而特殊的事件，这进一步放大了风险。如果一种工具只对常见或不太罕见的事件给出有用答案，那么对于经常处理极端异常事件的人来说，它未必真有多大用处。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Observability and Monitoring" data-type="sect2"><div class="sect2" id="ch19_observability_and_monitoring">
+<h2>可观测性与监控</h2>
+
+<p>一个可喜之处是，<a data-primary="AI dev" data-secondary="observability issues" data-type="indexterm" id="id2719"/><a data-primary="observability" data-secondary="AI dev issues" data-type="indexterm" id="id2720"/>引入高质量可观测性的成本很可能会显著下降。如今，在代码中添加新指标，再一路完成采集、聚合和展示等环节，已经比以往任何时候都容易。不过，这也很可能带来两个明显弊端：第一，指标、聚合方式和仪表盘大量泛滥；第二，指标重复，因为 AI 开发系统不太可能始终在源头上消除重复的指标生成。反过来，在一组不断变化、甚至可能动态生成的遥测数据之上，AI SRE 很可能成为事实上的可观测层。</p>
+
+<p>AI 系统本身的可观测性仍是一个极其复杂的问题。尽管情况可能会改善，但我们距离可靠地理解智能体系统做了什么、怎么做的以及为什么这样做，仍有大量工作要完成。遗憾的是，对于生产变更而言，查明其中的<em>原因</em>至关重要；缺少这种上下文，调试的搜索空间就会急剧扩大。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Formal Methods" data-type="sect2"><div class="sect2" id="ch19_formal_methods">
+<h2>形式化方法</h2>
+
+<p>另一个可喜之处是，利用形式化方法<a data-primary="formal testing methods" data-secondary="reliability of" data-type="indexterm" id="id2721"/>描述系统行为，正变得越来越可行，也越来越高效。以这种方式构建的系统，可以对自身行为的某些方面作出保证，因此比没有采用形式化方法的系统更可靠，尽管形式化方法仍需全面测试作为补充。我们认为这是一个很有前景的领域，并在<a data-type="xref" href="ch14-zh.html#ch14">第 14 章</a>中作了进一步讨论。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Leadership and the Interpretation of Value" data-type="sect2"><div class="sect2" id="ch19_leadership_and_the_interpretation_of_value">
+<h2>领导力与价值解读</h2>
+
+<p>这又回到了价值如何由社会建构的问题。<a data-primary="production" data-secondary="future role of SRE" data-type="indexterm" id="id2722"/><a data-primary="future of SRE" data-type="indexterm" id="id2723"/>需要说明的是，我们没有看到任何迹象表明，运行生产系统这项工作会变得不那么重要或不那么困难。不过，我们预计 SRE 将拥有更多工具来完成工作。甚至可能出现这样的局面：没有这些工具，工作便无法开展。此外，创新固然必要，但至少在短期内，似乎不太可能让所有这类工具都成功实现智能体化。</p>
+
+<p>不过，我们毕竟是从业者，自然强烈倾向于肯定这类工作的价值。随着工作组合发生变化，智能体 SRE 承担更多部署后的活动，我们所做的事情也可能随之改变。例如，我们<a href="https://oreil.ly/mBz-j">曾经把</a> Google SRE 的角色比作外界所说的“Staff 工程师”：既善于编写代码，又能从整体上看待软件，以及构建和运行软件的团队。也许，SRE 在部署之前开展的工作会变得更加重要。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="ch19_conclusion">
+<h1>结语</h1>
+
+<p>我们制造软件的方式可能会继续变化，而过去决定这些做法的约束正变得越来越无关紧要。因此，非功能需求的实现方式很可能也会改变，SRE 最终如何履行其传统使命尤其如此。</p>
+
+<p>只要 AGI 尚未出现，完美的拉取请求也仍不存在，生产环境的约束就很可能会继续存在。把某项变更推入生产环境，始终是一件意义重大的事。每次这样做，都有可能证明该变更所设想的世界模型并不成立；而在撰写本书时，AI 开发本身还不具备出色的世界模型。AI SRE 工具或许能在一定程度上提供帮助，但随着代码库规模扩大，复杂性空间也会呈指数增长，“未知的未知”不仅会更多，还会更加复杂。事故很可能成为这场冲突的前线。即使智能体质量极高，似乎也无法完全避免制造出难以解决的问题；如今，即便最优秀的团队也会为此苦苦挣扎。目前，我们所能采用的最佳方法，仍是让人类充当最后的理解者，哪怕理解的时点从创造之时推迟到了故障发生之时。</p>
+
+<p class="fix_tracking">正如 SDLC 已经到了适合重新设计的时候，SRE 本身也来到了临界点。我们大量工作的底层假设正在失效，前路尚未完全明朗。但我们相信，有些事不会改变，尤其是生产环境的约束。从某种意义上说，AI SRE 是在为一项历来要求极高的工作提供协助。如果它最终让我们都更像 Staff 工程师，也就是能够从整体上看待系统、既有广度又有深度地理解系统，同时仍然是深谙软件的专业人士，那么我们甚至可能乐见这种变化。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2689"><sup><a href="ch19-zh.html#id2689-marker">1</a></sup> 质量会以多快的速度提高、它在哪些领域表现良好或不佳，以及这一切可能带来哪些更广泛的社会和环境影响，仍有待回答；本章不讨论这些问题。</p><p data-type="footnote" id="id2691"><sup><a href="ch19-zh.html#id2691-marker">2</a></sup> 参见<a href="https://oreil.ly/5vgH6">会议记录</a>第 7.1.2 节。</p><p data-type="footnote" id="id2692"><sup><a href="ch19-zh.html#id2692-marker">3</a></sup> 颇具讽刺意味的是，尽管瀑布模型后来被广泛采用，Royce 当时却明确称其“风险很高，并且会招致失败”，还提出了其他若干特性来降低风险。</p><p data-type="footnote" id="id2702"><sup><a href="ch19-zh.html#id2702-marker">4</a></sup> 例如，Royce 在最初的<a href="https://oreil.ly/mR1ch">瀑布模型论文</a>中就提出过这一观点。</p><p data-type="footnote" id="id2703"><sup><a href="ch19-zh.html#id2703-marker">5</a></sup> 两者之间的关系未必完全是线性的，但我们不太可能幸运到让它呈次线性增长。</p></div></div></section></body></html>
