@@ -1,0 +1,604 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>事件响应</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 9. Incident Response" data-type="chapter" epub:type="chapter"><div class="chapter" id="incident_response">
+<h1><span class="label">第 9 章 </span>事件响应</h1>
+
+<p class="byline">作者：Jennifer Mace、Jelena Oertel、Stephen Thorne、<br/>
+Arup Chakrabarti（PagerDuty）<br/>
+Jian Ma、Jessie Yang 参与撰写</p>
+
+<p>人人都希望自己的服务始终平稳运行，但现实世界并不完美，服务中断<em>确实</em>会发生。<a contenteditable="false" data-primary="incident response" data-type="indexterm" id="ix_incres"/>如果一个非同寻常的紧急问题需要多名人员或多个团队共同解决，该怎么办？这时，你既要管理事件响应，又要解决实际问题。</p>
+
+<p>解决事件，是指减轻其影响和／或将服务恢复到先前状态。管理事件，则是高效协调各响应团队的工作，并确保响应人员之间以及响应人员与关注事件进展的各方之间信息畅通。包括 Google 在内的许多科技公司，都借鉴并调整了应急响应组织多年来用于事件管理的最佳实践。</p>
+
+<p>事件管理的基本前提，是以结构化方式响应事件。大规模事件往往令人无所适从；各团队预先约定好组织结构，可以减少混乱。在灾难发生<em>之前</em>制定沟通与协作规则，能让团队在事件真正发生时专注于解决问题。如果团队已经演练并熟悉了沟通和协调方式，就不必在事件期间再为这些问题分心。</p>
+
+<p>建立事件响应流程不必是一项令人望而生畏的任务。<a contenteditable="false" data-primary="incident response" data-secondary="basic principles" data-type="indexterm" id="idm139660641182080"/>有许多公开资源可供参考，例如第一本 SRE 图书中的<a href="http://bit.ly/2J7G0qt">《事件管理》</a>。事件响应的基本原则包括：</p>
+
+<ul>
+	<li>
+	<p>保持清晰的指挥链。</p>
+	</li>
+	<li>
+	<p>指定职责明确的角色。</p>
+	</li>
+	<li>
+	<p>在调试和缓解过程中持续保留工作记录。</p>
+	</li>
+	<li>
+	<p>尽早且积极地宣布事件。</p>
+	</li>
+</ul>
+
+<p>本章将介绍 Google 和 PagerDuty 如何开展事件管理，并列举我们做对和做错的实例。如果你尚未建立自己的事件响应实践，<a data-type="xref" href="#putting_best_practices_into_practice">“将最佳实践付诸实践”</a>中的简明清单可以帮助你起步。</p>
+
+<section data-pdf-bookmark="Incident Management at Google" data-type="sect1"><div class="sect1" id="incident_management_at_google">
+<h1>Google 的事件管理</h1>
+
+<p>事件响应为处理和管理事件提供了一套体系。明确的框架和既定流程，使团队能够有效响应事件，并根据需要扩大响应规模。Google 的事件响应体系以<a contenteditable="false" data-primary="incident response" data-secondary="incident management at Google" data-type="indexterm" id="ix_incresG"/><a href="http://bit.ly/2Jcs6Dq">事件指挥系统（Incident Command System，ICS）</a>为基础。</p>
+
+<section data-pdf-bookmark="Incident Command System" data-type="sect2"><div class="sect2" id="incident_command_system">
+<h2>事件指挥系统</h2>
+
+<p>ICS 由消防人员于 1968 年创立，用于应对山火。<a contenteditable="false" data-primary="ICS (Incident Command System)" data-type="indexterm" id="idm139660641171712"/>这一框架规定了事件期间进行沟通和履行明确角色的标准化方式。由于该模型成效显著，后来企业将 ICS 调整用于应对计算机和系统故障。本章将介绍两个由此衍生的框架：<a contenteditable="false" data-primary="incident response" data-secondary="incident management at Google" data-tertiary="Incident Command System (ICS)" data-type="indexterm" id="idm139660641172512"/><a href="http://bit.ly/2JlldDs">PagerDuty 的事件响应流程</a>和 Google 事件管理（Incident Management At Google，<a href="http://bit.ly/2J7G0qt">IMAG</a>）。</p>
+
+<p>各种事件响应框架有三个共同目标，也称为事件<a contenteditable="false" data-primary="Cs of incident management (coordinate, communicate, control)" data-type="indexterm" id="idm139660641166160"/>管理的“三个 C”（3Cs）：<a contenteditable="false" data-primary="three Cs of incident management" data-type="indexterm" id="idm139660641167920"/></p>
+
+<ul>
+	<li>
+	<p><em>协调（Coordinate）</em>响应工作。<a contenteditable="false" data-primary="coordination of incident response effort" data-type="indexterm" id="idm139660641163456"/></p>
+	</li>
+	<li>
+	<p>在事件响应人员之间、组织内部以及面向外界进行<em>沟通（Communicate）</em>。<a contenteditable="false" data-primary="communication" data-secondary="in incident response" data-type="indexterm" id="idm139660641159536"/> </p>
+	</li>
+	<li>
+	<p>保持对事件响应的<em>掌控（Control）</em>。</p>
+	</li>
+</ul>
+
+<p>事件响应一旦出问题，症结很可能就在这三个方面之一。熟练掌握三个 C，是有效响应事件的关键。</p>
+</div></section>
+
+<section data-pdf-bookmark="Main Roles in Incident Response" data-type="sect2"><div class="sect2" id="main_roles_in_incident_response">
+<h2>事件响应中的主要角色</h2>
+
+<p>事件响应中的主要角色包括事件指挥官（Incident Commander，IC）、沟通负责人（Communications Lead，CL）和运营负责人（Operations Lead，简称 Ops Lead，OL）。<a contenteditable="false" data-primary="incident response" data-secondary="incident management at Google" data-tertiary="main roles in incident response" data-type="indexterm" id="idm139660641154208"/>IMAG 按层级组织这些角色：IC 领导事件响应，CL 和 OL 向 IC 汇报。 <a contenteditable="false" data-primary="Operations or Ops Lead (OL)" data-type="indexterm" id="idm139660641155360"/><a contenteditable="false" data-primary="IC (Incident Commander)" data-type="indexterm" id="idm139660641152784"/></p>
+
+<p>灾难发生时，宣布事件的人通常会担任 IC，从全局层面指挥事件。IC 聚焦于三个 C，并承担以下工作：</p>
+
+<ul>
+	<li>
+	<p>指挥并<em>协调</em>事件响应，根据需要委派角色。默认情况下，所有尚未委派的角色均由 IC 承担。</p>
+	</li>
+	<li>
+	<p>进行有效<em>沟通</em>。</p>
+	</li>
+	<li>
+	<p>始终<em>掌控</em>事件响应。</p>
+	</li>
+	<li>
+	<p>与其他响应人员协作解决事件。</p>
+	</li>
+</ul>
+
+<p>IC 可以把自己的角色移交给他人并转任 OL，也可以将 OL 角色委派给他人。OL 运用运维工具来缓解或解决事件，推进实际响应工作。</p>
+
+<p>IC 和 OL 专注于缓解和解决事件，而 CL 则是事件响应团队的对外窗口。CL 的主要职责包括定期向事件响应团队和利益相关方通报最新进展，并处理有关事件的询问。</p>
+
+<p>CL 和 OL 都可以带领团队，分别管理其负责的事件响应领域。这些团队可按需扩大或缩小。如果事件规模已经足够小，CL 的职责可以重新并入 IC 角色。<a contenteditable="false" data-primary="incident response" data-secondary="incident management at Google" data-startref="ix_incresG" data-type="indexterm" id="idm139660641140144"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Studies" data-type="sect1"><div class="sect1" id="case_studies-id00039">
+<h1>案例研究</h1>
+
+<p>以下四起大规模事件说明了事件响应在实践中如何运作。其中三个案例来自 Google，最后一个来自 PagerDuty，展示了其他组织如何使用由 ICS 衍生的框架。Google 的案例先从一次管理不善的事件讲起，再逐步介绍管理得当的事件。</p>
+
+<section data-pdf-bookmark="Case Study 1: Software Bug—The Lights Are On but No One’s (Google) Home" data-type="sect2"><div class="sect2" id="case_study_1_software_bugem_dashthe_light">
+<h2>案例研究 1：软件缺陷——灯亮着，却没有人在（Google）家</h2>
+
+<p>这个案例说明，没有尽早宣布<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Home software bug and failure to communicate" data-type="indexterm" id="ix_increscsGH"/>事件，会使团队缺少快速、高效响应所需的机制。<a contenteditable="false" data-primary="Google Home software bug incident response case study" data-type="indexterm" id="ix_GHcs"/>虽然这次事件最终得以解决，没有酿成重大灾难，但更早升级本可带来更迅速、更有组织的响应和更好的结果。</p>
+
+<section data-pdf-bookmark="Context" data-type="sect3"><div class="sect3" id="context">
+<h3>背景</h3>
+
+<p>Google Home 是一款响应语音命令的智能音箱和家庭助理设备。语音命令会与 Google Home 中名为 Google Assistant 的软件交互。</p>
+
+<p>用户说出<em>热词（hotword）</em>，即触发 Google Assistant 的特定短语后，便开始与 Google Home 交互。多个用户可以训练同一台 Google Home 设备，让 Assistant 识别他们说出的指定热词。用于识别说话者的热词模型在客户端训练，但训练数据（即说话者识别文件）存放在服务器上。服务器负责处理双向数据流。为应对繁忙时段的过载，服务器为 Google Assistant 设置了配额策略。为防止请求量过大压垮服务器，配额上限远高于单台设备上 Google Assistant 的基准用量。</p>
+
+<p>Google Assistant 1.88 版中的一个缺陷导致<a contenteditable="false" data-primary="Google Assistant (version 1.88), bug in" data-type="indexterm" id="idm139660641130816"/>说话者识别文件的提取频率达到预期的 50 倍，从而超过配额。起初，美国中部的 Google Home 用户只遇到少量请求丢失；但随着 1.88 版逐步推送到所有 Google Home 设备，到了 2017 年 6 月 3 日那个周末，用户有一半的请求失败。</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident" data-type="sect3"><div class="sect3" id="incident">
+<h3>事件</h3>
+
+<p>5 月 22 日星期一太平洋时间上午 11:48，Google Home 的值班开发者 Jasper 碰巧在查看每秒查询数（QPS）图表，发现了异常：Google Assistant 每 30 分钟就请求一次训练数据，而预期频率是每天一次。他暂停了已推送给 25% 用户的 1.88 版发布，并在 Google 的缺陷跟踪系统中提交了一个问题——姑且称为缺陷 12345——以调查原因。他在问题记录中指出，Google Assistant 每天请求数据 48 次，导致 QPS 超出容量。<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Home software bug and failure to communicate" data-tertiary="incident" data-type="indexterm" id="idm139660641121184"/></p>
+
+<p>另一位开发者 Melinda 将此问题与先前报告的一个缺陷联系起来——姑且称为缺陷 67890：每当应用刷新设备的身份验证和注册状态时，语音处理器都会重启。该缺陷计划在 1.88 版发布后修复，因此团队申请临时提高该模型的配额，以缓解额外查询造成的过载。</p>
+
+<p>1.88 版恢复发布并继续扩大推送范围，到 5 月 31 日星期三已覆盖 50% 的用户。遗憾的是，团队后来发现，缺陷 67890 虽然确实造成了一部分额外流量，却并非 Jasper 所发现的高频提取问题的真正根因。</p>
+
+<p>当天早上，客户开始向 Google 支持团队报告问题：每当有人说出“OK Google”（或其他用于激活 Google Home 的热词）时，设备都会返回错误消息，导致用户无法向 Google Assistant 发出命令。团队开始调查这些错误的成因。他们怀疑是配额问题，于是再次申请提高配额，这似乎缓解了问题。</p>
+
+<p>与此同时，团队继续调查缺陷 12345，寻找触发错误的原因。尽管调试初期就已确认问题与配额有关，但客户端和服务器端开发者之间的沟通失误使排障走上了错误方向，完整解决方案仍遥不可及。</p>
+
+<p>团队也一直困惑于 Google Assistant 的流量为何不断触及配额上限。客户端和服务器端开发者看到客户端报错，却找不到服务器端的对应问题，因而无从解释。开发者在下一版本中增加了日志记录，希望帮助团队更好地理解错误并推进事件解决。</p>
+
+<p>到 6 月 1 日星期四，用户报告问题已经消失。由于没有新的问题报告，1.88 版继续推送。然而，最初问题的根因仍未查明。</p>
+
+<p>到 6 月 3 日星期六清晨，1.88 版的推送比例已超过 50%。发布是在周末推进的，此时开发人员不易联系。团队没有遵循只在工作日发布的最佳实践；该实践旨在确保一旦出问题，开发人员能够及时到场。</p>
+
+<p>6 月 3 日星期六，1.88 版推送达到 100% 后，客户端流量再次触及 Google Assistant 的服务器上限。新的客户报告随之涌入。Google 员工也报告自己的 Google Home 设备不断报错。Google Home 支持团队收到了大量客户来电、推文和 Reddit 帖子，Google Home 帮助论坛中讨论此问题的<a href="http://bit.ly/2Jkbk8N">帖子也在不断增长</a>。尽管用户报告和反馈众多，该缺陷仍未被提升到更高优先级。</p>
+
+<p>6 月 4 日星期日，随着客户报告持续增加，支持团队终于把缺陷优先级提升到最高级。团队仍未宣布事件，而是继续采用“常规”方式排障，通过缺陷跟踪系统沟通。值班开发者发现某个数据中心集群的错误率异常，联系 SRE 要求将其排空。与此同时，团队再次申请提高配额。随后，开发团队的一名工程师发现，排空操作只是把错误转移到了其他单元，这进一步证明问题与配额有关。下午 3:33，开发团队经理再次提高 Google Assistant 的配额，用户影响随即消失，事件结束。此后不久，团队查明了根因（见前面的“背景”一节）。</p>
+</div></section>
+
+<section data-pdf-bookmark="Review" data-type="sect3"><div class="sect3" id="review">
+<h3>复盘</h3>
+
+<p>这次事件处理有些方面做得很好，另一些方面则有改进空间。</p>
+
+<p>首先，开发者在周末主动集结，为解决问题提供了宝贵帮助。<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Home software bug and failure to communicate" data-tertiary="review" data-type="indexterm" id="idm139660641112784"/>这既是好事，也暴露了问题。团队固然珍视这些人在周末投入的时间和精力，但成功的事件管理不应依赖个人的英雄式付出。假如联系不上开发者呢？归根结底，Google 倡导良好的工作与生活平衡，不应在工程师休息时临时叫他们处理工作问题。正确做法应是在工作时间发布，或安排有偿的值班轮换来覆盖非工作时间。</p>
+
+<p>其次，团队努力缓解了问题。Google 一贯主张先制止事件影响，再查找根因（除非根因恰好很早就被识别出来）。问题缓解后，同样必须查明根因，以防再次发生。本案例中，三次缓解都成功暂时消除了影响，但只有找到根因后，团队才能真正阻止问题复发。第一次缓解后，更好的做法是暂停发布，待根因完全确定后再继续，从而避免周末发生的大规模中断。</p>
+
+<p>最后，团队在问题初现时没有宣布事件。<a contenteditable="false" data-primary="communication" data-secondary="in incident response" data-tertiary="failure in Google Home incident" data-type="indexterm" id="idm139660641124304"/>我们的经验表明，纳入正式管理的事件解决得更快。尽早宣布事件可以确保：</p>
+
+<ul>
+	<li>
+	<p>避免客户端和服务器端开发者之间的沟通失误。</p>
+	</li>
+	<li>
+	<p>更早识别根因并解决事件。</p>
+	</li>
+	<li>
+	<p>更早通知相关团队，使对外沟通更迅速、更顺畅。</p>
+	</li>
+</ul>
+
+<p>集中沟通是 IMAG 协议的重要原则。例如，灾难发生时，SRE 通常会聚集到“作战室”。作战室可以是会议室这样的实体地点，也可以是虚拟空间：团队可以聚集到 IRC 频道或 Hangout 中。关键是让所有事件响应人员集中到同一处实时沟通，从而管理事件，并最终将其解决。<a contenteditable="false" data-primary="Google Home software bug incident response case study" data-startref="ix_GHcs" data-type="indexterm" id="idm139660641106720"/><a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Home software bug and failure to communicate" data-startref="ix_increscsGH" data-type="indexterm" id="idm139660641105776"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 2: Service Fault—Cache Me If You Can" data-type="sect2"><div class="sect2" id="case_study_2_service_faultem_dashcache_me">
+<h2>案例研究 2：服务故障——缓存救场</h2>
+
+<p>下面的事件说明，当专家团队尝试调试一个交互关系极其复杂、<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Kubernetes Engine (GKE), cluster creation failure" data-type="indexterm" id="ix_increscsGKE"/><a contenteditable="false" data-primary="Google Kubernetes Engine (GKE), CreateCluster failure case study" data-type="indexterm" id="ix_GKEcs"/>任何一个人都无法掌握<em>全部</em>细节的系统时，会发生什么。<a contenteditable="false" data-primary="Kubernetes" data-secondary="GKE CreateCluster failure, incident response case study" data-type="indexterm" id="ix_Kubircs"/>听起来是不是很熟悉？</p>
+
+<section data-pdf-bookmark="Context" data-type="sect3"><div class="sect3" id="context-id00040">
+<h3>背景</h3>
+
+<p>Kubernetes 是由许多公司和个人贡献者共同构建的开源容器管理系统。Google Kubernetes Engine（GKE）是 Google 托管的系统，为用户创建、托管和运行 Kubernetes 集群。这个托管版本负责运行控制平面，用户则以最适合自己的方式上传和管理工作负载。</p>
+
+<p>用户首次创建新集群时，GKE 会提取并初始化集群所需的 Docker 镜像。理想情况下，这些组件应在内部提取和构建，以便我们验证。但 Kubernetes 是开源系统，新的外部依赖有时仍会悄然混入。</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident" data-type="sect3"><div class="sect3" id="incident-id00041">
+<h3>事件</h3>
+
+<p>某个星期四太平洋时间上午 6:41，GKE 的伦敦值班 SRE Zara 收到告警：多个可用区的 CreateCluster 探测失败，无法成功创建新集群。<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Kubernetes Engine (GKE), cluster creation failure" data-tertiary="incident" data-type="indexterm" id="idm139660641088464"/>Zara 查看探测器信息中心，发现两个可用区的失败率超过 60%。她确认该问题正在影响用户创建新集群，但现有集群的流量不受影响。Zara 按照 GKE 的既定流程，于上午 7:06 宣布事件。</p>
+
+<p>最初有四人参与事件响应：</p>
+
+<ul>
+	<li>
+	<p>Zara 最先发现问题，因此按规定默认担任事件指挥官</p>
+	</li>
+	<li>
+	<p>Zara 的两名队友</p>
+	</li>
+	<li>
+	<p>由事件流程呼叫的客户支持工程师 Rohit</p>
+	</li>
+</ul>
+
+<p>Rohit 位于苏黎世，因此 Zara（IC）开设了 GKE Panic IRC 频道，供团队共同调试。另外两名 SRE 深入查看监控和错误消息时，Zara 向 Rohit 说明了中断情况及其影响。到上午 7:24，Rohit 已向用户发布通知，说明 Europe-West 区域的 CreateCluster 操作正在失败。事件规模正在扩大。</p>
+
+<p>上午 7:00 至 8:20，Zara、Rohit 和其他人员一直在排查问题。他们检查集群启动日志，发现如下错误：</p>
+
+<pre data-type="programlisting">
+error: failed to run Kubelet: cannot create certificate signing request: Post
+https://192.0.2.53/apis/certificates.k8s.io/v1beta1/certificatesigningrequests
+</pre>
+
+<p>他们需要确定证书创建过程中的哪个环节失败。SRE 分别调查了网络、资源可用性和证书签名流程，单独看似乎都工作正常。上午 8:22，Zara 将调查摘要发布到事件管理系统，并寻找可以协助她的开发者。</p>
+
+<p>幸好 GKE 安排了可在紧急情况下呼叫的值班开发者。值班开发者 Victoria 加入频道，要求创建一个跟踪问题，并让团队把问题升级给基础设施值班团队。</p>
+
+<p>此时已是上午 8:45。西雅图当天第一位到办公室的 SRE Il-Seong 喝了点咖啡，准备开始工作。Il-Seong 是一名资深 SRE，拥有多年事件响应经验。他得知事件仍在进行，立即加入协助。首先，他把当天的发布记录与告警时间对照，认定当天的发布并非事件原因。随后，他创建了一份工作文档<sup><a data-type="noteref" href="ch09-zh.html#ch09fn1" id="ch09fn1-marker">1</a></sup>来汇总笔记。他建议 Zara 将事件升级给基础设施、云网络和 Compute Engine 团队，以便排除这些领域作为根因的可能性。Zara 升级事件后，更多人员加入了响应：</p>
+
+<ul>
+	<li>
+	<p>GKE 节点开发负责人</p>
+	</li>
+	<li>
+	<p>云网络值班人员</p>
+	</li>
+	<li>
+	<p>Compute Engine 值班人员</p>
+	</li>
+	<li>
+	<p>另一名西雅图 SRE Herais</p>
+	</li>
+</ul>
+
+<p>上午 9:10，事件频道已有十余名参与者。事件持续了两个半小时，既未找到根因，也没有缓解措施，沟通开始成为难题。伦敦向西雅图移交值班通常在上午 10:00 进行，但 Zara 决定提前把事件指挥权交给 Il-Seong，因为他拥有更多 IMAG 实践经验。</p>
+
+<p>Il-Seong 担任事件指挥官后，为事件响应建立了正式组织结构。他指定 Zara 为运营负责人（Ops Lead），Herais 为沟通负责人（Comms Lead），Rohit 继续担任外部沟通负责人。Herais 立即向多个 GKE 邮件列表（包括所有开发负责人）发送“全员支援”邮件，请专家加入事件响应。</p>
+
+<p>截至此时，事件响应人员已知：</p>
+
+<ul>
+	<li>
+	<p>节点尝试向主节点注册时，集群创建失败。</p>
+	</li>
+	<li>
+	<p>错误消息表明证书签名模块可能是问题所在。</p>
+	</li>
+	<li>
+	<p>欧洲的所有集群创建操作均失败，其他大洲则一切正常。</p>
+	</li>
+	<li>
+	<p>欧洲没有其他 GCP 服务出现网络或配额问题。</p>
+	</li>
+</ul>
+
+<p>得益于“全员支援”的呼叫，GKE 安全团队成员 Puanani 加入了响应。<a contenteditable="false" data-primary="dependencies" data-secondary="external dependencies and incident response" data-type="indexterm" id="idm139660641060448"/>她发现证书签名程序没有启动。该程序正尝试从 DockerHub 拉取一个镜像，而镜像似乎已经损坏。Victoria（GKE 值班开发者）在两个不同地理位置对该镜像执行了 Docker 的 <code>pull</code> 命令：在欧洲集群上失败，在美国集群上成功。这表明问题出在欧洲集群。上午 9:56，团队找到了一个可能的根因。</p>
+
+<p>由于 DockerHub 是外部依赖，缓解问题和查明根因会格外困难。第一种缓解方案是请 Docker 的人员迅速修复镜像；第二种是重新配置集群，改从其他位置提取镜像，例如 Google 的安全镜像托管系统 Google Container Registry（GCR）。所有其他依赖项，包括对该镜像的其他引用，都位于 GCR。</p>
+
+<p>Il-Seong 分别指定负责人推进这两种方案，又委派一个团队调查如何修复故障集群。讨论内容很快变得过于密集，不适合继续放在 IRC 中，于是详细调试转移到共享文档，IRC 则成为决策中心。</p>
+
+<p>第二种方案需要推送新配置，这意味着重建二进制文件，耗时约一小时。上午 10:59，当重建完成 90% 时，团队发现还有一处使用了错误的镜像提取路径，只得重新开始构建。</p>
+
+<p>IRC 中的工程师正在推进两种缓解方案时，SRE Tugay 想到了另一个办法：与其重建并推送配置——这个过程既繁琐又有风险——能否拦截 Docker 的 <code>pull</code> 请求，用内部缓存镜像替代 Docker 的响应？GCR 恰好提供了这样的镜像服务。Tugay 联系 GCR SRE 团队，后者确认可以在 Docker 配置中设置 <code>--registry-mirror=</code><code><em>https://mirror.gcr.io</em></code>。Tugay 开始配置这一功能，却发现<em>镜像服务早已启用！</em></p>
+
+<p>上午 11:29，Tugay 在 IRC 中报告，这些镜像实际上<em>来自 GCR 镜像服务，而非 DockerHub</em>。上午 11:37，事件指挥官呼叫 GCR 值班人员。上午 11:59，GCR 值班人员从欧洲存储层清除了损坏的镜像。到中午 12:11，欧洲所有可用区的错误率都降至 0%。</p>
+
+<p>服务中断结束了。剩下的只有清理工作，以及撰写一份堪称史诗的事后总结。</p>
+
+<p>欧洲的 CreateCluster 操作持续失败了 6 小时 40 分钟才恢复。整个事件期间共有 41 名用户出现在 IRC 中，IRC 日志长达 26,000 词。响应过程中先后成立了七个 IMAG 专项小组，最多有四个小组同时开展工作；六个团队的值班人员被呼叫，这还不包括响应“全员支援”通知的人员。事后总结列出了 28 项行动。</p>
+</div></section>
+
+<section data-pdf-bookmark="Review" data-type="sect3"><div class="sect3" id="review-id00042">
+<h3>复盘</h3>
+
+<p>无论按什么标准衡量，GKE CreateCluster 中断都是一次大型事件。下面看看哪些地方做得好，哪些地方本可处理得更好。</p>
+
+<section data-pdf-bookmark="What went well?" data-type="sect4"><div class="sect4" id="what_went_wellquestion_mark">
+<h4 class="no_period">哪些方面做得好？</h4>
+
+<p>团队记录了多条升级路径，也熟悉事件响应策略。GKE 值班人员 Zara 很快确认问题确实影响了真实客户。随后，她使用预先准备好的事件管理系统让 Rohit 加入，由后者向客户通报服务中断。<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Kubernetes Engine (GKE), cluster creation failure" data-tertiary="responses that went well" data-type="indexterm" id="idm139660641059520"/></p>
+</div></section>
+
+<section data-pdf-bookmark="What could have been handled better?" data-type="sect4"><div class="sect4" id="what_could_have_been_handled_betterquesti">
+<h4 class="no_period">哪些方面本可处理得更好？</h4>
+
+<p>服务本身存在一些隐患。<a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Kubernetes Engine (GKE), cluster creation failure" data-tertiary="responses that needed improvement" data-type="indexterm" id="idm139660641047328"/>系统过于复杂且依赖专家，给响应造成了困难；日志不足以支持诊断，团队还被 DockerHub 上的损坏镜像带偏，而真正的问题并不在那里。</p>
+
+<p>事件初期，事件指挥官没有建立正式的响应结构。Zara 虽然承担了这一角色，并把讨论转移到 IRC，但本可更主动地协调信息和决策。结果，最先到场的几名响应人员在缺乏协调的情况下各自调查。直到首次呼叫两小时后，Il-Seong 才正式建立事件响应结构。</p>
+
+<p>最后，这次事件<a contenteditable="false" data-primary="generic mitigations" data-type="indexterm" id="idm139660641047664"/>暴露了 GKE 灾难准备中的一处缺口：服务没有可在早期减轻用户痛苦的通用缓解措施。<a contenteditable="false" data-primary="mitigation in incident response" data-type="indexterm" id="idm139660641034240"/><em>通用缓解措施（generic mitigation）</em>是最先到场的响应人员在尚未完全理解根因时，为减轻影响而采取的行动。例如，如果中断与发布周期相关，可以回滚最近的发布；如果错误集中在某个区域，可以重新配置负载均衡器以避开该区域。需要注意的是，通用缓解措施是粗放手段，可能对服务造成其他干扰。不过，它们虽然影响范围可能大于精准方案，却能迅速止损，为团队查明并解决根因争取时间。<a contenteditable="false" data-primary="generic mitigations" data-secondary="useful, in GKE CreateCluster failure case study" data-type="indexterm" id="idm139660641035536"/></p>
+
+<p>让我们再次查看事件时间线，看看通用缓解措施可能在哪个时间点发挥作用：</p>
+
+<ul>
+	<li>
+	<p><strong>上午 7:00（评估影响）。</strong>Zara 确认用户受到服务中断影响。</p>
+	</li>
+	<li>
+	<p><strong>上午 9:56（找到可能原因）。</strong>Puanani 和 Victoria 发现了一个异常镜像。</p>
+	</li>
+	<li>
+	<p><strong>上午 10:59（定制缓解方案）。</strong>几名团队成员重建二进制文件，以推送从其他位置提取镜像的新配置。</p>
+	</li>
+	<li>
+	<p><strong>上午 11:59（找到根因并修复问题）。</strong>Tugay 和 GCR 值班人员禁用 GCR 缓存，并从欧洲存储层清除损坏的镜像。</p>
+	</li>
+</ul>
+
+<p>在这里，第 2 步（找到可能原因）之后采取通用缓解措施会非常有效。如果响应人员在确定问题大致位置后，把所有镜像回滚到已知正常状态，那么事件到上午 10:00 就能得到缓解。要缓解事件，不必完全了解所有细节，只需知道根因的大致位置。对于运行稳健、高可用的服务而言，能够在完全查明原因之前缓解中断至关重要。</p>
+
+<p>在这个案例中，如果有便于回滚的工具，响应人员会受益匪浅。开发缓解工具确实需要投入工程时间，但创建通用缓解工具的正确时机是在事件发生之前，而不是在紧急响应期间。查阅事后总结，是发现那些事后看来本应有用的缓解措施和工具的好办法；将其构建到服务中，便能在今后更好地管理事件。</p>
+
+<p>务必记住，最先到场的响应人员必须<a contenteditable="false" data-primary="mitigation in incident response" data-secondary="prioritizing mitigation above all else" data-type="indexterm" id="idm139660641028992"/><em>将缓解置于一切之上</em>，否则解决时间就会延长。预先具备回滚、排空等通用缓解手段，可以加快恢复，让客户更满意。归根结底，客户不关心你是否已经完全理解中断原因；他们只希望错误停止出现。</p>
+
+<p>以缓解为最高优先级时，应按以下顺序处理正在进行的事件：</p>
+
+<ol>
+	<li>
+	<p>评估事件影响。</p>
+	</li>
+	<li>
+	<p>缓解影响。</p>
+	</li>
+	<li>
+	<p>对事件执行根因分析。</p>
+	</li>
+	<li>
+	<p>事件结束后，修复事件成因并撰写事后总结。</p>
+	</li>
+</ol>
+
+<p>之后，可以通过事件响应演练来检验系统中的薄弱点，再由工程师通过项目逐一解决。<a contenteditable="false" data-primary="Google Kubernetes Engine (GKE), CreateCluster failure case study" data-startref="ix_GKEcs" data-type="indexterm" id="idm139660641022336"/><a contenteditable="false" data-primary="Kubernetes" data-secondary="GKE CreateCluster failure, incident response case study" data-startref="ix_Kubircs" data-type="indexterm" id="idm139660641023024"/><a contenteditable="false" data-primary="incident response" data-secondary="case study, Google Kubernetes Engine (GKE), cluster creation failure" data-startref="ix_increscsGKE" data-type="indexterm" id="idm139660641016576"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 3: Power Outage—Lightning Never Strikes Twice…Until It Does" data-type="sect2"><div class="sect2" id="case_study_3_lightning_never_strikes_twic">
+<h2>案例研究 3：电力中断——闪电从不击中同一处两次……<span class="keep-together">直到它真的发生</span></h2>
+
+<p>前面的案例展示了缺乏良好事件响应策略时可能出现的问题。<a contenteditable="false" data-primary="incident response" data-secondary="case study, lightning strikes at Google datacenter" data-type="indexterm" id="ix_increscslight"/>下面的案例则说明了一次成功管理的事件。只要遵循定义明确、清晰易懂的响应规程，即使罕见或异常的事件也能从容应对。</p>
+
+<section data-pdf-bookmark="Context" data-type="sect3"><div class="sect3" id="context-id00043">
+<h3>背景</h3>
+
+<p>雷击等电网事件会使输入数据中心设施的电力发生剧烈波动。影响电网的雷击虽很少见，却并非不可预见。Google 使用备用发电机和电池防范突发停电；这些设备经过充分测试，已知能在此类场景中发挥作用。</p>
+
+<p>Google 的许多服务器连接着大量磁盘，这些磁盘安装在服务器上方或下方的独立托盘中。托盘配有自己的不间断电源（UPS）电池。停电时，备用发电机会启动，但完全启动需要几分钟。在此期间，服务器和磁盘托盘所连接的备用电池负责供电，直到备用发电机全面运行，从而避免电网事件影响数据中心运行。</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident" data-type="sect3"><div class="sect3" id="incident-id00044">
+<h3>事件</h3>
+
+<p>2015 年年中，比利时一座 Google 数据中心附近的电网在两分钟内遭到四次雷击。<a contenteditable="false" data-primary="incident response" data-secondary="case study, lightning strikes at Google datacenter" data-tertiary="incident" data-type="indexterm" id="idm139660641006352"/>数据中心的备用发电机启动，为所有机器供电。在发电机启动期间，大多数服务器依靠备用电池运行了几分钟。</p>
+
+<p>由于第三次和第四次雷击间隔过短，磁盘托盘中的 UPS 未能切换到备用电池供电。因此，磁盘托盘断电，直到备用发电机接管供电。服务器本身没有断电，却无法访问经历断电重启的磁盘。<a contenteditable="false" data-primary="GCE" data-see="Google Compute Engine" data-type="indexterm" id="idm139660640997280"/></p>
+
+<p>持久磁盘存储的大量磁盘托盘掉线，导致 Google Compute Engine（GCE）上运行的许多虚拟机（VM）实例出现读写错误。持久磁盘 SRE 值班人员立即收到这些错误的告警。持久磁盘 SRE 团队确认影响后，宣布重大事件并通知所有受影响方。持久磁盘 SRE 值班人员担任事件指挥官。<a contenteditable="false" data-primary="Google Compute Engine (GCE)" data-secondary="losing large number of disk trays, incident response case study" data-type="indexterm" id="ix_GCEir"/></p>
+
+<p>经过初步调查以及利益相关方之间的沟通，我们确认：</p>
+
+<ul>
+	<li>
+	<p>每台因短时断电而失去磁盘托盘的机器都需要重启。</p>
+	</li>
+	<li>
+	<p>等待重启期间，一些客户 VM 无法正常读写磁盘。</p>
+	</li>
+	<li>
+	<p>同时承载磁盘托盘和客户 VM 的主机不能直接“重启”，否则会中断原本未受影响的客户 VM。持久磁盘 SRE 要求 GCE SRE 将未受影响的 VM 迁移到其他主机。</p>
+	</li>
+</ul>
+
+<p>持久磁盘 SRE 的主值班人员继续担任 IC，因为该团队最了解客户所受影响。</p>
+
+<p>运营团队成员承担以下目标：</p>
+
+<ul>
+	<li>
+	<p>安全恢复电网供电，停止使用备用发电机。</p>
+	</li>
+	<li>
+	<p>重启所有未承载 VM 的机器。</p>
+	</li>
+	<li>
+	<p>协调持久磁盘 SRE 与 GCE SRE，在重启受影响机器之前安全迁出其中的 VM。</p>
+	</li>
+</ul>
+
+<p>前两个目标定义清晰、理解一致，并已有文档记录。数据中心运维值班人员立即开始安全恢复电网供电，并定期向 IC 报告状态。持久磁盘 SRE 已有重启所有未承载虚拟机之机器的既定流程，一名团队成员随即开始重启这些机器。</p>
+
+<p>第三个目标较为模糊，现有流程也没有覆盖。事件指挥官指定一名专职运营团队成员协调 GCE SRE 和持久磁盘 SRE。各团队协作，将 VM 安全迁出受影响机器，以便重启这些机器。IC 密切跟踪进展，并意识到这项工作需要迅速编写新工具，于是调集更多工程师加入运营团队，开发所需工具。</p>
+
+<p>沟通负责人观察所有事件相关活动并主动提问，负责向多个<a contenteditable="false" data-primary="Communications Lead (CL)" data-type="indexterm" id="idm139660640988400"/><span class="keep-together">受众群体</span>报告准确信息：</p>
+
+<ul>
+	<li>
+	<p>公司管理层需要了解问题范围，并确认问题正在得到处理。</p>
+	</li>
+	<li>
+	<p>依赖存储的团队需要知道存储何时能全面恢复。</p>
+	</li>
+	<li>
+	<p>需要主动告知外部客户，其磁盘在该云区域中遇到了问题。</p>
+	</li>
+	<li>
+	<p>已提交支持工单的客户需要进一步了解所见问题，并获得变通方案和预计时间方面的建议。</p>
+	</li>
+</ul>
+
+<p>最初的客户影响得到缓解后，我们还需要开展一些后续工作，例如：</p>
+
+<ul>
+	<li>
+	<p>诊断磁盘托盘所用 UPS 失效的原因，并确保问题不再发生。</p>
+	</li>
+	<li>
+	<p>更换数据中心内失效的电池。</p>
+	</li>
+	<li>
+	<p>手动清理由大量存储系统同时掉线所造成的“卡住”操作。</p>
+	</li>
+</ul>
+
+<p>事件后分析表明，只有少量写入——即事件期间断电机器上尚未完成的写入——最终没有写入磁盘。持久磁盘快照和所有 Cloud Storage 数据都会冗余存储在多个数据中心，因此运行中的 GCE 机器仅丢失了 0.000001% 的数据，而且只有运行中实例的数据曾面临风险。</p>
+</div></section>
+
+<section data-pdf-bookmark="Review" data-type="sect3"><div class="sect3" id="review-id00045">
+<h3>复盘</h3>
+
+<p>团队尽早宣布事件，并在明确领导下组织响应，因此这支管理有序的队伍有效处理了复杂事件。<a contenteditable="false" data-primary="incident response" data-secondary="case study, lightning strikes at Google datacenter" data-tertiary="review" data-type="indexterm" id="idm139660640975120"/></p>
+
+<p>事件指挥官把恢复供电和重启服务器等常规问题委派给合适的运营负责人。工程师负责解决问题，并向运营负责人汇报进展。</p>
+
+<p>同时满足 GCE 和持久磁盘需求这一更复杂的问题，需要多个团队协调决策和互动。事件指挥官确保从两个团队中指派合适的运营人员参与事件，并直接与他们协作，推动问题解决。事件指挥官明智地聚焦于事件最重要的方面：尽快满足受影响客户的需求。<a contenteditable="false" data-primary="incident response" data-secondary="case study, lightning strikes at Google datacenter" data-startref="ix_increscslight" data-type="indexterm" id="idm139660640972240"/><a contenteditable="false" data-primary="Google Compute Engine (GCE)" data-secondary="losing large number of disk trays, incident response case study" data-startref="ix_GCEir" data-type="indexterm" id="idm139660640971200"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 4: Incident Response at PagerDuty" data-type="sect2"><div class="sect2" id="case_study_4_incident_response_at_pagerdu">
+<h2>案例研究 4：PagerDuty 的事件响应</h2>
+
+<p><em>PagerDuty 的 Arup Chakrabarti 撰写</em></p>
+
+<p>多年来，PagerDuty 不断发展和完善内部事件响应实践。<a contenteditable="false" data-primary="incident response" data-secondary="case study, incident response at PagerDuty" data-type="indexterm" id="ix_incresPD"/><a contenteditable="false" data-primary="PagerDuty, incident response case study" data-type="indexterm" id="ix_PaDu"/>最初，我们设置了一名覆盖全公司的常任事件指挥官，并为每项服务指定专门工程师参与事件响应。随着 PagerDuty 发展到 400 多名员工和数十个工程团队，我们的事件响应流程也随之变化。每隔几个月，我们都会认真审视这些流程，并根据业务需要加以更新。我们学到的几乎所有经验都记录在 <a href="https://response.pagerduty.com."><em class="hyperlink">https://response.pagerduty.com.</em></a>。我们的事件响应流程有意保持动态，会像业务一样不断变化和演进。</p>
+
+<section data-pdf-bookmark="Major incident response at PagerDuty" data-type="sect3"><div class="sect3" id="major_incident_response_at_pagerduty">
+<h3>PagerDuty 的重大事件响应</h3>
+
+<p>通常，小型事件只需一名值班工程师响应。<a contenteditable="false" data-primary="major incident response at PagerDuty" data-type="indexterm" id="idm139660640957120"/>面对较大事件时，我们则高度重视团队协作。<a contenteditable="false" data-primary="incident response" data-secondary="case study, incident response at PagerDuty" data-tertiary="major incident response" data-type="indexterm" id="idm139660640955792"/>在高压力、高影响的场景中，工程师不应孤军奋战。我们采用以下方法促进团队协作：</p>
+
+<dl>
+	<dt><dfn>参加模拟演练</dfn></dt>
+	<dd>
+	<p>我们教授团队协作的一种方式，是参加<a href="http://bit.ly/2LP7JOE">“故障星期五”（Failure Friday）</a>。PagerDuty 受到 <a href="http://bit.ly/2yukZU8">Netflix Simian Army</a> 的启发，创建了这一项目。最初，“故障星期五”是手动注入故障的演练，旨在深入了解系统可能以哪些方式出错。如今，我们也利用这项每周演练重现生产环境和事件响应场景中的常见问题。</p>
+
+	<p>“故障星期五”开始前，我们会指定一名事件指挥官（通常是正在接受 IC 培训的人）。开展故障注入演练时，此人必须像真正的 IC 一样行事。整个演练期间，领域专家使用与实际事件中相同的流程和术语。这既能让新的值班工程师熟悉事件响应语言和流程，也能帮助经验丰富的值班工程师温故知新。</p>
+	</dd>
+	<dt><dfn>进行限时模拟游戏</dfn></dt>
+	<dd>
+	<p>“故障星期五”很适合训练工程师熟悉不同角色和流程，却无法完全复现真实重大事件的紧迫感。我们使用具有时间压力的模拟游戏，来体现事件响应的这一面。</p>
+
+	<p><a href="http://www.keeptalkinggame.com/">《Keep Talking and Nobody Explodes》</a>是我们经常采用的一款游戏。玩家必须协作，在规定时间内拆除炸弹。游戏压力大、沟通密集，迫使玩家有效配合、共同完成任务。</p>
+	</dd>
+	<dt><dfn>从以往事件中学习</dfn></dt>
+	<dd>
+	<p>吸取以往事件的经验，有助于我们日后更好地响应重大事件。为此，我们会撰写并定期审阅事后总结。</p>
+
+	<p>PagerDuty 的事后总结流程包括公开会议和详尽文档。通过让这些信息易于访问和检索，我们力求缩短未来事件的解决时间，甚至彻底防止类似事件再次发生。</p>
+
+	<p>我们还会录下重大事件涉及的所有通话，以便从实时沟通过程中学习。</p>
+	</dd>
+</dl>
+
+<p>下面来看 PagerDuty 最近一次启用事件响应流程的案例。事件发生于 2017 年 10 月 6 日，持续十多个小时，但对客户影响很小。</p>
+
+<ul>
+	<li>
+	<p><strong>晚上 7:53。</strong>PagerDuty SRE 团队的一名成员收到告警，指出 PagerDuty 内部 NTP 服务器出现时钟漂移。值班 SRE 确认所有自动恢复操作均已执行，并完成相关运行手册中的缓解步骤。这些工作记录在 SRE 团队的专用 Slack 频道中。</p>
+	</li>
+	<li>
+	<p><strong>晚上 8:20。</strong>PagerDuty 软件团队 A 的一名成员收到自动告警，指出其服务存在时钟漂移错误。软件团队 A 与 SRE 团队开始共同解决问题。</p>
+	</li>
+	<li>
+	<p><strong>晚上 9:17。</strong>PagerDuty 软件团队 B 的一名成员收到自动告警，指出其服务存在时钟漂移错误。团队 B 的工程师加入了正在对问题进行分诊和调试的 Slack 频道。</p>
+	</li>
+	<li>
+	<p><strong>晚上 9:49。</strong>SRE 值班人员宣布重大事件，并呼叫事件指挥官值班人员。</p>
+	</li>
+	<li>
+	<p><strong>晚上 9:55。</strong>IC 组建响应团队，其中包括所有依赖 NTP 之服务的值班工程师，以及 PagerDuty 的客户支持值班人员。IC 要求响应团队加入专用电话会议和 Slack 频道。</p>
+
+	<p>接下来的八小时里，响应团队持续处理并缓解问题。运行手册中的流程未能解决问题后，团队开始有条不紊地尝试新的恢复方案。</p>
+
+	<p>在此期间，我们每四小时轮换一次值班工程师和 IC。这样既能让工程师休息，也能为响应团队带来新的思路。</p>
+	</li>
+	<li>
+	<p><strong>凌晨 5:33。</strong>值班 SRE 更改了 NTP 服务器配置。</p>
+	</li>
+	<li>
+	<p><strong>早上 6:13。</strong>IC 与各服务的值班工程师逐一确认所有服务均已恢复。验证完成后，IC 关闭电话会议和 Slack 频道，宣布事件结束。鉴于 NTP 服务影响范围广泛，需要开展事后分析。在正式关闭事件前，IC 将事后分析任务指派给负责该服务的 SRE 值班团队。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Tools used for incident response" data-type="sect3"><div class="sect3" id="tools_used_for_incident_response">
+<h3>事件响应所用工具</h3>
+
+<p>我们的事件响应<a contenteditable="false" data-primary="incident response" data-secondary="case study, incident response at PagerDuty" data-tertiary="tools used" data-type="indexterm" id="idm139660640929888"/>流程主要利用<a contenteditable="false" data-primary="tools" data-secondary="for incident response" data-type="indexterm" id="idm139660640928240"/>三种工具：</p>
+
+<dl>
+	<dt><dfn>PagerDuty</dfn></dt>
+	<dd><p>我们将所有值班信息、服务归属、事后总结、事件元数据等存储在 PagerDuty 中。这样一旦出事，就能迅速召集正确的团队。</p></dd>
+	<dt><dfn>Slack</dfn></dt>
+	<dd><p>我们维护一个专用频道（#incident-war-room），供所有领域专家和事件指挥官集中协作。该频道主要充当记录员的信息台账，用于记录行动、负责人和时间戳。</p></dd>
+	<dt><dfn>电话会议</dfn></dt>
+	<dd><p>值班工程师一旦被要求加入事件响应，就必须拨入固定的电话会议号码。我们倾向于在电话会议中作出所有协调决策，再把决策结果记录到 Slack。实践表明，这是最快的决策方式。我们还会录下每次通话，以便记录员遗漏重要细节时仍能还原完整时间线。</p></dd>
+</dl>
+
+<p>虽然 Slack 和电话会议是我们首选的沟通渠道，但你应采用最适合自己公司及其工程师的沟通方式。</p>
+
+<p>在 PagerDuty，事件响应的处理方式直接关系到公司的成败。我们不会毫无准备地面对这类事件，而是有意识地通过开展模拟演练、复盘以往事件和选择正确工具来做好准备，使自己能够从容应对任何可能到来的重大事件。<a contenteditable="false" data-primary="incident response" data-secondary="case study, incident response at PagerDuty" data-startref="ix_incresPD" data-type="indexterm" id="idm139660640922496"/><a contenteditable="false" data-primary="PagerDuty, incident response case study" data-startref="ix_PaDu" data-type="indexterm" id="idm139660640920400"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Putting Best Practices into Practice" data-type="sect1"><div class="sect1" id="putting_best_practices_into_practice">
+<h1>将最佳实践付诸行动</h1>
+
+<p>我们已经看到了处理得当和处理不当的事件案例。等到<a contenteditable="false" data-primary="incident response" data-secondary="best practices, using" data-type="indexterm" id="ix_incresbp"/>寻呼机发出问题告警时，再考虑如何管理事件就太晚了。思考事件管理流程的正确时机，是事件发生<em>之前</em>。那么，怎样才能在灾难发生前做好准备，把理论付诸实践？本节将给出一些建议。</p>
+
+<section data-pdf-bookmark="Incident Response Training" data-type="sect2"><div class="sect2" id="incident_response_training">
+<h2>事件响应培训</h2>
+
+<p>我们强烈建议培训响应人员如何组织事件响应，使他们在真正的紧急情况下有一套模式可循。<a contenteditable="false" data-primary="incident response" data-secondary="best practices, using" data-tertiary="training" data-type="indexterm" id="idm139660640911488"/><a contenteditable="false" data-primary="training" data-secondary="for incident response" data-type="indexterm" id="idm139660640909952"/>懂得如何组织响应、在事件全程使用共同语言并保持一致预期，可以降低沟通失误的概率。</p>
+
+<p>完整的事件指挥系统可能超出你的实际需要，但可以从事件<a contenteditable="false" data-primary="on-call" data-secondary="actions in incident response" data-type="indexterm" id="idm139660640904832"/>管理流程中选择对组织重要的部分，建立自己的事件处理框架。例如：</p>
+
+<ul>
+	<li>
+	<p>让值班人员知道，事件期间可以委派职责和升级问题。</p>
+	</li>
+	<li>
+	<p>鼓励“缓解优先”的响应方式。</p>
+	</li>
+	<li>
+	<p>明确事件指挥官、沟通负责人和运营负责人的角色。</p>
+	</li>
+</ul>
+
+<p>你可以调整并总结自己的事件响应框架，制作演示文稿向新团队成员介绍。我们的经验表明，如果能把事件响应理论与实际场景和具体行动联系起来，人们会更愿意接受相关培训。因此，务必加入动手演练，分享以往事件的经过，并分析哪些方面做得好、哪些方面不够好。还可以考虑聘请专门提供事件响应课程和培训的外部机构。</p>
+</div></section>
+
+<section data-pdf-bookmark="Prepare Beforehand" data-type="sect2"><div class="sect2" id="prepare_beforehand">
+<h2>提前准备</h2>
+
+<p>除了事件响应培训，事先做好事件准备也很有帮助。<a contenteditable="false" data-primary="preparations for incidents" data-type="indexterm" id="idm139660640899296"/><a contenteditable="false" data-primary="incident response" data-secondary="best practices, using" data-tertiary="preparing beforehand" data-type="indexterm" id="idm139660640900880"/>可以采用以下建议和策略，让准备更加充分。</p>
+
+<section data-pdf-bookmark="Decide on a communication channel" data-type="sect3"><div class="sect3" id="decide_on_a_communication_channel">
+<h3>确定沟通渠道</h3>
+
+<p>事先选定并约定沟通渠道（Slack、电话会议桥、IRC、HipChat 等）——没有哪个<a contenteditable="false" data-primary="communication" data-secondary="in incident response" data-tertiary="deciding on communication channel" data-type="indexterm" id="idm139660640896640"/>事件指挥官愿意在事件期间才做这个决定。提前练习使用，避免临场出现意外。如有可能，应选择团队已经熟悉的渠道，让每个人都能得心应手。</p>
+</div></section>
+
+<section data-pdf-bookmark="Keep your audience informed" data-type="sect3"><div class="sect3" id="keep_your_audience_informed">
+<h3>及时向受众通报情况</h3>
+
+<p>如果你不确认事件正在发生并得到积极处理，人们自然会认为没有人采取行动解决问题。<a contenteditable="false" data-primary="communication" data-secondary="in incident response" data-tertiary="keeping your audience informed" data-type="indexterm" id="idm139660640888496"/>同样，如果问题缓解或解决后忘记宣布响应结束，人们就会认为事件仍在持续。可以在事件全程定期发布状态更新，主动避免这种情况。预先准备联系人名单（见下一条建议）既能节省宝贵时间，也能确保没有遗漏任何人。</p>
+
+<p>提前考虑如何起草、审阅、批准和发布公开博客文章或新闻稿。在 Google，团队会征求公关团队的指导。此外，应准备两三个可直接使用的信息发布模板，并确保值班人员知道如何发送。没有人愿意在极度紧张且毫无指引的情况下撰写公告。模板能让对外发布信息变得简单，并尽量减轻压力。</p>
+</div></section>
+
+<section data-pdf-bookmark="Prepare a list of contacts" data-type="sect3"><div class="sect3" id="prepare_a_list_of_contacts">
+<h3>准备联系人名单</h3>
+
+<p>事先准备好需要发送邮件或呼叫的人员名单，能节省关键时间和精力。<a contenteditable="false" data-primary="contacts, preparing for an incident" data-type="indexterm" id="idm139660640880960"/>在<a data-type="xref" href="#case_study_2_service_faultem_dashcache_me">“案例研究 2：服务故障——缓存救场”</a>中，沟通负责人向预先建立的多个 GKE 邮件列表发信，发出了“全员支援”的呼叫。</p>
+</div></section>
+
+<section data-pdf-bookmark="Establish criteria for an incident" data-type="sect3"><div class="sect3" id="establish_criteria_for_an_incident">
+<h3>制定事件判定标准</h3>
+
+<p>有时，告警所指的问题显然构成事件；<a contenteditable="false" data-primary="incidents" data-secondary="establishing criteria for" data-type="indexterm" id="idm139660640884880"/>有时则并不明确。最好建立一套标准，用来判断某个问题是否确实属于事件。团队可以回顾以往的服务中断，并考虑已知的高风险领域，据此制定可靠的标准清单。</p>
+
+<p>总之，响应事件时，必须为协调和沟通建立共同基础。事先决定如何传达事件、受众是谁，以及事件期间由谁负责什么。这些准则很容易建立，却能显著缩短事件解决时间。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Drills" data-type="sect2"><div class="sect2" id="drills">
+<h2>演练</h2>
+
+<p>事件管理流程的最后一步，是练习事件管理技能。<a contenteditable="false" data-primary="incident response" data-secondary="best practices, using" data-tertiary="drills" data-type="indexterm" id="idm139660640872224"/><a contenteditable="false" data-primary="drills (incident management)" data-type="indexterm" id="idm139660640873504"/>通过在不那么危急的场景中练习，团队可以形成良好习惯和行为模式，以应对真正或比喻意义上的“雷击”。培训负责介绍事件响应理论，实践则能确保事件响应技能保持熟练。</p>
+
+<p>开展事件管理演练有多种方式。Google 会组织全公司范围的韧性测试，称为灾难恢复测试（Disaster Recovery Testing，DiRT；参见 Kripa Krishnan 的文章《Weathering the Unexpected》<a contenteditable="false" data-primary="disaster recovery testing (DiRT) at Google" data-type="indexterm" id="idm139660640875056"/><sup><a data-type="noteref" href="ch09-zh.html#ch09fn2" id="ch09fn2-marker">2</a></sup>）。在测试中，我们会制造一个实际不影响客户的受控紧急情况，各团队则像面对真实紧急情况一样作出响应。之后，团队复核应急响应流程并讨论事件经过。接受失败是一种学习手段、重视所发现的缺口，并争取领导层支持，是 Google 成功建立 DiRT 计划的关键。在较小范围内，我们也会使用“厄运之轮”等演练来练习响应特定事件（参见<a href="http://bit.ly/2Hb8ONg">《Disaster Role Playing》</a>，收录于 <em>Site Reliability Engineering</em>）。</p>
+
+<p>也可以有意把小问题当作需要大规模响应的重大问题，从而练习事件响应。这样，团队就能在风险较低的真实场景中使用既定流程和工具。</p>
+
+<p>演练是尝试新事件响应技能的一种友好方式。团队中任何可能被卷入事件响应的人——SRE、开发者，甚至客户支持和市场合作伙伴——都应熟悉并自如运用这些方法。</p>
+
+<p>要组织演练，可以虚构一次服务中断，让团队响应该事件；也可以根据事后总结设计中断场景，其中包含大量适合事件管理演练的素材。管理事件时应尽量使用真实工具。还可以考虑有意破坏测试环境，让团队使用现有工具开展真正的故障排除。</p>
+
+<p>所有这些演练只有定期开展才会更有价值。每次演练后都可以撰写报告，说明哪些方面做得好、哪些方面不够好，以及原本可以如何改进，从而增强演练效果。演练最有价值的部分是审视结果；结果能揭示事件管理中的许多缺口。发现缺口后，就可以着手弥补。<a contenteditable="false" data-primary="incident response" data-secondary="best practices, using" data-startref="ix_incresbp" data-type="indexterm" id="idm139660640858224"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00046">
+<h1>结语</h1>
+
+<p>为灾难来临做好准备。如果团队定期演练并更新事件响应流程，那么不可避免的服务中断发生时，就不会惊慌失措。</p>
+
+<p>事件期间需要协作的人员范围会随事件规模扩大。与不熟悉的人合作时，流程能提供必要结构，使大家迅速朝着解决问题的方向前进。我们强烈建议趁世界<em>还没有</em>陷入火海时预先建立这些流程，并定期审查、迭代事件管理计划和行动手册。</p>
+
+<p>事件指挥系统概念简单、易于理解，并可根据公司和事件规模灵活扩展或收缩。它虽然容易理解，却并不容易实施，尤其是在事件中途突然陷入恐慌时。紧急情况下保持冷静并遵循响应结构需要反复练习；练习会形成“肌肉记忆”，让你有信心应对真正的紧急情况。</p>
+
+<p>我们强烈建议在团队繁忙的日程中定期留出时间练习事件管理。争取领导层支持专门的练习时间，并确保他们了解事件响应如何运作，以防实际事件中需要其参与。充分准备可以从响应时间中节省宝贵的几分钟甚至几小时，并形成竞争优势。任何公司都不可能每次都做对——从错误中学习，继续前进，下一次做得更好。<a contenteditable="false" data-primary="incident response" data-startref="ix_incres" data-type="indexterm" id="idm139660640866944"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch09fn1"><sup><a href="ch09-zh.html#ch09fn1-marker">1</a></sup> 当三人或更多人共同处理事件时，最好创建一份协作文档，列出当前假设、已排除的原因，以及错误日志、可疑图表等有用的调试信息。文档可以保存这些信息，避免其淹没在对话中。</p><p data-type="footnote" id="ch09fn2"><sup><a href="ch09-zh.html#ch09fn2-marker">2</a></sup> Kripa Krishan，《Weathering the Unexpected》，<em>Communications of the ACM</em>，2012 年第 10 卷第 9 期，<a href="https://queue.acm.org/detail.cfm?id=2371516"><em class="hyperlink">https://queue.acm.org/detail.cfm?id=2371516</em></a>。</p></div></div></section></body></html>
