@@ -1,0 +1,259 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 与 DevOps 的关系</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section class="pagenumrestart" data-pdf-bookmark="Chapter 1. How SRE Relates to DevOps" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_relates_devops">
+<h1><span class="label">第 1 章　</span>SRE 与 DevOps 的关系</h1>
+
+<p class="subtitle"><span class="keep-together">class SRE implements interface DevOps——SRE 类实现 DevOps 接口</span></p>
+
+<p class="byline">作者：Niall Richard Murphy、<br/>
+Liz Fong-Jones 和 Betsy Beyer，<br/>
+Todd Underwood、Laura Nolan<br/>
+及 Dave Rensin 参与撰写</p>
+
+<p>运维作为一门专业，<em>很难</em>做好。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644272192" id="idm139660644272192-marker">1</a></sup>如何把系统运行好，本身仍是一个普遍没有解决的问题；即使某些最佳实践<em>确实</em>已被证明有效，也高度依赖具体情境，远未得到广泛采用。<a contenteditable="false" data-primary="operations" data-type="indexterm" id="idm139660644275776"/>此外，怎样把运维团队管理好，也基本无人给出答案。人们通常认为，对这些问题的系统研究始于<a href="http://bit.ly/2HeARLw">运筹学</a>：第二次世界大战期间，盟军曾用它改进流程与产出。但事实上，几千年来人类一直在思考如何<a href="http://bit.ly/2HcEH7R">把事情运作得更好</a>。</p>
+
+<p>然而，投入了如此多的努力与思考之后，可靠的生产运维依然难以实现，在<a href="http://bit.ly/2JoeVmi">信息技术</a>和<a href="http://bit.ly/2Lf1hiQ">软件可运维性</a>领域尤其如此。以企业界为例，运维常被当作成本中心，<sup><a data-type="noteref" href="ch01-zh.html#idm139660644267440" id="idm139660644267440-marker">2</a></sup>这使得真正改善成果即使不是不可能，也极其困难。这种做法目光短浅得惊人，却尚未被广泛认识；不过，对它的不满已经催生了一场革命，改变了我们组织 IT 工作的方式。</p>
+
+<p>这场革命源自解决一组常见问题的尝试。针对这些问题，最新的解决思路有两个不同的名字：DevOps 和站点可靠性工程（SRE）。人们往往分别谈论二者，仿佛它们是对上述企业思维模式完全不同的回应。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644263056" id="idm139660644263056-marker">3</a></sup>但我们希望让你相信：它们实际上的相似程度，以及两类实践者的共同之处，都远超你的想象。<a contenteditable="false" data-primary="site reliability engineering" data-see="SRE" data-type="indexterm" id="idm139660644260624"/></p>
+
+<p>不过，先来了解一下二者各自的核心原则。</p>
+
+<section data-pdf-bookmark="Background on DevOps" data-type="sect1"><div class="sect1" id="idm139660644261808">
+<h1>DevOps 背景简介</h1>
+
+<p>DevOps 是一套较为宽泛的实践、指导原则和文化，旨在打破 IT 开发、运维、网络和安全领域之间的壁垒。<a contenteditable="false" data-primary="DevOps" data-secondary="about" data-type="indexterm" id="idm139660644264976"/>由 John Willis、Damon Edwards 和 Jez Humble 总结的 <a href="https://www.atlassian.com/devops">CA(L)MS</a>，是记忆 DevOps 哲学要点的实用缩写：文化（Culture）、自动化（Automation）、精益（Lean，指<a href="http://bit.ly/2Hd0nkp">精益管理</a>；另见<a href=" http://bit.ly/1V7EIyd">持续交付</a>）、度量（Measurement）和共享（Sharing）。<a contenteditable="false" data-primary="CALMS (Culture, Automation, Lean, Measurement, and Sharing)" data-type="indexterm" id="idm139660644254416"/>共享与协作是这场运动的重中之重。采用 DevOps 时，你先改进某件事（通常通过自动化），再衡量结果，并与同事分享，让整个组织都能随之改进。支持性的文化有助于落实 CALMS 的每一项原则。</p>
+
+<p>DevOps、敏捷以及其他各种业务与软件再造方法，都体现了同一种总体世界观：在现代社会中，怎样经营才最有效。DevOps 哲学中的各个要素很难彼此割裂，而这本来就是有意为之。不过，其中仍有几个关键观念可以相对独立地讨论。</p>
+
+<section data-pdf-bookmark="No More Silos" data-type="sect2"><div class="sect2" id="idm139660644249456">
+<h2>不再各自为政</h2>
+
+<p>第一个关键观念是<em>消除壁垒</em>。这<a contenteditable="false" data-primary="silos, elimination of" data-type="indexterm" id="idm139660644255088"/>是对以下两种现象的回应：<a contenteditable="false" data-primary="DevOps" data-secondary="elimination of silos" data-type="indexterm" id="idm139660644253104"/></p>
+
+<ul>
+	<li>
+	<p>过去很流行、如今却日益显得过时的组织方式：运维团队与开发团队彼此分离</p>
+	</li>
+	<li>
+	<p>大量事实表明，<a href="http://bit.ly/2J9m5HG">知识被严重割裂</a>、只鼓励局部优化，以及<a href="http://bit.ly/2J80L5D">缺乏协作</a>，往往会直接损害业务<sup><a data-type="noteref" href="ch01-zh.html#idm139660644244992" id="idm139660644244992-marker">4</a></sup></p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Accidents Are Normal" data-type="sect2"><div class="sect2" id="idm139660644243056">
+<h2>事故是常态</h2>
+
+<p>第二个关键观念是：事故并不只是某个人孤立行为的结果，而是因为系统缺少<a contenteditable="false" data-primary="accidents, view in DevOps" data-type="indexterm" id="idm139660644241952"/>应对必然会出错之时的防护措施。<a contenteditable="false" data-primary="DevOps" data-secondary="accidents, view of" data-type="indexterm" id="idm139660644240192"/><sup><a data-type="noteref" href="ch01-zh.html#idm139660644238496" id="idm139660644238496-marker">5</a></sup>例如，糟糕的界面会在压力下无意中诱导人做出错误操作；系统中某个设计缺陷会在某些未被明确说明的不利条件出现时让故障无可避免；失灵的监控则让人连系统是否出错都无从得知，更别说判断<em>哪里</em>出了错。<a contenteditable="false" data-primary="failures" data-type="indexterm" id="idm139660644236688"/>一些观念较传统的企业，本能地想找出犯错者并加以惩罚。但这样做也有后果：最明显的是，它会鼓励人们混淆问题、隐瞒真相、相互推责，而这些最终都只是无益于利润的干扰。因此，与其试图杜绝事故，不如把重点放在加快恢复上，这样更有价值。</p>
+</div></section>
+
+<section data-pdf-bookmark="Change Should Be Gradual" data-type="sect2"><div class="sect2" id="idm139660644235328">
+<h2>变更应当小步推进</h2>
+
+<p>第三个关键观念是：<a href="http://bit.ly/2Js80IK">变更最好规模小、频率高</a>。在某些环境中，<a contenteditable="false" data-primary="changes" data-secondary="gradual change in DevOps" data-type="indexterm" id="idm139660644233408"/>变更委员会每月开会，讨论文档详尽的大型机配置变更计划；<a contenteditable="false" data-primary="DevOps" data-secondary="gradual change" data-type="indexterm" id="idm139660644231376"/>对这些环境而言，这种主张相当激进，但它并不新鲜。事实证明，让经验丰富的人审核所有变更，再把变更攒成批次以提高审核效率，几乎恰好与最佳实践背道而驰。变更确实有风险，但正确的应对方式，是尽可能把它拆成更小的组成部分。然后，把产品、设计和基础设施方面持续产生的变更汇成一条稳定、低风险的流水线。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644229952" id="idm139660644229952-marker">6</a></sup>这种策略再配合对小规模变更的<a contenteditable="false" data-primary="deployments" data-secondary="continuous" data-seealso="continuous integration and continuous delivery" data-type="indexterm" id="idm139660644226128"/>自动测试，以及对不良变更的可靠回滚，就形成了<a contenteditable="false" data-primary="continuous integration and continuous delivery (CI/CD)" data-type="indexterm" id="idm139660644224608"/>持续集成（<a href="http://bit.ly/2J9meec">CI</a>）和持续交付或部署（<a href="http://bit.ly/1V7EIyd">CD</a>）等变更管理方法。</p>
+</div></section>
+
+<section data-pdf-bookmark="Tooling and Culture Are Interrelated" data-type="sect2"><div class="sect2" id="idm139660644223648">
+<h2>工具与文化相互影响</h2>
+
+<p>工具是 DevOps 的重要组成部分。尤其考虑到 DevOps 强调正确管理变更，而如今的变更管理要依赖高度专门化的工具，这一点就更加突出。<a contenteditable="false" data-primary="DevOps" data-secondary="interrelation of tooling and culture" data-type="indexterm" id="idm139660644219104"/><a contenteditable="false" data-primary="tooling" data-secondary="relationship with culture in DevOps" data-type="indexterm" id="idm139660644221072"/><a contenteditable="false" data-primary="culture" data-secondary="and tooling in DevOps" data-type="indexterm" id="idm139660644218752"/>但总体而言，DevOps 的倡导者坚信：采用新工作方式能否成功，关键在于组织文化，而非工具。良好的文化能够弥补工具的缺陷，反过来却很少成立。俗话说，<a href="http://bit.ly/2sokzLC">文化能把战略当早餐吃掉</a>。和运维一样，变革本身也很难。</p>
+</div></section>
+
+<section data-pdf-bookmark="Measurement Is Crucial" data-type="sect2"><div class="sect2" id="idm139660644217040">
+<h2>度量至关重要</h2>
+
+<p>最后，在打破壁垒、处理事故等整体业务情境中，度量尤其关键。<a contenteditable="false" data-primary="measurements" data-secondary="importance in DevOps" data-type="indexterm" id="idm139660644214240"/><a contenteditable="false" data-primary="DevOps" data-secondary="measurement as crucial" data-type="indexterm" id="idm139660644215312"/>在每种情境下，都要通过客观度量确认实际发生了什么，验证局面是否正按预期改变，并为不同职能团队都能认可的讨论建立客观基础。（这一原则既适用于业务，<em>也</em>适用于值班等其他场景。）</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Background on SRE" data-type="sect1"><div class="sect1" id="idm139660644206528">
+<h1>SRE 背景简介</h1>
+
+<p>站点可靠性工程（SRE）这个名称及其对应的岗位，由 Google 工程副总裁 Ben Treynor Sloss 创立。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644207520" id="idm139660644207520-marker">7</a></sup>从<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="about" data-type="indexterm" id="idm139660644208080"/>上一节可以看到，DevOps 是一套宽泛的原则，关注运维与产品开发在整个生命周期中的协作。SRE 则既是一种岗位，也是一套被我们验证有效的实践（下文将介绍），还包含支撑这些实践的一些理念。如果把 DevOps 看成一种哲学和工作方法，那么可以说，SRE 落实了 DevOps 所描述的部分理念；与“DevOps 工程师”相比，它也更接近一个具体的工作或岗位定义。<a contenteditable="false" data-primary="DevOps" data-secondary="implementation by SRE" data-type="indexterm" id="idm139660644210128"/><sup><a data-type="noteref" href="ch01-zh.html#idm139660644200352" id="idm139660644200352-marker">8</a></sup>所以从某种意义上说，<em>class SRE implements interface DevOps</em>，也就是“SRE 类实现了 DevOps 接口”。</p>
+
+<p>DevOps 运动源于多家公司领导者与一线实践者之间的协作；与之不同，Google 的 SRE 在“<em>SRE</em>”一词广泛流行于全行业之前，就已经从公司整体环境中继承了大量文化。由于这段发展历程，SRE 这门学科目前在默认情况下不像 DevOps 那样把文化变革摆在最突出的位置。（当然，这并不意味着在任何一个具体组织中实施 SRE 时不需要文化变革。）</p>
+
+<p>SRE 由以下<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-type="indexterm" id="ix_Sreprin"/>具体原则来定义。</p>
+
+<section data-pdf-bookmark="Operations Is a Software Problem" data-type="sect2"><div class="sect2" id="idm139660644201968">
+<h2>运维是一个软件问题</h2>
+
+<p>SRE 的基本信条是：要把运维做好，需要解决的是软件问题。因此，SRE 应当用软件工程方法来解决它。这里的视野非常宽广，既包括流程和业务变革，也包括同样复杂、但更传统的软件问题，例如重写整个技术栈，消除业务逻辑中的单点故障。</p>
+</div></section>
+
+<section data-pdf-bookmark="Manage by Service Level Objectives (SLOs)" data-type="sect2"><div class="sect2" id="idm139660644196320">
+<h2>以服务等级目标（SLO）进行管理</h2>
+
+<p>SRE 并不试图让一切都达到 100% 可用。如我们的第一本书<a href="http://bit.ly/2kIcNYM">《<em>站点可靠性工程</em>》</a>所述，出于<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-tertiary="managing by SLOs" data-type="indexterm" id="idm139660644194032"/>多方面原因，这个目标并不正确。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="managing by, in SRE" data-type="indexterm" id="idm139660644191632"/>产品团队与 SRE 团队应当为服务及其用户群选择适当的可用性目标，再依照该 SLO 管理服务。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644190320" id="idm139660644190320-marker">9</a></sup>确定这样的目标，需要业务方深度参与协作。SLO 也具有文化层面的意义：它是利益相关方共同作出的决定；一旦违反 SLO，各团队便会在不追责个人的前提下重新审视方案。</p>
+</div></section>
+
+<section data-pdf-bookmark="Work to Minimize Toil" data-type="sect2"><div class="sect2" id="idm139660644186864">
+<h2>努力减少琐务</h2>
+
+<p>对 SRE 而言，任何由系统结构决定、必须手工完成的运维任务都令人厌恶。<a contenteditable="false" data-primary="toil" data-secondary="working to minimize in SRE" data-type="indexterm" id="idm139660644184896"/>（这并不是说我们<em>没有</em>这类运维工作；我们有<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-tertiary="working to minimize toil" data-type="indexterm" id="idm139660644188064"/>很多，只是不喜欢它们。）我们相信，如果机器<em>能够</em>完成一项所需操作，那么通常就<em>应当</em>让机器来做。<a href="http://bit.ly/2xvlcIa">这种区分及其背后的价值取向</a>在其他组织中并不常见；在那里，琐务<em>就是</em>工作本身，公司付钱雇人就是让其完成这些事。但在 Google 的 SRE 语境中，琐务<em>不是</em>本职工作，也绝不能成为本职工作。花在运维任务上的每一分钟，都无法用于项目工作；而我们正是通过项目工作，让服务变得更加可靠、更易扩展。</p>
+
+<p>不过，依据“生产环境的智慧”，亲自执行运维任务确实能为决策提供至关重要的信息。这些工作让我们立足现实，因为它们会带来某个系统的实时反馈。琐务的来源必须能够识别，才能加以减少或消除。但如果运维工作量不足，也许反而应该更频繁地推出新功能和变更，让工程师持续熟悉所支持服务的运行方式。</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="idm139660644180752">
+<h5>生产环境的智慧</h5>
+
+<p>这里解释一下“生产环境的智慧”：我们所说的，是从某样东西实际运行于生产环境中获得的认识，<a contenteditable="false" data-primary="production" data-secondary="wisdom from" data-type="indexterm" id="idm139660644178336"/><a contenteditable="false" data-primary="wisdom of production" data-type="indexterm" id="idm139660644177184"/>也就是它<em>实际</em>如何表现、软件<em>实际</em>应如何设计等纷繁复杂的细节；它不是脱离现场事实、只在白板上推演出来的服务图景。你收到的每一次告警、团队接到的每一张工单等等，都是与现实的直接联系，都应当帮助我们改进系统的设计与行为。</p>
+</div></aside>
+</div></section>
+
+<section data-pdf-bookmark="Automate This Year’s Job Away" data-type="sect2"><div class="sect2" id="idm139660644169584">
+<h2>用自动化消除今年的工作</h2>
+
+<p>这一领域真正的工作，在于判断哪些事情应该自动化、在什么条件下自动化，以及如何<a contenteditable="false" data-primary="automation" data-secondary="automating this year’s job away" data-type="indexterm" id="idm139660644172784"/>实现自动化。</p>
+
+<p>Google 所实践的 SRE 对团队成员花在琐务上的时间设有硬性限制：琐务最多只能占工作时间的 50%，其余时间应用于能创造持久价值的工程工作。许多人把这个限制看成一道<em>上限</em>。其实，把它理解成一种<em>保证</em>更有用：它既是一项明确承诺，也是一套保障机制，确保人们以工程方法解决问题，而不是一遍又一遍地埋头做琐务。</p>
+
+<p>当我们思考自动化与琐务时，这项基准在实际运作中会产生一种反直觉而有趣的相互作用。<a contenteditable="false" data-primary="Murphy-Beyer effect" data-type="indexterm" id="idm139660644168288"/>随着时间推移，SRE 团队最终会把某项服务中所有能自动化的工作都自动化，只剩下无法自动化的部分（即 <a href="http://bit.ly/2Js7hau">Murphy-Beyer 效应</a>）。在其他条件不变时，如果不采取别的措施，这些剩余工作会逐渐成为 SRE 团队工作的主体。在 Google，你通常要么继续增加所负责的服务，直到工作负载达到仍可保证 50% 工程时间的上限；要么自动化做得极其成功，于是可以彻底转去做别的事情。</p>
+</div></section>
+
+<section data-pdf-bookmark="Move Fast by Reducing the Cost of Failure" data-type="sect2"><div class="sect2" id="idm139660644165984">
+<h2>降低失败成本，从而快速前进</h2>
+
+<p>引入 SRE 的主要收益之一，不一定是可靠性提高——当然，这确实会发生——而是产品<a contenteditable="false" data-primary="failures" data-secondary="reducing cost of" data-type="indexterm" id="idm139660644164928"/>开发产出得到改善。<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-tertiary="moving fast by reducing cost of failure" data-type="indexterm" id="idm139660644160224"/>为什么？常见故障的平均修复时间（MTTR）缩短后，产品开发人员无需再浪费时间和精力收拾这些问题造成的残局，开发速度自然会提高。<a contenteditable="false" data-primary="mean time to repair (MTTR)" data-type="indexterm" id="idm139660644162592"/>这也符合一个众所周知的事实：问题在产品生命周期中发现得越晚，<a href="http://bit.ly/2sqVEXL">修复成本就越高</a>。SRE 的一项明确职责，就是改善这种过晚发现问题的不良状况，从而让整个公司受益。</p>
+</div></section>
+
+<section data-pdf-bookmark="Share Ownership with Developers" data-type="sect2"><div class="sect2" id="idm139660644158064">
+<h2>与开发人员共同承担所有权</h2>
+
+<p>在“应用开发”和“生产运维”（有时也称程序员和运维人员）之间划出僵硬边界，<a contenteditable="false" data-primary="development" data-secondary="SREs sharing ownership with developers" data-type="indexterm" id="idm139660644159216"/>会适得其反。<a contenteditable="false" data-primary="production" data-secondary="boundaries between application development and" data-type="indexterm" id="idm139660644154832"/><a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-tertiary="sharing ownership with developers" data-type="indexterm" id="idm139660644153184"/>如果职责分割和把运维归为成本中心的做法进一步造成权力失衡，或导致地位、薪酬不平等，问题就更加严重。<a contenteditable="false" data-primary="operations" data-secondary="and separation between development and production" data-type="indexterm" id="idm139660644151856"/></p>
+
+<p>SRE 往往更关注生产问题而非业务逻辑问题，但他们用软件工程工具处理这些问题，因此与产品开发团队拥有许多共同技能。一般而言，SRE 在所负责服务的可用性、延迟、性能、效率、变更管理、监控、应急响应和容量规划方面具有专门知识。这些明确而具体的能力，正是 SRE 为产品及其开发团队提供的核心价值。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644149104" id="idm139660644149104-marker">10</a></sup>理想情况下，产品开发团队和 SRE 团队都应从整体上理解整个技术栈，包括前端、后端、库、存储、内核和物理机器；任何团队都不应把某个单独组件据为己有。事实证明，只要“模糊边界”，<sup><a data-type="noteref" href="ch01-zh.html#idm139660644149584" id="idm139660644149584-marker">11</a></sup>让 SRE 也能为 JavaScript 添加监测手段，让产品开发人员也能验证内核是否合用，就可以完成更多工作：掌握变更方法并有权实施变更的人会大幅增加，各方也不再有动机把某项职能牢牢攥在自己手中。</p>
+
+<p>在<a href="http://bit.ly/2kIcNYM">《<em>站点可靠性工程</em>》</a>中，我们没有充分说明：在 Google，产品开发团队默认对自己的服务负有所有权。绝大多数服务既得不到 SRE 支持，也没有必要获得这种支持；不过，Google 仍会依据 SRE 原则管理所有服务。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644147568" id="idm139660644147568-marker">12</a></sup>当 SRE 团队与产品开发团队合作时，最终采用的同样是共同所有权模式。</p>
+</div></section>
+
+<section data-pdf-bookmark="Use the Same Tooling, Regardless of Function or Job Title" data-type="sect2"><div class="sect2" id="idm139660644140096">
+<h2>无论职能或职称如何，都使用同一套工具</h2>
+
+<p>工具是影响行为的一个极其重要的决定因素。如果天真地认为 Google 的 SRE 之所以有效，<a contenteditable="false" data-primary="tooling" data-secondary="using same tooling regardless of job title" data-type="indexterm" id="idm139660644142352"/><a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-tertiary="using same tooling regardless of job title" data-type="indexterm" id="idm139660644146192"/>与广泛开放的<a href="http://bit.ly/2J4jgMi">统一代码库</a>、种类丰富的软件与系统工具、<a href="http://bit.ly/2J6wkkp">高度优化的专有</a>生产技术栈等毫无关系，显然站不住脚。但我们与 DevOps 共享一项毫不含糊的信念：负责同一项服务的团队，<sup><a data-type="noteref" href="ch01-zh.html#idm139660644138000" id="idm139660644138000-marker">13</a></sup>不论在组织中扮演什么角色，都应使用相同的工具。如果 SRE 用一套工具，产品开发人员用另一套，而且两套工具在不同情况下表现不一，甚至可能产生灾难性差异，就不可能把服务管理好。工具之间的差异越大，公司从每一次单项工具改进中获得的整体收益就越少。<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="principles" data-startref="ix_Sreprin" data-type="indexterm" id="idm139660644137744"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Compare and Contrast" data-type="sect1"><div class="sect1" id="idm139660644211104">
+<h1>异同对照</h1>
+
+<p>回顾上述原则，可以立即看出二者有许多<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="comparing and contrasting with DevOps" data-type="indexterm" id="idm139660644130464"/>共同点：<a contenteditable="false" data-primary="DevOps" data-secondary="comparing and contrasting with SRE" data-type="indexterm" id="idm139660644130864"/></p>
+
+<ul>
+	<li>
+	<p>DevOps 和 SRE 都以接受“为了改进，变更不可或缺”为前提。若不接受这一点，就几乎没有腾挪空间。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644127920" id="idm139660644127920-marker">14</a></sup></p>
+	</li>
+	<li>
+	<p>协作是 DevOps 工作的核心。<a contenteditable="false" data-primary="collaboration in DevOps and SRE" data-type="indexterm" id="idm139660644125184"/>SRE 要有效运作，也离不开切实可行的共同所有权模式和良好的伙伴团队关系。和 DevOps 一样，SRE 在整个组织中也共享一套鲜明的价值观，这能稍稍降低团队打破壁垒的难度。</p>
+	</li>
+	<li>
+	<p>变更管理最好通过持续的小步行动来进行，其中大多数变更最好既能自动测试，也能自动应用。<a contenteditable="false" data-primary="change management" data-secondary="in DevOps and SRE" data-type="indexterm" id="idm139660644123200"/>变更与可靠性紧密相互影响，因此这一点对 SRE 尤其重要。</p>
+	</li>
+	<li>
+	<p>合适的工具至关重要；在一定程度上，工具决定了你能够采取哪些行动。<a contenteditable="false" data-primary="tooling" data-secondary="in DevOps and SRE" data-type="indexterm" id="idm139660644120768"/>但我们不能过分关注某项目标是否通过某套特定工具实现。归根结底，用 API 管理系统是一种更重要的理念，其生命力会超过任何一种具体实现。</p>
+	</li>
+	<li>
+	<p>度量<a contenteditable="false" data-primary="measurements" data-secondary="in DevOps and SRE" data-type="indexterm" id="idm139660644118304"/>是 DevOps 和 SRE 运作方式中绝对关键的一环。对 SRE 而言，SLO 主导着为改进服务而采取的行动。当然，没有度量就不可能建立 SLO；同时还需要跨团队讨论，最好有产品、基础设施或 SRE 以及业务方共同参与。对 DevOps 来说，度量常用于了解流程产出了什么、反馈循环持续多久，等等。无论把 DevOps 和 SRE 看作职业还是理念，二者都以数据为导向。</p>
+	</li>
+	<li>
+	<p>管理生产服务的残酷现实是，坏事偶尔必然发生，而你必须讨论其原因。<a contenteditable="false" data-primary="production" data-secondary="managing services in DevOps and SRE" data-type="indexterm" id="idm139660644106896"/>SRE 和 DevOps 都采用<a href="http://bit.ly/2J2Po2W">无责复盘</a>，以抑制肾上腺素驱动、却于事无补的应激反应。<a contenteditable="false" data-primary="postmortems" data-secondary="blameless" data-type="indexterm" id="idm139660644113280"/><a contenteditable="false" data-primary="blameless postmortems" data-type="indexterm" id="idm139660644114208"/></p>
+	</li>
+	<li>
+	<p>归根结底，实施 DevOps <em>或</em> SRE 都是一项整体性工作；二者都希望通过一种高度明确的协作方式，让整个团队（或部门、组织）变得更好。无论 DevOps 还是 SRE，最终结果都应当是交付速度提升。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644105600" id="idm139660644105600-marker">15</a></sup></p>
+	</li>
+</ul>
+
+<p>可见，DevOps 和 SRE 有许多共同之处。</p>
+
+<p>不过，二者也存在显著差异。从某种意义上说，DevOps 是一种范围更广的理念和文化。它带来的变化比 SRE 更广泛，因此也更依赖具体情境。至于如何在细节层面开展运维，DevOps 相对少有论述。例如，它并不规定服务具体应如何管理，而是选择把重点放在打破组织中更广泛的壁垒上。这一点很有价值。</p>
+
+<p>相比之下，SRE 的职责定义较窄，其关注范围通常围绕服务和最终用户，而不是整个企业。因此，面对“怎样有效运行系统”这个问题，它会提出一套主张鲜明的思维框架，其中包括<a href="http://bit.ly/2so6uOc">错误预算</a>等概念。SRE 作为一种职业，虽然非常重视激励及其影响，却很少谈及孤岛化和信息壁垒等话题。它会支持 CI 和 CD，未必是因为二者有何商业理由，而是因为它们能够改进运维实践。换句话说，SRE <em>相信的事情与 DevOps 相同，只是理由略有不同。</em></p>
+</div></section>
+
+<section data-pdf-bookmark="Organizational Context and Fostering Successful Adoption" data-type="sect1"><div class="sect1" id="idm139660644134736">
+<h1>组织环境与如何促成成功落地</h1>
+
+<p>DevOps 与 SRE 的运作方式在理念上高度重叠。不出所料，要让二者能够在组织内实施，<a contenteditable="false" data-primary="DevOps" data-secondary="organizational context and fostering successful adoption" data-type="indexterm" id="ix_DOocadopt"/>并从实施中获得最大收益，<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="organizational context and fostering successful adoption" data-type="indexterm" id="ix_SREocadopt"/>所需条件也很相似。借用一句<a href="http://bit.ly/2LPfiog">托尔斯泰差一点却并未真正说过的话</a>：有效的运维方法都是相似的，失灵的方法却各有各的失灵之处。激励机制可以解释其中一部分原因。</p>
+
+<p>如果一个组织的文化认可 DevOps 方法带来的收益，也愿意承担相应成本——通常包括招聘难度上升、维持团队与职责流动性所需的精力，以及为了吸引必然更稀缺的技能而增加的薪酬投入——那么，它还必须确保<em>激励机制</em>正确，才能充分获得这种方法的收益。<a contenteditable="false" data-primary="incentives" data-secondary="for successful adoption of DevOps and SRE" data-type="indexterm" id="ix_incent"/></p>
+
+<p>具体来说，在 DevOps 和 SRE 两种环境中，都应满足以下条件。</p>
+
+<section data-pdf-bookmark="Narrow, Rigid Incentives Narrow Your Success" data-type="sect2"><div class="sect2" id="idm139660644089568">
+<h2>狭隘僵化的激励会限制成功</h2>
+
+<p>许多公司无意中制定了会损害集体绩效的正式激励机制。<a contenteditable="false" data-primary="incentives" data-secondary="for successful adoption of DevOps and SRE" data-tertiary="narrow incentives narrowing success" data-type="indexterm" id="idm139660644092816"/>要避免这个错误，就不要让激励与发布结果或可靠性结果过度、狭隘地绑定。正如<a href="http://bit.ly/2J7AZhA">任何经济学家</a>都会告诉你的，只要<em>存在</em>数字指标，人们就会找到办法钻指标的空子，造成不良后果；有时甚至完全出于善意。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644088208" id="idm139660644088208-marker">16</a></sup>相反，应让员工有自由寻找恰当的权衡。如前所述，DevOps 或 SRE 可以从整体上为产品团队提速，使软件组织的其他成员能够持续、可靠地向客户交付功能。这种机制还能解决传统系统团队与软件团队分立模式中一个长期存在的问题：设计与生产之间缺少反馈循环。如果 SRE 能尽早参与，最好在设计阶段就加入，那么无论最终由谁负责管理服务，系统部署到生产环境后的表现通常都会更好。（没有什么比丢失用户数据更能拖慢功能开发。）</p>
+</div></section>
+
+<section data-pdf-bookmark="It’s Better to Fix It Yourself; Don’t Blame Someone Else" data-type="sect2"><div class="sect2" id="idm139660644084720">
+<h2>自己动手修复，胜过归咎他人</h2>
+
+<p>此外，不要设置任何激励，让人把生产事故或系统故障的责任推给其他团队。<a contenteditable="false" data-primary="incentives" data-secondary="for successful adoption of DevOps and SRE" data-tertiary="avoiding passing of blame" data-type="indexterm" id="idm139660644083344"/><a contenteditable="false" data-primary="failures" data-secondary="not passing off blame for" data-type="indexterm" id="idm139660644081328"/>从许多方面看，相互推责正是传统工程运维模式的核心问题：运维团队和软件团队彼此分离，便会各自产生不同的激励。要在组织层面抑制推责，可以考虑采用以下做法：</p>
+
+<ul>
+	<li>
+	<p>当产品需要时，不仅要允许工程师修改代码和配置，还要主动<em>鼓励</em>他们这样做。同时，应授权这些团队在自身使命范围内大胆行动，从而消除促使他们放慢脚步的激励。</p>
+	</li>
+	<li>
+	<p>支持无责复盘。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644079136" id="idm139660644079136-marker">17</a></sup>这样做可以消除淡化或掩盖问题的动机。<a contenteditable="false" data-primary="postmortems" data-secondary="blameless" data-type="indexterm" id="idm139660644076592"/><a contenteditable="false" data-primary="blameless postmortems" data-type="indexterm" id="idm139660644075648"/>要充分理解产品，真正优化其性能和功能，这一步至关重要；它依赖的正是前文所说的生产环境智慧。</p>
+	</li>
+</ul>
+
+<p>应允许支持团队退出那些在运维上已经无可挽救的产品。撤回支持的可能性，会促使产品开发团队在获得支持前的准备阶段，以及产品已经获得支持之后修复问题，从而节省所有人的时间。究竟什么算“在运维上无可挽救”，会因具体环境而异；这里的互动应建立在双方都理解各自责任的基础上。向其他部门提出异议时，可以委婉地说：“我们认为，拥有这类技能的人才把时间用在别处，能创造更高价值。”也可以划清底线：“如果让这些人承担过多运维工作，却不给他们机会发挥工程技能，他们会辞职。”在 Google，彻底撤回对此类产品的支持已经成为制度化做法。</p>
+</div></section>
+
+<section data-pdf-bookmark="Consider Reliability Work as a Specialized Role" data-type="sect2"><div class="sect2" id="idm139660644070704">
+<h2>把可靠性工作视为专业岗位</h2>
+
+<p>在 Google，SRE 与产品开发分属不同组织。<a contenteditable="false" data-primary="reliability" data-secondary="considering work on as specialized role" data-type="indexterm" id="idm139660644067584"/>双方各有自己的关注点、优先事项和管理体系，谁也不必听命于对方。不过，当产品取得成功时，产品开发团队实际上会通过新增招聘名额，为 SRE 的扩张提供资源。这样一来，产品开发团队会关心 SRE 团队能否成功，正如 SRE 也会关心产品开发团队能否成功。SRE 还很幸运地得到了管理层高层的支持，因此工程团队即使反对以“SRE 方式”支持服务，异议通常也不会持续太久。不过，想用不同方式做事并不一定要调整组织结构图；只要形成一个采用不同实践的专业社群即可。</p>
+
+<p>无论你是正式拆分组织结构，还是采用更非正式的机制，都必须认识到专业化会带来挑战。DevOps 和 SRE 实践者如果拥有一个由同行组成的实践社群，就能从中获得支持并促进职业发展；同时还需要有相应的职级体系，<sup><a data-type="noteref" href="ch01-zh.html#idm139660644069760" id="idm139660644069760-marker">18</a></sup>对他们带来的独特技能与视角给予回报。</p>
+
+<p>必须注意，Google 所采用的组织结构以及前述部分激励机制，<em>在一定程度上</em>依赖相当大的组织规模。例如，如果你的初创公司只有 20 人，也只有一个规模较小的产品，允许撤回运维支持就没多大意义。你仍然可以采用 DevOps 风格的方法，<sup><a data-type="noteref" href="ch01-zh.html#idm139660644064688" id="idm139660644064688-marker">19</a></sup>但如果你唯一能做的就是帮助这个产品增长，那么改进一个运维表现糟糕的产品的能力就会受到削弱。不过通常来说，在满足增长需求和控制技术债务累积速度之间如何取舍，人们拥有的选择其实比自己想象的更多。<sup><a data-type="noteref" href="ch01-zh.html#idm139660644063184" id="idm139660644063184-marker">20</a></sup></p>
+</div></section>
+
+<section data-pdf-bookmark="When Can Substitute for Whether" data-type="sect2"><div class="sect2" id="idm139660644061920">
+<h2><em>“何时”</em>可以代替<em>“是否”</em></h2>
+
+<p>不过，当组织或产品增长到一定规模之后，你就有更大的余地<a contenteditable="false" data-primary="support for services, deciding on" data-type="indexterm" id="idm139660644058480"/>决定支持哪些产品，或者如何<em>安排支持工作的优先级</em>。如果系统 X 显然会比系统 Y 更早得到支持，那么这种隐含的条件性，在 SRE 环境中可以发挥与决定<em>不</em>支持某项服务大致相同的作用。</p>
+
+<p>在 Google，SRE 与产品开发之间牢固的<a contenteditable="false" data-primary="development" data-secondary="partnership with SRE, critical importance of" data-type="indexterm" id="idm139660644060384"/>伙伴关系已被证明极其重要。如果你的组织中也存在这种关系，那么是否撤回或提供支持，就可以依据不同产品运维特性的客观数据来决定，从而避免那些原本毫无成效的争论。</p>
+
+<p>SRE 与产品开发之间富有成效的关系，还有助于避免一种组织反模式：产品开发团队被迫在产品或功能尚未真正就绪时就将其发布。SRE 可以改为与开发团队合作，先改善产品，再把维护负担从最有能力修复问题的人手中转移出去。</p>
+</div></section>
+
+<section data-pdf-bookmark="Strive for Parity of Esteem: Career and Financial" data-type="sect2"><div class="sect2" id="idm139660644057360">
+<h2>争取同等认可：职业与薪酬</h2>
+
+<p>最后，要确保促使人们做正确事情的职业激励已经到位：我们希望 DevOps/SRE 组织得到与产品开发团队同等的认可。<a contenteditable="false" data-primary="incentives" data-secondary="for successful adoption of DevOps and SRE" data-tertiary="striving for parity of esteem" data-type="indexterm" id="idm139660644045824"/>因此，各团队成员应当接受大致相同方式的评价，并获得<a contenteditable="false" data-primary="incentives" data-secondary="for successful adoption of DevOps and SRE" data-startref="ix_incent" data-type="indexterm" id="idm139660644044080"/>同等的经济激励。<a contenteditable="false" data-primary="DevOps" data-secondary="organizational context and fostering successful adoption" data-startref="ix_DOocadopt" data-type="indexterm" id="idm139660644050400"/><a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="organizational context and fostering successful adoption" data-startref="ix_SREocadopt" data-type="indexterm" id="idm139660644048704"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="idm139660644042816">
+<h1>结语</h1>
+
+<p>从许多方面看，在 IT 运维这片整体版图中，DevOps 与 SRE 无论在实践还是理念上都十分接近。</p>
+
+<p>要取得实质性进展，DevOps 和 SRE 都需要充分讨论、管理层支持，以及实际工作者的认同。<a contenteditable="false" data-primary="rename-and-shame" data-type="indexterm" id="idm139660644038736"/>实施任何一种方法都是一段旅程，不是速效药；“只改名、再问责”的做法<sup><a data-type="noteref" href="ch01-zh.html#idm139660644037280" id="idm139660644037280-marker">21</a></sup>徒有其表，不太可能带来收益。SRE 对如何开展运维有更明确的主张，因此在这段旅程的早期，会提出更多改变工作实践的具体建议，尽管这些建议需要结合实际情况调整。DevOps 关注面更广，因此理解起来更困难，也更难转化为具体步骤；但恰恰因为范围广，它在初期遭遇的阻力可能更小。</p>
+
+<p>不过，二者的实践者使用许多相同的工具，采用相同的变更管理方法，也共享依据数据决策的思维方式。归根结底，不论我们叫什么名字，面对的都是同一个长期存在的问题：生产环境，以及如何把它变得更好。</p>
+
+<p>如果你希望进一步阅读，以下资料可以帮助你更全面地理解当前这场运维革命背后的文化、商业和技术基础：</p>
+
+<ul>
+	<li>
+	<p><a href="http://bit.ly/2kIcNYM">《<em>站点可靠性工程</em>》</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/1ST4nI5">《<em>高效 DevOps</em>》</a></p>
+	</li>
+	<li>
+	<p><a href="http://oreil.ly/1PfgBX8">《<em>凤凰项目</em>》</a></p>
+	</li>
+	<li>
+	<p><a href="https://amzn.to/2GZSY86">《<em>云系统管理实践：面向 Web 服务的 DevOps 与 SRE 实践（第 2 卷）</em>》</a></p>
+	</li>
+	<li>
+	<p><a href="https://amzn.to/2LGQ9fK">《<em>加速：精益软件与 DevOps 的科学</em>》</a></p>
+	</li>
+</ul>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="idm139660644272192"><sup><a href="ch01-zh.html#idm139660644272192-marker">1</a></sup>请注意，由于本书讨论的是 SRE，部分内容专门针对软件服务运维，而不是一般意义上的 IT 运维。</p><p data-type="footnote" id="idm139660644267440"><sup><a href="ch01-zh.html#idm139660644267440-marker">2</a></sup>Mary Poppendieck 写过一篇精彩文章讨论这一问题，题为“<a href="http://bit.ly/2LRFkHt">成本中心陷阱</a>”。这种做法还可能以另一种方式失败：一场规模巨大、发生概率很低的灾难，可能一次性吞掉采用低标准运维模式节省的全部成本（参见 <a href="https://ind.pn/2LNQflE">2017 年 5 月英国航空公司服务中断事件</a>）。</p><p data-type="footnote" id="idm139660644263056"><sup><a href="ch01-zh.html#idm139660644263056-marker">3</a></sup>当然，还有许多其他可能的回应。例如，ITIL® 是另一种 IT 管理方法，主张加强标准化。</p><p data-type="footnote" id="idm139660644244992"><sup><a href="ch01-zh.html#idm139660644244992-marker">4</a></sup>还要注意，现实世界十分复杂，分区、壁垒等做法也会产生一些<a href="http://bit.ly/2JaOddH">积极影响</a>；不过在运维领域，<a href="http://bit.ly/2L9Mw0s">这种划分</a>的负面影响似乎尤其顽固且有害。</p><p data-type="footnote" id="idm139660644238496"><sup><a href="ch01-zh.html#idm139660644238496-marker">5</a></sup>参见 <a href="https://en.wikipedia.org/wiki/Normal_Accidents"><em class="hyperlink">https://en.wikipedia.org/wiki/Normal_Accidents</em></a>。</p><p data-type="footnote" id="idm139660644229952"><sup><a href="ch01-zh.html#idm139660644229952-marker">6</a></sup>风险较高的变更，或无法通过自动化手段验证的变更，显然仍应由人工审核，即使不一定由人工实施。</p><p data-type="footnote" id="idm139660644207520"><sup><a href="ch01-zh.html#idm139660644207520-marker">7</a></sup>Google 的 SRE 源自一个更偏重运维的前身团队；Ben 推动团队从工程角度处理这一问题，由此开启了 Google 的 SRE 历史。</p><p data-type="footnote" id="idm139660644200352"><sup><a href="ch01-zh.html#idm139660644200352-marker">8</a></sup>“DevOps 工程师”这个名称在许多方面都名不副实。最根本的问题或许是：你不能只是招来一些人，称他们为“DevOps 工程师”，就指望立即获得成效。要真正受益，必须接受改变工作方式的整套理念。正如 <a href="http://bit.ly/2sy7UVI">Andrew Clay Shafer 所说</a>：“人们出售 DevOps，但你买不到它。”Seth Vargo 在<a href="http://bit.ly/2HcHmP1">《DevOps 的十大迷思》</a>中也指出，你不能“雇一个 DevOp 来修好你的组织”。</p><p data-type="footnote" id="idm139660644190320"><sup><a href="ch01-zh.html#idm139660644190320-marker">9</a></sup>服务等级目标，是针对某项具体指标设定的性能目标（例如 99.9% 的时间可用）。</p><p data-type="footnote" id="idm139660644149104"><sup><a href="ch01-zh.html#idm139660644149104-marker">10</a></sup>当然，并非每个团队都会承担所有这些工作，但它们是 SRE 最常见的工作类别。</p><p data-type="footnote" id="idm139660644149584"><sup><a href="ch01-zh.html#idm139660644149584-marker">11</a></sup>如果把系统看成分层的技术栈，这相当于主动打破分层约束。</p><p data-type="footnote" id="idm139660644147568"><sup><a href="ch01-zh.html#idm139660644147568-marker">12</a></sup>事实上，<em>任何服务</em>在接入前都要接受生产就绪评审；SRE 不会毫无准备地直接接手服务。</p><p data-type="footnote" id="idm139660644138000"><sup><a href="ch01-zh.html#idm139660644138000-marker">13</a></sup>宽泛地说，服务是为了满足某种业务需求而运行的软件，通常还受到可用性要求的约束。</p><p data-type="footnote" id="idm139660644127920"><sup><a href="ch01-zh.html#idm139660644127920-marker">14</a></sup>在 Google，这场争论基本已经尘埃落定，服务的状态、配置、所有权、方向等始终都在变化。某种程度上，Google 的 SRE 得益于过去多次围绕“变更不可或缺”展开且最终胜出的争论。不过用 William Gibson 的话说，这种共识的<a href="http://bit.ly/2J1qnFf">分布仍不完全均匀</a>。</p><p data-type="footnote" id="idm139660644105600"><sup><a href="ch01-zh.html#idm139660644105600-marker">15</a></sup>相关研究见 <a href="https://devops-research.com/research.html"><em class="hyperlink">https://devops-research.com/research.html</em></a>。</p><p data-type="footnote" id="idm139660644088208"><sup><a href="ch01-zh.html#idm139660644088208-marker">16</a></sup>参见 <a href="http://en.wikipedia.org/wiki/Goodhart%27s_law"><em class="hyperlink">http://en.wikipedia.org/wiki/Goodhart%27s_law</em></a> 和 <a href="https://skybrary.aero/bookshelf/books/2336.pdf"><em class="hyperlink">https://skybrary.aero/bookshelf/books/2336.pdf</em></a>。</p><p data-type="footnote" id="idm139660644079136"><sup><a href="ch01-zh.html#idm139660644079136-marker">17</a></sup>例如，参见 <a href="https://codeascraft.com/2012/05/22/blameless-postmortems/"><em class="hyperlink">https://codeascraft.com/2012/05/22/blameless-postmortems/</em></a>。</p><p data-type="footnote" id="idm139660644069760"><sup><a href="ch01-zh.html#idm139660644069760-marker">18</a></sup>这里指已经形成成熟 DevOps 或 SRE 文化的组织。处于早期阶段的公司，很可能尚未建立奖励这些岗位的机制。</p><p data-type="footnote" id="idm139660644064688"><sup><a href="ch01-zh.html#idm139660644064688-marker">19</a></sup>事实上，可以说除非把运维外包，否则这是你<em>唯一</em>的选择。</p><p data-type="footnote" id="idm139660644063184"><sup><a href="ch01-zh.html#idm139660644063184-marker">20</a></sup>关于如何在不同情境下应用 SRE 原则，参见<a data-type="xref" href="ch20-zh.html#sre_team_lifecycles">第 20 章</a>。</p><p data-type="footnote" id="idm139660644037280"><sup><a href="ch01-zh.html#idm139660644037280-marker">21</a></sup>也就是说，只把一个团队改名为 DevOps 或 SRE，却不改变它在组织中的位置；承诺的改进没有出现时，这个团队必然会受到指责。</p></div></div></section></body></html>
