@@ -1,0 +1,973 @@
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>实施 SLO</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 2. Implementing SLOs" data-type="chapter" epub:type="chapter"><div class="chapter" id="implementing_slos">
+<h1><span class="label">第 2 章　</span>实施 SLO</h1>
+
+<p class="byline">作者：Steven Thurgood 和 David Ferguson<br/>
+Alex Hidalgo 和 Betsy Beyer 参与撰写</p>
+
+<p><em>服务等级目标</em>（SLO）规定服务可靠性应达到的目标水平<a contenteditable="false" data-primary="service level objectives (SLOs)" data-type="indexterm" id="ix_SLO"/>。SLO 是依据数据制定可靠性决策的关键，因此也是 SRE 实践的核心。从许多方面来看，这是本书最重要的一章。<a contenteditable="false" data-primary="SLOs" data-see="service level objectives" data-type="indexterm" id="idm139660644019344"/></p>
+
+<p>掌握几条指导原则后，建立初始 SLO 及其持续完善流程并不复杂。 <a href="http://bit.ly/2szBKsK">第 4 章</a> 介绍了 SLO 和服务等级指标（SLI），并给出了一些使用建议。<a contenteditable="false" data-primary="service level indicators (SLIs)" data-type="indexterm" id="idm139660644022032"/><a contenteditable="false" data-primary="SLIs" data-see="service level indicators" data-type="indexterm" id="idm139660644018192"/></p>
+
+<p>本章先讨论 SLO 和错误预算背后的动机，再给出一套循序渐进的方法，帮助你开始设计 SLO，并说明此后如何迭代。随后，我们会介绍如何用 SLO 做出有效的业务决策，并探讨一些进阶主题。最后，我们将给出不同类型服务的 SLO 示例，以及在特定情形下制定更复杂 SLO 的思路。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn1" id="ch02fn1-marker">1</a></sup></p>
+
+<section data-pdf-bookmark="Why SREs Need SLOs" data-type="sect1"><div class="sect1" id="why_sres_need_slos">
+<h1>为什么 SRE 需要 SLO</h1>
+
+<p>即使在规模最大的组织中，工程师也是稀缺资源。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="why they need SLOs" data-type="indexterm" id="idm139660644012192"/>  工程时间应当 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="why SREs need them" data-type="indexterm" id="idm139660644013712"/>投入到最重要服务的最重要特性上。<a contenteditable="false" data-primary="site reliability engineers" data-see="SREs" data-type="indexterm" id="idm139660644008784"/>  一边要投资于能够吸引新客户、留住现有客户的功能，一边又要投资于让客户满意的可靠性和可扩展性；如何在二者之间取得恰当平衡并不容易。Google 的经验表明，经过深思熟虑并得到落实的 SLO，是依据数据判断可靠性工作的机会成本、合理确定其优先级的关键。</p>
+
+<p>SRE 的核心职责不只是把“一切”自动化并承担值班响应。他们的日常任务和项目由 SLO 驱动：短期内守住 SLO，中长期则确保 SLO 能够持续达成。甚至可以说，没有 SLO，就没有设立 SRE 的必要。</p>
+
+<p>SLO 是确定工程工作优先级的工具。例如，在“自动回滚”和“迁移到有副本的数据存储”这两个可靠性项目之间取舍时，可以估算二者对错误预算的影响，从而判断哪个项目对用户更有益。详情参见<a data-type="xref" href="#decision_making_using_slos_and_error_budg">“使用 SLO 和错误预算做决策”</a>一节，另见<a href="http://bit.ly/2xzGm83">“风险管理”</a>一章，出自<em>《站点可靠性工程》</em>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Getting Started" data-type="sect1"><div class="sect1" id="getting_started">
+<h1>入门</h1>
+
+<p>为了建立一组基本 SLO，我们先假设你的服务是某种代码，<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="getting started with" data-type="indexterm" id="ix_SLOstart"/>已经编译、发布并运行在联网基础设施上，用户通过 Web 访问。你的系统可能处于<a contenteditable="false" data-primary="systems" data-secondary="maturity levels" data-type="indexterm" id="idm139660643998720"/>以下某个成熟度阶段：</p>
+
+<ul>
+	<li>
+	<p>全新开发的系统，目前尚未部署任何内容</p>
+	</li>
+	<li>
+	<p>已经投入生产，具备一些监控，出问题时能够通知你；但没有正式目标，也没有错误预算的概念，只是默认追求 100% 正常运行时间</p>
+	</li>
+	<li>
+	<p>已经运行且设有低于 100% 的 SLO，但大家既未形成对其重要性的共识，也不知道如何借助它选择持续改进事项；换句话说，这是一个没有约束力的 SLO</p>
+	</li>
+</ul>
+
+<p>要采用<a contenteditable="false" data-primary="error budgets" data-secondary="prerequisites for adopting as SRE approach" data-type="indexterm" id="idm139660643989792"/> 以错误预算为基础的站点可靠性工程方法，需要满足以下条件：</p>
+
+<ul>
+	<li>
+	<p>组织中的所有利益相关方都已认可一组适合该产品的 SLO。</p>
+	</li>
+	<li>
+	<p>负责确保服务达到 SLO 的人员认同：在正常情况下，这些 SLO 可以实现。</p>
+	</li>
+	<li>
+	<p>组织承诺使用错误预算进行决策和优先级排序，并以错误预算策略的形式将这一承诺正式确定下来。</p>
+	</li>
+	<li>
+	<p>已经建立完善 SLO 的流程。</p>
+	</li>
+</ul>
+
+<p>否则，你无法采用基于错误预算的可靠性方法。SLO 达标情况只会成为另一个 KPI（关键绩效指标）或报告指标，而不是决策工具。<a contenteditable="false" data-primary="performance" data-secondary="KPI (key performance indicator), SLO compliance as" data-type="indexterm" id="idm139660643987056"/></p>
+
+<section data-pdf-bookmark="Reliability Targets and Error Budgets" data-type="sect2"><div class="sect2" id="reliability_targets_and_error_budgets">
+<h2>可靠性目标与错误预算</h2>
+
+<p>制定适当 SLO 的第一步， <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="getting started with" data-tertiary="reliability targets and error budgets" data-type="indexterm" id="idm139660643982272"/>是讨论 SLO 应该是什么，以及它应涵盖哪些内容。<a contenteditable="false" data-primary="reliability" data-secondary="reliability targets and error budgets" data-type="indexterm" id="idm139660643978464"/></p>
+
+<p>SLO 为服务面向客户的可靠性设定目标水平。高于这个阈值时，几乎所有用户都应对服务感到满意（假设服务的用途本身也令他们满意）。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn2" id="ch02fn2-marker">2</a></sup> 低于这个阈值时，用户很可能开始抱怨，甚至停止使用服务。归根结底，用户满意度才是关键：满意的用户会继续使用服务，为组织创造收入，较少求助客户支持团队，还会向朋友推荐服务。我们保持服务可靠，目的正是让客户满意。</p>
+
+<p>客户满意度是个相当模糊的概念，无法精确测量；我们往往甚至几乎无从观察。那么，该从哪里开始？第一个 SLO 应该用什么？</p>
+
+<p>经验表明，100% 可靠性是错误的目标：</p>
+
+<ul>
+	<li>
+	<p>如果 SLO 与客户满意度保持一致，100% 就不是合理目标。即使具备冗余组件、自动健康检查和快速故障转移，一个或多个组件同时失效的概率仍不为零，因此可用性必然可能低于 100%。<a contenteditable="false" data-primary="error budgets" data-secondary="reliability targets and" data-type="indexterm" id="idm139660643970224"/></p>
+	</li>
+	<li>
+	<p>即使系统内部能够达到 100% 可靠性，客户体验到的可靠性也不会是 100%。你与客户之间的系统链路通常漫长而复杂，其中任何组件都可能失效。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn3" id="ch02fn3-marker">3</a></sup> 这还意味着，当可靠性从 99% 提升到 99.9%，再提升到 99.99% 时，每增加一个“9”，成本都会上升，而对客户的边际效用却逐渐趋近于零。</p>
+	</li>
+	<li>
+	<p>即使你确实为客户创造了 100% 可靠的体验，要维持这一水平，也意味着服务永远不能更新或改进。<a contenteditable="false" data-primary="features" data-secondary="tradeoffs between feature velocity and reliability" data-type="indexterm" id="idm139660643964496"/> 变更是中断的首要来源：发布新功能、应用安全补丁、部署新硬件，以及为满足客户需求而扩容，都会影响 100% 这个目标。服务迟早会停滞不前，客户也会转投他处，这对任何人的收益都没有好处。</p>
+	</li>
+	<li>
+	<p>100% 的 SLO 意味着你只能被动响应。可用性低于 100% 是必然会发生的，而你实际上除了对此作出反应，什么也做不了。100% 可靠性不是工程文化所追求的 SLO，而是运维团队的 SLO。</p>
+	</li>
+</ul>
+
+<p>一旦把 SLO 目标设在 100% 以下，就需要由组织中有权在功能交付速度与可靠性之间做取舍的人负责。在小型组织中，这个人可能是 CTO；在大型组织中，通常是产品负责人（或产品经理）。</p>
+</div></section>
+
+<section data-pdf-bookmark="What to Measure: Using SLIs" data-type="sect2"><div class="sect2" id="what_to_measure_using_slis">
+<h2>衡量什么：使用 SLI</h2>
+
+<p>既然认同 100% 不是正确数字，那么正确数字该如何确定？究竟又是在衡量什么？<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="getting started with" data-tertiary="measurements using SLIs" data-type="indexterm" id="ix_SLOstartmeas"/><a contenteditable="false" data-primary="measurements" data-secondary="with service level indicators (SLIs)" data-type="indexterm" id="idm139660643960864"/><a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="measurements with" data-type="indexterm" id="idm139660643965600"/>这就要用到服务等级指标：SLI 是反映所提供服务水平的<em>指标</em>。</p>
+
+<p>很多数值都可以充当 SLI，但我们通常建议把 SLI 表示为两个数之比：良好事件数除以事件总数。 <a contenteditable="false" data-primary="HTTP requests" data-secondary="success of, SLIs for" data-type="indexterm" id="idm139660643955840"/>例如：</p>
+
+<ul>
+	<li>
+	<p>成功的 HTTP 请求数 / HTTP 请求总数（成功率）</p>
+	</li>
+	<li>
+	<p>在 100 ms 内成功完成的 gRPC 调用数 / gRPC 请求总数</p>
+	</li>
+	<li>
+	<p>使用完整语料库的搜索结果数 / 搜索结果总数（包括优雅降级后的结果）</p>
+	</li>
+	<li>
+	<p>产品搜索发出的“库存检查计数”请求中使用了更新时间不超过 10 分钟的库存数据的请求数 / 库存检查请求总数</p>
+	</li>
+	<li>
+	<p>按照该指标的一组扩展条件判定的“良好用户分钟数” / 用户分钟总数</p>
+	</li>
+</ul>
+
+<p>这种形式的 SLI 有几个格外实用的性质。SLI 的取值范围是 0% 到 100%：0% 表示全部不可用，100% 表示没有任何故障。实践证明，这种尺度很直观，也很容易与错误预算概念结合：SLO 是目标百分比，错误预算则等于 100% 减去 SLO。<a contenteditable="false" data-primary="error budgets" data-secondary="calculating" data-type="indexterm" id="idm139660643949200"/> 例如，若成功率 SLO 为 99.9%，某服务在四周内收到 300 万次请求，那么这段时间允许发生 3,000 次（0.1%）错误。若一次中断造成 1,500 次错误，它就消耗了 50% 的错误预算。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn4" id="ch02fn4-marker">4</a></sup></p>
+
+<p>此外，让所有 SLI 采用一致形式，可以更充分地利用工具：告警逻辑、SLO 分析工具、错误预算计算和报告都可以接收相同的输入，即分子、分母和阈值。简化本身也是一项收益。</p>
+
+<p>第一次制定 SLI 时，可以把它进一步分成 <em>SLI 规范</em> 和 <em>SLI 实现</em>：</p>
+
+<dl>
+	<dt><dfn>SLI 规范</dfn></dt>
+	<dd>
+	<p>对你认为用户关心的服务结果所作的描述，<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="specifications" data-type="indexterm" id="idm139660643939792"/>不涉及具体如何测量。</p>
+
+	<p>例如：首页请求中在 100 ms 内完成加载的比例</p>
+	</dd>
+	<dt><dfn>SLI 实现</dfn></dt>
+	<dd>
+	<p>SLI 规范 <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="implementation" data-type="indexterm" id="idm139660643935968"/>以及测量它的方法。</p>
+
+	<p>例如：</p>
+
+	<ul>
+		<li>
+		<p>首页请求中在 100 ms 内完成加载的比例，以服务器日志的 Latency 列为准。这种测量会漏掉未能到达后端的请求。</p>
+		</li>
+		<li>
+		<p>首页请求中在 100 ms 内完成加载的比例，由探测器<a contenteditable="false" data-primary="probers" data-type="indexterm" id="idm139660643930688"/>测量；探测器会在虚拟机中运行的浏览器里执行 JavaScript。这种测量能捕获请求无法到达我方网络时的错误，但可能漏掉只影响部分用户的问题。</p>
+		</li>
+		<li>
+		<p>首页请求中在 100 ms 内完成加载的比例，由首页 JavaScript 自身的插桩测量，并回报给专用遥测记录服务。这种测量能更准确地反映用户体验，但需要修改代码来采集信息，还要建设记录信息的基础设施，而这套设施本身也有可靠性要求。</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+
+<p>可见，一项 SLI 规范可能有多种 SLI 实现；每种实现在质量（反映客户体验的准确程度）、覆盖率（反映所有客户体验的完整程度）和成本方面各有利弊。</p>
+
+<p>第一次制定的 SLI 和 SLO 不必完全正确；最重要的是先建立并测量一套指标，再形成反馈循环以便改进。（我们将在 <a data-type="xref" href="#continuous_improvement_of_slo_targets">“持续改进 SLO 目标”</a>中深入讨论。）</p>
+
+<p>在<a href="http://bit.ly/2kIcNYM">我们的第一本书</a>中，我们不建议根据当前性能选择 SLO，因为这可能让你背上不必要的严苛目标。<a contenteditable="false" data-primary="performance" data-secondary="current performance as determinant of SLOs" data-type="indexterm" id="idm139660643929472"/> 这条建议仍然成立。不过，如果没有其他信息，而且具备良好的持续迭代流程（稍后会介绍），当前性能也可以作为起点。只是完善 SLO 时不要受当前性能限制：客户会逐渐把 SLO 水平视为服务的正常表现。因此，如果服务有 99.999% 的请求能在 10 ms 内成功返回，一旦明显偏离这一基线，客户就可能不满。</p>
+
+<p>要建立第一组 SLO，需要选定几项对服务至关重要的 SLI 规范。可用性和延迟 SLO 很常见；新鲜度、持久性、正确性、质量和覆盖率 SLO 也各有用途（稍后会进一步讨论）。</p>
+
+<p>如果难以确定该从哪类 SLI 开始，不妨先从简单处着手：</p>
+
+<ul>
+	<li>
+	<p>先选择一个要定义 SLO 的应用。如果产品包含多个应用，以后再逐步加入。</p>
+	</li>
+	<li>
+	<p>明确此处的“用户”是谁；你要优化的正是这些人的满意度。</p>
+	</li>
+	<li>
+	<p>考虑用户与系统交互的常见方式，包括常见任务和关键活动。</p>
+	</li>
+	<li>
+	<p>绘制系统的高层架构图，标出关键组件、请求流、数据流和关键依赖。再按下一节列出的类别对组件分组（类别之间可能有重叠或边界不清；凭经验判断即可，不要为了追求完美而妨碍取得实际进展）。</p>
+	</li>
+</ul>
+
+<p>选择 SLI 时应认真思考，但也不要把问题复杂化。尤其刚开始实践 SLI 时，应选择与系统相关且易于测量的方面；以后随时可以迭代完善。</p>
+
+<section data-pdf-bookmark="Types of components" data-type="sect3"><div class="sect3" id="types_of_components">
+<h3>组件类型</h3>
+
+<p>设定 SLI 最简单的起步方法，是把系统抽象为几种常见组件。<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="abstracting your system into types of components" data-type="indexterm" id="idm139660643911968"/> 然后参考我们为各类组件建议的 SLI，选择与服务最相关的指标：<a contenteditable="false" data-primary="components" data-secondary="types of" data-type="indexterm" id="idm139660643916928"/> </p>
+
+<dl>
+	<dt><dfn>请求驱动型</dfn></dt>
+	<dd><p>用户发起某种事件，并期待得到响应。<a contenteditable="false" data-primary="request-driven components" data-type="indexterm" id="idm139660643908288"/> 例如，它可以是用户通过浏览器交互的 HTTP 服务，也可以是移动应用调用的 API。</p></dd>
+	<dt><dfn>流水线</dfn></dt>
+	<dd>
+	<p>以记录为输入，对其进行转换，再把输出放到其他位置的系统。<a contenteditable="false" data-primary="pipeline components" data-type="indexterm" id="idm139660643904528"/> 它既可以是在单个实例上实时运行的简单进程，也可以是耗时数小时的多阶段批处理流程。例如：</p>
+
+	<ul>
+		<li>
+		<p>定期从关系数据库读取数据，再写入分布式哈希表以优化服务的系统</p>
+		</li>
+		<li>
+		<p>把视频从一种格式转换为另一种格式的视频处理服务</p>
+		</li>
+		<li>
+		<p>读取多个来源的日志文件并生成报告的系统</p>
+		</li>
+		<li>
+		<p>从远程服务器拉取指标并生成时间序列和告警的监控系统</p>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>存储型</dfn></dt>
+	<dd><p>一种系统， <a contenteditable="false" data-primary="storage systems" data-type="indexterm" id="idm139660643899328"/>它接收数据（如字节、记录、文件和视频），并允许日后检索。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="getting started with" data-startref="ix_SLOstartmeas" data-tertiary="measurements using SLIs" data-type="indexterm" id="idm139660643898096"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="getting started with" data-startref="ix_SLOstart" data-type="indexterm" id="idm139660643896832"/> </p></dd>
+</dl>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="A Worked Example" data-type="sect1"><div class="sect1" id="worked_example">
+<h1>完整示例</h1>
+
+<p>手机游戏的简化架构<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="architecture for example mobile phone game" data-type="indexterm" id="ix_SLIarch"/>，<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-type="indexterm" id="ix_SLOimpl"/>如<a data-type="xref" href="#architecture_for_an_example_mobile_phone">图 2-1</a>所示。</p>
+
+<figure><div class="figure" id="architecture_for_an_example_mobile_phone"><img alt="手机游戏示例架构" src="assets/tsrw_0201.png"/>
+<h6><span class="label">图 2-1　</span>手机游戏示例架构</h6>
+</div></figure>
+
+<p>用户手机上的应用与云端运行的 HTTP API 交互。API 把状态变更写入永久存储系统。流水线定期处理这些数据，生成今日、本周和历史最高分排行榜。排行榜数据写入独立的排行榜数据存储，用户可通过移动应用查看游戏内分数，也可在网站上查看。用户还可以把自定义头像上传到 User Data 表；游戏会通过 API 使用这些头像，高分网站也会使用它们。</p>
+
+<p>基于这一架构，我们可以开始分析用户如何与系统交互，以及哪些 SLI 能衡量用户体验的不同方面。</p>
+
+<p>这些 SLI 可能相互重叠：请求驱动型服务可以有正确性 SLI，流水线可以有可用性 SLI，持久性 SLI 也可以视为正确性 SLI 的一种变体。我们建议只选择少量（不超过五种）SLI 类型，用来代表客户最看重的关键功能。</p>
+
+<p>为了同时反映典型用户体验和长尾体验，我们还建议对某些类型的 SLI 设置多档 SLO。例如，若 90% 的用户请求能在 100 ms 内返回，但其余 10% 要等 10 秒，仍会有许多用户不满。延迟 SLO 可以通过设置多个阈值来涵盖这部分用户：90% 的请求快于 100 ms，99% 的请求快于 400 ms。凡是参数用于衡量用户不满程度的 SLI，都适用这一原则。<a contenteditable="false" data-primary="components" data-secondary="types of" data-tertiary="SLIs for different types" data-type="indexterm" id="idm139660643874128"/> </p>
+
+<p><a data-type="xref" href="#potential_slis_for_different_types_of_com">表 2-1</a>列出了不同服务类型常用的一些 SLI。<a contenteditable="false" data-primary="latency SLI" data-type="indexterm" id="idm139660643882640"/><a contenteditable="false" data-primary="availability SLI" data-type="indexterm" id="idm139660643884192"/></p>
+
+<table class="border" id="potential_slis_for_different_types_of_com">
+	<caption><span class="label">表 2-1　</span>不同组件类型可采用的 SLI</caption>
+	<thead>
+		<tr>
+			<th><strong>服务类型</strong></th>
+			<th><strong>SLI 类型</strong></th>
+			<th><strong>说明</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>请求驱动型</td>
+			<td>可用性</td>
+			<td>得到成功响应的请求比例。</td>
+		</tr>
+		<tr>
+			<td>请求驱动型</td>
+			<td>延迟</td>
+			<td>完成时间短于某个阈值的请求比例。</td>
+		</tr>
+		<tr>
+			<td>请求驱动型</td>
+			<td>质量</td>
+			<td>如果服务在过载或后端不可用时会优雅降级，就需要衡量未降级响应所占的比例。例如，即使 User Data 存储不可用，游戏仍可运行，只是改用通用图像。<a contenteditable="false" data-primary="quality SLI" data-type="indexterm" id="idm139660643867008"/></td>
+		</tr>
+		<tr>
+			<td>流水线</td>
+			<td>新鲜度</td>
+			<td>更新时间未超过某个时间阈值的数据比例。理想情况下，该指标应按用户访问数据的次数计数，以尽可能准确地反映用户体验。<a contenteditable="false" data-primary="freshness SLI" data-type="indexterm" id="idm139660643864192"/></td>
+		</tr>
+		<tr>
+			<td>流水线</td>
+			<td>正确性</td>
+			<td>进入流水线后得到正确输出值的记录比例。<a contenteditable="false" data-primary="correctness SLI" data-type="indexterm" id="idm139660643858480"/></td>
+		</tr>
+		<tr>
+			<td>流水线</td>
+			<td>覆盖率</td>
+			<td>对于批处理，是处理数据量达到目标值的作业比例。<a contenteditable="false" data-primary="coverage SLI" data-type="indexterm" id="idm139660643855680"/><br/>
+			对于流处理，是在指定时间窗口内成功处理的输入记录比例。</td>
+		</tr>
+		<tr>
+			<td>存储型</td>
+			<td>持久性</td>
+			<td>已写入且能够成功读出的记录比例。使用<a contenteditable="false" data-primary="durability SLI" data-type="indexterm" id="idm139660643852736"/> 持久性 SLI 时要格外谨慎：用户所需的数据可能只占全部存储数据的一小部分。例如，系统保存了过去 10 年的 10 亿条记录，但用户只想读取今天的记录，而这些记录恰好不可用；即使几乎所有其他数据都可读取，用户仍然会不满。</td>
+		</tr>
+	</tbody>
+</table>
+
+<section data-pdf-bookmark="Moving from SLI Specification to SLI Implementation" data-type="sect2"><div class="sect2" id="moving_from_sli_specification_to_sli_impl">
+<h2>从 SLI 规范到 SLI 实现</h2>
+
+<p>明确 SLI 规范后，就要开始考虑如何实现它们。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="moving from SLI specification to implementation" data-type="indexterm" id="ix_SLOimplSLIsp"/><a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="architecture for example mobile phone game" data-startref="ix_SLIarch" data-type="indexterm" id="idm139660643847520"/></p>
+
+<p>对于第一批 SLI， <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="moving from specification to implementation" data-type="indexterm" id="idm139660643846208"/>应选择工程投入最少的方案。如果 Web 服务器日志已经可用，而设置探测器要花几周、为 JavaScript 插桩要花几个月，那就先用日志。</p>
+
+<p>测量 SLI 需要足够的信息：衡量可用性需要成功或失败状态；衡量慢请求需要处理请求所花的时间。你可能需要重新配置 Web 服务器来记录这些信息。如果使用云服务，其中一些信息可能已经出现在监控仪表板中。</p>
+
+<p>示例架构中的 SLI 有多种实现方案，各有利弊。下面几节将详细介绍系统中三类组件的 SLI。</p>
+
+<section data-pdf-bookmark="API and HTTP server availability and latency" data-type="sect3"><div class="sect3" id="api_and_http_server_availability_and_late">
+<h3>API 与 HTTP 服务器的可用性和延迟</h3>
+
+<p>在所考虑的所有 SLI 实现中，我们都根据 HTTP 状态码判断响应是否成功。<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="moving from specification to implementation" data-tertiary="API and HTTP server availability and latency" data-type="indexterm" id="idm139660643837632"/><a contenteditable="false" data-primary="APIs" data-secondary="availability and latency SLIs" data-type="indexterm" id="idm139660643839104"/><a contenteditable="false" data-primary="HTTP servers, availability and latency" data-type="indexterm" id="idm139660643842448"/> 5XX 响应计为未达到 SLO，其他请求都视为成功。<a contenteditable="false" data-primary="availability SLI" data-secondary="API and HTTP server availability" data-type="indexterm" id="idm139660643835376"/><a contenteditable="false" data-primary="latency SLI" data-secondary="API and HTTP server latency" data-type="indexterm" id="idm139660643836032"/> 可用性 SLI 是成功请求所占比例，延迟 SLI 则是完成时间短于指定阈值的请求比例。</p>
+
+<p>SLI 应当具体且可测量。概括 <a data-type="xref" href="#what_to_measure_using_slis">“衡量什么：使用 SLI”</a>一节列出的候选方案，SLI 可以使用<a contenteditable="false" data-primary="load balancer monitoring" data-type="indexterm" id="idm139660643833040"/><a contenteditable="false" data-primary="measurements" data-secondary="sources of, for API and HTTP sever availability and latency SLI" data-type="indexterm" id="idm139660643830592"/> 以下一个或多个数据源：</p>
+
+<ul>
+	<li>
+	<p>应用服务器日志</p>
+	</li>
+	<li>
+	<p>负载均衡器监控</p>
+	</li>
+	<li>
+	<p>黑盒监控</p>
+	</li>
+	<li>
+	<p>客户端插桩</p>
+	</li>
+</ul>
+
+<p>本例采用负载均衡器监控，因为相关指标已经可用，而且由此得到的 SLI 比应用服务器日志更接近用户实际体验。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pipeline freshness, coverage, and correctness" data-type="sect3"><div class="sect3" id="pipeline_freshnesscomma_coveragecomma_and">
+<h3>流水线的新鲜度、覆盖率和正确性</h3>
+
+<p>流水线更新排行榜时，会记录一条水位线，其中包含数据<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="moving from specification to implementation" data-tertiary="pipeline freshness, coverage, and correctness" data-type="indexterm" id="idm139660643823552"/>更新的时间戳。<a contenteditable="false" data-primary="pipeline components" data-secondary="SLIs for freshness, coverage, and correctness" data-type="indexterm" id="idm139660643822512"/>以下是一些<a contenteditable="false" data-primary="freshness SLI" data-secondary="implementation for pipeline freshness" data-type="indexterm" id="idm139660643818640"/> SLI<a contenteditable="false" data-primary="coverage SLI" data-secondary="implementation for pipeline coverage" data-type="indexterm" id="idm139660643817040"/> 实现示例：</p>
+
+<ul>
+	<li>
+	<p>定期查询整个排行榜，统计新鲜记录数和记录总数。这种做法会把每条陈旧记录视为同等重要，而不考虑有多少用户看到了该数据。</p>
+	</li>
+	<li>
+	<p>让排行榜的所有客户端在请求最新数据时检查水位线，并递增记录数据请求次数的指标计数器；如果数据的更新时间未超过预定义阈值，再递增另一个计数器。</p>
+	</li>
+</ul>
+
+<p>在这两种方案中，本例采用客户端实现，因为它得到的 SLI 与用户体验的相关性高得多，而且实现起来很简单。</p>
+
+<p>为了计算覆盖率 SLI， <a contenteditable="false" data-primary="coverage SLI" data-secondary="implementation for pipeline coverage" data-type="indexterm" id="idm139660643813296"/>流水线会导出应处理的记录数和成功处理的记录数。如果配置错误导致流水线根本不知道某些记录的存在，该指标可能会漏掉它们。</p>
+
+<p>衡量正确性有两种可选方法：</p>
+
+<ul>
+	<li>
+	<p>向系统注入已知输出的数据，统计实际输出符合预期的比例。</p>
+	</li>
+	<li>
+	<p>使用一套独立于流水线本身的方法，根据输入计算正确输出（这种方法很可能成本更高，因此不适合直接充当流水线）。用它对输入/输出对抽样，统计输出记录正确的比例。这一方法的前提是构建这样的系统既可行又实际。</p>
+	</li>
+</ul>
+
+<p>本例的正确性 SLI 以游戏状态数据库中一组人工整理的数据为基础。这些数据具有已知的正确输出，每次流水线运行时都会测试。SLI 是测试数据中正确条目所占的比例。要让这一 SLI 能代表真实用户体验，就必须确保人工整理的数据具有现实数据的代表性。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Measuring the SLIs" data-type="sect2"><div class="sect2" id="measuring_the_slis">
+<h2>测量 SLI</h2>
+
+<p><a data-type="xref" href="#how_our_monitoring_system_collects_sli_me">图 2-2</a>展示了 <a contenteditable="false" data-primary="measurements" data-secondary="measuring the SLIs" data-type="indexterm" id="ix_measSLI"/>白盒监控 <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="measuring" data-type="indexterm" id="ix_SLImeas"/>系统如何从示例应用的各个组件采集 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="measuring the SLIs" data-type="indexterm" id="ix_SLOimplmeas"/>指标。</p>
+
+<figure><div class="figure" id="how_our_monitoring_system_collects_sli_me"><img alt="监控系统如何采集 SLI 指标" src="assets/tsrw_0202.png"/>
+<h6><span class="label">图 2-2　</span>监控系统如何采集 SLI 指标</h6>
+</div></figure>
+
+<p>下面通过一个例子，说明如何用监控系统中的指标计算初始 SLO。虽然示例使用可用性和延迟指标，但同样的原则适用于其他所有候选 SLO。系统使用的完整指标清单见 <a data-type="xref" href="app01.html#example_slo_document">附录 A</a>。所有示例都采用 <a href="https://prometheus.io/">Prometheus 表示法</a>。</p>
+
+<section data-pdf-bookmark="Load balancer metrics" data-type="sect3"><div class="sect3" id="load_balancer_metrics">
+<h3>负载均衡器指标</h3>
+
+<p>按后端（<code>"api"</code> 或 <code>"web"</code>）和响应码统计的请求总数：</p>
+
+<pre data-type="programlisting">
+http_requests_total{host="api", status="500"}
+</pre>
+
+<p>延迟的累积直方图；每个桶统计耗时小于等于该值的请求数：</p>
+
+<pre data-type="programlisting">
+http_request_duration_seconds{host="api", le="0.1"}
+http_request_duration_seconds{host="api", le="0.2"}
+http_request_duration_seconds{host="api", le="0.4"}
+</pre>
+
+<p>一般来说，直接统计慢请求比用直方图近似更好。但由于没有直接计数数据，本例使用监控系统提供的直方图。另一种方法是依据负载均衡器配置中的不同慢请求阈值（例如 100 ms 和 500 ms）显式计数。这能得到更准确的数据，却需要更多配置，也使事后修改阈值更加困难。</p>
+
+<pre data-type="programlisting">
+http_request_duration_seconds{host="api", le="0.1"}
+http_request_duration_seconds{host="api", le="0.5"}
+</pre>
+</div></section>
+
+<section data-pdf-bookmark="Calculating the SLIs" data-type="sect3"><div class="sect3" id="calculating_the_slis">
+<h3>计算 SLI</h3>
+
+<p>利用上述指标， <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="measuring" data-tertiary="calculating SLIs over previous week" data-type="indexterm" id="idm139660643778768"/>可以计算过去七天的当前 SLI，如 <a data-type="xref" href="#calculations_for_slis_over_the_previous_s">表 2-2</a>。</p>
+
+<table class="border" id="calculations_for_slis_over_the_previous_s">
+	<caption><span class="label">表 2-2　</span>过去七天的 SLI 计算</caption>
+	<thead>
+		<tr>
+			<th> </th>
+			<th> </th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>可用性</td>
+			<td>
+			<pre data-type="programlisting">
+sum(rate(http_requests_total{host="api", status!~"5.."}[7d]))
+/
+sum(rate(http_requests_total{host="api"}[7d])
+</pre>
+			</td>
+		</tr>
+		<tr>
+			<td>延迟</td>
+			<td>
+			<pre data-type="programlisting">
+histogram_quantile(0.9, rate(http_request_duration_seconds_bucket[7d]))
+histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[7d]))
+</pre>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Using the SLIs to Calculate Starter SLOs" data-type="sect2"><div class="sect2" id="using_the_slis_to_calculate_starter_slos">
+<h2>用 SLI 计算初始 SLO</h2>
+
+<p>我们可以把<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-startref="ix_SLOimplmeas" data-tertiary="measuring the SLIs" data-type="indexterm" id="idm139660643770608"/><a contenteditable="false" data-primary="measurements" data-secondary="measuring the SLIs" data-startref="ix_measSLI" data-type="indexterm" id="idm139660643768704"/><a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="measuring" data-startref="ix_SLImeas" data-type="indexterm" id="idm139660643767120"/>这些 SLI 调整为便于管理的<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="using to calculate starter SLOs" data-type="indexterm" id="idm139660643765056"/>保守数值（例如，可用性向下取至两位有效数字，延迟阈值向上取整，幅度不超过 50 ms<sup><a data-type="noteref" href="ch02-zh.html#ch02fn5" id="ch02fn5-marker">5</a></sup>），从而<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="using SLIs to calculate starter SLOs" data-type="indexterm" id="idm139660643763744"/>得到初始 SLO。</p>
+
+<p>例如，四周内的 API 指标如下：</p>
+
+<ul>
+	<li>
+	<p>请求总数：3,663,253</p>
+	</li>
+	<li>
+	<p>成功请求总数：3,557,865（97.123%）</p>
+	</li>
+	<li>
+	<p>第 90 百分位延迟：432 ms</p>
+	</li>
+	<li>
+	<p>第 99 百分位延迟：891 ms</p>
+	</li>
+</ul>
+
+<p>对其他 SLI 重复这一过程，<a contenteditable="false" data-primary="APIs" data-secondary="proposed SLOs for the API" data-type="indexterm" id="idm139660643754736"/> 得到 API 的建议 SLO，如 <a data-type="xref" href="#proposed_slos_for_the_api">表 2-3</a>。</p>
+
+<table class="border pagebreak-before" id="proposed_slos_for_the_api">
+	<caption><span class="label">表 2-3　</span>API 的建议 SLO</caption>
+	<thead>
+		<tr>
+			<th><strong>SLO 类型</strong></th>
+			<th><strong>目标</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>可用性</td>
+			<td>97%</td>
+		</tr>
+		<tr>
+			<td>延迟</td>
+			<td>90% 的请求耗时 &lt; 450 ms</td>
+		</tr>
+		<tr>
+			<td>延迟</td>
+			<td>99% 的请求耗时 &lt; 900 ms</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><a data-type="xref" href="app01.html#example_slo_document">附录 A</a> 给出了完整的 SLO 文档示例，其中包含本节为简洁起见而省略的 SLI 实现。</p>
+
+<p>根据这些建议 SLO，可以计算四周内的错误预算，如 <a data-type="xref" href="#error_budget_over_four_weeks">表 2-4</a>。</p>
+
+<table class="border" id="error_budget_over_four_weeks">
+	<caption><span class="label">表 2-4　</span>四周内的错误预算</caption>
+	<thead>
+		<tr>
+			<th><strong>SLO</strong></th>
+			<th><strong>允许的失败数</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>97% 可用性</td>
+			<td>109,897</td>
+		</tr>
+		<tr>
+			<td>90% 的请求快于 450 ms</td>
+			<td>366,325</td>
+		</tr>
+		<tr>
+			<td>99% 的请求快于 900 ms</td>
+			<td>36,632</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Choosing an Appropriate Time Window" data-type="sect1"><div class="sect1" id="choosing_an_appropriate_time_window">
+<h1>选择适当的时间窗口</h1>
+
+<p>SLO 可以按不同时间间隔定义，既可以使用滚动窗口，也可以使用与日历对齐的窗口（如一个月）。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="choosing appropriate time window" data-type="indexterm" id="idm139660643732480"/><a contenteditable="false" data-primary="time windows for SLOs" data-type="indexterm" id="idm139660643730544"/> 选择窗口时需要考虑多个因素。</p>
+
+<p>滚动窗口更贴近用户体验：如果月末最后一天发生大规模中断，用户不会在次月第一天突然忘记它。建议把窗口定义为整数周，使其中始终包含相同数量的周末。例如，30 天窗口有时包含四个周末，有时包含五个；如果周末与工作日流量差异很大，SLI 就会因无关紧要的原因发生波动。</p>
+
+<p>日历窗口更符合业务规划和项目安排。例如，可以每季度评估 SLO，决定下一季度把项目人力投入何处。日历窗口也会带来不确定性：季度过半时，无法知道余下时间会收到多少请求。因此，季度中途做决策时，必须估计剩余季度将消耗多少错误预算。</p>
+
+<p>较短的时间窗口能让你更快做决策：如果上周未达到 SLO，可以通过小幅调整方向——例如优先修复相关缺陷——来避免今后几周再次违反 SLO。</p>
+
+<p>较长的时间段更适合战略性决策。例如，三个大型项目只能选一个时，应该迁移到高可用分布式数据库，自动化发布与回滚流程，还是在另一个可用区部署一套相同技术栈？评估跨多个季度的大项目，不能只看一周的数据；所需数据量大致应与拟投入的工程工作量相称。</p>
+
+<p>实践表明，四周滚动窗口是很好的通用时间间隔。此外，我们用每周摘要确定任务优先级，用季度汇总报告规划项目。</p>
+
+<p>如果数据源支持，就可以用建议 SLO 计算该时间段内的实际达标情况。初始 SLO 若依据实测数据制定，按定义自然已经达标；但我们仍能从数据分布中获得有价值的信息：过去四周是否有某几天未达到 SLO？这些日期是否与真实事故相对应？当时是否采取了（或本应采取）事故应对措施？</p>
+
+<p>如果没有日志、指标或其他历史性能数据源，就需要配置一个。例如，对于 HTTP 服务，可以先采用精度较低的方案：设置远程监控服务，定期执行某种健康检查（ping 或 HTTP GET），并回报成功请求数。许多在线服务都能轻松实现这一方案。</p>
+</div></section>
+
+<section data-pdf-bookmark="Getting Stakeholder Agreement" data-type="sect1"><div class="sect1" id="getting_stakeholder_agreement">
+<h1>取得利益相关方的共识</h1>
+
+<p>要让建议的 SLO 真正有用且有效， <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="getting stakeholder agreement" data-type="indexterm" id="idm139660643727248"/>必须让所有利益相关方 <a contenteditable="false" data-primary="stakeholders, getting agreement from on SLOs" data-type="indexterm" id="idm139660643714704"/>达成一致：</p>
+
+<ul>
+	<li>
+	<p>产品经理必须认可该阈值足以满足用户：低于它的性能不可接受，值得投入工程时间修复。</p>
+	</li>
+	<li>
+	<p>产品开发人员必须同意：错误预算耗尽后，在服务重新回到预算范围内之前，要采取措施降低用户风险（参见 <a data-type="xref" href="#establishing_an_error_budget_policy">“制定错误预算策略”</a>）。</p>
+	</li>
+	<li>
+	<p>负责生产环境并承担守护该 SLO 职责的团队必须认同：无需付出超常努力、承担过量琐事或导致职业倦怠，就能守住这一目标；这些代价都会损害团队与服务的长期健康。</p>
+	</li>
+</ul>
+
+<p>这些事项一旦达成共识，最困难的部分就完成了。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn6" id="ch02fn6-marker">6</a></sup> 你已经踏上 SLO 实践之路，剩下的就是从这个起点不断迭代。</p>
+
+<p>要守住 SLO，需要设置监控和告警（见 <a data-type="xref" href="ch05.html#alerting_on_slos">第 5 章</a>），让工程师能在威胁导致错误预算透支之前及时收到通知。</p>
+
+<section data-pdf-bookmark="Establishing an Error Budget Policy" data-type="sect2"><div class="sect2" id="establishing_an_error_budget_policy">
+<h2>制定错误预算策略</h2>
+
+<p>有了 SLO，就可以据此推导错误预算。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="establishing error budget policy" data-type="indexterm" id="idm139660643706800"/> 要使用错误预算，还需要一项策略，说明服务耗尽预算时该怎么做。<a contenteditable="false" data-primary="error budgets" data-secondary="establishing error budget policy" data-type="indexterm" id="idm139660643707568"/></p>
+
+<p>让产品经理、开发团队和 SRE 等所有关键利益相关方批准错误预算策略，是检验 SLO 是否适用的好方法：</p>
+
+<ul>
+	<li>
+	<p>如果 SRE 认为不承担过量琐事就无法守住 SLO，可以主张放宽部分目标。</p>
+	</li>
+	<li>
+	<p>如果开发团队和产品经理认为，为修复可靠性问题而增加的资源会使功能发布速度降到不可接受的水平，也可以主张放宽目标。要记住，降低 SLO 也会减少 SRE 介入响应的情况，产品经理必须理解这一取舍。</p>
+	</li>
+	<li>
+	<p>如果产品经理认为，在错误预算策略触发问题处理之前，SLO 会让大量用户已经遭遇糟糕体验，那么这些 SLO 很可能不够严格。</p>
+	</li>
+</ul>
+
+<p>如果三方无法一致同意执行错误预算策略，就需要持续迭代 SLI 和 SLO，直到所有利益相关方都满意。应决定如何推进，以及做出决策还需要什么：更多数据、更多资源，还是修改 SLI 或 SLO？</p>
+
+<p>所谓执行错误预算，是指错误预算一旦耗尽（或接近耗尽），就要采取行动恢复系统稳定性。</p>
+
+<p>要决定如何执行错误预算，首先需要书面策略。策略应说明服务耗尽某一时间段的全部错误预算后必须采取哪些具体行动，并指定行动负责人。常见的负责人和行动包括：</p>
+
+<ul>
+	<li>
+	<p>开发团队把过去四周内与可靠性问题有关的缺陷列为最高优先级。</p>
+	</li>
+	<li>
+	<p>在系统重新达到 SLO 前，开发团队只处理可靠性问题；同时获得高层授权，可以拒绝外部功能请求和指令。</p>
+	</li>
+	<li>
+	<p>为降低再次中断的风险，冻结生产变更，暂停对系统的某些修改，直到错误预算充足后再恢复。</p>
+	</li>
+</ul>
+
+<p>有时服务已经耗尽全部错误预算，但并非所有利益相关方都认同此时应执行错误预算策略。出现这种情况，就需要返回策略审批阶段。</p>
+</div></section>
+
+<section data-pdf-bookmark="Documenting the SLO and Error Budget Policy" data-type="sect2"><div class="sect2" id="documenting_the_slo_and_error_budget_poli">
+<h2>记录 SLO 和错误预算策略</h2>
+
+<p>定义合理的 SLO 应记录在醒目位置，供其他团队和利益相关方审阅。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="documenting SLOs and error budget policy" data-type="indexterm" id="idm139660643689600"/><a contenteditable="false" data-primary="error budgets" data-secondary="documenting error budget policy" data-type="indexterm" id="idm139660643690656"/> 文档应包含以下信息：</p>
+
+<ul>
+	<li>
+	<p>SLO 的作者、审核者（检查技术准确性的人）和批准者（从业务角度决定该 SLO 是否合适的人）。</p>
+	</li>
+	<li>
+	<p>批准日期和下次审核日期。</p>
+	</li>
+	<li>
+	<p>服务简介，为读者提供背景。</p>
+	</li>
+	<li>
+	<p>SLO 详情：目标和 SLI 实现。</p>
+	</li>
+	<li>
+	<p>错误预算的计算和消耗方式。</p>
+	</li>
+	<li>
+	<p>这些数字的依据，以及它们来自实验数据还是观察数据。即使 SLO 完全是临时确定的，也应如实记录，以免日后的工程师把这些临时设定当作可靠依据，进而做出错误决策。</p>
+	</li>
+</ul>
+
+<p>SLO 文档的审核频率取决于组织 SLO 文化的成熟度。刚开始时应频繁审核，也许每月一次。随着 SLO 的适用性逐渐得到验证，可以降为每季度一次，甚至更低。</p>
+
+<p>错误预算策略也应形成文档，其中应包含：</p>
+
+<ul>
+	<li>
+	<p>策略的作者、审核者和批准者</p>
+	</li>
+	<li>
+	<p>批准日期和下次审核日期</p>
+	</li>
+	<li>
+	<p>服务简介，为读者提供背景</p>
+	</li>
+	<li>
+	<p>预算耗尽后要采取的行动</p>
+	</li>
+	<li>
+	<p>如果对预算计算结果存在分歧，或对约定行动是否适合当前情形存在争议，应遵循的明确升级路径</p>
+	</li>
+	<li>
+	<p>视读者对错误预算的经验和专业程度而定，文档中还可以加入错误预算概述。</p>
+	</li>
+</ul>
+
+<p>参见 <a data-type="xref" href="app01.html#example_slo_document">附录 A</a>，其中给出了 SLO 文档和错误预算策略示例。</p>
+</div></section>
+
+<section data-pdf-bookmark="Dashboards and Reports" data-type="sect2"><div class="sect2" id="dashboards_and_reports">
+<h2>仪表板与报告</h2>
+
+<p>除了发布 SLO 和错误预算策略文档外，最好还有报告和仪表板，<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-tertiary="dashboards and reports" data-type="indexterm" id="idm139660643670784"/>用于提供<a contenteditable="false" data-primary="dashboards" data-secondary="providing for SLOs" data-type="indexterm" id="idm139660643669728"/>服务 SLO 达标情况的即时快照，以便与其他团队沟通并发现问题领域。<a contenteditable="false" data-primary="visualizations" data-seealso="dashboards" data-type="indexterm" id="idm139660643667664"/></p>
+
+<p><a data-type="xref" href="#slo_compliance_report">图 2-3</a>中的报告展示了多个服务的总体 <a contenteditable="false" data-primary="reports on SLO compliance" data-type="indexterm" id="idm139660643664800"/>达标情况：它们在过去一年中是否达到每季度的全部 SLO（括号内数字分别表示已达成目标数和目标总数），以及 SLI 相比上一季度和去年同期呈上升还是下降趋势。</p>
+
+<figure><div class="figure" id="slo_compliance_report"><img alt="SLO 达标情况报告" src="assets/tsrw_0203.png"/>
+<h6><span class="label">图 2-3　</span>SLO 达标情况报告</h6>
+</div></figure>
+
+<p>展示 SLI 趋势的仪表板也很有用。<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="dashboards showing SLI trends" data-type="indexterm" id="idm139660643660064"/><a contenteditable="false" data-primary="dashboards" data-secondary="showing SLI trends" data-type="indexterm" id="idm139660643658560"/>它能显示错误预算的消耗速度是否高于平常，以及是否存在需要关注的模式或趋势。</p>
+
+<p><a data-type="xref" href="#error_budget_dashboard">图 2-4</a>中的仪表板展示了某个季度进行到一半时的错误预算情况。<a contenteditable="false" data-primary="error budgets" data-secondary="dashboard showing error budget consumption" data-type="indexterm" id="idm139660643655088"/>可以看到，一个事件在两天内消耗了约 15% 的错误预算。</p>
+
+<figure><div class="figure" id="error_budget_dashboard"><img alt="错误预算仪表板" src="assets/tsrw_0204.png"/>
+<h6><span class="label">图 2-4　</span>错误预算仪表板</h6>
+</div></figure>
+
+<p>错误预算可用于量化这些事件。例如，“这次中断消耗了本季度错误预算的 30%”，或“这是本季度最严重的三个事故，按消耗的错误<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="implementing, worked example" data-startref="ix_SLOimpl" data-type="indexterm" id="idm139660643652304"/> 预算从高到低排列”。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Continuous Improvement of SLO Targets" data-type="sect1"><div class="sect1" id="continuous_improvement_of_slo_targets">
+<h1>持续改进 SLO 目标</h1>
+
+<p>每项服务都能从持续改进中受益。例如，这也是 <a href="https://en.wikipedia.org/wiki/ITIL">ITIL</a> 的核心服务目标之一。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="continuous improvement of SLO targets" data-type="indexterm" id="ix_SLOCI"/></p>
+
+<p>改进 SLO 目标之前，需要先有反映用户对服务满意程度的信息源。可选方法很多：</p>
+
+<ul>
+	<li>
+	<p>可以统计人工发现的中断、公共论坛帖子、支持工单和客户服务来电。</p>
+	</li>
+	<li>
+	<p>可以尝试衡量社交媒体上的用户情绪。</p>
+	</li>
+	<li>
+	<p>可以在系统中加入代码，定期抽样调查用户满意度。</p>
+	</li>
+	<li>
+	<p>可以面对面开展用户调查和抽样。</p>
+	</li>
+</ul>
+
+<p>可行方法不胜枚举，最佳选择取决于具体服务。建议从采集成本低的度量开始，再由此迭代。请产品经理在原本就会与客户讨论的定价和功能议题中加入可靠性，是很好的起点。</p>
+
+<section data-pdf-bookmark="Improving the Quality of Your SLO" data-type="sect2"><div class="sect2" id="improving_the_quality_of_your_slo">
+<h2>提高 SLO 的质量</h2>
+
+<p>统计人工发现的中断；如果有支持工单，也一并统计。查看发生过已知中断或事故的时段。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="continuous improvement of SLO targets" data-tertiary="improving quality of SLOs" data-type="indexterm" id="idm139660643638832"/> 检查这些时段是否与错误预算的急剧下降相关。同样，也要查看 SLI 显示异常或服务未达到 SLO 的时段：它们是否与已知中断或支持工单增加相关？如果熟悉统计分析，可以使用 <a href="http://bit.ly/1RhdJzE">斯皮尔曼等级相关系数</a> 来量化这种关系。</p>
+
+<p><a data-type="xref" href="#graph_showing_the_number_of_support_ticke">图 2-5</a>展示了每日新增支持工单数与当天测得的错误预算损失之间的关系。 <a contenteditable="false" data-primary="error budgets" data-secondary="support tickets per day vs. measured loss in budget" data-type="indexterm" id="idm139660643637120"/>虽然并非所有工单都与可靠性问题有关，但工单数与错误预算损失之间确实存在相关性。图中有两个离群点：一天只有 5 个工单，却损失了 10% 的错误预算；另一天有 40 个工单，却没有损失错误预算。两者都值得深入调查。</p>
+
+<figure><div class="figure" id="graph_showing_the_number_of_support_ticke"><img alt="每日支持工单数与当日错误预算损失对比图" src="assets/tsrw_0205.png"/>
+<h6><span class="label">图 2-5　</span>每日支持工单数与当日错误预算损失对比图</h6>
+</div></figure>
+
+<p>如果有些中断和工单激增未被任何 SLI 或 SLO 捕获，或者 SLI 下跌、SLO 未达标却对应不上面向用户的问题，就强烈表明 SLO 的覆盖范围不足。 <a contenteditable="false" data-primary="coverage, SLO lacking" data-type="indexterm" id="idm139660643625424"/>这种情况完全正常，也在预料之中。随着服务实际情况变化，代表它的 SLI 和 SLO 也应随时间调整。不要害怕持续检查和完善它们。</p>
+
+<p>如果 SLO 覆盖不足，可以采取以下几种措施：</p>
+
+<dl>
+	<dt>修改 SLO</dt>
+	<dd>
+	<p>如果 SLI 已经显示问题，而 SLO 却没有促使任何人注意或响应，可能需要收紧 SLO。</p>
+
+	<ul>
+		<li>
+		<p>如果当天的事故严重到必须处理，应查看相关时段的 SLI 值，计算怎样的 SLO 才会在这些日期触发通知。再把该 SLO 应用于历史 SLI，看看调整后还会捕获哪些事件。如果为了提高系统召回率而把精确率降到团队必须不断响应无关紧要事件的程度，就得不偿失。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn7" id="ch02fn7-marker">7</a></sup></p>
+		</li>
+		<li>
+		<p>同样，对于出现假阳性的日期，可以考虑放宽 SLO。</p>
+		</li>
+	</ul>
+
+	<p>如果无论向哪个方向调整 SLO，都会产生过多假阳性或假阴性，还需要改进 SLI 实现。</p>
+	</dd>
+	<dt>修改 SLI 实现</dt>
+	<dd>
+	<p>修改 SLI 实现 <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="changing SLI implementation" data-type="indexterm" id="idm139660643617056"/>有两条路径：把测量点移近用户以提高指标质量，或扩大覆盖范围以捕获更高比例的用户交互。例如：</p>
+
+	<ul>
+		<li>
+		<p>不要在服务器端测量成功率或延迟，改在负载均衡器或客户端测量。</p>
+		</li>
+		<li>
+		<p>不要用简单的 HTTP GET 请求衡量可用性，改用能够覆盖更多系统功能的健康检查处理程序，或执行全部客户端 JavaScript 的测试。<a contenteditable="false" data-primary="availability SLI" data-secondary="measuring availability with health-checking handler" data-type="indexterm" id="idm139660643618720"/></p>
+		</li>
+	</ul>
+	</dd>
+	<dt>设立愿景 SLO</dt>
+	<dd>
+	<p>有时你会认定，必须收紧 SLO 才能让用户满意，但改进产品以达到该目标需要一段时间。<a contenteditable="false" data-primary="aspirational SLOs" data-type="indexterm" id="idm139660643611952"/> 如果直接实施更严格的 SLO，服务将长期处于未达标状态，并持续触发错误预算策略。此时，可以把完善后的 SLO 定为 <em>愿景 SLO</em>：与当前 SLO 一同测量和跟踪，但在错误预算策略中明确注明无需据此采取行动。这样既能跟踪达成愿景 SLO 的进展，又不会一直处于紧急状态。</p>
+	</dd>
+	<dt>迭代</dt>
+	<dd>
+	<p>迭代方式多种多样，审核会议会发现许多潜在改进。 <a contenteditable="false" data-primary="iterations for SLO quality improvement" data-type="indexterm" id="idm139660643610448"/>选择最可能带来最高投资回报的方案。尤其在最初几轮迭代中，宁可优先选择更快、更便宜的做法；这样能降低指标的不确定性，并帮助判断是否确实需要成本更高的指标。按需要反复迭代。</p>
+	</dd>
+</dl>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Decision Making Using SLOs and Error Budgets" data-type="sect1"><div class="sect1" id="decision_making_using_slos_and_error_budg">
+<h1>使用 SLO 和错误预算做决策</h1>
+
+<p>有了<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="continuous improvement of SLO targets" data-startref="ix_SLOCI" data-type="indexterm" id="idm139660643602128"/> SLO，就可以开始用它们做决策。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="decision making using SLOs and error budgets" data-type="indexterm" id="ix_SLOdec"/></p>
+
+<p>最直接的决策，是未达到 SLO——也就是错误预算已经耗尽——时该怎么办。<a contenteditable="false" data-primary="error budgets" data-secondary="decision making using" data-type="indexterm" id="ix_errbudec"/> 如前所述，错误预算耗尽后的适当行动应由错误预算策略规定。常见策略包括：暂停功能发布，直到服务重新达到 SLO；或者把部分乃至全部工程时间投入可靠性缺陷修复。</p>
+
+<p>在极端情况下，团队可以经高层批准宣布进入紧急状态，在服务满足退出条件前降低所有外部需求（例如其他团队的请求）的优先级。退出条件通常包括服务已经达到 SLO，并且已经采取措施降低再次未达标的概率。这些措施可能包括改进监控、改进测试、移除高风险依赖，或重构系统以消除已知故障类型。</p>
+
+<p>可以根据事故消耗错误预算的比例判断其规模，并利用这些数据找出最关键、最值得深入调查的事故。</p>
+
+<p>例如，假设新版 API 发布后，100% 的请求都抛出 <code>NullPointerException</code>，四小时后系统才完成回退。<sup><a data-type="noteref" href="ch02-zh.html#ch02fn8" id="ch02fn8-marker">8</a></sup> 检查原始服务器日志发现，该问题造成 14,066 次错误。按照前文 97% 的 SLO 和 109,897 次错误的预算，这一个事件就消耗了 13% 的错误预算。</p>
+
+<p>又或者，状态数据库仅部署在单台服务器上，而这台服务器发生故障，从备份恢复用了 20 小时。根据该时段的历史流量估算，这次中断造成 72,000 次错误，消耗了 65% 的错误预算。</p>
+
+<p>假设示例公司五年只发生过一次服务器故障，却通常每年有两三次糟糕发布需要回滚。可以估算，平均而言，错误发布消耗的错误预算是数据库故障的两倍。数字证明，解决发布问题远比投入资源调查服务器故障更有价值。</p>
+
+<p>如果服务运行完美、几乎无需监管，也许应该把它转到干预程度较低的支持级别。你仍可提供事故响应管理和高层监督，但不必再每天深度参与该产品，从而可以把精力投入更需要 SRE 支持的其他系统。</p>
+
+<p><a data-type="xref" href="#slo_decision_matrix">表 2-5</a>根据三个关键维度给出了建议行动：</p>
+
+<ul>
+	<li>
+	<p>SLO 达标情况</p>
+	</li>
+	<li>
+	<p>运行服务所需的琐事量</p>
+	</li>
+	<li>
+	<p>客户对服务的满意程度</p>
+	</li>
+</ul>
+
+<table class="border" id="slo_decision_matrix">
+	<caption><span class="label">表 2-5　</span>SLO 决策矩阵</caption>
+	<thead>
+		<tr>
+			<th><strong>SLO</strong></th>
+			<th><strong>琐事</strong></th>
+			<th><strong>客户满意度</strong></th>
+			<th><strong>行动</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>达标</td>
+			<td>低</td>
+			<td>高</td>
+			<td>选择：（a）放宽发布和部署流程，提高速度；或（b）减少对该服务的投入，把工程时间集中到更需要提高可靠性的服务上。</td>
+		</tr>
+		<tr>
+			<td>达标</td>
+			<td>低</td>
+			<td>低</td>
+			<td>收紧 SLO。</td>
+		</tr>
+		<tr>
+			<td>达标</td>
+			<td>高</td>
+			<td>高</td>
+			<td>如果告警产生假阳性，则降低灵敏度；否则，暂时放宽 SLO（或减轻琐事负担），同时修复产品和/或改进自动故障缓解措施。</td>
+		</tr>
+		<tr>
+			<td>达标</td>
+			<td>高</td>
+			<td>低</td>
+			<td>收紧 SLO。</td>
+		</tr>
+		<tr>
+			<td>未达标</td>
+			<td>低</td>
+			<td>高</td>
+			<td>放宽 SLO。</td>
+		</tr>
+		<tr>
+			<td>未达标</td>
+			<td>低</td>
+			<td>低</td>
+			<td>提高告警灵敏度。</td>
+		</tr>
+		<tr>
+			<td>未达标</td>
+			<td>高</td>
+			<td>高</td>
+			<td>放宽 SLO。</td>
+		</tr>
+		<tr>
+			<td>未达标</td>
+			<td>高</td>
+			<td>低</td>
+			<td>减轻琐事负担，同时修复产品和/或改进自动故障缓解措施。</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="Advanced Topics" data-type="sect1"><div class="sect1" id="advanced_topics">
+<h1>进阶主题</h1>
+
+<p>形成健康、成熟的 SLO 和错误预算 <a contenteditable="false" data-primary="error budgets" data-secondary="decision making using" data-startref="ix_errbudec" data-type="indexterm" id="idm139660643560592"/>文化后，<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="decision making using SLOs and error budgets" data-startref="ix_SLOdec" data-type="indexterm" id="idm139660643561424"/> 就可以继续改进和完善衡量、讨论服务可靠性的方式。</p>
+
+<section data-pdf-bookmark="Modeling User Journeys" data-type="sect2"><div class="sect2" id="modeling_user_journeys">
+<h2>建立用户旅程模型</h2>
+
+<p>本章讨论的所有技术都会让组织受益，但 SLO 最终应以改善客户体验为中心。因此，应围绕以用户为中心的操作来编写 SLO。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="refining" data-tertiary="modeling user journeys" data-type="indexterm" id="idm139660643556080"/></p>
+
+<p>可以使用 <em>关键用户旅程</em> 来帮助 <a contenteditable="false" data-primary="user journeys, modeling" data-type="indexterm" id="idm139660643553408"/>刻画客户体验。关键用户旅程是一系列任务，它们构成某类用户体验的核心，也是服务不可或缺的部分。例如，在线购物的关键用户旅程可能包括：</p>
+
+<ul>
+	<li>
+	<p>搜索商品</p>
+	</li>
+	<li>
+	<p>把商品加入购物车</p>
+	</li>
+	<li>
+	<p>完成购买</p>
+	</li>
+</ul>
+
+<p>这些任务几乎肯定无法与现有 SLI 良好对应：每项任务都包含多个复杂步骤，任何一步都可能失败，而从日志推断这些操作成功还是失败可能极其困难。（例如，怎样判断用户是第三步失败了，还是被另一个标签页里的猫咪视频吸引走了？）但只有先识别用户真正关心什么，才能着手确保服务的相应方面可靠。</p>
+
+<p>识别出以用户为中心的事件后，就可以解决其测量问题。方法可能是关联不同日志事件、使用高级 JavaScript 探测、使用客户端插桩，或采用其他流程。一旦某个事件可测量，它就成为另一项 SLI，可以与现有 SLI 和 SLO 一同跟踪。关键用户旅程能提高召回率，而不影响精确率。</p>
+</div></section>
+
+<section data-pdf-bookmark="Grading Interaction Importance" data-type="sect2"><div class="sect2" id="grading_interaction_importance">
+<h2>划分交互的重要程度</h2>
+
+<p>并非所有请求都同等重要。移动 <a contenteditable="false" data-primary="HTTP requests" data-secondary="grading importance of" data-type="indexterm" id="idm139660643544864"/>应用检查账户通知的 HTTP 请求（通知由每日流水线生成）对用户很重要，但不如广告客户发起的账单相关请求重要。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="refining" data-tertiary="grading interaction importance" data-type="indexterm" id="idm139660643545760"/></p>
+
+<p>我们需要一种方法来区分不同类别的请求。<a contenteditable="false" data-primary="bucketing, using with SLIs" data-type="indexterm" id="idm139660643542208"/>可以使用<em>分桶</em>来做到这一点：为 SLI 添加更多标签，再对不同标签应用不同的 SLO。<a data-type="xref" href="#bucketing_by_tier">表 2-6</a>展示了一个示例。</p>
+
+<table class="border" id="bucketing_by_tier">
+	<caption><span class="label">表 2-6　</span>按等级分桶</caption>
+	<thead>
+		<tr>
+			<th><strong>客户等级</strong></th>
+			<th><strong>可用性 SLO</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>高级</td>
+			<td>99.99%</td>
+		</tr>
+		<tr>
+			<td>免费</td>
+			<td>99.9%</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>还可以按预期响应速度拆分请求，如 <a data-type="xref" href="#bucketing_by_expected_responsiveness">表 2-7</a>。</p>
+
+<table class="border" id="bucketing_by_expected_responsiveness">
+	<caption><span class="label">表 2-7　</span>按预期响应速度分桶</caption>
+	<thead>
+		<tr>
+			<th><strong>响应类型</strong></th>
+			<th><strong>延迟 SLO</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>交互式（即会阻塞页面加载的请求）</td>
+			<td>90% 的请求在 100 ms 内完成</td>
+		</tr>
+		<tr>
+			<td>CSV 下载</td>
+			<td>90% 的下载在 5 秒内开始</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>如果数据足以对每位客户单独应用 SLO，就可以跟踪任意时刻达到 SLO 的客户数量。注意，这个数字可能波动很大：请求量极少的客户，要么有 100% 可用性（恰好一次失败也没遇到），要么可用性很低（仅有的一次失败已占其请求的很大比例）。单个客户可能因无关紧要的原因未达到 SLO，但从整体看，跟踪影响大量客户 SLO 达标情况的问题仍是有用信号。</p>
+</div></section>
+
+<section data-pdf-bookmark="Modeling Dependencies" data-type="sect2"><div class="sect2" id="modeling_dependencies">
+<h2>建立依赖关系模型</h2>
+
+<p>大型系统包含许多组件。一个系统可能有表示层、应用 <a contenteditable="false" data-primary="dependencies" data-secondary="modeling" data-type="indexterm" id="idm139660643510528"/>层、 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="refining" data-tertiary="modeling dependencies" data-type="indexterm" id="idm139660643521632"/>业务逻辑层和数据持久层；每一层又可能由许多服务或微服务组成。</p>
+
+<p>首要任务是实施覆盖整个技术栈、以用户为中心的 SLO；与此同时，SLO 也可用于协调并落实技术栈中不同组件之间的可靠性要求。</p>
+
+<p>例如，如果某个组件是某项高价值交互的关键依赖<sup><a data-type="noteref" href="ch02-zh.html#ch02fn9" id="ch02fn9-marker">9</a></sup> ，其可靠性保证至少应与依赖它的操作相同。运行该组件的团队需要像管理产品总体 SLO 一样，对该服务的 SLO 负责并加以管理。</p>
+
+<p>如果某组件存在固有的可靠性限制，SLO 可以把这一限制传达出去。如果依赖它的用户旅程需要的可用性高于该组件合理所能提供的水平，就必须通过工程设计规避限制：改用其他组件，或增加足够的防护措施（缓存、离线存储转发处理、优雅降级等）来应对组件故障。</p>
+
+<p>人们很容易想靠数学计算解决这些问题。假设某服务在单个可用区提供 99.9% 可用性，而需求是 99.95%，那么把服务部署到两个可用区似乎就能满足要求。两个实例同时中断的概率极低，双可用区看起来应能提供 99.9999% 可用性。但这种推理假设两个实例完全独立，而现实几乎从来不是如此。应用的两个实例会有共同依赖、共同故障域、命运共享因素和全局控制平面；无论设计和管理多么谨慎，这些因素都可能让两个系统同时中断。除非逐一列举并考虑每项依赖和故障模式，否则这类计算会产生误导。</p>
+
+<p>对于错误预算策略应如何处理由其他团队负责的依赖故障所导致的 SLO 未达标，存在两种观点<a contenteditable="false" data-primary="error budgets" data-secondary="addressing missed SLO caused by a dependency" data-type="indexterm" id="idm139660643516080"/> ：</p>
+
+<ul>
+	<li>
+	<p>问题并非由本系统造成，因此团队不应停止发布，也不应投入更多时间改善可靠性。</p>
+	</li>
+	<li>
+	<p>无论中断因何而起，都应冻结变更，以尽量降低未来再次中断的概率。</p>
+	</li>
+</ul>
+
+<p>第二种做法会让用户更满意。应用这一原则时可以保留一定灵活性；根据中断和依赖的性质，冻结变更未必实际可行。应选择最适合服务及其依赖的做法，并把决定写入错误预算文档，供后来者参考。实际运作示例见 <a data-type="xref" href="app02.html#example_error_budget_policy">附录 B</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Experimenting with Relaxing Your SLOs" data-type="sect2"><div class="sect2" id="experimenting_with_relaxing_your_slos">
+<h2>试验放宽 SLO</h2>
+
+<p>可以对应用可靠性开展试验，衡量哪些可靠性变化<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="refining" data-tertiary="experimenting with relaxing SLOs" data-type="indexterm" id="idm139660643502128"/> （例如增加页面加载延迟）会对用户行为（例如完成购买的用户比例）产生可测量的不利影响。 <a contenteditable="false" data-primary="reliability" data-secondary="experimenting with relaxing SLOs" data-type="indexterm" id="idm139660643504976"/>只有确信错误预算足以消耗时，才建议进行这类分析。延迟、可用性、客户、业务领域以及竞争状况（包括缺乏竞争）之间存在许多微妙的相互作用。主动降低客户感知体验是一条几乎不可回头的界线；即使真要跨越，也必须极其慎重。</p>
+
+<p>这类试验可能令人害怕（谁都不想损失销售额），但从中获得的知识能帮助你改进服务，未来甚至可能带来更好的性能和更高的销售额。这个过程或许能用数学方法识别关键业务指标（如销售额）与可测技术指标（如延迟）之间的关系。一旦做到，就获得了一项非常宝贵的数据，可用于今后为服务制定重要工程决策。</p>
+
+<p>这不应是一次性活动。随着服务演进，客户预期也会变化，因此必须定期检查这种关系是否仍然有效。</p>
+
+<p>这类分析的另一项风险是误读数据。例如，人为把页面放慢 50 ms 后，若转化率没有相应下降，你可能会认为延迟 SLO 过于严格。然而，用户也许已经不满，只是暂时没有替代服务；竞争者一出现，他们就会离开。务必确认测量的是正确指标，并采取适当的<span class="keep-together">预防措施</span>。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00003">
+<h1>总结</h1>
+
+<p>本书讨论的每个主题都能追溯到 SLO。读完本章，我们希望你会认同：哪怕只对 SLO 做了部分正式化（明确说明对用户的承诺），它也能提供一个框架，让人们更清晰地讨论系统行为，并在服务未达到预期时找出可付诸行动的补救措施。</p>
+
+<p>总结如下：</p>
+
+<ul>
+	<li>
+	<p>SLO 是衡量服务可靠性的工具。</p>
+	</li>
+	<li>
+	<p>错误预算是在可靠性工作与其他工程工作之间取得平衡的工具，也是判断哪些项目影响最大的好方法。</p>
+	</li>
+	<li>
+	<p>应当从今天开始使用 SLO 和错误预算。</p>
+	</li>
+</ul>
+
+<p>SLO 文档示例<a contenteditable="false" data-primary="service level objectives (SLOs)" data-startref="ix_SLO" data-type="indexterm" id="idm139660643491840"/> 和错误预算策略示例见附录 <a data-type="xref" data-xrefstyle="select:labelnumber" href="app01.html#example_slo_document">A</a> 和 <a data-type="xref" data-xrefstyle="select:labelnumber" href="app02.html#example_error_budget_policy">B</a>。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch02fn1"><sup><a href="ch02-zh.html#ch02fn1-marker">1</a></sup> 术语说明：本章使用<em>可靠性</em>一词来描述服务在所有 SLI 方面的表现，它可以反映可用性、延迟等多种情况。</p><p data-type="footnote" id="ch02fn2"><sup><a href="ch02-zh.html#ch02fn2-marker">2</a></sup> 这不同于<em>服务等级协议</em>（SLA）。SLA 是一种商业合同，当服务表现差到必须以某种方式补偿用户时，它就会生效。</p><p data-type="footnote" id="ch02fn3"><sup><a href="ch02-zh.html#ch02fn3-marker">3</a></sup> 关于如何把依赖因素纳入服务可靠性计算，详见 Ben Treynor、Mike Dahlin、Vivek Rau 和 Betsy Beyer 的“The Calculus of Service Availability”，<em>《ACM Queue》</em>第 15 卷第 2 期（2017 年），<a href="https://queue.acm.org/detail.cfm?id=3096459"><em class="hyperlink">https://queue.acm.org/detail.cfm?id=3096459</em></a>。</p><p data-type="footnote" id="ch02fn4"><sup><a href="ch02-zh.html#ch02fn4-marker">4</a></sup> 如果按季度等日历周期衡量 SLO，而预算又以流量等不可预测的指标为基础，那么季度结束前可能无法知道最终预算规模。更多关于报告周期的讨论见<a data-type="xref" href="#choosing_an_appropriate_time_window">“选择适当的时间窗口”</a>。</p><p data-type="footnote" id="ch02fn5"><sup><a href="ch02-zh.html#ch02fn5-marker">5</a></sup> 之所以取 50 ms，是因为用户不太可能察觉 50 ms 的延迟变化；不过，合适的取整幅度显然取决于服务和用户。报表服务与实时游戏就不相同。</p><p data-type="footnote" id="ch02fn6"><sup><a href="ch02-zh.html#ch02fn6-marker">6</a></sup> 先说明一下：后面可能还有更困难的任务。</p><p data-type="footnote" id="ch02fn7"><sup><a href="ch02-zh.html#ch02fn7-marker">7</a></sup> <em>召回率</em>是被 SLI 捕获的、对用户有显著影响的事件所占比例。<em>精确率</em>是 SLI 捕获的事件中，对用户有显著影响的事件所占比例。</p><p data-type="footnote" id="ch02fn8"><sup><a href="ch02-zh.html#ch02fn8-marker">8</a></sup> 这里值得重申：错误预算只是对用户满意度的近似。每 30 天发生一次四小时中断，造成的不满用户可能少于每 30 天发生四次各一小时的中断；而后者造成的不满用户又可能少于持续 0.5% 的错误率。但错误预算会把三者同等对待。这些阈值会因服务而异。</p><p data-type="footnote" id="ch02fn9"><sup><a href="ch02-zh.html#ch02fn9-marker">9</a></sup> 如果某项依赖不可用就会导致服务也不可用，那么它就是关键依赖。</p></div></div></section></body></html>
