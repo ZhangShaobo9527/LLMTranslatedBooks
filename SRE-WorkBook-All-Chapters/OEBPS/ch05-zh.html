@@ -1,0 +1,690 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>基于 SLO 的告警</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第 5 章 基于 SLO 的告警" data-type="chapter" epub:type="chapter"><div class="chapter" id="alerting_on_slos">
+<h1><span class="label">第 5 章 </span>基于 SLO 的告警</h1>
+
+<p class="byline">Steven Thurgood 著<br/>
+Jess Frame、Anthony Lenton、<br/>
+Carmela Quinito、Anton Tolchanov 和 Nejc Trdin 参与撰写</p>
+
+<p>本章说明如何把 SLO 转化为针对重大事件、可采取行动的告警。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-type="indexterm" id="ix_alrtSLO"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-type="indexterm" id="ix_SLOalrt"/> 我们的 <a href="http://bit.ly/2kIcNYM">第一本 SRE 图书</a> 和本书都讨论了如何实施 SLO。我们认为，优秀的 SLO 能够以客户的实际体验衡量平台可靠性，因此是判断值班工程师何时应介入的最可靠信号。下面将具体说明如何把这些 SLO 转换为告警规则，使你能在错误预算消耗过多之前处理问题。</p>
+
+<p>我们将给出一系列复杂度逐步提高的告警指标和逻辑实现，并讨论各自的用途与不足。示例采用一个简单的请求驱动型服务和 <a href="https://prometheus.io">Prometheus 语法</a>，但这种方法适用于任何告警框架。</p>
+
+<section data-pdf-bookmark="告警策略的考量因素" data-type="sect1"><div class="sect1" id="alerting_considerations">
+<h1>告警策略的考量因素</h1>
+
+<p>要根据服务等级指标（SLI）和错误预算生成告警，需要<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="considerations in" data-type="indexterm" id="idm139660642866528"/> 一种方法， <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="considerations in" data-type="indexterm" id="idm139660642879808"/>把这两个要素组合成明确的规则。你的目标是在发生 <em>重大事件</em>时收到通知；重大事件是指会消耗很大一部分错误预算的事件。</p>
+
+<p>评估告警策略时，应考虑以下属性：</p>
+
+<dl class="pagebreak-before">
+	<dt><dfn>准确率（Precision）</dfn></dt>
+	<dd><p>检测到的事件中，重大事件所占的比例。 <a contenteditable="false" data-primary="precision in SLO alerts" data-type="indexterm" id="idm139660642860160"/>如果每次告警都对应一个重大事件，准确率就是 100%。请注意，在低流量时段，告警可能对非重大事件格外敏感（参见 <a data-type="xref" href="#low_traffic_services_and_error_budget_ale">“低流量服务与错误预算告警”</a>）。</p></dd>
+	<dt><dfn>召回率（Recall）</dfn></dt>
+	<dd><p>检测到的重大事件占全部重大事件的比例。 <a contenteditable="false" data-primary="recall (SLO alerts)" data-type="indexterm" id="idm139660642856816"/>如果每个重大事件都会触发告警，召回率就是 100%。</p></dd>
+	<dt><dfn>检测时间</dfn></dt>
+	<dd><p>在各种情况下发出通知所需的时间。 <a contenteditable="false" data-primary="detection time (SLO alerts)" data-type="indexterm" id="idm139660642853824"/>检测时间过长会导致更多错误预算被消耗。</p></dd>
+	<dt><dfn>复位时间</dfn></dt>
+	<dd><p>问题解决后，告警还会持续触发多长时间。<a contenteditable="false" data-primary="reset time (SLO alerts)" data-type="indexterm" id="idm139660642851568"/> 复位时间过长可能造成困惑，或使问题被忽略。</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="针对重大事件的告警方法" data-type="sect1"><div class="sect1" id="ways_to_alert_on_significant_events">
+<h1>针对重大事件的告警方法</h1>
+
+<p>为 SLO 构建告警规则可能相当复杂。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="significant events" data-type="indexterm" id="ix_SLOalrtsig"/> 下面按照有效性逐步提高的顺序介绍六种重大事件告警配置方法，最终得到一种能同时良好控制准确率、召回率、检测时间和复位时间的方案。每种方法分别解决不同的问题，其中一些方法最终可以同时解决多个问题。前三种尝试并不可行，但它们逐步引出后三种可行策略；其中第 6 种最为可行，也是我们最推荐的方案。第一种方法实现简单却不够完善，而最佳方法则能兼顾长期和短期，全面保护 SLO。</p>
+
+<p>在本节讨论中，“错误预算”和“错误率”适用于所有 SLI，并不限于名称中带有“错误”的指标。在 <a data-type="xref" href="ch02-zh.html#what_to_measure_using_slis">“衡量什么：使用 SLI”</a>一节中，我们建议使用能够反映良好事件数占事件总数比例的 SLI。错误预算规定允许发生的不良事件数量，而错误率是不良事件数与事件总数之比。</p>
+
+<section data-pdf-bookmark="1：目标错误率 ≥ SLO 所允许的错误率" data-type="sect2"><div class="sect2" id="one_target_error_rate_ge_slo_threshold">
+<h2>1：目标错误率 ≥ SLO 所允许的错误率</h2>
+
+<p>最简单的方案是选择一个较短的时间窗口（例如 10 分钟），并在该窗口内的<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="target error rate ࣙ SLO threshold" data-type="indexterm" id="idm139660642843696"/> 错误率 <a contenteditable="false" data-primary="errors" data-secondary="alerting for target error rate over SLO threshold" data-type="indexterm" id="idm139660642841952"/>超过 SLO 所允许的错误率时发出告警。</p>
+
+<p>例如，如果 SLO 是 30 天内达到 99.9%，那么过去 10 分钟的错误率 ≥ 0.1% 时就发出告警：</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+  expr: job:slo_errors_per_request:ratio_rate10m{job="myjob"} &gt;= 0.001
+</pre>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>这个 10 分钟平均值通过 Prometheus 记录规则计算：</p>
+
+<pre data-type="programlisting">
+record: job:slo_errors_per_request:ratio_rate10m
+expr:
+  sum(rate(slo_errors[10m])) by (job)
+    /
+  sum(rate(slo_requests[10m])) by (job)
+</pre>
+
+<p>如果作业没有导出 <code>slo_errors</code> 和 <code>slo_requests</code> ，可以通过重命名指标来创建这些时间序列：</p>
+
+<pre data-type="programlisting">
+record: slo_errors
+expr: http_errors
+</pre>
+</div>
+
+<p>当近期错误率等于 SLO 所允许的错误率时发出告警，意味着系统能够检测到的预算消耗比例为：</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML" class="bump150"><mfrac><mi>alerting window size</mi><mi>reporting period</mi></mfrac></math></div>
+
+<p><a data-type="xref" href="#detection_time_for_an_example_service_wit">图 5-1</a> 展示了一个告警窗口为 10 分钟、SLO 为 99.9% 的示例服务中，检测时间与错误率之间的关系。</p>
+
+<figure><div class="figure" id="detection_time_for_an_example_service_wit"><img alt="告警窗口为 10 分钟、SLO 为 99.9% 的示例服务的检测时间" src="assets/tsrw_0501.png"/>
+<h6><span class="label">图 5-1。 </span>告警窗口为 10 分钟、SLO 为 99.9% 的示例服务的检测时间</h6>
+</div></figure>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_when_the_immedi">表 5-1</a> 列出了在即时错误率过高时告警的优缺点。</p>
+
+<table class="border" id="pros_and_cons_of_alerting_when_the_immedi">
+	<caption><span class="label">表 5-1。 </span>即时错误率过高时发出告警的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>检测时间短：完全中断时仅需 0.6 秒。</p>
+
+			<p>任何威胁 SLO 的事件都会触发此告警，因此召回率很高。</p>
+			</td>
+			<td>
+			<p>准确率低：许多并不威胁 SLO 的事件也会触发告警。错误率持续 10 分钟为 0.1% 就会告警，但这 <em>仅消耗月度错误预算的 0.02%。</em></p>
+
+			<p>极端情况下，你每天最多可能收到 144 次告警，即使对所有告警都不采取行动，仍然可以满足 SLO。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="2：延长告警窗口" data-type="sect2"><div class="sect2" id="two_increased_alert_window">
+<h2>2：延长告警窗口</h2>
+
+<p>我们可以在前一个示例的基础上调整告警窗口大小，以提高准确率。 <a contenteditable="false" data-primary="errors" data-secondary="increased alert window for SLO errors" data-type="indexterm" id="idm139660642813488"/><a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="increased alert window" data-type="indexterm" id="idm139660642814912"/>窗口越长，触发告警前消耗的错误预算就越多。</p>
+
+<p>为了使 <a href="http://bit.ly/2LQYspl">告警频率保持在可管理的范围内</a>，你决定仅在某个事件消耗了 30 天错误预算的 5% 时接收通知，这对应 36 小时窗口：</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+   expr: job:slo_errors_per_request:ratio_rate36h{job="myjob"} &gt; 0.001
+</pre>
+
+<p>此时，检测时间为：</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow> <mfrac> <mrow><mn>1</mn><mo>−</mo><mi>SLO</mi></mrow> <mi>error ratio</mi></mfrac> <mo>×</mo> <mi>alerting window size</mi></mrow> </math></div>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_when_the_error">表 5-2</a> 列出了较长时间窗口内错误率过高时发出告警的优缺点。</p>
+
+<table class="border" id="pros_and_cons_of_alerting_when_the_error">
+	<caption><span class="label">表 5-2。 </span>较长时间窗口内错误率过高时发出告警的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>检测时间仍然较短：完全中断时为 2 分 10 秒。</p>
+
+			<p>准确率比前例更高：要求错误率持续更长时间后，告警更有可能代表对错误预算的重大威胁。</p>
+			</td>
+			<td>
+			<p>复位时间很差：发生 100% 中断时，告警会在 2 分钟后不久触发，并在接下来的 36 小时内持续触发。</p>
+
+			<p>由于数据点数量庞大，计算较长窗口内的比率可能消耗大量内存或 I/O 资源。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><a data-type="xref" href="#error_rate_over_a_36_hour_period">图 5-2</a> 表明，虽然 36 小时周期末尾的即时错误率已降至可忽略的水平，但 36 小时平均错误率仍高于阈值。</p>
+
+<figure><div class="figure" id="error_rate_over_a_36_hour_period"><img alt="36 小时内的错误率" src="assets/tsrw_0502.png"/>
+<h6><span class="label">图 5-2。 </span>36 小时内的错误率</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="3：设置更长的告警持续条件" data-type="sect2"><div class="sect2" id="three_incrementing_alert_duration">
+<h2>3：设置更长的告警持续条件</h2>
+
+<p>大多数监控系统允许在告警条件中加入持续时间参数，<a contenteditable="false" data-primary="duration parameter (alerts), incrementing" data-type="indexterm" id="idm139660642790400"/> 只有当 <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="incrementing alert duration" data-type="indexterm" id="idm139660642789104"/>指标值持续高于阈值一段时间后才触发告警。你可能会想用这个参数，以较低的计算成本达到类似延长窗口的效果：</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+    expr: job:slo_errors_per_request:ratio_rate1m{job="myjob"} &gt; 0.001
+    for: 1h
+</pre>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_a_duration_paramet">表 5-3</a> 列出了在告警中使用持续时间参数的优缺点。</p>
+
+<table class="border" id="pros_and_cons_of_using_a_duration_paramet">
+	<caption><span class="label">表 5-3。 </span>告警使用持续时间参数的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>告警的准确率可能更高。要求错误率持续一段时间才触发，使告警更可能对应重大事件。</td>
+			<td>
+			<p>召回率和检测时间都很差：持续时间不会随事件严重程度变化，因此 100% 中断与 0.2% 中断一样，都要一小时后才告警。100% 中断会在这一小时内消耗 30 天错误预算的 140%。</p>
+
+			<p>只要指标哪怕短暂恢复到满足 SLO 的水平，持续时间计时器就会重置。如果 SLI 在不满足和满足 SLO 之间波动，可能永远不会告警。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>基于 <a data-type="xref" href="#pros_and_cons_of_using_a_duration_paramet">表 5-3</a>所列的原因，我们不建议把持续时间用作基于 SLO 的告警条件。<sup><a data-type="noteref" href="ch05-zh.html#ch05fn1" id="ch05fn1-marker">1</a></sup></p>
+
+<p><a data-type="xref" href="#service_with_100percent_error_spikes_ever">图 5-3</a> 展示了一个服务在 5 分钟窗口内的平均错误率，其告警要求条件持续 10 分钟。每隔 10 分钟出现一次持续 5 分钟的 100% 错误尖峰；即使这些尖峰已消耗 35% 的错误预算，也始终不会触发告警。</p>
+
+<figure><div class="figure" id="service_with_100percent_error_spikes_ever"><img alt="每 10 分钟出现一次 100% 错误尖峰的服务" src="assets/tsrw_0503.png"/>
+<h6><span class="label">图 5-3。 </span>每 10 分钟出现一次 100% 错误尖峰的服务</h6>
+</div></figure>
+
+<p>每次尖峰几乎都消耗 30 天错误预算的 12%，但告警始终没有触发。</p>
+</div></section>
+
+<section data-pdf-bookmark="4：基于消耗率告警" data-type="sect2"><div class="sect2" id="four_alert_on_burn_rate">
+<h2>4：基于消耗率告警</h2>
+
+<p>为了改进前一种方案，需要建立一种检测迅速且准确率高的告警。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="burn rate for error budgets" data-type="indexterm" id="idm139660642771088"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-type="indexterm" id="idm139660642769712"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="alerting on" data-type="indexterm" id="idm139660642767632"/> 为此，可以引入消耗率，在保持告警触发时所对应的错误预算消耗比例不变的同时缩短窗口。</p>
+
+<p><em>消耗率</em> 表示服务相对于 SLO 消耗错误预算的速度。 <a data-type="xref" href="#error_budgets_relative_to_burn_rates">图 5-4</a> 展示了消耗率与错误预算之间的关系。</p>
+
+<p>示例服务的消耗率为 1，这意味着服务正以恰好会在 SLO 时间窗口结束时耗尽预算的速度消耗错误预算（参见我们的第一本书 <a href="http://bit.ly/2szBKsK">第 4 章</a>）。对于 30 天内 99.9% 的 SLO，持续 0.1% 的错误率会恰好用完全部错误预算，也就是消耗率为 1。</p>
+
+<figure><div class="figure" id="error_budgets_relative_to_burn_rates"><img alt="错误预算与消耗率的关系" src="assets/tsrw_0504.png"/>
+<h6><span class="label">图 5-4。 </span>错误预算与消耗率的关系</h6>
+</div></figure>
+
+<p><a data-type="xref" href="#burn_rates_and_time_to_complete_budget_ex">表 5-4</a> 列出了消耗率、对应的错误率以及耗尽 SLO 预算所需的时间。</p>
+
+<table class="border" id="burn_rates_and_time_to_complete_budget_ex">
+	<caption><span class="label">表 5-4。 </span>消耗率与预算完全耗尽时间</caption>
+	<thead>
+		<tr>
+			<th><strong>消耗率</strong></th>
+			<th><strong>99.9% SLO 对应的错误率</strong></th>
+			<th><strong>耗尽时间</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>1</td>
+			<td>0.1%</td>
+			<td>30 天</td>
+		</tr>
+		<tr>
+			<td>2</td>
+			<td>0.2%</td>
+			<td>15 天</td>
+		</tr>
+		<tr>
+			<td>10</td>
+			<td>1%</td>
+			<td>3 天</td>
+		</tr>
+		<tr>
+			<td>1,000</td>
+			<td>100%</td>
+			<td>43 分钟</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>把告警窗口固定为一小时，并认定消耗 5% 的错误预算已足以通知人员后，就可以推导出告警所用的消耗率。</p>
+
+<p>对于基于消耗率的告警，触发告警所需的时间为：</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow> <mfrac> <mrow><mn>1</mn><mo>−</mo><mi>SLO</mi></mrow> <mi>error ratio</mi></mfrac> <mo>×</mo> <mi>alerting window size</mi> <mo>×</mo> <mi>burn rate</mi></mrow> </math></div>
+
+<p>告警触发时已消耗的错误预算为：</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML" class="bump150"> <mfrac> <mrow><mi>burn rate</mi><mo>×</mo><mi>alerting window size</mi></mrow> <mi>period</mi> </mfrac> </math></div>
+
+<p class="pagebreak-before">要在一小时内消耗 30 天错误预算的 5%，消耗率必须达到 36。告警规则变为：</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+  expr: job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; 36 * 0.001
+</pre>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_based_on_burn_r">表 5-5</a> 列出了基于消耗率告警的优点和局限。</p>
+
+<table class="border" id="pros_and_cons_of_alerting_based_on_burn_r">
+	<caption><span class="label">表 5-5。 </span>基于消耗率告警的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>准确率高：此策略选择在错误预算消耗达到显著比例时告警。</p>
+
+			<p>时间窗口更短，计算成本更低。</p>
+
+			<p>检测时间短。</p>
+
+			<p>复位时间有所改善：58 分钟。</p>
+			</td>
+			<td>
+			<p>召回率低：35 倍消耗率永远不会触发告警，却会在 20.5 小时内耗尽 30 天的全部错误预算。</p>
+
+			<p>复位时间仍然过长：58 分钟。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="5：多消耗率告警" data-type="sect2"><div class="sect2" id="five_multiple_burn_rate_alerts">
+<h2>5：多消耗率告警</h2>
+
+<p>告警逻辑可以采用多个消耗率和时间窗口，并在消耗率超过指定阈值时触发告警。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="multiple burn rate alarms" data-type="indexterm" id="idm139660642724464"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-tertiary="multiple alarms" data-type="indexterm" id="idm139660642722704"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="multiple alerts on" data-type="indexterm" id="idm139660642720672"/> 这种方案既保留了基于消耗率告警的优点，也能确保不会漏掉较低但仍然显著的错误率。</p>
+
+<p>还可以为通常不易察觉、但若不处理就可能耗尽错误预算的事件创建工单通知，例如三天内消耗 10% 的预算。这个错误率足以识别重大事件，但预算消耗速度仍留有充足的处理时间，因此不必呼叫值班人员。</p>
+
+<p>我们建议把一小时内消耗 2% 和六小时内消耗 5% 的预算作为呼叫告警的合理起点，并把三天内消耗 10% 的预算作为工单告警的基准。合适的数值取决于服务以及通常的呼叫告警量。对于较繁忙的服务，还应结合周末和节假日的值班职责，考虑将六小时窗口改为工单告警。</p>
+
+<p><a data-type="xref" href="#recommended_time_windows_and_burn_rates_f">表 5-6</a> 列出了不同 SLO 预算消耗比例所对应的消耗率和时间窗口。</p>
+
+<table class="border" id="recommended_time_windows_and_burn_rates_f">
+	<caption><span class="label">表 5-6。 </span>不同 SLO 预算消耗比例对应的建议时间窗口和消耗率</caption>
+	<thead>
+		<tr>
+			<th><strong>SLO 预算消耗</strong></th>
+			<th><strong>时间窗口</strong></th>
+			<th><strong>消耗率</strong></th>
+			<th><strong>通知方式</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>2%</td>
+			<td>1 小时</td>
+			<td>14.4</td>
+			<td>呼叫</td>
+		</tr>
+		<tr>
+			<td>5%</td>
+			<td>6 小时</td>
+			<td>6</td>
+			<td>呼叫</td>
+		</tr>
+		<tr>
+			<td>10%</td>
+			<td>3 天</td>
+			<td>1</td>
+			<td>工单</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>告警配置可能如下：</p>
+
+<pre data-type="programlisting">
+expr: (
+        job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; (14.4*0.001)
+      or
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; (6*0.001)
+      )
+severity: page
+
+expr: job:slo_errors_per_request:ratio_rate3d{job="myjob"} &gt; 0.001
+severity: ticket
+</pre>
+
+<p><a data-type="xref" href="#error_ratecomma_detection_timecomma_and_a">图 5-5</a> 展示了不同错误率对应的检测时间和告警类型。</p>
+
+<figure><div class="figure" id="error_ratecomma_detection_timecomma_and_a"><img alt="错误率、检测时间和告警通知" src="assets/tsrw_0505.png"/>
+<h6><span class="label">图 5-5。 </span>错误率、检测时间和告警通知</h6>
+</div></figure>
+
+<p>多个消耗率让你可以根据所需响应速度调整告警优先级。如果问题会在几小时或几天内耗尽错误预算，适合发送需要立即响应的通知；否则，更适合创建工单，在下一个工作日处理。<sup><a data-type="noteref" href="ch05-zh.html#ch05fn2" id="ch05fn2-marker">2</a></sup></p>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_multiple_burn_rate">表 5-7</a> 列出了使用多个消耗率的优缺点。</p>
+
+<table class="border" id="pros_and_cons_of_using_multiple_burn_rate">
+	<caption><span class="label">表 5-7。 </span>使用多个消耗率的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>可以根据严重程度让监控配置适应多种情形：错误率高时迅速告警；错误率较低但持续存在时最终也会告警。</p>
+
+			<p>与所有基于固定预算比例的告警方法一样，准确率较高。</p>
+
+			<p>由于采用三天窗口，召回率较高。</p>
+
+			<p>可以根据保护 SLO 所需的响应速度选择最合适的告警类型。</p>
+			</td>
+			<td>
+			<p>需要管理和分析更多数值、窗口大小和阈值。</p>
+
+			<p>由于采用三天窗口，复位时间变得更长。</p>
+
+			<p>如果所有条件都成立，为避免同时触发多个告警，需要实现告警抑制。例如，五分钟内消耗 10% 的预算，同时也意味着六小时内消耗了 5%、一小时内消耗了 2%。除非监控系统足够智能，能够阻止重复通知，否则这种情形会触发三次通知。</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="6：多窗口、多消耗率告警" data-type="sect2"><div class="sect2" id="six_multiwindowcomma_multi_burn_rate_aler">
+<h2>6：多窗口、多消耗率告警</h2>
+
+<p>可以改进第 5 种方案中的多消耗率告警，使它只在错误预算 <em>仍在</em> 持续消耗时通知我们，从而减少误报。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="multiwindow, multi-burn-rate alerts" data-type="indexterm" id="idm139660642680288"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-tertiary="multiwindow, multi-burn-rate alerts" data-type="indexterm" id="idm139660642682656"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="multiwindow multi-burn-rate alerts" data-type="indexterm" id="idm139660642680560"/> 为此，需要增加一个参数：用较短窗口检查触发告警时错误预算是否仍在消耗。</p>
+
+<p>一个实用准则是让短窗口的时长等于长窗口的 1/12，如 <a data-type="xref" href="#short_and_long_windows_for_alerting">图 5-6</a>所示。图中给出了两个窗口的告警阈值。错误率达到 15% 并持续 10 分钟时，短窗口平均值立即超过告警阈值；5 分钟后，长窗口平均值也超过阈值，此时告警开始触发。错误停止 5 分钟后，短窗口平均值降到阈值以下，告警随即停止；而长窗口平均值要在错误停止 60 分钟后才会降到阈值以下。</p>
+
+<figure><div class="figure" id="short_and_long_windows_for_alerting"><img alt="告警的短窗口和长窗口" src="assets/tsrw_0506.png"/>
+<h6><span class="label">图 5-6。 </span>告警的短窗口和长窗口</h6>
+</div></figure>
+
+<p>例如，只有过去一小时和过去五分钟的消耗率都超过 14.4 倍时，才发送呼叫级告警。该告警要到错误预算已消耗 2% 时才触发，但复位更快：错误停止后五分钟就不再触发，而不是继续触发一小时：</p>
+
+<pre data-type="programlisting">
+expr: (
+        job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; (14.4*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate5m{job="myjob"} &gt; (14.4*0.001)
+      )
+    or
+      (
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; (6*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate30m{job="myjob"} &gt; (6*0.001)
+      )
+severity: page
+
+expr: (
+        job:slo_errors_per_request:ratio_rate24h{job="myjob"} &gt; (3*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate2h{job="myjob"} &gt; (3*0.001)
+      )
+    or
+      (
+        job:slo_errors_per_request:ratio_rate3d{job="myjob"} &gt; 0.001
+      and
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; 0.001
+      )
+severity: ticket
+</pre>
+
+<p>我们建议以 <a data-type="xref" href="#recommended_parameters_for_an_slo_based_a">表 5-8</a> 中的参数作为 SLO 告警配置的起点。</p>
+
+<table class="border" id="recommended_parameters_for_an_slo_based_a">
+	<caption><span class="label">表 5-8。 </span>99.9% SLO 告警配置的建议参数</caption>
+	<thead>
+		<tr>
+			<th><strong>严重级别</strong></th>
+			<th><strong>长窗口</strong></th>
+			<th><strong>短窗口</strong></th>
+			<th><strong>消耗率</strong></th>
+			<th><strong>已消耗的错误预算</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>呼叫</td>
+			<td>1 小时</td>
+			<td>5 分钟</td>
+			<td>14.4</td>
+			<td>2%</td>
+		</tr>
+		<tr>
+			<td>呼叫</td>
+			<td>6 小时</td>
+			<td>30 分钟</td>
+			<td>6</td>
+			<td>5%</td>
+		</tr>
+		<tr>
+			<td>工单</td>
+			<td>3 天</td>
+			<td>6 小时</td>
+			<td>1</td>
+			<td>10%</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>实践表明，基于多个消耗率进行告警，是实现 SLO 告警的一种强大方法。</p>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_multiple_b-id00013">表 5-9</a> 列出了使用多个消耗率和窗口大小的优点与局限。</p>
+
+<table class="border" id="pros_and_cons_of_using_multiple_b-id00013">
+	<caption><span class="label">表 5-9。 </span>使用多个消耗率和窗口大小的优缺点</caption>
+	<thead>
+		<tr>
+			<th><strong>优点</strong></th>
+			<th><strong>缺点</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>告警框架灵活，可以根据事件严重程度和组织要求控制告警类型。</p>
+
+			<p>与所有基于固定预算比例的告警方法一样，准确率较高。</p>
+
+			<p>由于采用三天窗口，召回率较高。</p>
+			</td>
+			<td>需要指定大量参数，可能导致告警规则难以管理。有关管理告警规则的更多内容，请参见 <a data-type="xref" href="#alerting_at_scale">“规模化告警”</a>。</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="低流量服务与错误预算告警" data-type="sect1"><div class="sect1" id="low_traffic_services_and_error_budget_ale">
+<h1>低流量服务与错误预算告警</h1>
+
+<p>刚才介绍的多窗口、多消耗率方法，<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrtsig" data-tertiary="significant events" data-type="indexterm" id="idm139660642643584"/> 在传入请求速率足够高、问题出现时能够提供有意义信号的情况下 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_SLOalrtlow"/>效果很好。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_alrtSLOlow"/><a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_errbudalrt"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-type="indexterm" id="ix_lowtr"/> 然而，对于请求量低的系统，这些方法可能带来问题。如果系统用户很少，或者自然存在低流量时段（例如夜间和周末），就可能需要调整方法。</p>
+
+<p>在低流量服务中，很难自动区分无关紧要的事件。例如，系统每小时只收到 10 个请求时，一个失败请求就会使该小时的错误率达到 10%。对于 99.9% 的 SLO，这相当于 1,000 倍消耗率，并会立即呼叫值班人员，因为它消耗了 30 天错误预算的 13.9%。在这种情况下，30 天内只允许 7 个请求失败。单个请求可能因许多短暂且无关紧要的原因失败；像处理大规模系统性中断那样解决它们，未必具有成本效益。</p>
+
+<p>最佳方案取决于服务的性质：单个失败请求会造成什么影响<sup><a data-type="noteref" href="ch05-zh.html#ch05fn3" id="ch05fn3-marker">3</a></sup>？如果失败的是不会重试、一次性且价值很高的请求，高可用性目标可能是合适的。从业务角度看，逐一调查每个失败请求也可能合理。不过在这种情况下，告警系统只能在请求已经失败后通知你，无法再保护该次请求。</p>
+
+<p>对于低流量服务，我们建议采用以下几种主要方案：</p>
+
+<ul>
+	<li>
+	<p>生成合成流量，弥补真实用户信号不足的问题。</p>
+	</li>
+	<li>
+	<p>出于监控目的，把多个较小服务合并成一个较大的服务。</p>
+	</li>
+	<li>
+	<p>修改产品，使其满足以下至少一项：</p>
+
+	<ul>
+		<li>
+		<p>需要更多请求失败，才把单次事件判定为故障。</p>
+		</li>
+		<li>
+		<p>降低单次失败的影响。</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="生成合成流量" data-type="sect2"><div class="sect2" id="generating_artificial_traffic">
+<h2>生成合成流量</h2>
+
+<p>系统可以模拟用户活动，以检查潜在错误和高延迟请求。<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="generating artificial traffic" data-type="indexterm" id="idm139660642620688"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="generating artificial traffic" data-type="indexterm" id="idm139660642621920"/> 没有真实用户活动时，监控系统也能检测合成请求及其错误，使值班工程师可以在问题影响过多真实用户之前作出响应。</p>
+
+<p>合成流量提供了更多可用信号，还允许复用现有监控逻辑和 SLO 数值。你甚至可能已经具备大部分必要的流量生成组件，例如黑盒探测器和集成测试。<a contenteditable="false" data-primary="probers" data-type="indexterm" id="idm139660642615808"/></p>
+
+<p>生成合成负载也有缺点。大多数需要 SRE 支持的服务都很复杂，可观察和控制的系统表面非常广。理想情况下，系统从设计和构建之初就应支持使用合成流量进行监控。即使对于并非特别复杂的服务，也只能模拟全部用户请求类型中的一小部分；对于有状态服务，状态数量更多会进一步加剧这一问题。</p>
+
+<p>此外，如果问题影响真实用户却不影响合成流量，成功的合成请求会掩盖真实用户信号，导致用户遇到错误时你却收不到通知。</p>
+</div></section>
+
+<section data-pdf-bookmark="合并服务" data-type="sect2"><div class="sect2" id="combining_services">
+<h2>合并服务</h2>
+
+<p>如果多个低流量服务共同实现一项整体功能，把它们的请求合并为一个更高层级的组，可以更准确地检测重大事件，并减少误报。<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="combining services" data-type="indexterm" id="idm139660642610384"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="combining services" data-type="indexterm" id="idm139660642612848"/> 要使这种方法有效，这些服务必须存在某种关联。例如，可以合并同一产品中的多个微服务，或由同一二进制程序处理的多种请求类型。<a contenteditable="false" data-primary="microservices" data-secondary="combining for low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642617936"/></p>
+
+<p>合并服务的缺点是，单个服务完全故障也可能达不到重大事件的判定标准。可以选择共享故障域的服务，例如使用同一后端数据库的服务，从而提高故障影响整个服务组的可能性。与此同时，仍可使用较长周期的告警，最终捕获单个服务的这类 100% 故障。</p>
+</div></section>
+
+<section data-pdf-bookmark="调整服务和基础设施" data-type="sect2"><div class="sect2" id="making_service_and_infrastructure_changes">
+<h2>调整服务和基础设施</h2>
+
+<p>针对重大事件告警，目的是留出充足的预警时间，在问题耗尽全部错误预算之前缓解影响。<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="making service and infrastructure changes" data-type="indexterm" id="idm139660642607584"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="making service and infrastructure changes" data-type="indexterm" id="idm139660642605312"/> 如果无法降低监控对短暂事件的敏感度，而生成合成流量又不切实际，可以考虑改造服务，降低单个请求失败对用户的影响。例如：</p>
+
+<ul>
+	<li>
+	<p>修改客户端，使其采用指数退避和抖动机制进行重试。<sup><a data-type="noteref" href="ch05-zh.html#ch05fn4" id="ch05fn4-marker">4</a></sup></p>
+	</li>
+	<li>
+	<p>设置降级路径，先保存请求、稍后再执行；这种机制可以位于服务端，也可以位于客户端。</p>
+	</li>
+</ul>
+
+<p>这些改动对高流量系统有用，对低流量系统尤其有用：错误预算可以容纳更多失败事件，监控能获得更多信号，而且在事件变得重大之前有更多响应时间。</p>
+</div></section>
+
+<section data-pdf-bookmark="降低 SLO 或延长窗口" data-type="sect2"><div class="sect2" id="lowering_the_slo_or_increasing_the_window">
+<h2>降低 SLO 或延长窗口</h2>
+
+<p>还应重新考虑：单次失败对错误预算的影响，是否准确反映了它对用户的影响。<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="lowering the SLO or increasing the window" data-type="indexterm" id="idm139660642592528"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="lowering the SLO or increasing the window" data-type="indexterm" id="idm139660642593552"/> 如果少量错误就会消耗错误预算，真的有必要立即呼叫工程师修复吗？如果没有必要，那么较低的 SLO 也同样能让用户满意。降低 SLO 后，只有规模更大、持续时间更长的中断才会通知工程师。</p>
+
+<p>与服务利益相关方协商并同意降低 SLO 后（例如从 99.9% 降至 99%），实施改动非常简单：如果已经具备基于 SLO 阈值的报告、监控和告警系统，只需把新的 SLO 值加入相关系统。</p>
+
+<p>降低 SLO 也有缺点：这是一项产品决策。更改 SLO 会影响系统的其他方面，例如对系统行为的预期，以及何时执行错误预算政策。这些要求对产品的重要性，可能高于减少一些低信号告警。</p>
+
+<p>同理，延长告警逻辑使用的时间窗口，可以确保触发呼叫的告警更加重大，确实值得关注。</p>
+
+<p>实践中，我们会组合使用以下方法，为低流量服务设置告警：</p>
+
+<ul>
+	<li>
+	<p>在可行且能够取得良好覆盖率时生成模拟流量</p>
+	</li>
+	<li>
+	<p>修改客户端，降低短暂故障伤害用户的可能性</p>
+	</li>
+	<li>
+	<p>聚合共享某种故障模式的较小服务</p>
+	</li>
+	<li>
+	<p>根据请求失败的实际影响设置相称的 SLO 阈值</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="极端可用性目标" data-type="sect1"><div class="sect1" id="extreme_availability_goals">
+<h1>极端可用性目标</h1>
+
+<p>可用性目标极低或极 <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-startref="ix_alrtSLOlow" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642582560"/>高<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrtlow" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642581920"/> 的服务<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-startref="ix_errbudalrt" data-type="indexterm" id="idm139660642578368"/> 可能需要特殊<a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-startref="ix_lowtr" data-type="indexterm" id="idm139660642576512"/> 处理。例如，假设某服务的可用性目标为 90%。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="services with extreme availability goals" data-type="indexterm" id="idm139660642573632"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="services with extreme availability goals" data-type="indexterm" id="idm139660642574688"/><a contenteditable="false" data-primary="availability" data-secondary="alerting on services with extreme availability goals" data-type="indexterm" id="idm139660642571536"/>  <a data-type="xref" href="#recommended_parameters_for_an_slo_based_a">表 5-8</a> 规定，在一小时内消耗 2% 的错误预算时发出呼叫。但即使发生 100% 中断，一小时也只会消耗 1.4% 的预算，因此该告警永远无法触发。如果错误预算周期很长，可能需要调整告警参数。</p>
+
+<p>对于可用性目标极高的服务，100% 中断时预算耗尽得极快。若服务的月度可用性目标为 99.999%，100% 中断会在 26 秒内耗尽预算。这个时间甚至短于许多监控服务采集指标的间隔，更不用说生成告警并通过电子邮件、短信等通知系统传递告警所需的端到端时间。即使告警直接发送给自动修复系统，问题也可能在得到缓解前耗尽全部错误预算。</p>
+
+<p>在只剩 26 秒预算时收到通知，并不一定是糟糕的策略；只是对保护 SLO 没有帮助。要达到这种可靠性水平，唯一办法是在设计上把发生 100% 中断的概率降到极低，从而能在预算耗尽之前修复问题。例如，最初只向 1% 的用户发布某项变更；即使这部分用户全部受到影响，整体错误率也只有 1%，此时距离错误预算耗尽还有 43 分钟。有关此类系统的设计策略，请参见 <a data-type="xref" href="ch16.html#canarying_releases">第 16 章</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="规模化告警" data-type="sect1"><div class="sect1" id="alerting_at_scale">
+<h1>规模化告警</h1>
+
+<p>扩展服务规模时，也必须确保告警策略能够相应扩展。<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="making sure alerting is scalable" data-type="indexterm" id="idm139660642563952"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="making sure alerting is scalable" data-type="indexterm" id="idm139660642557376"/> 你可能会想为各个服务分别指定自定义告警参数。如果系统由 100 个微服务组成（或者一个服务有 100 种不同的请求类型），这种做法很快就会积累大量无法扩展的琐务和认知负担。</p>
+
+<p>在这种情况下，我们强烈建议不要为每个服务单独指定告警窗口和消耗率参数，因为这种方式很快就会变得难以掌控。<sup><a data-type="noteref" href="ch05-zh.html#ch05fn5" id="ch05fn5-marker">5</a></sup> 确定告警参数后，应将其应用于所有服务。</p>
+
+<p>管理大量 SLO 的一种方法，是按照大致相近的可用性要求把请求类型划分到不同类别中。<a contenteditable="false" data-primary="requests" data-secondary="grouping request types into buckets of similar availability requirements" data-type="indexterm" id="idm139660642568112"/><a contenteditable="false" data-primary="availability" data-secondary="grouping request types into buckets of similar availability requirements" data-type="indexterm" id="idm139660642567888"/> 例如，对于同时具有可用性和延迟 SLO 的服务，可以把请求类型分为以下几类：</p>
+
+<dl>
+	<dt><dfn><code>CRITICAL</code></dfn></dt>
+	<dd><p>最重要的请求类型，例如用户登录服务时发出的请求。<a contenteditable="false" data-primary="CRITICAL requests" data-type="indexterm" id="idm139660642552464"/></p></dd>
+	<dt><dfn><code>HIGH_FAST</code></dfn></dt>
+	<dd><p>要求高可用、低延迟的请求。 <a contenteditable="false" data-primary="HIGH_FAST requests" data-type="indexterm" id="idm139660642548944"/>这类请求涉及核心交互功能，例如用户单击按钮，查看其广告资源本月获得的收入。</p></dd>
+	<dt><dfn><code>HIGH_SLOW</code></dfn></dt>
+	<dd><p>重要但对延迟不太敏感的功能，例如用户单击按钮，生成过去几年所有广告活动的报告，且并不期待数据立即返回。<a contenteditable="false" data-primary="HIGH_SLOW requests" data-type="indexterm" id="idm139660642547456"/></p></dd>
+	<dt><dfn><code>LOW</code></dfn></dt>
+	<dd><p>必须具备一定可用性、但中断大多不易被用户察觉的请求。例如，轮询账户通知的处理程序即使长时间失败，也不会影响用户。<a contenteditable="false" data-primary="LOW (availability) requests" data-type="indexterm" id="idm139660642543024"/></p></dd>
+	<dt><dfn><code>NO_SLO</code></dfn></dt>
+	<dd><p>用户完全不可见的功能，例如暗发布功能，或明确不受任何 SLO 约束的 alpha 功能。<a contenteditable="false" data-primary="NO_SLO requests" data-type="indexterm" id="idm139660642540224"/></p></dd>
+</dl>
+
+<p>与其为每种请求类型分别设定独有的可用性和延迟目标，不如像 <a data-type="xref" href="#request_class_buckets_according_to_simila">表 5-10</a>所示，把请求归入五个类别。</p>
+
+<table class="border" id="request_class_buckets_according_to_simila">
+	<caption><span class="label">表 5-10。 </span>按相近可用性要求和阈值划分的请求类别</caption>
+	<thead>
+		<tr>
+			<th><strong>请求类别</strong></th>
+			<th><strong>可用性</strong></th>
+			<th><strong>90% 分位延迟<sup><a data-type="noteref" href="ch05-zh.html#ch05fn6" id="ch05fn6-marker">a</a></sup></strong></th>
+			<th><strong>99% 分位延迟</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>CRITICAL</code></td>
+			<td>99.99%</td>
+			<td>100 ms</td>
+			<td>200 ms</td>
+		</tr>
+		<tr>
+			<td><code>HIGH_FAST</code></td>
+			<td>99.9%</td>
+			<td>100 ms</td>
+			<td>200 ms</td>
+		</tr>
+		<tr>
+			<td><code>HIGH_SLOW</code></td>
+			<td>99.9%</td>
+			<td>1,000 ms</td>
+			<td>5,000 ms</td>
+		</tr>
+		<tr>
+			<td><code>LOW</code></td>
+			<td>99%</td>
+			<td>无</td>
+			<td>无</td>
+		</tr>
+		<tr>
+			<td><code>NO_SLO</code></td>
+			<td>无</td>
+			<td>无</td>
+			<td>无</td>
+		</tr>
+	</tbody>
+<tbody><tr class="footnotes"><td colspan="4"><p data-type="footnote" id="ch05fn6"><sup><a href="ch05-zh.html#ch05fn6-marker">a</a></sup> 90% 的请求<a href="http://bit.ly/2LgeYy1">快于此阈值</a>。</p></td></tr></tbody></table>
+
+<p>这些类别足以精确地保障用户满意度，同时比那些管理起来更复杂、成本更高，且 <em>可能</em> 更准确映射用户体验的系统省去更多琐务。</p>
+</div></section>
+
+<section data-pdf-bookmark="总结" data-type="sect1"><div class="sect1" id="conclusion-id00014">
+<h1>总结</h1>
+
+<p>如果设定的 SLO 有意义、易于理解且能用指标表示，就可以配置告警，仅在错误预算面临明确且可采取行动的威胁时通知值班人员。</p>
+
+<p>重大事件告警技术包括在错误率超过 SLO 所允许的错误率时告警，以及采用多级消耗率和多种窗口大小。在大多数情况下，我们认为多窗口、多消耗率告警是保护应用 SLO 最合适的方法。</p>
+
+<p>希望本章提供的背景知识和工具，足以帮助你为自己的<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrt" data-type="indexterm" id="idm139660642515152"/>  <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-startref="ix_alrtSLO" data-type="indexterm" id="idm139660642516160"/>应用和组织作出正确的配置决策。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch05fn1"><sup><a href="ch05-zh.html#ch05fn1-marker">1</a></sup> 在过滤持续时间极短的瞬时噪声时，持续时间子句偶尔会有用。不过，你仍需留意本节列出的缺点。</p><p data-type="footnote" id="ch05fn2"><sup><a href="ch05-zh.html#ch05fn2-marker">2</a></sup> 正如 <a href="http://bit.ly/2xCtP3S">引言</a>（<em>Site Reliability Engineering</em>）所述，呼叫和工单是促使人员采取行动的仅有两种有效方式。</p><p data-type="footnote" id="ch05fn3"><sup><a href="ch05-zh.html#ch05fn3-marker">3</a></sup> <a data-type="xref" href="ch02-zh.html#what_to_measure_using_slis">“衡量什么：使用 SLI”</a>一节建议采用一种能随用户影响程度相应变化的 SLI。</p><p data-type="footnote" id="ch05fn4"><sup><a href="ch05-zh.html#ch05fn4-marker">4</a></sup> 参见 <a href="http://bit.ly/2J2gqr0">“过载与故障”</a>，出处：<em>Site Reliability Engineering</em>。</p><p data-type="footnote" id="ch05fn5"><sup><a href="ch05-zh.html#ch05fn5-marker">5</a></sup> 但有一种例外：在修复持续中的中断且期间无需接收通知时，有必要临时更改告警参数。</p></div></div></section></body></html>
