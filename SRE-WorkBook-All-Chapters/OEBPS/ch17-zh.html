@@ -1,0 +1,388 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>识别过载并从中恢复</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 17. Identifying and Recovering from Overload" data-type="chapter" epub:type="chapter"><div class="chapter" id="identifying_and_recovering_from_overload">
+<h1><span class="label">第 17 章　</span>识别过载并从中恢复</h1>
+
+<p class="byline">作者：Maria-Hendrike Peetz、Luis Quesada Torres 和 Marilia Melo，Diane Bates 参与撰写</p>
+
+<p>当一个 SRE 团队运转顺畅时，团队成员应当感觉自己能够从容处理全部工作。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-type="indexterm" id="ix_ovrld"/>他们既能处理工单，也有时间投入长期项目，让服务今后的管理变得更容易。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="work overload" data-see="overload, identifying and recovering from" data-type="indexterm" id="idm139660637977040"/> </p>
+
+<p>但有时，现实条件会妨碍团队实现工作目标。团队成员可能因长期患病而休假，也可能调往其他团队；组织可能要求 SRE 实施覆盖整个生产环境的新计划；服务或更大系统发生变化，也会带来新的技术挑战。随着工作量增加，团队成员开始延长工时来处理工单和寻呼告警，投入工程工作的时间则越来越少。整个团队付出了更多努力，却感觉没有取得进展，于是压力和挫败感不断累积。压力反过来又会让人更容易犯错，影响可靠性，并最终波及最终用户。简而言之，团队失去了调节日常工作、有效管理服务的能力。</p>
+
+<p>到了这个阶段，团队需要设法摆脱过载状态。他们需要重新平衡工作量，让成员能够专注于必要的工程工作。</p>
+
+<p><em>运维负载</em>（operational load，也称 <em>operational workload</em>）是指为使系统和服务保持最佳性能而持续开展的维护工作。<a contenteditable="false" data-primary="operational load (or operational workload)" data-type="indexterm" id="idm139660637960480"/>运维负载分为三类：<em>寻呼告警</em>、<em>工单</em>和<em>持续性运维职责</em>。寻呼告警通常需要立即处理，与紧急问题有关的工单也可能有很短的期限。寻呼告警和紧急工单都会打断 SRE，使他们无法继续开展支撑团队运维职责的工程项目。<a contenteditable="false" data-primary="interrupts" data-type="indexterm" id="idm139660637968576"/>因此，我们把这两类工作称为<em>中断性工作</em>（interrupts）。<a href="http://bit.ly/2LQYspl">第 29 章</a>（收录于<em>《Site Reliability Engineering》</em>）介绍了管理这类中断的方法；维护复杂系统正常运行时，中断自然难以避免。</p>
+
+<p>当运维负载超出团队的管理能力时，团队就会陷入<em>运维过载</em>（operational overload，也称<em>工作过载</em>）。<a contenteditable="false" data-primary="operational overload (or work overload)" data-type="indexterm" id="idm139660637970208"/>如果紧急问题不断抢占项目工作的时间，导致团队无法推进关键优先事项，<a contenteditable="false" data-primary="work overload" data-seealso="overload, identifying and recovering from" data-type="indexterm" id="idm139660637964352"/>团队便处于运维过载状态。过载不仅会妨碍团队落实优先事项、改进服务，还会提高工程师出错的概率。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn1" id="ch17fn1-marker">1</a></sup></p>
+
+<p>运维过载的临界点因团队而异。Google SRE 团队规定，运维工作最多只能占工程师工作时间的 50%。一个成功的 SRE 团队必须有信心：从长期来看，团队能够完成必要的工程项目，从而降低其所管理服务的运维负载。</p>
+
+<p>本章介绍 Google 的团队如何摆脱以运维过载为特征的困境，使工作量重新得到妥善管理。两个案例研究展示了运维过载对团队健康的不利影响，以及团队如何调整日常任务，从而专注于具有长期影响的项目。在案例研究 1 中，团队规模不断缩小，留下的成员无力应对工作量，最终导致过载。在案例研究 2 中，团队遭遇了<em>感知过载</em>（perceived overload）：它与运维过载造成的后果相同，但起因是对实际工作量的错误认知。<a contenteditable="false" data-primary="perceived overload" data-type="indexterm" id="idm139660637954256"/></p>
+
+<p>这些案例重点介绍了两支 Google SRE 团队行之有效的具体做法，而<a data-type="xref" href="#strategies_for_mitigating_overload">“缓解过载的策略”</a>一节则给出了适用于任何公司或组织的过载识别与缓解实践。因此，无论你是过载团队的管理者，还是担心出现过载的 SRE 团队成员，都可以从本章获益。</p>
+
+<section data-pdf-bookmark="From Load to Overload" data-type="sect1"><div class="sect1" id="from_load_to_overload">
+<h1>从负载到过载</h1>
+
+<p>无论起因是什么，过载都是一种足以严重损害生产力的职业压力。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="from load to overload" data-type="indexterm" id="ix_ovrldfrom"/>若放任不管，<a href="http://bit.ly/2sozmWE">它可能导致严重疾病</a>。对 SRE 团队而言，运维负载通常由两部分组成：一部分是认知难度很高的任务，例如调试内存泄漏或段错误；另一部分是大量需要频繁切换上下文的小任务，例如处理配额申请、启动二进制文件发布等。</p>
+
+<p>当团队没有足够时间处理所有这些任务时，往往会出现工作过载。这是一种客观现实：分配给团队的任务无法在各自期限内全部完成。感知过载的主观性更强，发生在团队成员<em>感觉</em>工作太多时。它通常出现在短时间内连续发生多项组织或工作变动，而团队几乎没有机会就这些变化与领导层沟通的情况下。</p>
+
+<p>值班时，你永远无法预先确定会出现什么问题，也无法确知工作量有多大。一方面，一张看似无害的磁盘空间不足工单，可能引出对某个周期性垃圾回收作业的深入调查；另一方面，一场包含 20 多条寻呼的告警风暴，最后可能只是监控配置不当。工作量难以估算或预测时，人很容易受认知偏差影响，误判工作量。例如，你可能认为工单队列太长，值班期间根本处理不完。<a contenteditable="false" data-primary="perceived overload" data-type="indexterm" id="idm139660637941936"/>即使这些工单其实很快就能全部解决，实际工作量并不高，刚看到队列时你仍会<em>感觉</em>不堪重负。这种感知过载<sup><a data-type="noteref" href="ch17-zh.html#ch17fn2" id="ch17fn2-marker">2</a></sup>本身包含心理因素，会影响你处理工作的方式和态度。如果一天开始时你<em>没有</em>先入为主地认定工作多得做不完，就更可能立即着手逐张处理工单。也许忙了一整天之后仍未做完，因而确实面临工作过载，但与一开始就深感无力相比，你取得的进展会多得多。</p>
+
+<p>大量中断性工作不断累积，可能导致工作过载，但并非必然如此。然而，当频繁中断与外部压力因素同时出现时，无论工作量本来很大还是很小，都很容易演变成感知过载。<a contenteditable="false" data-primary="interrupts" data-secondary="work overload and" data-type="indexterm" id="idm139660637933296"/>这些压力可能来自害怕令其他团队成员失望、工作缺乏保障、工作或个人冲突、疾病，或睡眠不足、缺乏锻炼等健康问题。</p>
+
+<p>如果工作没有得到恰当的优先级排序，每项任务看起来都会同样紧急，由此既可能造成实际过载，也可能造成感知过载。在实际过载的情况下，工单和告警的紧迫性可能促使团队成员一直工作到问题解决，哪怕这意味着持续长时间加班。面对感知过载时，重新排列优先级可以减少紧急工作的数量，为团队腾出空间，通过项目工作消除过载根源。</p>
+
+<p>分析具体情况时，不要想当然地认为必须改变工作量本身。我们建议先量化团队面对的工作，并了解工作量随时间发生了怎样的变化，或者是否根本没有变化。例如，可以用团队处理的工单数和寻呼数衡量工作量。如果工作量实际上一直没有变化，团队可能只是因为主观上觉得工作难以承受，才产生过载感。要更全面地了解团队当前的工作量，可以做一次快照调查，让每位成员列出自己面对的全部工作任务。然后再考察团队承受的心理压力因素，例如组织变动或优先级调整。完成这些调查后，你便有了稳定的依据，可以据此决定是否调整工作量。</p>
+
+<p><a data-type="xref" href="#strategies_for_mitigating_overload">“缓解过载的策略”</a>会进一步介绍如何识别实际过载和感知<span class="keep-together">过载</span>。首先来看两个案例：其中的团队意识到自己已经过载，并采取措施缓解了问题。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="from load to overload" data-startref="ix_ovrldfrom" data-type="indexterm" id="idm139660637931040"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 1: Work Overload When Half a Team Leaves" data-type="sect1"><div class="sect1" id="case_study_1_work_overload_when_half_a_te">
+<h1>案例研究 1：半数团队成员离开导致工作过载</h1>
+
+<section data-pdf-bookmark="Background" data-type="sect2"><div class="sect2" id="background-id00081">
+<h2>背景</h2>
+
+<p>Google 的一支内部存储 SRE 团队负责多个服务的后端，包括 Gmail、Google Drive、Google Groups，以及许多其他内部服务和面向用户的服务。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-type="indexterm" id="ix_ovrldcs1"/><a contenteditable="false" data-primary="SRE teams" data-secondary="work overload when half a team leaves, case study" data-type="indexterm" id="ix_SREteamovr"/>2016 年年中，我们经历了一场危机：团队三分之二的成员，包括资历最深的工程师（即经理），在相对较短的时间内先后转向了其他机会，原因确实完全互不相关。这显然带来了严重的工作量管理问题：可用于承担同等运维工作和项目工作的 SRE 减少，很快就造成了过载。每名成员的专业知识又分别局限在不同的生产领域，使工作进一步受到瓶颈制约。新成员和三名实习生的加入从长远看会改善工作量，但要让这些工程师进入状态，必须投入大量时间和精力。</p>
+</div></section>
+
+<section data-pdf-bookmark="Problem Statement" data-type="sect2"><div class="sect2" id="problem_statement-id00082">
+<h2>问题描述</h2>
+
+<p>上述因素显著降低了团队生产力。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="problem statement" data-type="indexterm" id="idm139660637918064"/>我们的项目工作开始落后，与所管理的众多服务有关的工单也越积越多。所有精力都被更高优先级的任务占用，我们没有余力处理这些积压。用不了多久，我们甚至会无力承担全部关键和紧急工作。与此同时，团队很快还将接到更多高优先级工作。</p>
+
+<p>如果不卸下一部分工作，我们迟早会在无意中漏掉重要事项。然而，刚开始移交或取消工作时，我们就遇到了一些心理障碍：</p>
+
+<ul>
+	<li>
+	<p>放弃任何已经开始的工作，都让人觉得此前的投入全部白费。积压事项大多看起来不是至关重要，就是值得我们继续投入，因此取消项目或无限期推迟项目总让人感觉不妥。<a contenteditable="false" data-primary="sunk cost fallacy" data-type="indexterm" id="idm139660637913840"/>我们当时没有意识到，自己已经陷入了<a href="http://bit.ly/2Hdgf6t">沉没成本谬误</a>。</p>
+	</li>
+	<li>
+	<p>与立即处理高优先级中断相比，投入精力实现流程自动化或消除工作量过大的根本原因，似乎没有那么紧迫。把这些工作再堆到原本已经很庞大的任务之上，全部工作顿时显得<span class="keep-together">令人难以承受</span>。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="What We Decided to Do" data-type="sect2"><div class="sect2" id="what_we_decided_to_do-id00083">
+<h2>我们的决定</h2>
+
+<p>我们把团队召集到一个房间，列出团队的全部职责，包括项目积压、运维工作和工单。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660637907760"/>然后，我们对清单上的每一项逐一分诊。把每项工作全部摆在眼前，虽然白板几乎都写不下，仍帮助我们识别并重新界定了真正的优先事项。随后，我们便能设法尽量缩减、移交或取消优先级较低的工作。</p>
+</div></section>
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="implementation-id00084">
+<h2>实施</h2>
+
+<p>我们找出了一些成本低廉的自动化工作。它们虽然并不紧急，却能在部署后显著降低运维负载。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="implementation of the solution" data-type="indexterm" id="idm139660637900512"/></p>
+
+<p>我们还找出了一些可以编写文档的常见问题，让用户能够自助解决。写出用户需要的操作步骤并没有花费太多时间，却从队列中消除了一部分重复工作。</p>
+
+<p>我们在合理范围内关闭了尽可能多的积压工单。结果发现，其中大部分已经过时、内容重复，或者并不像声称的那样紧急。有些工单只是监控产生的伪象，无法采取行动，于是我们修复了相关监控。在另一些情况下，我们正在处理的问题其实并不关键。我们暂时搁置这些问题，转而处理更紧急的工单；不过在此之前，我们先记录了已有进展，以免日后重新处理时丢失上下文。</p>
+
+<p>拿不准时，我们就先放弃任务，但把它标记为需要进行第二轮分诊。等手头的工作（几乎）清空后，我们再次检查这份暂缓清单，决定恢复哪些任务。结果几乎没有任何任务的影响或重要性足以值得恢复。</p>
+
+<p>两天之内，也就是一天集中分诊，再用一天编写流程文档和实现自动化，这支规模大幅缩小的团队处理完了数月积累的中断性工作。之后，我们便能处理仅剩的少量中断，它们都与生产环境中的活跃问题有关。</p>
+</div></section>
+
+<section data-pdf-bookmark="Lessons Learned" data-type="sect2"><div class="sect2" id="lessons_learned-id00085">
+<h2>经验教训</h2>
+
+<p>团队认识到，要解决过载，第一步是识别过载并界定其范围。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="lessons learned" data-type="indexterm" id="idm139660637897968"/>只有把所有人召集起来，重新评估积压工作，才能帮助团队恢复到健康状态。</p>
+
+<p>为了避免中断性工作再次堆积，我们开始每两周分诊一次。<a contenteditable="false" data-primary="interrupts" data-secondary="triaging" data-type="indexterm" id="idm139660637894128"/><a contenteditable="false" data-primary="triaging interrupts" data-type="indexterm" id="idm139660637893568"/>技术负责人会定期检查任务队列，评估团队是否面临过载风险。我们决定，每名成员的未结工单应不超过 10 张，以免发生过载。如果团队负责人发现有人超过 10 张工单，可以采取以下一种或多种措施：</p>
+
+<ul>
+	<li>
+	<p>提醒团队关闭陈旧工单。</p>
+	</li>
+	<li>
+	<p>与过载的成员同步情况，帮他们分担工单。</p>
+	</li>
+	<li>
+	<p>提醒各成员处理自己的工单队列。</p>
+	</li>
+	<li>
+	<p>组织全团队用一天集中修复工单。</p>
+	</li>
+	<li>
+	<p>安排工作以修复工单的产生源头，或者安排能减少未来工单数量的运维工作。<a contenteditable="false" data-primary="SRE teams" data-secondary="work overload when half a team leaves, case study" data-startref="ix_SREteamovr" data-type="indexterm" id="idm139660637884640"/><a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-startref="ix_ovrldcs1" data-type="indexterm" id="idm139660637884000"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 2: Perceived Overload After Organizational and Workload Changes" data-type="sect1"><div class="sect1" id="case_study_2_perceived_overload_after_org">
+<h1>案例研究 2：组织和工作量变化后的感知过载</h1>
+
+<section data-pdf-bookmark="Background" data-type="sect2"><div class="sect2" id="background-id00086">
+<h2>背景</h2>
+
+<p>本案例中的 Google SRE 团队分布在两个地点，每处有六到七名值班工程师。<a contenteditable="false" data-primary="perceived overload" data-secondary="after organizational and workload changes, case study" data-type="indexterm" id="ix_percovr"/><a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-type="indexterm" id="ix_ovrlcs2"/>关于团队规模的更多讨论，请参阅<a href="http://bit.ly/2JgUBU7">第 11 章</a>（收录于<em>《Site Reliability Engineering》</em>）。悉尼团队的运维状况健康，而苏黎世团队却处于过载状态。</p>
+
+<p>苏黎世团队陷入过载之前，状态一直稳定而满意。我们管理的服务数量相对稳定，不过各项服务差异很大，维护要求也很高。我们所支持服务的 SLO 与其外部依赖项的 SLO 并不匹配，但这种不一致尚未引发任何问题。我们当时正在开展多个项目，改进所管理的服务，例如改善负载均衡。</p>
+
+<p>多个诱因同时出现，使苏黎世团队陷入过载：我们开始接管一些新服务，它们产生的噪声更多，与 Google 通用基础设施的集成程度也更低；与此同时，技术负责人兼经理和另一名成员离开了团队，造成两个职位空缺。额外工作量与知识流失叠加，又引发了更多问题：</p>
+
+<ul>
+	<li>
+	<p>新服务的监控尚未调优，迁移相关的监控也产生了额外告警，导致每个班次收到的寻呼增加。这一增长是逐渐发生的，所以我们当时没有察觉。</p>
+	</li>
+	<li>
+	<p>面对新服务，SRE 感到相当无助。我们对服务了解不足，无法作出适当响应，经常需要向开发团队提问。过载状况或许已经足以成为把服务交还开发人员的理由，但团队过去从未交还过服务，因此没有认真考虑过这一可行选项。</p>
+	</li>
+	<li>
+	<p>值班轮值缩减到五个人，挤占了我们通常用于运维工作的时间。</p>
+	</li>
+	<li>
+	<p>新的工单告警暴露出一些在近期团队变动之前就已存在的问题。过去，我们只是忽略这些问题；现在却必须把原先被忽略的电子邮件告警转成工单。项目规划并未计入这一新的技术债来源。</p>
+	</li>
+	<li>
+	<p>新的工单 SLO 要求我们在<a contenteditable="false" data-primary="tickets" data-secondary="new ticket SLO in perceived overload case study" data-type="indexterm" id="idm139660637863680"/>三天内处理工单，这意味着值班人员必须更快解决其班次内创建的工单。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn3" id="ch17fn3-marker">3</a></sup>这项 SLO 原本旨在减少加入积压队列的工单数量，而我们的积压队列此前大多无人理会；但它造成的副作用可能更加糟糕。SRE 现在觉得值班结束后无法得到所需休息，因为必须立即处理后续工作。工单优先级提高，也意味着 SRE 没有足够时间完成其他运维工作。</p>
+	</li>
+</ul>
+
+<p>这段时间，团队换了一位新经理，而他还同时管理着另外两支团队。新经理不参与值班轮值，因此无法直接感受到团队成员承受的压力。团队向经理说明情况后，一切仍没有改变。成员觉得自己的意见无人听取，因而与管理团队日益疏远。</p>
+
+<p>工单造成的过载持续了数月，团队成员变得烦躁不满，最终负面情绪层层蔓延至整个团队。</p>
+</div></section>
+
+<section data-pdf-bookmark="Problem Statement" data-type="sect2"><div class="sect2" id="problem_statement-id00087">
+<h2>问题描述</h2>
+
+<p>在失去两名成员、又接手更多且类型各异的工作后，团队感到不堪重负。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="problem statement" data-type="indexterm" id="idm139660637859328"/>我们试图把这种感受告诉直属经理，但经理并不认同。长时间工作持续下去，疲惫逐渐累积。生产力不断下降，任务的积累速度开始超过团队的解决速度。感知过载由此变成了客观过载，情况进一步恶化。</p>
+
+<p>过载引起的情绪压力正在打击士气，并使一些成员精疲力竭。个别成员承受过度工作的身体后果，例如生病和生产力下降，团队里的其他人便不得不接手更多工作。每周团队会议中分配的任务也无法完成。</p>
+
+<p>随后，我们开始认定不能指望其他人完成各自的工作，团队内部的信任感和可靠感因此受到侵蚀。<a contenteditable="false" data-primary="psychological safety" data-secondary="interpersonal risk taking" data-type="indexterm" id="idm139660637851008"/><a contenteditable="false" data-primary="interpersonal risk taking" data-type="indexterm" id="idm139660637860224"/>结果，我们不再觉得可以放心承担<em>人际风险</em>；这是心理安全感的重要组成部分，参见<a href="http://bit.ly/2JgUBU7">第 11 章</a>（收录于<em>《Site Reliability Engineering》</em>）。团队成员觉得自己得不到同事的接纳和尊重，因此不再自在地相互协作。随着团队心理安全感降低，协作陷入停滞，信息共享变慢，效率进一步下降。</p>
+
+<p>团队调查同样显示心理安全感已经丧失：成员表示自己对团队没有归属感。他们不再关心个人职业发展，团队晋升率也降至历史最低点。</p>
+
+<p>当高层管理者又给我们分配新的公司级强制项目时，团队终于到达崩溃临界点。此时，我们再次就过载问题与管理层沟通，而且态度比以往更加坚决。经过一系列讨论，我们发现，团队的不幸处境并不只是工作过多造成的；对团队安全状况的认知，使我们不再相互信任和协作。</p>
+</div></section>
+
+<section data-pdf-bookmark="What We Decided to Do" data-type="sect2"><div class="sect2" id="what_we_decided_to_do-id00088">
+<h2>我们的决定</h2>
+
+<p>高层管理者为团队指派了一位不再同时负责三支团队的新经理。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660637848832"/><a contenteditable="false" data-primary="participatory management" data-type="indexterm" id="idm139660637842240"/>新经理采用<a href="http://bit.ly/2kFehmx">参与式管理</a>，改善团队的心理安全感，让我们能够恢复协作。这种方法让团队成员有能力主动参与解决团队问题。包括直属经理在内的整个团队参加了一系列简单的团队建设活动，以提高团队效能；其中有些活动简单到只是一起喝茶。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn4" id="ch17fn4-marker">4</a></sup>在此基础上，我们制定了以下目标：</p>
+
+<dl>
+	<dt><dfn>短期</dfn></dt>
+	<dd><p>缓解压力并改善心理安全感，建立健康的工作氛围。</p></dd>
+	<dt><dfn>中期</dfn></dt>
+	<dd>
+	<p>通过培训增强每名团队成员的信心。</p>
+
+	<p>找出造成过载问题的根本原因。</p>
+	</dd>
+	<dt><dfn>长期</dfn></dt>
+	<dd><p>解决造成连锁恶化的持续性问题。</p></dd>
+</dl>
+
+<p>要制定这些目标，我们首先必须让团队恢复到具备基本心理安全感的状态。随着士气改善，我们开始分享知识，并在彼此想法的基础上继续推进，共同寻找控制工作量的办法。</p>
+</div></section>
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="implementation-id00089">
+<h2>实施</h2>
+
+<section data-pdf-bookmark="Short-term actions" data-type="sect3"><div class="sect3" id="short_term_actions">
+<h3>短期行动</h3>
+
+<p>无论长期压力来自<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="short-term actions to address" data-type="indexterm" id="idm139660637832880"/>过度工作，还是来自对团队缺乏安全感的感受，都会降低生产力、损害健康。因此，最重要的短期行动是缓解压力，改善信任和心理安全感。部分压力得到纾解后，团队成员才能更清晰地思考，并参与推动整个团队向前发展。识别出过载后的一个月内，我们采取了以下措施：</p>
+
+<ul>
+	<li>
+	<p><strong>开始不定期举行圆桌讨论。</strong>团队成员借此释放挫败情绪，并集思广益分析过载的可能原因。</p>
+	</li>
+	<li>
+	<p><strong>找到更合适的负载衡量指标。</strong>我们决定改进原先采用的寻呼数量指标。工单会自动分配给值班人员，即使班次结束，值班人员仍要负责这些工单。新指标衡量的是值班人员在值班结束后还需要花多少时间解决工单。</p>
+	</li>
+	<li>
+	<p><strong>审查并移除骚扰式告警。</strong>我们检查了各项告警，删除其中并不代表用户可见问题的告警。</p>
+	</li>
+	<li>
+	<p><strong>更积极地静默告警。</strong>团队有意不去追查每一条告警的来源，而是优先缓解持续收到寻呼和工单造成的压力，因为这些告警针对的都是我们已经知道的问题。我们采用了以下策略：</p>
+
+	<ul>
+		<li>
+		<p>新出现的告警先予以静默，直到问题得到修复。</p>
+		</li>
+		<li>
+		<p>告警只能静默一段有限的时间，通常为一天，有时最长一周，否则可能掩盖服务中断。</p>
+		</li>
+		<li>
+		<p>几分钟内无法修复的告警，要分配一张跟踪工单。</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p><strong>增加一位只负责单个团队的直属经理。</strong>让一位深受尊重的团队成员担任新经理，重新建立了大家对管理层的信任。新经理不再同时管理三支团队，能够把更多时间投入这支团队及其成员。</p>
+	</li>
+	<li>
+	<p><strong>重新平衡团队。</strong>我们调入技术经验丰富、对团队或组织没有先入之见的 SRE，既带来新的视角，也减轻了值班压力。找到合适的人绝非易事，但完全值得付出这些努力。</p>
+	</li>
+	<li>
+	<p><strong>组织聚餐和桌游等团队活动。</strong>谈论与工作无关的话题、一起欢笑，缓解了团队的紧张气氛，也改善了心理安全感。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Mid-term actions" data-type="sect3"><div class="sect3" id="mid_term_actions">
+<h3>中期行动</h3>
+
+<p>仅靠短期方案无法维持健康氛围。例如，我们的一项短期策略<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="mid-term actions to address" data-type="indexterm" id="idm139660637815856"/>只是静默告警，并没有真正修复根因。在三个月内，我们还采取了以下行动：</p>
+
+<ul>
+	<li>
+	<p><strong>尽量把运维工作限制在值班时间内</strong>，参见<a href="http://bit.ly/2LQYspl">第 29 章</a>（收录于<em>《Site Reliability Engineering》</em>），让团队可以集中精力实施永久修复和开展项目工作。</p>
+	</li>
+	<li>
+	<p><strong>把一项服务的责任交还给其开发团队。</strong></p>
+	</li>
+	<li>
+	<p><strong>相互培训，并培训新成员。</strong>培训需要<a contenteditable="false" data-primary="training" data-secondary="to reduce perceived work overload" data-type="indexterm" id="idm139660637807440"/>投入时间和精力，但知识传播开来之后，所有成员以及未来的新员工都能更快排查和修复问题。培训同事也增强了我们的信心，因为我们逐渐意识到，自己其实已经相当了解这些服务。随着知识增加，团队成员开始找到管理服务的新方法，提高了可靠性，也减少了过载。</p>
+	</li>
+	<li>
+	<p><strong>请远程团队的 SRE 承担我们的部分值班班次，并参与培训。</strong>他们注意到了团队承受的压力，也带来了一些很有价值的新视角。</p>
+	</li>
+	<li>
+	<p><strong>补齐团队的两个空缺职位。</strong></p>
+	</li>
+	<li>
+	<p><strong>在静默到期时逐条处理告警。</strong>我们在每周生产会议上深入讨论重复寻呼和无需采取行动的寻呼，由此调优告警并修复底层问题。尽管这些行动既重要又显而易见，但只有先将告警静默、消除持续噪声后，我们才有余力进行分析并采取行动。</p>
+	</li>
+	<li>
+	<p><strong>组织倾听活动。</strong>管理层，包括隔级经理和团队负责人，有意识地倾听团队的痛点，并寻找由团队推动的解决方案。</p>
+	</li>
+	<li>
+	<p><strong>让大家看到前景。</strong>希望不是策略，但无疑有助于改善团队士气。随着新成员即将加入值班轮值、优先事项变得更明确、产生告警噪声的项目即将结束，团队的情绪也有所好转。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Long-term actions" data-type="sect3"><div class="sect3" id="long_term_actions">
+<h3>长期行动</h3>
+
+<p>为了维持刚刚恢复的稳定状态，我们目前正在让服务 SLO 与各自后端服务的 SLO 对齐，并努力提高各项服务的一致性。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="long-term actions to address" data-type="indexterm" id="idm139660637794064"/>统一性有双重好处：既能降低 SRE 的认知负载，又更容易编写可跨服务复用的自动化工具。我们还在审查已经运行多年的服务，并将它们更新到当前的生产标准。例如，有些服务面对多年来显著增长的负载时表现不佳；有些服务需要根据其后端服务的策略变化进行更新；还有一些服务只是已经多年未曾更新。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Effects" data-type="sect2"><div class="sect2" id="effects">
+<h2>成效</h2>
+
+<p>第一次集思广益会议后的几个月里，成效开始显现：值班班次变得安静许多，团队还以集体协作的方式迅速、高效地处理了一起棘手事故。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="results of actions" data-type="indexterm" id="idm139660637792848"/>再过一段时间，新成员也加入了团队。在一次圆桌会议上讨论心理安全感时，新成员表示无法想象团队过去竟然有过这些问题。事实上，他们觉得我们的团队是一个温暖、安全的工作场所。最初升级问题约一年后，原有的过载已经所剩无几；匿名调查表明，成员现在认为团队既高效又安全。</p>
+</div></section>
+
+<section data-pdf-bookmark="Lessons Learned" data-type="sect2"><div class="sect2" id="lessons_learned-id00090">
+<h2>经验教训</h2>
+
+<p>工作场所的变化会给团队中的人带来心理影响，毕竟同事不是机器。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="lessons learned" data-type="indexterm" id="idm139660637784256"/>必须关注团队的压力水平，让成员重新建立起足以相互协作的信任。否则，团队可能陷入过载引发压力、压力又妨碍解决过载的恶性循环。</p>
+
+<p>感知过载事实上<em>就是</em>过载，对团队造成的影响与其他因素引起的工作过载同样严重。在我们的案例中，悉尼的姊妹团队没有遇到相同的问题，与往年相比，我们处理的寻呼数量实际上也没有太大变化。真正使团队产生过载感的，是两名成员离开、认知负载增加、工单噪声增多，以及新增的三天工单 SLO。归根结底，客观过载与感知过载之间的区别并不重要：只要少数成员产生感知过载，就可能很快让整个团队陷入过载。<a contenteditable="false" data-primary="perceived overload" data-secondary="after organizational and workload changes, case study" data-startref="ix_percovr" data-type="indexterm" id="idm139660637786576"/><a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-startref="ix_ovrlcs2" data-type="indexterm" id="idm139660637773296"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Strategies for Mitigating Overload" data-type="sect1"><div class="sect1" id="strategies_for_mitigating_overload">
+<h1>缓解过载的策略</h1>
+
+<p>局外人有时很容易看出一支团队已经过载。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-type="indexterm" id="ix_ovrldmit"/>事后回顾时，要评论当初本应采取什么行动也很容易。但当你正在亲历过载时，该如何识别它？深陷过载之中时，很难想象通往健康、友善而愉快的工作氛围的道路。本节介绍如何识别并缓解团队过载。</p>
+
+<section data-pdf-bookmark="Recognizing the Symptoms of Overload" data-type="sect2"><div class="sect2" id="recognizing_the_symptoms_of_overload">
+<h2>识别过载症状</h2>
+
+<p>只要了解过载的症状，识别一支<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-tertiary="recognizing symptoms of overload" data-type="indexterm" id="idm139660637770960"/>过载团队其实相当容易：<a contenteditable="false" data-primary="symptoms of overload" data-type="indexterm" id="idm139660637778704"/></p>
+
+<dl>
+	<dt>团队士气下降</dt>
+	<dd>
+	<p>过载可能表现为激烈的抱怨和牢骚。围绕工作条件、工作满意度、项目、同事和经理等相关主题开展调查，通常能够反映团队士气；团队过载时，调查结果会更加负面。与团队负责人定期举行主动倾听会议，可以暴露你此前没有察觉的问题。主动倾听的关键之一，是不加评判地倾听。</p>
+	</dd>
+	<dt>团队成员长时间工作，或者带病工作</dt>
+	<dd>
+	<p>无偿加班可能成为一种社会心理压力源。领导者应以身作则：按照合同约定的时数工作，生病时留在家中休息。</p>
+	</dd>
+	<dt>生病更加频繁<sup><a data-type="noteref" href="ch17-zh.html#ch17fn5" id="ch17fn5-marker">5</a></sup></dt>
+	<dd>
+	<p>过度工作的成员更容易身心疲惫，也更容易生病。</p>
+	</dd>
+	<dt>任务队列处于不健康状态</dt>
+	<dd>
+	<p>我们建议定期审查团队的任务队列，了解积压了多少工单、谁在处理哪些问题，以及哪些任务可以推迟或放弃。如果团队不断错过期限，或者紧急事项使你无法定期开展这项审查，那么团队很可能正在以超过处理能力的速度积累中断性工作。</p>
+	</dd>
+	<dt>指标失衡</dt>
+	<dd>
+	<p>以下几个关键<a contenteditable="false" data-primary="metrics" data-secondary="indicating work overload" data-type="indexterm" id="idm139660637768224"/>指标可能表明团队已经过载：</p>
+
+	<ul>
+		<li>
+		<p>关闭单个问题需要很长时间</p>
+		</li>
+		<li>
+		<p>琐事所占时间比例很高</p>
+		</li>
+		<li>
+		<p>关闭源自某次值班的问题需要很多天</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+
+<p>团队应当共同决定采用哪些衡量方式。<a contenteditable="false" data-primary="toil" data-secondary="metrics in work overload" data-type="indexterm" id="idm139660637755408"/>没有一种方法适用于所有团队；每支团队的过载都会以不同方式表现出来。作为经理，在不了解每个人的工作量和工作习惯之前，不要把某项指标强加给团队。如果你坚持使用特定指标，成员可能会觉得你并不理解他们的工作。例如，如果用解决一个问题所需的天数衡量负载，一个人可能用一整天集中修复问题，另一个人则可能把这项工作与其他工作一起分散到几天内完成。</p>
+</div></section>
+
+<section data-pdf-bookmark="Reducing Overload and Restoring Team Health" data-type="sect2"><div class="sect2" id="reducing_overload_and_restoring_team_heal">
+<h2>减轻过载，恢复团队健康</h2>
+
+<p>看完上述判断标准，你可能会认为自己的团队已经过载。不要灰心！<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-tertiary="reducing overload and restoring team health" data-type="indexterm" id="idm139660637751168"/>本节列出了一些方法，帮助团队恢复健康状态。</p>
+
+<p>一般而言，赋予团队成员更多<a contenteditable="false" data-primary="perceived overload" data-secondary="reducing by giving team members more control and power" data-type="indexterm" id="idm139660637752240"/>控制权和自主权，可以减轻感知过载。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn6" id="ch17fn6-marker">6</a></sup>在压力情境中，管理者或许容易诉诸微观管理，但重要的是让团队持续了解情况，并共同确定优先级，以提高工作绩效和工作满意度。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn7" id="ch17fn7-marker">7</a></sup>这种做法以<a href="http://bit.ly/2LPemR2">团队能够基本正常运转</a>为前提，也就是说，管理层与成员之间、成员彼此之间至少要有相对健康的关系。<a contenteditable="false" data-primary="baseline of a functional team" data-type="indexterm" id="idm139660637742496"/></p>
+
+<section data-pdf-bookmark="Identify and alleviate psychosocial stressors" data-type="sect3"><div class="sect3" id="identify_and_alleviate_psychosocial_stres">
+<h3>识别并缓解社会心理压力源</h3>
+
+<p>要修复一支失调的团队，首要任务是让每位成员重新获得<a contenteditable="false" data-primary="stressors (psychological), identifying and alleviating" data-type="indexterm" id="idm139660637740800"/>心理安全感。<a contenteditable="false" data-primary="psychological safety" data-secondary="regaining by identifying and alleviating psychological stressors" data-type="indexterm" id="idm139660637739632"/>团队的运转状况不可能好于其成员个人的状态。</p>
+
+<p>可以先识别并缓解每个人以及整个团队面对的社会心理压力源。<sup><a data-type="noteref" href="ch17-zh.html#ch17fn8" id="ch17fn8-marker">8</a></sup>这些因素中，哪些确实在你的控制范围内？你无法控制团队成员是否身患重病，却<em>可以</em>控制团队积压队列的规模，如案例研究 1 所示；也可以静默寻呼告警，如案例研究 2 所示。</p>
+
+<p>与合作的产品开发团队沟通，让他们知道你的团队已经过载。他们或许能够伸出援手，给予理解，甚至接手整个项目。</p>
+
+<p>当团队成员能够相互依靠，并达到一定程度的<a href="http://bit.ly/2H9Tssg">心理安全感</a>，足以承担人际风险时，就可以把更多责任交给个人。发掘成员的专长领域，并为特定技术指定接口人和技术负责人，能够增强他们的自信，进而使他们敢于承担风险<em>。</em></p>
+
+<p>决策过程应当透明，并尽可能民主。每名成员都应感到自己对局面具有一定控制力。例如，案例研究 2 中的集思广益会议就帮助团队识别并讨论了问题。</p>
+</div></section>
+
+<section data-pdf-bookmark="Prioritize and triage within one quarter" data-type="sect3"><div class="sect3" id="prioritize_and_triage_within_one_quarter">
+<h3>在一个季度内确定优先级并完成分诊</h3>
+
+<p>健康的团队能够对问题进行优先级排序和分诊。<a contenteditable="false" data-primary="prioritizing and triaging issues" data-type="indexterm" id="idm139660637728752"/>案例研究 1 很好地展示了这一过程：团队坐在同一间屋里，共同审查积压工作。这次审查让他们意识到团队已经过载。于是他们重新排列工作优先级，并着手处理能够快速减轻部分过载的任务。案例研究 2 中的团队如今会在每个季度末开会，共同规划并确定现有工作和未来工作的优先级。</p>
+
+<p>如果条件允许，我们建议 SRE 在日历上安排<em>不受中断的时间</em>，即不值班的时段，以便开展自动化开发、调查中断根因等难度较高的工作。在案例研究 2 中，远程团队分担部分值班工作后，成员才获得了宝贵时间，可以专注于自己的项目。</p>
+
+<p>如果确实<a contenteditable="false" data-primary="dropping work" data-type="indexterm" id="idm139660637730192"/>别无选择，就放弃一部分工作。案例研究 2 中，团队把一项服务的责任交还开发团队，从而不再承担该服务的值班支持。</p>
+</div></section>
+
+<section data-pdf-bookmark="Protect yourself in the future" data-type="sect3"><div class="sect3" id="protect_yourself_in_the_future">
+<h3>防范未来再次过载</h3>
+
+<p>我们强烈建议建立一组用于评估<a contenteditable="false" data-primary="metrics" data-secondary="establishing to evaluate team workload" data-type="indexterm" id="idm139660637725072"/>团队工作量的指标，<a contenteditable="false" data-primary="future protection from overload" data-type="indexterm" id="idm139660637723712"/>并定期审查这些指标，确保它们衡量的确实是正确的事项。</p>
+
+<p>团队摆脱过载后，可以通过监控或解决底层问题来防止过载复发。例如，案例研究 1 中的团队现在维持着一套轻量级分诊流程，用于发现不断增长的任务积压。案例研究 2 中的团队则正在制定长期计划，让后端 SLO 与服务 SLO 对齐。</p>
+
+<p>团队处于过载状态时，应当比平时更加优先开展能够消减重复性琐事的项目工作。这些投入会在未来带来回报。</p>
+
+<p>最后，团队中的每个人都应负责关注表明可能出现过载的早期预警信号，参见<a data-type="xref" href="#recognizing_the_symptoms_of_overload">“识别过载症状”</a>。如果管理者感觉团队正逐渐走向过载，就应当坐下来与成员沟通。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-startref="ix_ovrldmit" data-type="indexterm" id="idm139660637719488"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00091">
+<h1>总结</h1>
+
+<p>在理想世界里，SRE 团队总能运用我们第一本书介绍的方法妥善管理中断性工作。但我们终究只是普通人，团队有时无法达到这种理想状态。本章分析了过载如何吞噬一支团队，并讨论了如何发现过载、如何作出响应。</p>
+
+<p>尤其是在运维工作中，过多的中断很容易使团队从正常负载滑向过载。频繁中断可能导致过载，而过载又会损害健康和生产力。过载给团队成员造成社会心理压力，进一步影响工作，最终形成不断自我强化的循环。</p>
+
+<p>感知过载是一种特殊的过载形式，无法通过琐事或运维工作的数量来衡量，也很难准确定位和消除。</p>
+
+<p>要保持团队工作量平衡，就必须持续监控过载，无论它是客观存在还是仅被成员感知。要更好地服务用户、做好工作，首先要尊重自己和团队。在日常工作中维持健康的平衡，能够有力地帮助你和团队实现这一目标。<a contenteditable="false" data-primary="overload, identifying and recovering from" data-startref="ix_ovrld" data-type="indexterm" id="idm139660637706480"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch17fn1"><sup><a href="ch17-zh.html#ch17fn1-marker">1</a></sup> Kara A. Latorella，《<em>Investigating Interruptions: Implications for Flightdeck Performance</em>》（弗吉尼亚州汉普顿：Langley Research Center，1999），<a href="https://go.nasa.gov/2Jc50Nh"><em class="hyperlink">https://go.nasa.gov/2Jc50Nh</em></a>；NTSB，《<em>Aircraft Accident Report: NWA DC-9-82 N312RC, Detroit Metro, 16 August 1987 (No. NTSB/AAR-88/05)</em>》（华盛顿特区：National Transportation Safety Board，1988），<a href="http://libraryonline.erau.edu/online-full-text/ntsb/aircraft-accident-reports/AAR88-05.pdf"><em class="hyperlink">http://libraryonline.erau.edu/online-full-text/ntsb/aircraft-accident-reports/AAR88-05.pdf</em></a>。</p><p data-type="footnote" id="ch17fn2"><sup><a href="ch17-zh.html#ch17fn2-marker">2</a></sup> Emmanuelle Brun 和 Malgorzata Milczarek，《<em>Expert Forecast on Emerging Psychosocial Risks Related to Occupational Safety and Health</em>》（西班牙毕尔巴鄂：European Agency for Safety and Health at Work，2007），<a href="https://osha.europa.eu/en/tools-and-publications/publications/reports/7807118"><em class="hyperlink">https://osha.europa.eu/en/tools-and-publications/publications/reports/7807118</em></a>；M. Melchior、I. Niedhammer、L. F. Berkman 和 M. Goldberg，“Do Psychosocial Work Factors and Social Relations Exert Independent Effects on Sickness Absence? A Six-Year Prospective Study of the GAZEL Cohort”，《<em>Journal of Epidemiology and Community Health</em>》57，第 4 期（2003）：285–93，<a href="http://jech.bmj.com/content/jech/57/4/285.full.pdf"><em class="hyperlink">http://jech.bmj.com/content/jech/57/4/285.full.pdf</em></a>。</p><p data-type="footnote" id="ch17fn3"><sup><a href="ch17-zh.html#ch17fn3-marker">3</a></sup>作为背景信息，据估算，SRE 每次值班后至少还需要额外一天跟进工单。</p><p data-type="footnote" id="ch17fn4"><sup><a href="ch17-zh.html#ch17fn4-marker">4</a></sup>我们采用了 Google 基于亚里士多德项目制定的计划：<a href="http://bit.ly/2LPemR2"><em class="hyperlink">http://bit.ly/2LPemR2</em></a>。</p><p data-type="footnote" id="ch17fn5"><sup><a href="ch17-zh.html#ch17fn5-marker">5</a></sup> Kurt G. I. Wahlstedt 和 Christer Edling，“Organizational Changes at a Postal Sorting Terminal—Their Effects Upon Work Satisfaction, Psychosomatic Complaints and Sick Leave”，《<em>Work and Stress</em>》11，第 3 期（1997）：279–91。</p><p data-type="footnote" id="ch17fn6"><sup><a href="ch17-zh.html#ch17fn6-marker">6</a></sup> Robert A. Karasek Jr.，“Job Demands, Job Decision Latitude, and Mental Strain—Implications for Job Redesign”，《<em>Administrative Science Quarterly</em>》24，第 2 期（1979）：285–308。</p><p data-type="footnote" id="ch17fn7"><sup><a href="ch17-zh.html#ch17fn7-marker">7</a></sup> Frank W. Bond 和 David Bunce，“Job Control Mediates Change in a Work Reorganization Intervention for Stress Reduction”，《<em>Journal of Occupational Health Psychology</em>》6，第 4 期（2001）：290–302；Toby D. Wall、Paul R. Jackson 和 Keith Davids，“Operator Work Design and Robotics System Performance: A Serendipitous Field Study”，《<em>Journal of Applied Psychology</em>》77，第 3 期（1992）：353–62。</p><p data-type="footnote" id="ch17fn8"><sup><a href="ch17-zh.html#ch17fn8-marker">8</a></sup> Brun 和 Malgorzata，《<em>Expert Forecast</em>》。</p></div></div></section></body></html>
