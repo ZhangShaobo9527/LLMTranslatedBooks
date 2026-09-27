@@ -1,0 +1,520 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Introducing Non-Abstract Large System Design</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 12. Introducing Non-Abstract Large System Design" data-type="chapter" epub:type="chapter"><div class="chapter" id="introducing_non_abstract_large_system_des">
+<h1><span class="label">Chapter 12. </span>Introducing Non-Abstract Large <span class="keep-together">System Design</span></h1>
+
+<p class="byline">By Salim Virji, James Youngman, Henry Robertson,<br/>
+Stephen Thorne, Dave Rensin, and Zoltan Egyed<br/>
+with Richard Bondi</p>
+
+<p>With responsibilities that span production operations and product engineering, SRE is in a unique position to align business case requirements and operational costs. Product engineering teams may not be aware of the maintenance cost of systems they design, especially if that product team is building a single component that factors into a greater production ecosystem.<a contenteditable="false" data-primary="NALSD" data-see="non-abstract large system design" data-type="indexterm" id="idm139660639891520"/><a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-type="indexterm" id="ix_NALSD"/></p>
+
+<p>Based on Google’s experience developing systems, we consider reliability to be the most critical feature of any production system. We find that deferring reliability issues during design is akin to accepting fewer features at higher costs. By following an iterative style of system design and implementation, we arrive at robust and scalable designs with low operational costs. We call this style <em>Non-Abstract Large System Design (NALSD)</em>.</p>
+
+<section data-pdf-bookmark="What Is NALSD?" data-type="sect1"><div class="sect1" id="what_is_nalsdquestion_mark">
+<h1>What Is NALSD?</h1>
+
+<p>This chapter presents a NALSD approach: we begin with the problem statement, gather requirements, and iterate through designs that become increasingly sophisticated until we reach a viable solution.<a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="about" data-type="indexterm" id="idm139660639904432"/> Ultimately, we arrive at a system that defends against many failure modes and satisfies both the initial requirements and additional details that emerged as we iterated.</p>
+
+<p>NALSD describes a skill critical to SRE: the ability to assess, design, and evaluate large systems. Practically, NALSD combines elements of capacity planning, component isolation, and graceful system degradation that are crucial to highly available production systems. Google SREs are expected to be able to start resource planning with a basic whiteboard diagram of a system, think through the various scaling and failure domains, and focus their design into a concrete proposal for resources. Because these systems change over time, it’s vitally important that an SRE is able to analyze and evaluate the key aspects of the system design.</p>
+</div></section>
+
+<section data-pdf-bookmark="Why “Non-Abstract”?" data-type="sect1"><div class="sect1" id="why_quotation_marknon_abstractquotation_m">
+<h1>Why “Non-Abstract”?</h1>
+
+<p>All systems will eventually have to run on real computers in real datacenters using real networks. <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="why non-abstract" data-type="indexterm" id="idm139660639884656"/>Google has learned (the hard way) that the people designing distributed systems need to develop and continuously exercise the muscle of turning a whiteboard design into concrete estimates of resources at multiple steps in the process. Without this rigor, it’s too tempting to create systems that don’t quite translate in the real world.</p>
+
+<p>This extra bit of work up front typically leads to fewer last-minute system design changes to account for some unforeseen physical constraint.</p>
+
+<p>Please note that while we drive these exercises to discrete results (e.g., number of machines), examples of sound reasoning and assumption making are more important than any final values. Early assumptions heavily influence calculation results, and making perfect assumptions isn’t a requirement for NALSD. The value of this exercise is in combining many imperfect-but-<em>reasonable</em> results into a better understanding of the design.</p>
+</div></section>
+
+<section data-pdf-bookmark="AdWords Example" data-type="sect1"><div class="sect1" id="adwords_example">
+<h1>AdWords Example</h1>
+
+<p>The Google AdWords service displays text advertisements <a contenteditable="false" data-primary="AdWords NALSD example" data-type="indexterm" id="ix_AdWd"/>on Google Web Search. The <em>click-through rate</em> (CTR) metric tells advertisers how well their ads are <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-type="indexterm" id="ix_NALSDex"/>performing. CTR is the ratio of times the ad is clicked versus the number of times the ad is shown.<a contenteditable="false" data-primary="CTR" data-see="click-through rate" data-type="indexterm" id="idm139660639879456"/><a contenteditable="false" data-primary="click-through rate (CTR)" data-type="indexterm" id="idm139660639879664"/></p>
+
+<p>This AdWords example aims to design a system capable of measuring and reporting an accurate CTR<a contenteditable="false" data-primary="Google AdWords" data-see="AdWords NALSD example" data-type="indexterm" id="idm139660639871184"/> for every AdWords ad. The data we need to calculate CTR is recorded in logs of the search and ad serving systems. These logs record the ads that are shown for each search query and the ads that are clicked, respectively.</p>
+
+<section data-pdf-bookmark="Design Process" data-type="sect2"><div class="sect2" id="design_process">
+<h2>Design Process</h2>
+
+<p>Google uses an iterative approach to design systems that meet our goals. <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-tertiary="design process" data-type="indexterm" id="idm139660639868032"/><a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="design process" data-type="indexterm" id="idm139660639869312"/>Each iteration defines a potential design and<a contenteditable="false" data-primary="design process (NALSD)" data-type="indexterm" id="idm139660639865248"/> examines its strengths and weaknesses. This analysis either feeds into the next iteration or indicates when the design is good enough to recommend.</p>
+
+<p>In broad strokes, the NALSD process has two phases, each with two to three <span class="keep-together">questions</span>.</p>
+
+<p>In the basic design phase, we try to invent a design that <em>works in principle</em>. We ask two questions:</p>
+
+<dl>
+	<dt>Is it possible?</dt>
+	<dd>
+	<p>Is the design even possible? If we didn’t have to worry about enough RAM, CPU, network bandwidth, and so on, what would we design to satisfy the requirements?</p>
+	</dd>
+	<dt>Can we do better?</dt>
+	<dd>
+	<p>For any such design, we ask, “Can we do better?” For example, can we make the system meaningfully faster, smaller, more efficient? If the design solves the problem in <a href="http://bit.ly/2LPpixO">O(<em>N</em>) time</a>, can we solve it more quickly—say, O(ln(<em>N</em>))?</p>
+	</dd>
+</dl>
+
+<p>In the next phase, we <em>try to scale up</em> our basic design—for example, by dramatically increasing a requirement. We ask three questions:</p>
+
+<dl>
+	<dt>Is it feasible?</dt>
+	<dd>
+	<p>Is it possible to scale this design, given constraints on money, hardware, and so on? If necessary, what distributed design would satisfy the requirements?</p>
+	</dd>
+	<dt>Is it resilient?</dt>
+	<dd>
+	<p>Can the design fail gracefully? What happens when this component fails? How does the system work when an entire datacenter fails?</p>
+	</dd>
+	<dt>Can we do better?</dt>
+	<dd> </dd>
+</dl>
+
+<p>While we generally cover these phases and questions in this approximate order, in practice, we bounce around between the questions and phases. For example, during the basic design phase, we often have growth and scaling in the back of our minds.</p>
+
+<p>Then we iterate. One design may successfully pass most of the phases, only to flounder later. When that happens, we start again, modifying or replacing components. The final design is the end of a story of twists and turns.</p>
+
+<p>With these concepts in mind, let’s walk through the iterative NALSD process.</p>
+</div></section>
+
+<section data-pdf-bookmark="Initial Requirements" data-type="sect2"><div class="sect2" id="initial_requirements">
+<h2>Initial Requirements</h2>
+
+<p>Each advertiser may have multiple advertisements. Each ad is keyed by <code>ad_id</code> and is associated with a list of search terms selected by the advertiser.<a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-tertiary="initial requirements" data-type="indexterm" id="idm139660639845920"/><a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="initial requirements" data-type="indexterm" id="idm139660639847392"/></p>
+
+<p>When displaying a dashboard to an advertiser, <a contenteditable="false" data-primary="click-through rate (CTR)" data-secondary="calculating" data-type="indexterm" id="idm139660639843136"/>we need to know the following for each ad and search term:</p>
+
+<ul>
+	<li>
+	<p>How often this search term triggered this ad to be shown</p>
+	</li>
+	<li>
+	<p>How many times the ad was clicked by someone who saw the ad</p>
+	</li>
+</ul>
+
+<p>With this information, we can calculate the CTR: the number of clicks divided by the number of impressions.</p>
+
+<p>We know our advertisers care about two things: that the dashboard displays quickly, and that the data is recent. Therefore, when iterating on the design, we will consider our requirements in terms of SLOs (see <a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a> for more details):</p>
+
+<ul>
+	<li>
+	<p>99.9% of dashboard queries complete in &lt; 1 second.</p>
+	</li>
+	<li>
+	<p>99.9% of the time, the CTR data displayed is less than 5 minutes old.</p>
+	</li>
+</ul>
+
+<p>These SLOs provide a reasonable goal that we should be able to consistently meet. They also provide an error budget (see <a href="http://bit.ly/2szBKsK">Chapter 4</a> in <em>Site Reliability Engineering</em>), which we will compare our solution against in each iteration of the design.</p>
+
+<p>We aim to create a system that can meet our SLOs and also support millions of advertisers who want to see their CTRs on a dashboard. For transaction rates, let’s assume 500,000 search queries per second and 10,000 ad clicks per second.</p>
+</div></section>
+
+<section data-pdf-bookmark="One Machine" data-type="sect2"><div class="sect2" id="one_machine">
+<h2>One Machine</h2>
+
+<p>The simplest starting point is to consider running our entire <a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="running application on one machine" data-type="indexterm" id="idm139660639831072"/>application <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-tertiary="running application on one machine" data-type="indexterm" id="idm139660639831600"/>on a single computer.</p>
+
+<p>For every web search query, we log:</p>
+
+<dl>
+	<dt><dfn><code>time</code></dfn></dt>
+	<dd><p>The time the query occurred</p></dd>
+	<dt><dfn><code>query_id</code></dfn></dt>
+	<dd><p>A unique query identifier (query ID)</p></dd>
+	<dt><dfn><code>search_term</code></dfn></dt>
+	<dd><p>The query content</p></dd>
+	<dt><dfn><code>ad_id</code></dfn></dt>
+	<dd><p>The ad IDs of all the AdWords advertisements shown for the search</p></dd>
+</dl>
+
+<p>Together, this information forms the <em>query log</em>. Every time a user clicks an ad, we log the time of the click, the query ID, and the ad ID in the <em>click log</em>.</p>
+
+<p>You may be wondering why we don’t simply add the <code>search_term</code> to the click log to reduce complexity. In the arbitrarily reduced scope of our example, this could be <span class="keep-together">feasible</span>. However, in practice, CTR is actually only one of many insights calculated from these logs. Click logs are derived from URLs, which have inherent size limitations, making the separate query log a more scalable solution. Instead of proving this point by adding extra CTR-like requirements to the exercise, we will simply acknowledge this assumption and move forward.</p>
+
+<p>Displaying a dashboard requires the data from both logs. We need to be able to show that we can achieve our SLO of displaying fresh data on the dashboard in under a second. Achieving this SLO requires that the speed of calculating a CTR remains constant as the system handles large amounts of clicks and queries.</p>
+
+<p>To meet our SLO of displaying our dashboard in under one second, we need quick lookups of the number of clicked and shown <code>query_id</code>s per <code>search_term</code> for a given <code>ad_id</code>. We can extract the breakdown of <em>shown</em> <code>query_id</code>s per <code>search_term</code> and <code>ad_id</code> from the query log. A CTR dashboard needs all records from both the query log and the click log for the <code>ad_id</code>s.</p>
+
+<p>If we have more than a few advertisers, scanning through the query log and the click log to generate the dashboard will be very inefficient. Therefore, our design calls for our one machine to create an appropriate data structure to allow fast CTR calculations as it receives the logs. On a single machine, using an SQL database with indexes on <code>query_id</code> and <code>search_term</code> should be able to provide answers in under a second. By joining these logs on <code>query_id</code> and grouping by <code>search_term</code>, we can report the CTR for each search.</p>
+
+<section data-pdf-bookmark="Calculations" data-type="sect3"><div class="sect3" id="calculations-id00063">
+<h3>Calculations</h3>
+
+<p>We need to calculate how many resources we need to parse all these logs.<a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="scaling resources for parsing logs" data-type="indexterm" id="idm139660639807072"/> To determine our scaling limits,<a contenteditable="false" data-primary="scaling" data-secondary="calculations for AdWords NALSD example" data-type="indexterm" id="idm139660639807360"/> we need to make some assumptions, starting with the size of the query log:</p>
+
+<dl>
+	<dt><dfn><code>time</code></dfn></dt>
+	<dd><p>64-bit integer, 8 bytes</p></dd>
+	<dt><dfn><code>query_id</code></dfn></dt>
+	<dd><p>64-bit integer, 8 bytes</p></dd>
+	<dt><dfn><code>ad_id</code></dfn></dt>
+	<dd><p>Three 64-bit integers, 8 bytes</p></dd>
+	<dt><dfn><code>search_term</code></dfn></dt>
+	<dd><p>A long string, up to 500 bytes</p></dd>
+	<dt><dfn>Other metadata</dfn></dt>
+	<dd><p>500–1,000 bytes of information, such as which machine served the ads, which language the search was in, and how many results the search term returned</p></dd>
+</dl>
+
+<p>To make sure we don’t prematurely hit a limit, we aggressively round up to treat each query log entry as 2 KB. Click log volume should be considerably smaller than query log volume: because the average CTR is 2% (10,000 clicks / 500,000 queries), the click log will have 2% as many records as the query log. Remember that we chose big numbers to illustrate that these principles scale to arbitrarily large implementations. These estimations seem large because they’re supposed to be.</p>
+
+<p>Finally, we can use scientific notation to limit errors caused by arithmetic on inconsistent units. The volume of query logs generated in a 24-hour period will be:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(5 × 10<sup>5</sup> queries/sec) × (8.64 × 10<sup>4</sup> seconds/day) × (2 × 10<sup>3</sup> bytes) = 86.4 TB/day</p>
+	</li>
+</ul>
+
+<p>Because we receive 2% as many clicks as queries, and we know that our database indexes will add some reasonable amount of overhead, we can round our 86.4 TB/day up to 100 TB of space required to store one day’s worth of log data.</p>
+
+<p>With an aggregate storage requirement of ~100 TB, we have some new assumptions to make. Does this design still work with a single machine? While it is possible to attach 100 TB of disks to a single machine, we’ll likely be limited by the machine’s ability to read from and write to disk.</p>
+
+<p>For example, a common 4 TB HDD might be able to sustain 200 input/output operations per second (IOPS). If every log entry can be stored and indexed in an average of one disk write per log entry, we see that IOPS is a limiting factor for our query logs:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(5 × 10<sup>5</sup> queries/sec) / (200 IOPS/disk) = 2.5 × 10<sup>3</sup> disks or 2,500 disks</p>
+	</li>
+</ul>
+
+<p>Even if we can batch our queries in a 10:1 ratio to limit the operations, in a best-case scenario we’d need several hundred HDDs. Considering that query log writes are only one component of the design’s IO requirements, we need to use a solution that handles high IOPS better than traditional HDDs.</p>
+
+<p>For simplicity’s sake, we’ll move straight to evaluating RAM and skip the evaluation of other storage media, such as solid state disk (SSD). A single machine can’t handle a 100 TB footprint entirely in RAM: assuming we have a standard machine footprint of 16 cores, 64 GB RAM, and 1 Gbps network throughput available, we’ll need:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(100 TB) / (64 GB RAM/machine) = 1,563 machines</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Evaluation" data-type="sect3"><div class="sect3" id="evaluation">
+<h3>Evaluation</h3>
+
+<p>Ignoring our calculations for a moment and imagining we could fit this design in a single machine, would we actually want to? If we test our design by asking <em>what happens when this component fails</em>, we identify a long list of single points of failure (e.g., CPU, memory, storage, power, network, cooling). Can we reasonably support our SLOs if one of these components fails? Almost certainly not—even a simple power cycle would significantly impact our users.</p>
+
+<p>Returning to our calculations, our one-machine design once again looks unfeasible, but this step hasn’t been a waste of time. We’ve discovered valuable information about how to <em>reason</em> about the constraints of the system and its initial requirements. We need to evolve our design to use more than one machine.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Distributed System" data-type="sect2"><div class="sect2" id="distributed_system">
+<h2>Distributed System</h2>
+
+<p>The <code>search_term</code>s we need are in the query log, and the <code>ad_id</code>s are in the click log.  <a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="distributed system" data-type="indexterm" id="ix_AdWdds"/>Now <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-tertiary="distributed system, designing" data-type="indexterm" id="ix_NALSDexdd"/>that we know we’ll need multiple machines, what’s the best design to join them?</p>
+
+<section data-pdf-bookmark="MapReduce" data-type="sect3"><div class="sect3" id="mapreduce">
+<h3>MapReduce</h3>
+
+<p>We can process and <a contenteditable="false" data-primary="MapReduce, evaluating for use in AdWords distributed system" data-type="indexterm" id="idm139660639773104"/>join the logs with a <a href="http://bit.ly/2kELxue">MapReduce</a>. We <a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="distributed system" data-tertiary="MapReduce, evaluating" data-type="indexterm" id="idm139660639770960"/>can periodically grab the accumulated query logs and click logs, and the MapReduce will produce a data set organized by <code>ad_id</code> that displays the number of clicks each <code>search_term</code> received.</p>
+
+<p>MapReduce works as a batch processor: its inputs are a large data set, and it can use many machines to process that data via workers and produce a result. Once all machines have processed their data, their output can be combined—the MapReduce can directly create summaries of every CTR for every AdWords ad and search term. We can use this data to create the dashboards we need.</p>
+
+<section data-pdf-bookmark="Evaluation" data-type="sect4"><div class="sect4" id="evaluation-id00064">
+<h4>Evaluation</h4>
+
+<p>MapReduce is a widely used model of computation that we are confident will scale horizontally. No matter how big our query log and click log inputs are, adding more machines will always allow the process to complete successfully without running out of disk space or RAM.</p>
+
+<p>Unfortunately, this type of batch process can’t meet our SLO of joined log availability within 5 minutes of logs being received. To serve results within 5 minutes, we’d need to run MapReduce jobs in small batches—just a few minutes of logs at a time.</p>
+
+<p>The arbitrary and nonoverlapping nature of the batches makes small batches impractical. If a logged query is in batch 1, and its click is in batch 2, the click and query will never be joined. While MapReduce handles self-contained batches well, it’s not optimized for this kind of problem. At this point, we could try to figure out potential workarounds using MapReduce. For simplicity’s sake, however, we’ll move on to examine another solution.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="LogJoiner" data-type="sect3"><div class="sect3" id="logjoiner">
+<h3>LogJoiner</h3>
+
+<p>The number of ads that users click is significantly smaller than the number of ads served. Intuitively, we need to focus on scaling the larger of the two: query logs. <a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="distributed system" data-tertiary="LogJoiner" data-type="indexterm" id="idm139660639761568"/>We do this by introducing a new distributed system component.<a contenteditable="false" data-primary="LogJoiner (AdWords example)" data-type="indexterm" id="idm139660639761792"/></p>
+
+<p>Rather than looking for the <code>query_id</code> in small batches, as in our MapReduce design, what if we created a store of all queries that we can look up by <code>query_id</code> on demand? <a contenteditable="false" data-primary="QueryStore (AdWords example)" data-type="indexterm" id="idm139660639755968"/>We’ll call it the <em>QueryStore</em>. It holds the full content of the query logs, keyed by <code>query_id</code>. To avoid repetition, we’ll assume that our calculations from the one-machine design will apply to the QueryStore and we’ll limit the review of QueryStore to what we’ve already covered. For a deeper discussion on how a component like this might work, we recommend reading about Bigtable.<sup><a data-type="noteref" href="ch12.html#ch12fn1" id="ch12fn1-marker">1</a></sup></p>
+
+<p>Because click logs also have the <code>query_id</code>, the scale of our processing loop is now much smaller: it only needs to loop over the click logs and pull in the specific queries referenced. We’ll call this component the <em>LogJoiner</em>.</p>
+
+<p>LogJoiner takes a continuous stream of data from the click logs, joins it with the data in QueryStore, and then stores that information, organized by <code>ad_id</code>. Once the queries that were clicked on are stored and indexed by <code>ad_id</code>, we have half the data required to generate the CTR dashboard. <a contenteditable="false" data-primary="ClickMap (AdWords example)" data-type="indexterm" id="idm139660639749824"/>We will call this the <em>ClickMap</em>, because it maps from <code>ad_id</code> to the clicks.</p>
+
+<p>If we don’t find a query for a click (there may be a slowdown in receiving the query logs), we put it aside for some time and retry, up to a time limit. If we can’t find a query for it by that time limit, we discard that click.</p>
+
+<p>The CTR dashboard needs two components for each <code>ad_id</code> and <code>search_term</code> pair: the number of impressions, and the number of ads clicked on. ClickMap needs a partner to hold the <a contenteditable="false" data-primary="QueryMap (AdWords example)" data-type="indexterm" id="idm139660639746192"/>queries, organized by <code>ad_id</code>. We’ll call this <em>QueryMap</em>. QueryMap is directly fed all the data from the query log, and also indexes entries by <code>ad_id</code>.</p>
+
+<p><a data-type="xref" href="#basic_logjoiner_designsemicolon_the_click">Figure 12-1</a> depicts how data flows through the system.</p>
+
+<p>The LogJoiner design introduces several new components: LogJoiner, QueryStore, ClickMap, and QueryMap. We need to make sure these components can scale.</p>
+
+<figure><div class="figure" id="basic_logjoiner_designsemicolon_the_click"><img alt="Basic LogJoiner design; the click data is processed and stored so the dashboard can retrieve it" src="assets/tsrw_1201.png"/>
+<h6><span class="label">Figure 12-1. </span>Basic LogJoiner design; the click data is processed and stored so the dashboard can retrieve it</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Calculations" data-type="sect4"><div class="sect4" id="calculations-id00065">
+<h4>Calculations</h4>
+
+<p>From the calculations we performed in previous iterations, we know the QueryStore will be around 100 TB of data for a day of logs. <a contenteditable="false" data-primary="scaling" data-secondary="calculations for LogJoiner, QueryStore, ClickMap,, and QueryMap in AdWords example" data-type="indexterm" id="idm139660639736016"/><a contenteditable="false" data-primary="LogJoiner (AdWords example)" data-secondary="scaling, calculations" data-type="indexterm" id="idm139660639734448"/> We can delete data that’s too old to be of value.</p>
+
+<p>The LogJoiner should process clicks as they come in and retrieve the corresponding query logs from the QueryStore.</p>
+
+<p>The amount of network throughput LogJoiner needs to process the logs is based on how many clicks per second we have in our logs, multiplied by the 2 KB record size:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(10<sup>4</sup> clicks/sec) × (2 × 10<sup>3</sup> bytes) = 2 × 10<sup>7</sup> = 20 MB/sec = 160 Mbps</p>
+	</li>
+</ul>
+
+<p>The QueryStore lookups incur additional network usage. <a contenteditable="false" data-primary="QueryStore (AdWords example)" data-secondary="scaling, calculations for" data-type="indexterm" id="idm139660639726896"/>For each click log record, we look up the <code>query_id</code> and return a full log record:</p>
+
+<ul>
+	<li>
+	<p>(10<sup>4</sup> clicks/sec) × (8 bytes) = 8 × 10<sup>4</sup> = 80 KB/sec = 640 Kbps</p>
+	</li>
+	<li>
+	<p>(10<sup>4</sup> clicks/sec) * (2 × 10<sup>3</sup> bytes) = 2 × 10<sup>7</sup> = 20 MB/sec = 160 Mbps</p>
+	</li>
+</ul>
+
+<p>LogJoiner will also send results to ClickMap. We need to store <a contenteditable="false" data-primary="ClickMap (AdWords example)" data-secondary="scaling, calculations for" data-type="indexterm" id="idm139660639720864"/>the <code>query_id</code>, <code>ad_id</code>, and <code>time</code>. <code>search_term</code>. <code>time</code> and <code>query_id</code> are both 64-bit integers, so that data will be less than 1 KB:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(10<sup>4</sup> clicks/sec) × (10<sup>3</sup> bytes) = 10<sup>7</sup> = 10 MB/sec = 80 Mbps</p>
+	</li>
+</ul>
+
+<p>An aggregate of ~400 Mbps is a manageable rate of data transfer for our machines.</p>
+
+<p>The ClickMap has to store the <code>time</code> and the <code>query_id</code> for each click, but does not need any additional metadata. We’ll ignore <code>ad_id</code> and <code>search_term</code> because they are a small linear factor (e.g., number of advertisers × number of ads × 8 bytes). Even 10 million advertisers with 10 ads each is only ~800 MB. A day’s worth of ClickMap is:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(10<sup>4</sup> clicks/sec) × (8.64 × 10<sup>4</sup> seconds/day) × (8 bytes + 8 bytes) = 1.4 × 10<sup>10</sup> = <span class="keep-together">14 GB/day for ClickMap</span></p>
+	</li>
+</ul>
+
+<p>We’ll round ClickMap up to 20 GB/day to account for any overhead and our <code>ad_ids</code>.</p>
+
+<p>As we fill out the QueryMap, we need to store the <code>query_id</code> for each ad that is shown. Our storage need increases because there are potentially three <code>ad_id</code>s that could be clicked on for each search query, so we’ll need to record the <code>query_id</code> in up to three entries:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>3 × (5 × 10<sup>5</sup> queries/sec) × (8.64 × 10<sup>4</sup> seconds/day) × (8 bytes + 8 bytes) = <span class="keep-together">2 × 10<sup>12</sup></span> = 2 TB/day for QueryMap</p>
+	</li>
+</ul>
+
+<p>2 TB is small enough to be hosted on a single machine using HDDs, but we know from our one-machine iteration that the individual small writes are too frequent to store on a hard drive. While we could calculate the impact of using higher IOPS drives (e.g., SSD), our exercise is focused on demonstrating that the system can scale to an arbitrarily large size. In this case, we need to design around a single machine’s IO limitations. <a contenteditable="false" data-primary="sharded LogJoiner (AdWords example)" data-type="indexterm" id="idm139660639693008"/>Therefore, the next step in scaling the design is to <em>shard</em> the inputs and outputs: to divide the incoming query logs and click logs into multiple streams.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Sharded LogJoiner" data-type="sect3"><div class="sect3" id="sharded_logjoiner">
+<h3>Sharded LogJoiner</h3>
+
+<p>Our goal in this iteration is to <a contenteditable="false" data-primary="LogJoiner (AdWords example)" data-secondary="sharded" data-type="indexterm" id="idm139660639698128"/>run multiple LogJoiner instances, each on a different shard of the data.<sup><a data-type="noteref" href="ch12.html#ch12fn2" id="ch12fn2-marker">2</a></sup> To this end, we need to think about several factors:</p>
+
+<dl>
+	<dt><dfn>Data management</dfn></dt>
+	<dd><p>To join the query logs and click logs, we must match each click log record with its corresponding query log record on the <code>query_id</code>. The design should prevent network and disk throughput from constraining our design as we scale.</p></dd>
+	<dt><dfn>Reliability</dfn></dt>
+	<dd><p>We know a machine can fail at any time. When a machine running LogJoiner fails, how do we make sure we don’t lose the work that was in progress?</p></dd>
+	<dt><dfn>Efficiency</dfn></dt>
+	<dd><p>Can we scale up without being wasteful? We need to use the minimum resources that meet our data management and reliability concerns.</p></dd>
+</dl>
+
+<p>Our LogJoiner design showed that we can join our query logs and click logs, but the resulting volume of data is very large. If we divide the work into shards based on <code>query_id</code>, we can run multiple LogJoiners in parallel.</p>
+
+<p>Provided a reasonable number of LogJoiner instances, if we distribute the logs evenly, each instance receives only a trickle of information over the network. As the flow of clicks increases, we scale horizontally by adding more LogJoiner instances, instead of scaling vertically by using more CPU and RAM.</p>
+
+<p>As shown in <a data-type="xref" href="#how_should_sharding_workquestion_mark">Figure 12-2</a>, so that the LogJoiners receive the right messages, we introduce a component called a <em>log sharder</em>, which will direct each log entry to the correct destination. For every record, our click log sharders do the following:</p>
+
+<ol>
+	<li>
+	<p>Hash the record’s <code>query_id</code>.</p>
+	</li>
+	<li>
+	<p>Modulo the result with <em>N</em> (the number of shards) and add 1 to arrive at a number between 1 and <em>N</em>.</p>
+	</li>
+	<li>
+	<p>Send the record to the shard number in step 2.</p>
+	</li>
+</ol>
+
+<figure><div class="figure" id="how_should_sharding_workquestion_mark"><img alt="How should sharding work?" src="assets/tsrw_1202.png"/>
+<h6><span class="label">Figure 12-2. </span>How should sharding work?</h6>
+</div></figure>
+
+<p>Now each LogJoiner will get a consistent subset of the incoming logs broken up by <code>query_id</code>, instead of the full click log.</p>
+
+<p>The QueryMap needs to be sharded as well. We know that it will take many hard drives to sustain the IOPS required of QueryMap, and that the size of one day’s QueryMap (2 TB) is too large for our 64 GB machines to store in RAM. However, instead of sharding by <code>query_id</code> like the LogJoiner, we will shard on <code>ad_id</code>. The <code>ad_id</code> is known before any read or write, so using the same hashing approach as the LogJoiner and CTR dashboard will provide a consistent view of the data.</p>
+
+<p>To keep implementations consistent, we can reuse the same log sharder design for the ClickMap as the QueryMap, since the ClickMap is smaller than the QueryMap.</p>
+
+<p>Now that we know our system will scale, we can move on to address the system’s reliability. Our design must be resilient to LogJoiner failures. If a LogJoiner fails after receiving log messages but before joining them, all its work must be redone. This delays the arrival of accurate data to the dashboard, which will affect our SLO.</p>
+
+<p>If our log sharder process sends duplicate log entries to two shards, the system can continue to perform at full speed and process accurate results even when a LogJoiner fails (likely because the machine it is on fails).</p>
+
+<p>By replicating the work in this way, we reduce (but do not eliminate) the chance of losing those joined logs. Two shards might break at the same time and lose the joined logs. By distributing the workload to ensure no duplicate shards land on the same machine, we can mitigate much of that risk. If two machines fail concurrently and we lose both copies of the shard, the system’s error budget (see <a href="http://bit.ly/2szBKsK">Chapter 4</a> from the first SRE book) can cover the remaining risk. When a disaster <em>does</em> occur, we can reprocess the logs. The dashboard will show only data that’s a bit older than 5 minutes for a brief window of time.</p>
+
+<p><a data-type="xref" href="#sharding_of_logs_with_same_query_id_to_du">Figure 12-3</a> shows our design for a shard and its replica, where the LogJoiner, ClickMap, and QueryMap are built on both shards.</p>
+
+<p>From the joined logs, we can construct a ClickMap on each of the LogJoiner machines. To display our user dashboards, all ClickMaps need to be combined and queried.</p>
+
+<section data-pdf-bookmark="Evaluation" data-type="sect4"><div class="sect4" id="evaluation-id00066">
+<h4>Evaluation</h4>
+
+<p>Hosting the sharded components in one datacenter creates a single point of failure: if either the right unlucky pair of machines or the datacenter is disconnected, we lose all the ClickMap work, and user dashboards stop working entirely! We need to evolve our design to use more than one datacenter.</p>
+</div></section>
+
+<figure><div class="figure" id="sharding_of_logs_with_same_query_id_to_du"><img alt="Sharding of logs with same query_id to duplicate shards" src="assets/tsrw_1203.png"/>
+<h6><span class="label">Figure 12-3. </span>Sharding of logs with same query_id to duplicate shards</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Multidatacenter" data-type="sect3"><div class="sect3" id="multidatacenter">
+<h3>Multidatacenter</h3>
+
+<p>Duplicating data across datacenters in different geographic locations allows our serving infrastructure to withstand catastrophic failures.<a contenteditable="false" data-primary="multidatacenter design (AdWords example)" data-type="indexterm" id="idm139660639660976"/><a contenteditable="false" data-primary="datacenters" data-secondary="multidatacenter in AdWords example" data-type="indexterm" id="idm139660639659936"/> If one datacenter is down (e.g., because of a multiday power or network outage), we can fail over to another datacenter. <a contenteditable="false" data-primary="ClickMap (AdWords example)" data-secondary="in multidatacenter design" data-type="indexterm" id="idm139660639658240"/>For failover to work, ClickMap data must be available in all datacenters where the system is deployed.</p>
+
+<p>Is such a ClickMap even possible? We don’t want to multiply our compute requirements by the number of datacenters, but how can we efficiently synchronize work between sites to ensure sufficient replication without creating unnecessary duplication?</p>
+
+<p>We’ve just described an example of the well-known <a href="http://bit.ly/2J2erD7">consensus</a> problem in distributed systems engineering. There are a number of complex algorithms for solving this problem, but the basic idea is:</p>
+
+<ol>
+	<li>
+	<p>Make three or five replicas of the service you want to share (like ClickMap).</p>
+	</li>
+	<li>
+	<p>Have the replicas<a contenteditable="false" data-primary="consensus algorithms" data-type="indexterm" id="idm139660639651248"/> use a consensus algorithm such as <a href="http://bit.ly/1X2NFew">Paxos</a> to ensure that we can reliably store the state of the calculations if a datacenter-sized failure occurs.<a contenteditable="false" data-primary="Paxos consensus algorithm" data-type="indexterm" id="idm139660639650208"/></p>
+	</li>
+	<li>
+	<p>Implement at least one network round-trip time between the participating nodes to accept a write operation. This requirement places a limit on the sequential throughput for the system. We can still parallelize some of the writes to the distributed consensus-based map.</p>
+	</li>
+</ol>
+
+<p>Following the steps just listed, the multidatacenter design now seems workable in principle. Will it also work in practice? What types of resources do we need, and how many of them do we need?</p>
+
+<section data-pdf-bookmark="Calculations" data-type="sect4"><div class="sect4" id="calculations-id00067">
+<h4>Calculations</h4>
+
+<p>The latency of executing the Paxos algorithm with fault-isolated datacenters means that each operation needs roughly 25 milliseconds to complete. <a contenteditable="false" data-primary="multidatacenter design (AdWords example)" data-secondary="scaling, calculations for" data-type="indexterm" id="idm139660639644384"/><a contenteditable="false" data-primary="latency" data-secondary="calculations for multidatacenter design in AdWords example" data-type="indexterm" id="idm139660639645552"/>This latency assumption is based upon datacenters at least a few hundred kilometers apart. Therefore, in terms of sequential processes, we can only perform one operation per 25 milliseconds or 40 operations per second. If we need to perform sequential processes 10<sup>4</sup> times per second (click logs), we need at least 250 processes per datacenter, sharded by <code>ad_id</code>, for the Paxos operations. In practice, we’d want to add more processes to increase parallelism—to handle accumulated backlog after any downtime or traffic spikes.</p>
+
+<p>Building on our previous calculations for ClickMap and QueryMap, and using the estimate of 40 sequential operations per second, how many new machines do we need for our<a contenteditable="false" data-primary="QueryMap (AdWords example)" data-secondary="scaling, calculations for" data-tertiary="in multidatacenter design" data-type="indexterm" id="idm139660639640272"/> multidatacenter design?<a contenteditable="false" data-primary="ClickMap (AdWords example)" data-secondary="scaling, calculations for" data-tertiary="in multidatacenter design" data-type="indexterm" id="idm139660639637696"/></p>
+
+<p>Because our sharded LogJoiner design introduces a replica for each log record, we’ve doubled the number of transactions per second to create the ClickMap and QueryMap: 20,000 clicks/second and 1,000,000 queries/second.</p>
+
+<p>We can calculate the minimum number of processes, or <em>tasks</em>, required by dividing the total queries per second by our maximum operations per second:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(1.02 × 10<sup>6</sup> queries/sec) / (40 operations/sec) = 25,500 tasks</p>
+	</li>
+</ul>
+
+<p>The amount of memory for each task (two copies of 2 TB QueryMap):</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(4 × 10<sup>12</sup> bytes) / (25,500 tasks) = 157 MB/task</p>
+	</li>
+</ul>
+
+<p>Tasks per machine:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(6.4 × 10<sup>10</sup> bytes) / (1.57 × 10<sup>8</sup> bytes) = 408 tasks/machine</p>
+	</li>
+</ul>
+
+<p>We know we can fit many tasks on a single machine, but we need to ensure that we won’t be bottlenecked by IO. The total network throughput for ClickMap and QueryMap (using a high estimate of 2 KB per entry):</p>
+
+<ul class="simplelist">
+	<li>
+	<p>(1.02 × 10<sup>6</sup> queries/sec) × (2 × 10<sup>3</sup> bytes) = 2.04 GB/sec = 16 Gbps</p>
+	</li>
+</ul>
+
+<p>Throughput per task:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>16 Gbps / 25,500 tasks = 80 KB/sec = 640 Kbps/task</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">Throughput per machine:</p>
+
+<ul class="simplelist">
+	<li>
+	<p>408 tasks × 640 Kbps/task = 256 Mbps</p>
+	</li>
+</ul>
+
+<p>Our combination of 157 MB memory and 640 Kbps per task is manageable. We need approximately 4 TB of RAM in each datacenter to host the sharded ClickMap and QueryMap. If we have 64 GB of RAM per machine, we can serve the data from just 64 machines, and will use only 25% of each machine’s network bandwidth.</p>
+</div></section>
+
+<section data-pdf-bookmark="Evaluation" data-type="sect4"><div class="sect4" id="evaluation-id00068">
+<h4>Evaluation</h4>
+
+<p>Now that we’ve designed a multidatacenter system, let’s review if the dataflow makes sense.<a contenteditable="false" data-primary="multidatacenter design (AdWords example)" data-secondary="evaluating dataflow" data-type="indexterm" id="idm139660639616368"/></p>
+
+<p><a data-type="xref" href="#multidatacenter_design">Figure 12-4</a> shows the entire system design. You can see how each search query and ad click is communicated to the servers, and how the logs are collected and pushed into each component.</p>
+
+<p>We can check this system against our requirements:</p>
+
+<dl>
+	<dt>10,000 ad clicks per second</dt>
+	<dd>
+	<p>The LogJoiner can scale horizontally to process all log clicks, and store the result in the ClickMap.</p>
+	</dd>
+	<dt>500,000 search queries per second</dt>
+	<dd>
+	<p>The QueryStore and QueryMap have been designed to handle storing a full day of data at this rate.</p>
+	</dd>
+	<dt>99.9% of dashboard queries complete in &lt; 1 second</dt>
+	<dd>
+	<p>The CTR dashboard fetches data from QueryMap and ClickMap, which are keyed by <code>ad_id</code>, making this transaction fast and simple.</p>
+	</dd>
+	<dt>99.9% of the time, the CTR data displayed is less than 5 minutes old</dt>
+	<dd>
+	<p>Each component is designed to scale horizontally, meaning that if the pipeline is too slow, adding more machines will decrease the end-to-end pipeline latency.</p>
+	</dd>
+</dl>
+
+<p>We believe this system architecture scales to meet our requirements for throughput, performance, and <a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-startref="ix_NALSDexdd" data-tertiary="distributed system, designing" data-type="indexterm" id="idm139660639604272"/><a contenteditable="false" data-primary="AdWords NALSD example" data-secondary="distributed system" data-startref="ix_AdWdds" data-type="indexterm" id="idm139660639605472"/>reliability.<a contenteditable="false" data-primary="AdWords NALSD example" data-startref="ix_AdWd" data-type="indexterm" id="idm139660639602304"/><a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="AdWords example" data-startref="ix_NALSDex" data-type="indexterm" id="idm139660639600864"/></p>
+
+<figure><div class="figure" id="multidatacenter_design"><img alt="Multidatacenter design" src="assets/tsrw_1204.png"/>
+<h6><span class="label">Figure 12-4. </span>Multidatacenter design</h6>
+</div></figure>
+</div></section>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00069">
+<h1>Conclusion</h1>
+
+<p>NALSD describes the iterative process of system design that Google uses for production systems. By breaking down software into logical components and placing these components into a production ecosystem with reliable infrastructure, we arrive at systems that provide reasonable and appropriate targets for data consistency, system availability, and resource efficiency. The practice of NALSD allows us to improve our design without starting anew for each iteration. While various design iterations <span class="keep-together">presented</span> in this chapter satisfied our original problem statement, each iteration revealed new requirements, which we could meet by extending our previous work.</p>
+
+<p>Throughout this process, we separated software components based on how we expected the system to grow. This strategy allowed us to scale different parts of the system independently and removed dependencies on single pieces of hardware or single instances of software, thereby producing a more reliable system.</p>
+
+<p>Throughout the design process, we continued to<a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-secondary="key questions in design iterations" data-type="indexterm" id="idm139660639587936"/> improve upon each iteration by asking the four key NALSD questions:</p>
+
+<dl>
+	<dt>Is it possible?</dt>
+	<dd>
+	<p>Can we build it without “magic”?</p>
+	</dd>
+	<dt>Can we do better?</dt>
+	<dd>
+	<p>Is it as simple as we can reasonably make it?</p>
+	</dd>
+	<dt>Is it feasible?</dt>
+	<dd>
+	<p>Does it fit within our practical constraints (budget, time, etc.)?</p>
+	</dd>
+	<dt>Is it resilient?</dt>
+	<dd>
+	<p>Will it survive occasional but inevitable disruptions?</p>
+	</dd>
+</dl>
+
+<p>NALSD is a learned skill. As with any skill, you need to practice it regularly to maintain your proficiency. Google’s experience has shown that the ability to reason from an abstract requirement to a concrete approximation of resources is critical to building healthy and long-lived systems.<a contenteditable="false" data-primary="non-abstract large system design (NALSD)" data-startref="ix_NALSD" data-type="indexterm" id="idm139660639584848"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch12fn1"><sup><a href="ch12.html#ch12fn1-marker">1</a></sup> Fay Chang et al., “Bigtable: A Distributed Storage System for Structured Data,” <em>ACM Transactions on Computer Systems (TOCS)</em> 26, no. 2 (2008), <a href="http://bit.ly/2J22BZv"><em class="hyperlink">http://bit.ly/2J22BZv</em></a>.</p><p data-type="footnote" id="ch12fn2"><sup><a href="ch12.html#ch12fn2-marker">2</a></sup> This section is based on Rajagopal Ananthanarayanan et al., “Photon: Fault-tolerant and Scalable Joining of Continuous Data Streams,” in SIGMOD ’13: <em>Proceedings of the 2013 ACM SIGMOD International Conference on Management of Data</em> (New York: ACM, 2013), <a href="http://bit.ly/2Jse3Ns"><em class="hyperlink">http://bit.ly/2Jse3Ns</em></a>.</p></div></div></section></body></html>

@@ -1,0 +1,1137 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Data Processing Pipelines</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 13. Data Processing Pipelines" data-type="chapter" epub:type="chapter"><div class="chapter" id="data_processing_pipelines">
+<h1><span class="label">Chapter 13. </span>Data Processing Pipelines</h1>
+
+<p class="byline">By Rita Sodt and Igor Maravić (Spotify)<br/>
+with Gary Luo, Gary O’Connor, and Kate Ward</p>
+
+<p>Data processing is a complex field that’s constantly evolving to meet the demands of larger data sets, intensive data transformations, and a desire for fast, reliable, and inexpensive results.<a contenteditable="false" data-primary="data processing pipelines" data-type="indexterm" id="ix_dppipe"/> The current landscape features data sets that are generated and collected from a variety of sources—from mobile usage statistics to integrated sensor networks to web application logs, and more. Data processing pipelines can turn these often unbounded, unordered, global-scale data sets into structured, indexed storage that can help inform crucial business decisions or unlock new product features. In addition to providing insight into system and user behavior, data processing is often business-critical. Delayed or incorrect data in your pipeline can manifest in user-facing issues that are expensive, labor-intensive, and time-consuming to fix.<a contenteditable="false" data-primary="pipelines, data processing" data-see="data processing pipelines" data-type="indexterm" id="idm139660639568016"/></p>
+
+<p>This chapter starts by using product examples to examine some common types of applications of big data processing pipelines. We then explore how to identify pipeline requirements and design patterns, and enumerate some best practices of managing data processing pipelines throughout the development lifecycle. We cover tradeoffs you can make to optimize your pipeline and techniques for measuring the important signals of pipeline health. For a service to remain healthy and reliable once it’s deployed, SREs (as well as developers) should be able to navigate all of these tasks. Ideally, SREs should be involved in this work from its early stages: Google’s SRE teams regularly consult with teams developing a data processing pipeline to ensure that the pipeline can be easily released, modified, and run without causing issues for customers.</p>
+
+<p class="pagebreak-before">Finally, the Spotify case study provides an overview of their event delivery processing pipeline, which uses a combination of in-house, Google Cloud, and other third-party solutions to manage a complex, business-critical data processing pipeline. Whether you own a pipeline directly, or own another service that depends on the data that a pipeline produces, we hope you can use the information in this chapter to help make your pipelines (and services) more reliable.</p>
+
+<p>For a comprehensive discussion of Google’s philosophies on data processing pipelines, see <a href="http://bit.ly/2JiPeDI">Chapter 25</a> of our first SRE book.</p>
+
+<section data-pdf-bookmark="Pipeline Applications" data-type="sect1"><div class="sect1" id="pipeline_applications">
+<h1>Pipeline Applications</h1>
+
+<p>There is a wide variety of pipeline applications, each with its own strengths and use cases.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="pipeline applications" data-type="indexterm" id="ix_dppipeapp"/> A pipeline can involve multiple stages; each stage is a separate process with dependencies on other stages. One pipeline might contain multiple stages, which are abstracted away with a high-level specification. An example of this is in Cloud Dataflow: a user writes the business logic with a relatively high-level API, and the <a href="http://bit.ly/2LRmU9P">pipeline technology</a> itself translates this data into a series of steps or stages where one’s output is the input of another. To give you an idea of the breadth of pipeline applications, next we describe several pipeline applications and their recommended uses. We use two example companies with different pipeline and implementation requirements to demonstrate different ways of meeting their respective data needs. These examples illustrate how your specific use case defines your project goals, and how you can use these goals to make an informed decision on what data pipeline works best for you.</p>
+
+<section data-pdf-bookmark="Event Processing/Data Transformation to Order or Structure Data" data-type="sect2"><div class="sect2" id="event_processingsolidusdata_transformatio">
+<h2>Event Processing/Data Transformation to Order or Structure Data</h2>
+
+<p>The Extract Transform Load (ETL) model is a common paradigm in data processing: data is extracted from a source, transformed,<a contenteditable="false" data-primary="data processing pipelines" data-secondary="pipeline applications" data-tertiary="event processing and data transformation" data-type="indexterm" id="idm139660639557760"/> and possibly<a contenteditable="false" data-primary="extract, transform, load (ETL) model" data-type="indexterm" id="idm139660639556352"/> denormalized, and then “reloaded” into a specialized format. In more modern applications, this might look like a cognitive process: data acquisition from some kind of sensor (live or playback) and a selection and marshalling phase, followed by “training” of a specialized data structure (like a machine learning network).</p>
+
+<p>ETL pipelines work in a similar way. <a contenteditable="false" data-primary="extract, transform, load (ETL) model" data-secondary="ETL pipelines" data-type="indexterm" id="idm139660639573184"/>Data is extracted from a single (or multiple) sources, transformed, and then loaded (or written) into another data source. The transformation phase can serve a variety of use cases, such as:</p>
+
+<ul>
+	<li>
+	<p>Making changes to the data format to add or remove a field</p>
+	</li>
+	<li>
+	<p>Aggregating computing functions across data sources</p>
+	</li>
+	<li>
+	<p>Applying an index to the data so it has better characteristics for serving jobs that consume the data</p>
+	</li>
+</ul>
+
+<p>Typically, an ETL pipeline prepares your data for further analysis or serving. When used correctly, ETL pipelines can perform complex data manipulations and ultimately increase the efficiency of your system. Some examples of ETL pipelines include:</p>
+
+<ul>
+	<li>
+	<p>Preprocessing steps for machine learning or business intelligence use cases</p>
+	</li>
+	<li>
+	<p>Computations, such as counting how many times a given event type occurs within a specific time interval<a contenteditable="false" data-primary="events" data-secondary="event processing to order or structure data" data-type="indexterm" id="idm139660639551616"/></p>
+	</li>
+	<li>
+	<p>Calculating and preparing billing reports</p>
+	</li>
+	<li>
+	<p>Indexing pipelines like the ones that power Google’s web search</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Data Analytics" data-type="sect2"><div class="sect2" id="data_analytics">
+<h2>Data Analytics</h2>
+
+<p><em>Business intelligence</em> refers to technologies, tools, and practices<a contenteditable="false" data-primary="business intelligence" data-type="indexterm" id="idm139660639546336"/> for collecting, integrating, analyzing, and presenting <a contenteditable="false" data-primary="data processing pipelines" data-secondary="pipeline applications" data-tertiary="data analytics" data-type="indexterm" id="idm139660639544784"/>large volumes <a contenteditable="false" data-primary="data analytics" data-type="indexterm" id="idm139660639547312"/>of information to enable better decision making.<sup><a data-type="noteref" href="ch13.html#ch13fn1" id="ch13fn1-marker">1</a></sup> Whether you have a retail product, a mobile game, or <a href="http://bit.ly/2HboyQc">Internet of Things–connected sensors</a>, aggregating data across multiple users or devices can help you identify where things are broken or working well.</p>
+
+<p>To illustrate the data analytics use case, let’s examine a fictional company and their recently launched mobile and web game, <em>Shave the Yak</em>. The owners want to know how their users interact with the game, both on their mobile devices and on the web. As a first step, they produce a data analytics report of the game that processes data about player events. The company’s business leaders have requested monthly reports on the most used features of the game so they can plan new feature development and perform market analysis. The mobile and web analytics for the game are stored in Google Cloud <a href="https://cloud.google.com/bigquery/">BigQuery</a> tables that are updated three times a day by <a href="http://bit.ly/2JmC8oT">Google Analytics</a>. The team set up a job that runs whenever new data is added to these tables. <a contenteditable="false" data-primary="Google Analytics" data-type="indexterm" id="idm139660639531200"/>On completion, the job makes an entry in the company’s daily aggregate table.</p>
+</div></section>
+
+<section data-pdf-bookmark="Machine Learning" data-type="sect2"><div class="sect2" id="machine_learning">
+<h2>Machine Learning</h2>
+
+<p>Machine learning (ML) applications are used for a variety of purposes, <a contenteditable="false" data-primary="machine learning" data-type="indexterm" id="idm139660639535136"/>like helping predict cancer, classifying<a contenteditable="false" data-primary="data processing pipelines" data-secondary="pipeline applications" data-tertiary="machine learning" data-type="indexterm" id="idm139660639533872"/> spam, and personalizing product recommendations for users. Typically, an ML system has the following stages:</p>
+
+<ol class="pagebreak-before">
+	<li>
+	<p>Data features and their <a href="http://bit.ly/2J8ZbQX">labels</a> are extracted from a larger data set.</p>
+	</li>
+	<li>
+	<p>An ML algorithm trains a model on the extracted features.</p>
+	</li>
+	<li>
+	<p>The model is evaluated on a test set of data.</p>
+	</li>
+	<li>
+	<p>The model is made available (served) to other services.</p>
+	</li>
+	<li>
+	<p>Other systems make decisions using the responses served by the model.</p>
+	</li>
+</ol>
+
+<p>To demonstrate an ML pipeline in action, let’s consider an example of a fictional company, Dressy, that sells dresses online. The company wants to increase their revenue by offering targeted recommendations to their users. When a new product is uploaded to the site, Dressy wants their system to start incorporating that product into user recommendations within 12 hours. Ultimately, Dressy would like to present users with near-real-time recommendations as they interact with the site and rate dresses. As a first step in their recommender system, Dressy investigates the following approaches:</p>
+
+<dl>
+	<dt><dfn>Collaborative</dfn></dt>
+	<dd><p>Show products that are similar to each other.</p></dd>
+	<dt><dfn>Clustering</dfn></dt>
+	<dd><p>Show products that have been liked by a similar user.</p></dd>
+	<dt><dfn>Content-based</dfn></dt>
+	<dd><p>Show products that are similar to other products that the user has viewed or liked.</p></dd>
+</dl>
+
+<p>As an online shop, Dressy has a data set of user profile information and reviews, so they opt to use a clustering filter. <a contenteditable="false" data-primary="machine learning" data-secondary="example machine learning data processing pipeline" data-type="indexterm" id="idm139660639518480"/>New products that are uploaded to their system don’t have structured data or consistent labels (e.g., some vendors may include extra information about color, size, and features of the dress using different categories and formats). Consequently, they need to implement a pipeline to preprocess the data into a format compatible with <a href="https://www.tensorflow.org/">TensorFlow</a> that joins both the product information and user profile data. The ML system includes pipelines to preprocess data from multiple sources needed to train the model. Using the training data, Dressy’s development team creates a TensorFlow model to serve the appropriate recommendations to customers. <a data-type="xref" href="#ml_data_processing_pipeline">Figure 13-1</a> shows the full ML solution. We detail each step afterward.</p>
+
+<figure><div class="figure" id="ml_data_processing_pipeline"><img alt="ML data processing pipeline" src="assets/tsrw_1301.png"/>
+<h6><span class="label">Figure 13-1. </span>ML data processing pipeline</h6>
+</div></figure>
+
+<ol>
+	<li>
+	<p>The development team elects to use a streaming dataflow pipeline, Google Cloud Dataflow, to preprocess the data into a format of labeled dresses by sending images to an image classification service that returns a list of characteristics.</p>
+	</li>
+	<li>
+	<p>The team preprocesses data from multiple sources that will be used to train a model that returns the top five most similar dresses. Their workflow generates an ML model from the dress product data and purchase history from customer profiles stored in BigQuery.</p>
+	</li>
+	<li>
+	<p>They choose to use a streaming Dataflow pipeline to preprocess the data into a format of customer personalization profiles. These profiles are used as input to train a TensorFlow model. The trained TensorFlow model binary is stored in a <a href="https://cloud.google.com/storage/">Google Cloud Storage (GCS) bucket</a>. Before being promoted to production, the team ensures the model passes accuracy checks when evaluated against a test set of the preprocessed data used for model evaluation.</p>
+	</li>
+	<li>
+	<p>A service provides the recommendations for a given customer, which the web and mobile frontends use. The team uses TensorFlow with the <a href="https://cloud.google.com/ml-engine/">Cloud ML online prediction service</a>.</p>
+	</li>
+	<li>
+	<p>A customer-facing, frontend service for making purchases serves the user data based on the up-to-date dress recommendations from the prediction service.</p>
+	</li>
+</ol>
+
+<p>Dressy has noticed that occasionally a new model doesn’t get published for over 24 hours, and the recommendations trigger intermittent errors. This is a common issue when a new model is deployed for the first time; however, there are some simple steps you can take to resolve this problem. If you start to notice that decisions, classifications, or recommendations either aren’t being surfaced or are stale or incorrect, ask yourself:</p>
+
+<ul>
+	<li>
+	<p>Is data stuck coming into the pipeline before it can be preprocessed to train the model?</p>
+	</li>
+	<li>
+	<p>Do we have a poor ML model caused by a software bug? Is there a lot of spam? Are the features used to train the model poorly chosen?</p>
+	</li>
+	<li>
+	<p>Has a new version of the ML model been recently generated, or is a stale version of the model running in production?</p>
+	</li>
+</ul>
+
+<p>Luckily, Dressy has a set of tools to monitor and detect an issue before their customers experience any problems. If and when an outage occurs, these tools can help them to quickly repair or roll back any offending code.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="pipeline applications" data-startref="ix_dppipeapp" data-type="indexterm" id="idm139660639498496"/> For more details on implementing monitoring and alerting, see <a data-type="xref" href="ch04.html#monitoring">Chapter 4</a>.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Pipeline Best Practices" data-type="sect1"><div class="sect1" id="pipeline_best_practices">
+<h1>Pipeline Best Practices</h1>
+
+<p>The following pipeline best practices apply to pipelines that are run as a service (i.e., pipelines that are responsible for correctly processing data in a timely manner for consumption by other systems). <a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-type="indexterm" id="ix_dppipebp"/>Multiple steps are required to properly deploy a pipeline as a service. These steps range from defining and measuring your customer needs with an SLO, to gracefully responding to degradations and failures, to writing documentation and creating a development lifecycle that catches issues before they reach production.</p>
+
+<section data-pdf-bookmark="Define and Measure Service Level Objectives" data-type="sect2"><div class="sect2" id="define_and_measure_service_level_objectiv">
+<h2>Define and Measure Service Level Objectives</h2>
+
+<p>It’s important to automatically detect when your pipeline is unhealthy and if you are failing to meet your customer’s needs.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="defining and measuring service level objectives" data-type="indexterm" id="ix_dppipebpSLO"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining and measuring for data processing pipelines" data-type="indexterm" id="idm139660639488496"/> Receiving notifications when you’re in danger of exceeding your error budget (for more details on error budget, see <a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a>) helps to minimize customer impact. At the same time, it’s important to strike a comfortable balance between reliability and feature launches—your customers care about both. The remainder of this section provides examples of pipeline SLOs and how to maintain them.</p>
+
+<section data-pdf-bookmark="Data freshness" data-type="sect3"><div class="sect3" id="data_freshness">
+<h3>Data freshness</h3>
+
+<p>Most pipeline<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining and measuring for data processing pipelines" data-tertiary="data freshness" data-type="indexterm" id="idm139660639486496"/> data freshness SLOs are in<a contenteditable="false" data-primary="freshness" data-secondary="data freshness SLOs for data processing pipeline" data-type="indexterm" id="idm139660639482896"/> one of the<a contenteditable="false" data-primary="data freshness" data-type="indexterm" id="idm139660639480896"/> following formats:</p>
+
+<ul>
+	<li>
+	<p><em>X</em>% of data processed in <em>Y</em> [seconds, days, minutes].</p>
+	</li>
+	<li>
+	<p>The oldest data is no older than <em>Y</em> [seconds, days, minutes].</p>
+	</li>
+	<li>
+	<p>The pipeline job has completed successfully within <em>Y</em> [seconds, days, minutes].</p>
+	</li>
+</ul>
+
+<p>For example, the <em>Shave the Yak</em> mobile game could choose to target an SLO requiring 99% of all user actions that impact the user score to be reflected in the scoreboard within 30 minutes.</p>
+</div></section>
+
+<section data-pdf-bookmark="Data correctness" data-type="sect3"><div class="sect3" id="data_correctness">
+<h3>Data correctness</h3>
+
+<p>Creating SLOs for data correctness ensures that you are alerted about potential data errors in your pipeline.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining and measuring for data processing pipelines" data-tertiary="data correctness" data-type="indexterm" id="idm139660639472320"/><a contenteditable="false" data-primary="correctness SLOs" data-type="indexterm" id="idm139660639471216"/><a contenteditable="false" data-primary="data correctness" data-type="indexterm" id="idm139660639468768"/> For example, a correctness error in a billing pipeline could result in customers being charged too much or too little. A correctness target can be difficult to measure, especially if there is no predefined correct output. If you don’t have access to such data, you can generate it. For example, use test accounts to calculate the expected output. Once you have this “golden data,” you can compare expected and actual output. From there, you can create monitoring for errors/discrepancies and implement threshold-based alerting as test data flows through a real production system.</p>
+
+<p>Another data correctness SLO involves backward-looking analysis. For example, you might set a target that no more than 0.1% of your invoices are incorrect per quarter. You might set another SLO target for the number of hours/days that bad data or errors are served from the pipeline output data. The notion of data correctness varies by product and application.</p>
+</div></section>
+
+<section data-pdf-bookmark="Data isolation/load balancing" data-type="sect3"><div class="sect3" id="data_isolationsolidusload_balancing">
+<h3>Data isolation/load balancing</h3>
+
+<p>Sometimes you will have segments of data that are higher in priority or that require more resources to process.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining and measuring for data processing pipelines" data-tertiary="data isolation/load balancing" data-type="indexterm" id="idm139660639460560"/><a contenteditable="false" data-primary="data isolation" data-type="indexterm" id="idm139660639457248"/> If you promise a tighter SLO on high-priority data, it’s important to know that this data will be processed before lower-priority data if your resources become constrained. The implementation of this support varies from pipeline to pipeline, but often manifests as different queues in task-based systems or different jobs. Pipeline workers can be configured to take the highest available priority task. There could be multiple pipeline applications or pipeline worker jobs running with different configurations of resources—such as memory, CPU, or <a href="https://cloud.google.com/network-tiers">network tiers</a>—and work that fails to succeed on lower provisioned workers could be retried on higher provisioned ones.<a contenteditable="false" data-primary="load balancing" data-secondary="for priority items in data processing pipelines" data-type="indexterm" id="idm139660639451984"/> In times of resource or system constraints, when it’s impossible to process all data quickly, this separation allows you to preferentially process higher-priority items over lower ones.</p>
+</div></section>
+
+<section data-pdf-bookmark="End-to-end measurement" data-type="sect3"><div class="sect3" id="end_to_end_measurement">
+<h3>End-to-end measurement</h3>
+
+<p>If your pipeline has a series of stages, it can be tempting to measure a per-stage or per-component SLO.<a contenteditable="false" data-primary="end-to-end measurement for data processing pipeline SLOs" data-type="indexterm" id="idm139660639454448"/> However, <a contenteditable="false" data-primary="measurements" data-secondary="end-to-end measurement for data processing pipeline SLOs" data-type="indexterm" id="idm139660639453936"/>measuring <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining and measuring for data processing pipelines" data-tertiary="end-to-end measurement" data-type="indexterm" id="idm139660639466096"/>SLOs in this fashion doesn’t capture your customer’s experience or the end-to-end health of your system. For example, imagine you have an event-based pipeline such as Google Analytics. The end-to-end SLO includes log input collection and any number of pipeline steps that happen before data reaches the serving state. You could monitor each stage individually and offer an SLO on each one, but customers only care about the SLO for the sum of all stages. If you’re measuring SLOs for each stage, you would be forced to tighten your per-component alerting, which could result in more alerts that don’t model the user experience.</p>
+
+<p>Additionally, if you measure data correctness only per stage, you could miss end-to-end data corruption bugs. For example, each stage in your pipeline could report that all is well, but one stage introduces a field that it expects a downstream job to process. This upstream stage assumes that the extra data has been processed and used to serve requests to users. A downstream job doesn’t expect the additional field, so it drops the data. Both jobs think they are correct, but the user doesn’t see the data.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-startref="ix_dppipebpSLO" data-tertiary="defining and measuring service level objectives" data-type="indexterm" id="idm139660639466704"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Plan for Dependency Failure" data-type="sect2"><div class="sect2" id="plan_for_dependency_failure">
+<h2>Plan for Dependency Failure</h2>
+
+<p>Once you define your SLO, it’s good practice to confirm that you aren’t overdepending on the SLOs/SLAs of other products<a contenteditable="false" data-primary="failures" data-secondary="dependency failure in data processing pipeline" data-type="indexterm" id="idm139660639448544"/> that fail to meet their commitments.<a contenteditable="false" data-primary="dependencies" data-secondary="planning for failure in data processing pipelines" data-type="indexterm" id="idm139660639446880"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="planning for dependency failure" data-type="indexterm" id="idm139660639443264"/> Many products, such as Google Cloud Platform, list their <a href="https://cloud.google.com/terms/sla">SLA promises</a> on their sites. Once you identify any third-party dependencies, at a minimum, design for the largest failure accounted for in their advertised SLAs. For example, when defining an SLO, the owner of a pipeline that reads or writes data to Cloud Storage would ensure that the <a href="https://cloud.google.com/storage/sla">uptimes and guarantees advertised</a> are appropriate. If the single-region uptime guarantee was less than required by the pipeline to meet its SLO on data processing time, the pipeline owner may choose to replicate the data across regions to get the higher availability.<a contenteditable="false" data-primary="service level agreements (SLAs)" data-secondary="and dependency failures in data processing pipelines" data-type="indexterm" id="idm139660639435248"/></p>
+
+<p>When a service provider’s infrastructure breaks its SLAs, the result can negatively impact dependent pipelines. If your pipeline depends on more strict guarantees than the service provider advertises, your service could fail even if the service provider remains within their SLA. Sometimes, realistically planning for dependency failure can mean accepting a lower level of reliability and offering a looser SLA to your <span class="keep-together">customers</span>.<sup><a data-type="noteref" href="ch13.html#ch13fn2" id="ch13fn2-marker">2</a></sup></p>
+
+<p>At Google, to encourage pipeline development with dependency failure in mind, we stage planned outages. For example, many pipelines at Google depend on the availability of the datacenter where they run.<a contenteditable="false" data-primary="disaster recovery testing (DiRT) at Google" data-type="indexterm" id="idm139660639429280"/> Our Disaster Recovery Testing (DiRT) frequently targets these systems, simulating a regional outage. When a regional outage occurs, pipelines that have planned for failure automatically fail over to another region. Other pipelines are delayed until the operator of the failed pipeline is alerted by their monitoring and manually fails over. Successful manual failover assumes that the pipeline can obtain enough resources to bring up a production stack in another region. In a best-case scenario, an unsuccessful manual failover prolongs an outage. In a worst-case scenario, processing jobs may have continued processing stale data, which introduces out-of-date or incorrect data in any downstream pipelines. Recovery tactics from an incident like this vary depending on your setup. For example, if correct data was overwritten with incorrect data, you may have to restore data from a previous backup version and reprocess any missing data.</p>
+
+<p>In summary, it’s good practice to prepare for the day when the systems you depend on are unavailable. Even the best products will fail and experience outages. Regularly practice disaster recovery scenarios to ensure your systems are resilient to common and uncommon failures. Assess your dependencies and automate your system responses as much as possible.</p>
+</div></section>
+
+<section data-pdf-bookmark="Create and Maintain Pipeline Documentation" data-type="sect2"><div class="sect2" id="create_and_maintain_pipeline_documentatio">
+<h2>Create and Maintain Pipeline Documentation</h2>
+
+<p>When well written and maintained, system documentation can help engineers visualize the data pipeline and its dependencies, understand complex system tasks, and potentially shorten downtime in an outage. <a contenteditable="false" data-primary="documentation" data-secondary="creating and maintaining for data processing pipelines" data-type="indexterm" id="idm139660639433136"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="creating and maintaining pipeline documentation" data-type="indexterm" id="idm139660639425792"/>We recommend three categories of documentation for your pipeline.</p>
+
+<section data-pdf-bookmark="System diagrams" data-type="sect3"><div class="sect3" id="system_diagrams">
+<h3>System diagrams</h3>
+
+<p>System diagrams, <a contenteditable="false" data-primary="system diagrams for data processing pipeline" data-type="indexterm" id="idm139660639423056"/>similar to <a data-type="xref" href="#pipeline_system_diagram_left_parenthesisp">Figure 13-2</a>, can help on-call engineers quickly find potential failure points. At Google, we encourage teams to draw system diagrams that show each component (both pipeline applications and data stores), and the transformations that happen at each step. Each of the components and transformations shown in your diagram can get stuck, causing data to stop flowing through the system. Each component can also introduce a software or application configuration bug that impacts data correctness.</p>
+
+<p>A system diagram should contain quick links to other monitoring and debugging information at different pipeline stages. Ideally, these links should pull from live monitoring information, displaying the current status of each stage (e.g., waiting for dependent job to finish/processing/complete). Displaying historical runtime information can also indicate if a pipeline stage is taking longer than expected. This delay can foreshadow performance degradation or an outage.</p>
+
+<p>Finally, even in complex systems, a system diagram makes it easier for developers to analyze data dependencies they should be aware of during feature launches.</p>
+
+<figure><div class="figure" id="pipeline_system_diagram_left_parenthesisp"><img alt="Pipeline system diagram (PII = personally identifiable information)" src="assets/tsrw_1302.png"/>
+<h6><span class="label">Figure 13-2. </span>Pipeline system diagram (PII = personally identifiable information)</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Process documentation" data-type="sect3"><div class="sect3" id="process_documentation">
+<h3>Process documentation</h3>
+
+<p>It’s important to document how to perform common tasks, such as releasing a new version of a pipeline or introducing a change to the data format.<a contenteditable="false" data-primary="process documentation for data processing pipelines" data-type="indexterm" id="idm139660639415920"/> Ideally, you should also document less common (often manual) tasks, such as initial service turnup or final service turndown in a new region. Once your tasks are documented, investigate the possibility of automating away any manual work. If the tasks and system are automated, consider generating your documentation directly from the source so you can keep both in sync.</p>
+</div></section>
+
+<section data-pdf-bookmark="Playbook entries" data-type="sect3"><div class="sect3" id="playbook_entries">
+<h3>Playbook entries</h3>
+
+<p>Each alert condition in your system should have a corresponding playbook entry that describes the steps to recovery. <a contenteditable="false" data-primary="playbooks, maintaining" data-secondary="entries for data processing pipelines" data-type="indexterm" id="idm139660639417824"/>At Google, we find it useful to link this documentation in any alert messages sent to on-call engineers. Playbook entries are discussed in more detail in <a href="http://bit.ly/2JgUBU7">Chapter 11 of our first book</a>.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Map Your Development Lifecycle" data-type="sect2"><div class="sect2" id="map_your_development_lifecycle">
+<h2>Map Your Development Lifecycle</h2>
+
+<p>As shown in <a data-type="xref" href="#pipeline_development_lifecycle_with_relea">Figure 13-3</a>, the development lifecycle of a pipeline (or a change to a pipeline) isn’t too different from the development lifecycle of other systems.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="mapping your development lifecycle" data-type="indexterm" id="ix_dppipebpmap"/><a contenteditable="false" data-primary="development" data-secondary="mapping data processing pipeline development lifecycle" data-type="indexterm" id="ix_devmapdpp"/> This section follows a typical release flow through each stage of the pipeline development <span class="keep-together">lifecycle</span>.</p>
+
+<figure><div class="figure" id="pipeline_development_lifecycle_with_relea"><img alt="Pipeline development lifecycle with release workflow" src="assets/tsrw_1303.png"/>
+<h6><span class="label">Figure 13-3. </span>Pipeline development lifecycle with release workflow</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Prototyping" data-type="sect3"><div class="sect3" id="prototyping">
+<h3>Prototyping</h3>
+
+<p>The first phase of development involves prototyping your pipeline and verifying semantics. Prototyping ensures that you can express the business logic necessary to execute your pipeline. You may discover that one programming language allows you to better express your business logic, or that a particular language more easily integrates with your existing libraries. A particular programming model may suit your specific use case (e.g., Dataflow versus MapReduce, batch versus streaming). For an example of a completed programming model comparison, see our blog post <a href="http://bit.ly/2Jj0VdA">“Dataflow/Beam &amp; Spark: A Programming Model Comparison”</a>. If you are adding a feature to an existing pipeline, we recommend adding your code and running unit tests in the prototype stage.</p>
+</div></section>
+
+<section data-pdf-bookmark="Testing with a 1% dry run" data-type="sect3"><div class="sect3" id="testing_with_a_1percent_dry_run">
+<h3>Testing with a 1% dry run</h3>
+
+<p>Once you have completed your prototype, it’s helpful to run a small setup on the full stack using production data. For example, run your pipeline using an experimental set, or a 1% dry run of production data in a nonproduction environment. Gradually scale up, tracking your pipeline performance to ensure you don’t encounter any bottlenecks. When your product has launched to customers, run performance tests. These tests are an integral development step that helps prevent outages caused by new feature rollouts.</p>
+</div></section>
+
+<section data-pdf-bookmark="Staging" data-type="sect3"><div class="sect3" id="staging">
+<h3>Staging</h3>
+
+<p>Before deploying to production, it’s useful to run your system in a preproduction (or staging) environment. The data in your staging environment should be as close to actual production data as possible. We recommend keeping a full copy of production data or at least a representative subset. Unit tests won’t catch all pipeline issues, so it’s important to let the data flow through the system end-to-end to catch integration issues.</p>
+
+<p>Integration tests can also identify errors. Using both unit and integration tests, run an A/B comparison of your newly generated data to previously generated known good data. For example, check your previous release for expected or unexpected differences before certifying the release and marking it ready to move to production.</p>
+</div></section>
+
+<section data-pdf-bookmark="Canarying" data-type="sect3"><div class="sect3" id="canarying">
+<h3>Canarying</h3>
+
+<p>Pipeline testing and verification requires more time and care than stateless jobs—the data is persisted and the transformations are often complex. <a contenteditable="false" data-primary="canarying releases" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639386256"/>If something goes wrong in your production release, it’s important to catch the issue early so you can limit the impact. Canarying your pipeline can help! Canarying is a process whereby you partially deploy your service (in this case, the pipeline application) and monitor the results. For a more detailed discussion of canarying, see <a data-type="xref" href="ch16.html#canarying_releases">Chapter 16</a>. Canarying is tied to the entire pipeline rather than a single process. During a canary phase, you may choose to process the same real production data as the live pipeline but skip writes to production storage; techniques such as two-phase mutation can help (see the section <a data-type="xref" href="#idempotent_and_two_phase_mutations">“Idempotent and Two-Phase Mutations”</a>). Often, you’ll have to wait for <span class="keep-together">the complete cycle</span> of processing to finish before you can discover any customer-impacting issues. After your dry run (or two-phase mutation), compare the results of your canary pipeline with your live pipeline to confirm their health and check for data differences.</p>
+
+<p>Sometimes it is possible to progress through the canary by gradually updating tasks of a job or by updating first in one region and then another, but this is not always possible with pipelines. Pipelines that use replicated data, such as Dataproc<sup><a data-type="noteref" href="ch13.html#ch13fn3" id="ch13fn3-marker">3</a></sup> and Dataflow,<sup><a data-type="noteref" href="ch13.html#ch13fn4" id="ch13fn4-marker">4</a></sup> support regional endpoints<sup><a data-type="noteref" href="ch13.html#ch13fn5" id="ch13fn5-marker">5</a></sup> and prevent this kind of canary progression—you can’t reload one cell in isolation from another. If you run a multihomed pipeline, it may not be possible to deploy to a single region (or a percentage of servers) like you might with a serving job. Instead, perform a rollout for a small percentage of data first, or as described earlier, roll out in dry-run mode first.</p>
+
+<p>During verification of your canary or preproduction environment, it is important to assess the health of your pipeline. Usually, you can use the same metrics you use to track your SLOs. Verifying your canary is a task that lends itself well to automation.</p>
+</div></section>
+
+<section data-pdf-bookmark="Performing a partial deployment" data-type="sect3"><div class="sect3" id="performing_a_partial_deployment">
+<h3>Performing a partial deployment</h3>
+
+<p>In addition to canarying your changes, you may also want to perform a partial deployment, particularly if there is a <a contenteditable="false" data-primary="deployments" data-secondary="partial, performing for data processing pipelines" data-type="indexterm" id="idm139660639369824"/>major feature launch or change that could impact system performance and resource usage. It can be difficult to predict the impact of these kinds of launches without first testing your changes on a subset of real traffic. You can implement a partial deployment as a flag or configuration option in your pipeline that accepts an allowed subset of data. Consider first processing your new features on one or two accounts, then gradually ramping up the amount of data (e.g., ~1%, ~10%, ~50%, and finally, 100% of your sample data).</p>
+
+<p class="pagebreak-before">There are a number of ways your partial deployment can go wrong: the input data might be incorrect or delayed, your data processing might have a bug, or your final storage might have an error. Any of these issues can result in an outage. Avoid <span class="keep-together">promoting</span> a corrupt set of data to your low-latency frontends. Aim to catch these types of issues as early as possible, before they reach your users.</p>
+</div></section>
+
+<section data-pdf-bookmark="Deploying to production" data-type="sect3"><div class="sect3" id="deploying_to_production">
+<h3>Deploying to production</h3>
+
+<p>Once you have fully promoted your new pipeline binaries and/or config to production, you should be reasonably confident that you’ve vetted any potential issues (and if an issue does occur, that your monitoring will alert you).<a contenteditable="false" data-primary="deployments" data-secondary="deploying data processing pipeline to production" data-type="indexterm" id="idm139660639366544"/> If your deployment goes wrong, be able to quickly restore from a known good state (e.g., roll back the binaries) and mark any potentially broken data as bad (e.g., replace the bad data with data from a previous backup version, make sure no jobs read the affected data, and/or reprocess the data if necessary).<a contenteditable="false" data-primary="development" data-secondary="mapping data processing pipeline development lifecycle" data-startref="ix_devmapdpp" data-type="indexterm" id="idm139660639367744"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-startref="ix_dppipebpmap" data-tertiary="mapping your development lifecycle" data-type="indexterm" id="idm139660639360576"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Reduce Hotspotting and Workload Patterns" data-type="sect2"><div class="sect2" id="reduce_hotspotting_and_workload_patterns">
+<h2>Reduce Hotspotting and Workload Patterns</h2>
+
+<p>Hotspotting happens when a resource becomes overloaded from excessive access, resulting in an operation failure. <a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="reducing hotspotting and workload patterns" data-type="indexterm" id="idm139660639359760"/><a contenteditable="false" data-primary="hotspotting, reducing in data processing pipeline" data-type="indexterm" id="idm139660639358912"/>Pipelines are susceptible to workload patterns—both through reads and writes—that can cause delays in isolated regions of data. Some common examples of hotspotting include:</p>
+
+<ul>
+	<li>
+	<p>Errors thrown because multiple pipeline workers are accessing a single serving task, causing overload.</p>
+	</li>
+	<li>
+	<p>CPU exhaustion due to concurrent access to a piece of data that is available on only one machine. Often, the internals of your data storage have a lowest level of granularity that may become unavailable if accessed heavily (e.g., a <a href="http://bit.ly/2J9fnSj">Spanner tablet</a> can become overloaded due to a problematic section of data even though most of the data storage is fine).</p>
+	</li>
+	<li>
+	<p>Latency due to row-level lock contention in a database.</p>
+	</li>
+	<li>
+	<p>Latency due to concurrent access to a hard drive, which exceeds the physical ability of the drive head to move fast enough to quickly locate the data. In this case, consider using solid state drives.</p>
+	</li>
+	<li>
+	<p>A large work unit that requires many resources.</p>
+	</li>
+</ul>
+
+<p>Hotspotting can be isolated to a subset of data. To combat hotspotting, you can also block fine-grained data such as individual records. If that data is blocked, the rest of the pipeline can progress. Typically, your infrastructure can provide this functionality. If a chunk of processing work is consuming a disproportionate amount of resources, the pipeline framework can dynamically rebalance by breaking the work into smaller pieces. To be safe, it’s still best to build an emergency shutdown into your client logic to allow you to stop processing and isolate fine-grained chunks of processing work characterized by large resource usage or errors. For example, you should be able to quickly set a flag or push a config that allows you to skip input data that matches a certain pattern or problematic user.</p>
+
+<p>Other strategies to reduce hotspotting include:</p>
+
+<ul>
+	<li>
+	<p>Restructuring your data or access patterns to spread the load evenly</p>
+	</li>
+	<li>
+	<p>Reducing the load (e.g., statically allocate some or all of your data)</p>
+	</li>
+	<li>
+	<p>Reducing lock granularity to avoid data lock contention</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Implement Autoscaling and Resource Planning" data-type="sect2"><div class="sect2" id="implement_autoscaling_and_resource_planni">
+<h2>Implement Autoscaling and Resource Planning</h2>
+
+<p>Spikes in workload are common and can lead to service outages if you’re unprepared for them.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="implementing autoscaling and resource planning" data-type="indexterm" id="idm139660639345296"/><a contenteditable="false" data-primary="autoscaling" data-secondary="implementing for data processing pipelines" data-type="indexterm" id="idm139660639344176"/> Autoscaling can help you handle these spikes. By using autoscaling, you don’t have to provision for peak load 100% of the time (for more details on autoscaling, see <a data-type="xref" href="ch11.html#managing_load">Chapter 11</a>). Constantly running the number of workers required for peak capacity is an expensive and inefficient use of resources. Autoscaling turns down idle workers so you won’t pay for resources you don’t need. This strategy is particularly important for streaming pipelines and workloads that are variable. Batch pipelines may run simultaneously and will consume as many resources as are available.</p>
+
+<p>Predicting the future growth of your system and allocating capacity accordingly ensures that your service won’t run out of resources. <a contenteditable="false" data-primary="resources" data-secondary="resource planning for data processing pipelines" data-type="indexterm" id="idm139660639345952"/><a contenteditable="false" data-primary="capacity planning" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639341440"/>It’s also important to weigh the cost of resources against the engineering effort needed to make the pipeline more efficient. When conducting resource planning with an estimate of future growth, keep in mind that costs may not be isolated to just running your pipeline job. You may also be paying the data storage and network bandwidth costs for replicating data across regions or cross-region writes and reads. Additionally, some data store systems are more expensive than others. Even though unit storage costs are low, these costs can quickly add up for very large data sets or expensive data access patterns that use a lot of computing resources on the storage servers. It’s good practice to help drive down costs by periodically examining your data set and pruning unused content.</p>
+
+<p>Although the effectiveness of a series of pipeline stages should be measured according to its end-to-end SLO, the pipeline efficiency and resource usage should be measured at each individual stage. For example, imagine that you have many jobs using BigQuery and notice a significant increase in BigQuery resource usage after a release. If you can quickly determine which jobs are responsible, you can focus your engineering effort on those jobs to drive down costs.</p>
+</div></section>
+
+<section data-pdf-bookmark="Adhere to Access Control and Security Policies" data-type="sect2"><div class="sect2" id="adhere_to_access_control_and_security_pol">
+<h2>Adhere to Access Control and Security Policies</h2>
+
+<p>Data flows through your system and is often persisted along the way.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="adhering to access control and security policies" data-type="indexterm" id="idm139660639338784"/> When managing any persisted data, we recommend <a contenteditable="false" data-primary="access control policies for data processing pipelines" data-type="indexterm" id="idm139660639333088"/>you adhere to <a contenteditable="false" data-primary="security policies for data processing pipeline, adhering to" data-type="indexterm" id="idm139660639339248"/>the following privacy, security, and data integrity principles:</p>
+
+<ul>
+	<li>
+	<p>Avoid storing personally identifiable information (PII) in temporary storage. If you’re required to store PII temporarily, make sure the data is properly <span class="keep-together">encrypted</span>.</p>
+	</li>
+	<li>
+	<p>Restrict access to the data. Grant each pipeline stage only the minimal access it needs to read the output data from the previous stage.</p>
+	</li>
+	<li>
+	<p>Put time to live (TTL) limits on logs and PII.</p>
+	</li>
+</ul>
+
+<p>Consider a BigQuery instance that is tied to a GCP project whose access permissions can be managed with Google Cloud Identity and Access Management (e.g., the Dressy example described earlier). Creating different projects and instances per function allows more fine-grained scoping to restrict access. Tables can have a master project and cross-create views among client projects to allow them controlled access. For example, Dressy has restricted access to tables containing sensitive customer information for jobs from specific project roles.</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan Escalation Paths" data-type="sect2"><div class="sect2" id="plan_escalation_paths">
+<h2>Plan Escalation Paths</h2>
+
+<p>It is important to design your pipeline to be resilient so that a system failure (like a machine or zonal outage) never triggers an SLO violation page. <a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-tertiary="planning escalation paths" data-type="indexterm" id="idm139660639318016"/>By the time you get paged, you need to manually intervene because all automated measures have been exhausted. If you have well-defined SLOs and reliable metrics and alert detection, you’ll be alerted before your customers notice or report issues. When an SLO is violated, it’s important to respond quickly and send proactive communication to your customers.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="best practices" data-startref="ix_dppipebp" data-type="indexterm" id="idm139660639311344"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Pipeline Requirements and Design" data-type="sect1"><div class="sect1" id="pipeline_requirements_and_design">
+<h1>Pipeline Requirements and Design</h1>
+
+<p>Today’s market provides many pipeline technology and framework options, and it can be overwhelming to identify which one best suits your use case.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-type="indexterm" id="ix_dppipereq"/> Some platforms provide fully managed pipelines. Others give you more flexibility but require more hands-on management. In SRE, we often take a significant amount of time during the design phase to assess which technology is the best fit. We compare and contrast the various design options based on user needs, product requirements, and system constraints. This section discusses tools you can use to both assess your pipeline technology options and make improvements to existing pipelines.</p>
+
+<section data-pdf-bookmark="What Features Do You Need?" data-type="sect2"><div class="sect2" id="what_features_do_you_needquestion_mark">
+<h2>What Features Do You Need?</h2>
+
+<p><a data-type="xref" href="#recommended_data_pipeline_features">Table 13-1</a> provides a list of features we recommend you optimize for when managing a data processing pipeline.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-tertiary="features" data-type="indexterm" id="idm139660639307216"/><a contenteditable="false" data-primary="features" data-secondary="planning for data processing pipelines" data-type="indexterm" id="idm139660639307744"/> Some of these features may already be present in your existing pipeline technology (e.g., via managed pipeline platforms, client application logic, or operational tools). Your application may not need some of these features—for example, you don’t need “exactly once” semantics if your work units are idempotent and can be performed more than once for the same result.</p>
+
+<table class="border" id="recommended_data_pipeline_features">
+	<caption><span class="label">Table 13-1. </span>Recommended data pipeline features</caption>
+	<thead>
+		<tr>
+			<th><strong>Pipeline item</strong></th>
+			<th><strong>Feature</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Latency</td>
+			<td>Use an API that supports streaming, batch, or both. Streaming processing is generally better than batch processing at supporting lower-latency applications. If you choose batch but might at some point want streaming, an API that is interchangeable may reduce the migration cost later.</td>
+		</tr>
+		<tr>
+			<td>Data correctness</td>
+			<td>
+			<p>Exactly-once semantics globally. You can require that data is processed (at most) once to get correct results.</p>
+
+			<p>Two-phase mutations.</p>
+
+			<p>Windowing functions for event processing and aggregations. You may want fixed time, session, or sliding windows to divide data (since data is not always processed in the order in which it’s received). You may also want in-order guarantees.</p>
+
+			<p>Black-box monitoring.</p>
+
+			<p>The ability to control the flow of multiple jobs or stages of your pipeline. This control should allow you to gate a job until another completes so the job does not process incomplete data.</p>
+			</td>
+		</tr>
+		<tr>
+			<td>High availability</td>
+			<td>
+			<p>Multihoming.</p>
+
+			<p>Autoscaling.</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Mean Time to Resolve (MTTR) incidents in data processing</td>
+			<td>
+			<p>Tie your code changes to a release, which allows for fast rollbacks.</p>
+
+			<p>Have tested data backup and restore procedures in place.</p>
+
+			<p>In the event of an outage, ensure that you can easily drain a region from serving or processing.</p>
+
+			<p>Have useful alert messages, dashboards, and logs for debugging. In particular, your monitoring should be quick to identify the reason(s) why a pipeline is delayed and/or why data is corrupt.</p>
+
+			<p>Use data checkpointing to help recover faster when a pipeline is interrupted.</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Mean Time to Detect (MTTD) outages</td>
+			<td>Ensure you have SLO monitoring in place. Monitoring out-of-SLO alerts allows you to detect issues that impact your customers. Alerting on the <a href="http://bit.ly/2J5tPum">symptom (versus the cause)</a> reduces monitoring gaps.</td>
+		</tr>
+		<tr>
+			<td>Development lifecycle to prevent errors from reaching production</td>
+			<td>We recommend running any changes in a canary environment before deploying to production. This strategy lowers the possibility of a change impacting SLOs in production.</td>
+		</tr>
+		<tr>
+			<td>Inspect and predict resource usage or cost</td>
+			<td>
+			<p>Create (or use an existing) resource accounting dashboard. Be sure to include resources like storage and network.</p>
+
+			<p>Create a metric that allows you to correlate or predict growth.</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Ease of development</td>
+			<td>
+			<p>Support a language that best fits your use case. Often pipeline technologies limit your options to one or two languages.</p>
+
+			<p>Use a simple API for defining data transformations and expressing your pipeline logic. Consider the tradeoff between simplicity and flexibility.</p>
+
+			<p>Reuse base libraries, metrics, and reporting. When you’re creating a new pipeline, reusable resources allow you to focus development on any new business logic.</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Ease of operation</td>
+			<td>
+			<p>Use existing automation and operational tools as much as possible. Doing so reduces operational costs, as you don’t need to maintain your own tools.</p>
+
+			<p>Automate as many operational tasks as possible.</p>
+
+			<p>Larger tasks that are performed infrequently may include a chain of dependencies and prerequisites that can be too numerous or complex for a human to assess in a timely manner (e.g., moving your data and pipeline stack from region A to region B, then turning down region A). To ease a transition like this, consider investing in automation. Perhaps introduce some pipeline health checks on the pipeline stack in region B before putting it into production.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="Idempotent and Two-Phase Mutations" data-type="sect2"><div class="sect2" id="idempotent_and_two_phase_mutations">
+<h2>Idempotent and Two-Phase Mutations</h2>
+
+<p>Pipelines can process large amounts of data. When a pipeline fails, some data must be reprocessed.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-tertiary="idempotent and two-phase mutations" data-type="indexterm" id="idm139660639274000"/> You can use the <em>idempotent mutations</em> design pattern to prevent storing duplicate or incorrect data.<a contenteditable="false" data-primary="mutations, idempotent and two-phase" data-type="indexterm" id="idm139660639270608"/> An <a href="http://bit.ly/2xyQqhP">idempotent</a> mutation is a type of mutation that can be applied multiple times with the same result. <a contenteditable="false" data-primary="idempotent mutations" data-type="indexterm" id="idm139660639267072"/>Implementing this design pattern allows separate executions of a pipeline with the same input data to always produce the same result.</p>
+
+<p>When testing or canarying a pipeline, you need to know if your applied mutations are acceptable to the pipeline owner according to the expected output.<a contenteditable="false" data-primary="two-phase mutations" data-type="indexterm" id="idm139660639265280"/> The <em>two-phase mutation</em> design pattern can help here. Typically, the data is read from a source and transformed, and then a mutation is applied. With two-phase mutation, the mutations themselves are stored in a temporary location. A separate verification step (or pipeline) can run against these potential mutations to validate them for correctness. A follow-up pipeline step applies the verified mutations only after the mutations pass validation. <a data-type="xref" href="#two_phase_mutation">Figure 13-4</a> shows an example of two-phase mutation.</p>
+
+<figure><div class="figure" id="two_phase_mutation"><img alt="Two-phase mutation" src="assets/tsrw_1304.png"/>
+<h6><span class="label">Figure 13-4. </span>Two-phase mutation</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Checkpointing" data-type="sect2"><div class="sect2" id="checkpointing">
+<h2>Checkpointing</h2>
+
+<p>Typically, pipelines are long-running processes that analyze or mutate large amounts of data. <a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-tertiary="checkpointing" data-type="indexterm" id="idm139660639259280"/><a contenteditable="false" data-primary="checkpointing in data processing pipelines" data-type="indexterm" id="idm139660639260752"/>Without special consideration, pipelines that are terminated early will lose their state, requiring the entire pipeline to be executed again. This is especially true for pipelines that create AI models, as each iteration of the model calculation relies on previous calculations. <em>Checkpointing</em> is a technique that enables long-running processes like pipelines to periodically save partial state to storage so that they can resume the process later.</p>
+
+<p>While checkpointing is often used for the failure case, it’s also useful when a job needs to be preempted or rescheduled (e.g., to change CPU or RAM limits). The job can be cleanly shut down, and upon rescheduling, it’s able to detect which work units have already been processed. Checkpointing has the added advantage of enabling a pipeline to skip potentially expensive reads or computations because it already knows the work is done.</p>
+</div></section>
+
+<section data-pdf-bookmark="Code Patterns" data-type="sect2"><div class="sect2" id="code_patterns">
+<h2>Code Patterns</h2>
+
+<p>Some common code patterns can make your pipelines more efficient to manage and reduce the effort required to make changes or updates.<a contenteditable="false" data-primary="code" data-secondary="code patterns for data processing pipelines" data-type="indexterm" id="idm139660639248464"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-tertiary="code patterns" data-type="indexterm" id="idm139660639257216"/></p>
+
+<section data-pdf-bookmark="Reusing code" data-type="sect3"><div class="sect3" id="reusing_code">
+<h3>Reusing code</h3>
+
+<p>If you operate multiple similar pipelines and want to implement a new monitoring capability or metric, you have to instrument each separate system.<a contenteditable="false" data-primary="reusing code in data processing pipelines" data-type="indexterm" id="idm139660639247808"/> This common workflow isn’t difficult if you use the right strategy. Implementing reusable code libraries allows you to add a metric for monitoring in one place and share it across multiple pipelines or stages. Shared libraries allow you to:</p>
+
+<ul>
+	<li>
+	<p>Gain insight across all data pipelines in a standard way.</p>
+	</li>
+	<li>
+	<p>Reuse other data analytics systems for each pipeline (e.g., a traffic report that works for all of your pipelines).</p>
+	</li>
+	<li>
+	<p>Alert on the same metric for multiple jobs, such as a generic data freshness alert.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Using the microservice approach to creating pipelines" data-type="sect3"><div class="sect3" id="using_the_microservice_approach_to_creati">
+<h3>Using the microservice approach to creating pipelines</h3>
+
+<p>When using microservices, it’s important to have a service perform a single task and do it well. <a contenteditable="false" data-primary="microservices" data-secondary="using microservice approach to creating data processing pipelines" data-type="indexterm" id="idm139660639240304"/>It’s easier to operate a group of microservices that use the same core libraries, varying only in their business logic, than it is to operate many custom services. A similar pattern can apply to pipelines. Instead of creating one monolithic pipeline application, create smaller pipelines that you can release and monitor separately. In doing so, you will get the same benefits as you get from a microservices architecture.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-startref="ix_dppipereq" data-type="indexterm" id="idm139660639240736"/></p>
+</div></section>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="Pipeline Production Readiness" data-type="sect2"><div class="sect2" id="pipeline_production_readiness">
+<h2>Pipeline Production Readiness</h2>
+
+<p>As <a contenteditable="false" data-primary="Production Readiness Reviews (PRRs)" data-type="indexterm" id="idm139660639236992"/>discussed in <a data-type="xref" href="ch18.html#sre_engagement_model">Chapter 18</a>, a PRR (Production Readiness Review) is the process that Google SRE teams use to onboard a new service.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-tertiary="pipeline production readiness" data-type="indexterm" id="ix_dppipereqpr"/><a contenteditable="false" data-primary="production" data-secondary="data processing pipeline readiness for" data-type="indexterm" id="ix_proddpp"/> In the same spirit, we use a <em>pipeline maturity matrix</em> when consulting on the choice or design of a pipeline technology.</p>
+
+<section data-pdf-bookmark="Pipeline maturity matrix" data-type="sect3"><div class="sect3" id="pipeline_maturity_matrix">
+<h3>Pipeline maturity matrix</h3>
+
+<p>The matrix in <a data-type="xref" href="#pipeline_maturity_matrix-id00070">Table 13-2</a> measures five key characteristics (but you can extend the matrix to measure <a contenteditable="false" data-primary="maturity matrix for data processing pipeline" data-type="indexterm" id="ix_matdpp"/>other characteristics you wish to optimize or standardize for):</p>
+
+<ul>
+	<li>
+	<p>Failure tolerance</p>
+	</li>
+	<li>
+	<p>Scalability</p>
+	</li>
+	<li>
+	<p>Monitoring and debugging</p>
+	</li>
+	<li>
+	<p>Transparency and ease of implementation</p>
+	</li>
+	<li>
+	<p>Unit and integration testing</p>
+	</li>
+</ul>
+
+<p>The maturity matrix represents the collective knowledge of many pipeline experts at Google. These individuals are responsible for running pipelines across multiple Google products and productionizing the associated systems.</p>
+
+<p>Each characteristic is measured on a scale of 1 to 5, where 1 represents “Chaotic” (unplanned, ad hoc, risky, fully manual) and 5 represents “Continuous improvement.” To score your system, read the descriptions for each characteristic below, and select the best matching milestone. If more than one milestone applies, use the score in the middle (i.e., 2 or 4). A completed scoresheet will give you a clear picture of where your system needs improvement.</p>
+
+<p>We recommend that you spend the time to make improvements in any weak areas identified by the matrix. Instrumenting monitoring, alerting, and other tooling recommended by the matrix can be time-intensive. When making improvements, you can start by looking for existing products or open source tools that fit your needs instead of creating your own. At Google, we encourage teams to use existing pipeline technologies or tools that provide out-of-the-box pipeline support and features. The more tools and processes that can be reused, the better.</p>
+
+<table class="border pagebreak-before" id="pipeline_maturity_matrix-id00070">
+	<caption><span class="label">Table 13-2. </span>Pipeline maturity matrix, with example milestones for beginning, medium, and advanced maturity</caption>
+	<thead>
+		<tr>
+			<th> </th>
+			<th><strong>1. Chaotic</strong></th>
+			<th><strong>3. Functional</strong></th>
+			<th><strong>5. Continuous improvement</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td colspan="6"><strong>Failure tolerance</strong></td>
+		</tr>
+		<tr>
+			<td>Failover</td>
+			<td>No <a contenteditable="false" data-primary="failures" data-secondary="failure tolerance in data processing pipeline" data-type="indexterm" id="idm139660639212464"/>support for failover</td>
+			<td>Some support for work unit retries (even if manual)</td>
+			<td>Multihomed with automatic failover</td>
+		</tr>
+		<tr>
+			<td>Global work scheduling</td>
+			<td>No support for global work scheduling, multihoming, or failover</td>
+			<td>Support for hot/hot/hot processing (process same work in all three regions so if any region is unavailable, there is at least one still running)</td>
+			<td>Support for effective warm/warm/warm processing (distribute work in all three regions and store work centrally to deal with any region loss)</td>
+		</tr>
+		<tr>
+			<td>Failed task management</td>
+			<td>No support for failed work units</td>
+			<td>—</td>
+			<td>
+			<p>Automatic retries for failed work units</p>
+
+			<p>Automatic quarantine of bad work units</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="6"><strong>Scalability</strong></td>
+		</tr>
+		<tr>
+			<td>Automatic scaling<a contenteditable="false" data-primary="scaling" data-secondary="scalability of data processing pipeline" data-type="indexterm" id="idm139660639199328"/> of available worker pool</td>
+			<td>No autoscaling; manual intervention required</td>
+			<td>Autoscaling works with the use of additional manual tools</td>
+			<td>Built-in automatic autoscaling support with no requirement for configuration inside a third-party tool</td>
+		</tr>
+		<tr>
+			<td>Automatic dynamic resharding to effect balanced load across the pool</td>
+			<td>Work units are fixed with no ability to make changes</td>
+			<td>Supports manual resharding of work, or resharding can be achieved automatically with additional code</td>
+			<td>Built-in support for dynamic subsharding to balance work across the available worker pool</td>
+		</tr>
+		<tr>
+			<td>Load shedding/task prioritization</td>
+			<td>No work unit prioritization exists</td>
+			<td>Some capability for work unit prioritization</td>
+			<td>
+			<p>An easy-to-use feature for work unit prioritization exists</p>
+
+			<p>Built-in support for load shedding</p>
+
+			<p>Workers understand preemption notification, after which a worker will clean up (finish work/mitigate)</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="6"><strong>Monitoring and debugging</strong></td>
+		</tr>
+		<tr>
+			<td>Debugging tools and capabilities</td>
+			<td>No logs; no way to identify or track failed work units</td>
+			<td>There is a solution to identify a failed work<a contenteditable="false" data-primary="debugging" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639185504"/> unit and extract associated logs</td>
+			<td>
+			<p>There is a solution <a contenteditable="false" data-primary="monitoring" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639184064"/>that allows a user to access logs for the time at which the work unit failed; this data is retrieved directly from the failed work unit</p>
+
+			<p>There is a solution to automatically quarantine and replay a failed work unit</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Dashboards and visualizations</td>
+			<td>No dashboards or visualization solutions<a contenteditable="false" data-primary="dashboards" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639179600"/> that support the display of pipeline information</td>
+			<td>
+			<p>There is an easy-to-configure dashboard showing the following information:</p>
+
+			<ul>
+				<li>
+				<p>Number of work units in various stages of completion</p>
+				</li>
+				<li>
+				<p>Latency and aging information for each stage</p>
+				</li>
+			</ul>
+			</td>
+			<td>
+			<p>A fine-grained visualization of the entire execution map for a pipeline</p>
+
+			<p>A<a contenteditable="false" data-primary="visualizations" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639174384"/> visualization for delays up to each stage</p>
+
+			<p>A visualization and rationale for throttling and pushback</p>
+
+			<p>Information about limiting factors due to resource usage</p>
+
+			<p>Information about the distribution of internal state worker machines (e.g., stack graph)</p>
+
+			<p>Information about how many work units are failing, stuck, or slow</p>
+
+			<p>Historical run statistics are presented and preserved</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="6"><strong>Ease of implementation and transparency</strong></td>
+		</tr>
+		<tr>
+			<td>Discoverability</td>
+			<td>No feature for discoverability (a list of the pipelines that are running and their status)</td>
+			<td>Some support for <a contenteditable="false" data-primary="ease of implementation and transparency" data-secondary="for data processing pipeline" data-type="indexterm" id="idm139660639167232"/>discoverability; manual setup might be required, or not all pipelines are discoverable</td>
+			<td>Built-in support for automatic discoverability; a global data registry service that allows the listing of configured pipelines</td>
+		</tr>
+		<tr>
+			<td>Code</td>
+			<td>Significant setup cost for using the technology</td>
+			<td>Some reusable components available</td>
+			<td>
+			<p>Base frameworks are available and require minimum code</p>
+
+			<p>The pipeline can be configured in machine-readable format</p>
+
+			<p>Zero config</p>
+
+			<p>Libraries with semantics similar to other pipeline solutions that are most heavily used in related teams</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Documentation and best practices</td>
+			<td>Sparse or outdated documentation</td>
+			<td>Minimal setup documentation for each component</td>
+			<td>
+			<p>Comprehensive and up-to-date documentation</p>
+
+			<p>Training examples for new users</p>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="6"><strong>Unit and integration testing</strong></td>
+		</tr>
+		<tr>
+			<td>Unit testing framework</td>
+			<td>No support or unit testing framework</td>
+			<td>
+			<p>Tests take a long time to run and frequently time<a contenteditable="false" data-primary="testing" data-secondary="unit and integration testing, data processing pipeline" data-type="indexterm" id="idm139660639152704"/> out</p>
+
+			<p>Too many resource requirements</p>
+
+			<p>No code coverage support</p>
+
+			<p>Easy to switch data sources to test a resource</p>
+			</td>
+			<td>
+			<p>Runs with <a href="https://github.com/google/sanitizers">sanitizers</a> (ASAN, TSAN, etc.)</p>
+
+			<p>The build dependency graph is as small as possible</p>
+
+			<p>Code coverage support</p>
+
+			<p>Provides debugging info and results</p>
+
+			<p>No external dependencies</p>
+
+			<p>Built-in test data generation library</p>
+			</td>
+		</tr>
+		<tr>
+			<td>Ease of configuration (this has direct relevance to the scalability aspect of the pipeline)</td>
+			<td>Test configuration is not supported or requires a significant amount of time to learn, in addition to learning about the pipeline itself—for example, testing uses a different programming language and a different API than the pipeline</td>
+			<td>The first integration test requires significant setup, but subsequent tests are either a copy/paste or an extension to the first with minimal overrides—for example, a test data generator could be minimally tweaked to support collecting test data for many different pipeline applications</td>
+			<td>Decoupling from production configuration, while not preventing reuse; easier to define integration test configuration and reuse relevant parts of prod configuration</td>
+		</tr>
+		<tr>
+			<td>Support for integration testing frameworks (this describes how well a pipeline should interact and support various integration testing methodologies, which are not necessarily part of the pipeline itself)</td>
+			<td>Using Cloud or third-party open source tools for diffing, monitoring, integration testing, and so on, can be difficult to implement and/or resource-intensive; requires in-house tools or tools do not exist</td>
+			<td>
+			<p>Minimal documentation and examples of integration testing tools and methodologies used in conjunction with the pipeline</p>
+
+			<p>Large amount of time required even for data sets with minimal input</p>
+
+			<p>Difficult to trigger on-demand execution for testing scenarios</p>
+
+			<p>Difficult to separate production from nonproduction concerns (e.g., all event logs go to production logging service)</p>
+			</td>
+			<td>
+			<p>Built-in support for scaled-down input data</p>
+
+			<p>Support for diffing of output data (e.g., persisting output test data)</p>
+
+			<p>Configurable monitoring for test run validation</p>
+
+			<p>Ample documentation and examples of integration tests built for the pipeline</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Pipeline Failures: Prevention and Response" data-type="sect1"><div class="sect1" id="pipeline_failures_prevention_and_response">
+<h1>Pipeline Failures: Prevention and Response</h1>
+
+<p>A pipeline can fail for many <a contenteditable="false" data-primary="data processing pipelines" data-secondary="requirements and design" data-startref="ix_dppipereqpr" data-tertiary="pipeline production readiness" data-type="indexterm" id="idm139660639134736"/>reasons, but the most common<a contenteditable="false" data-primary="production" data-secondary="data processing pipeline readiness for" data-startref="ix_proddpp" data-type="indexterm" id="idm139660639132352"/> culprits <a contenteditable="false" data-primary="maturity matrix for data processing pipeline" data-startref="ix_matdpp" data-type="indexterm" id="idm139660639130768"/>are data delay and data corruption.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="failures, prevention and response" data-type="indexterm" id="ix_dppipefail"/> When an outage <a contenteditable="false" data-primary="failures" data-secondary="data processing pipeline, prevention and response" data-type="indexterm" id="ix_faildpp"/>occurs, finding and repairing the issue quickly will greatly reduce its impact. At Google, when an outage or SLO violation occurs, we track metrics for MTTD and MTTR. Tracking these metrics indicates how effective we are at detecting and repairing an issue. In the postmortem that follows any outage at Google, we analyze the cause of the outage to elicit any patterns and address sources of operational toil.</p>
+
+<p>This section describes some common failure modes, methods to effectively respond to pipeline failures, and strategies to help you prevent future pipeline failures.</p>
+
+<section data-pdf-bookmark="Potential Failure Modes" data-type="sect2"><div class="sect2" id="potential_failure_modes">
+<h2>Potential Failure Modes</h2>
+
+<section data-pdf-bookmark="Delayed data" data-type="sect3"><div class="sect3" id="delayed_data">
+<h3>Delayed data</h3>
+
+<p>A pipeline can fail if its input or output is delayed. <a contenteditable="false" data-primary="failures" data-secondary="data processing pipeline, prevention and response" data-tertiary="potential failure modes" data-type="indexterm" id="idm139660639121264"/>Without the proper precautions, a downstream job may start running even though it doesn’t have the necessary data. <a contenteditable="false" data-primary="data processing pipelines" data-secondary="failures, prevention and response" data-tertiary="potential failure modes" data-type="indexterm" id="idm139660639121792"/><a contenteditable="false" data-primary="delayed data (in data processing pipeline)" data-type="indexterm" id="idm139660639118464"/>Stale data is almost always better than incorrect data. If your pipeline processes incomplete or corrupt data, errors will propagate downstream. Restoring or reprocessing bad data takes time and can prolong an outage. Instead, if your pipeline stalls, waits for data, and then resumes once the data becomes available, the data remains high quality. Creating data dependencies that are respected by all stages is important.</p>
+
+<p>Depending on the type of pipeline, the impact of delayed data can range from stale application data to stalled pipelines. In batch processing pipelines, each stage waits for its predecessor to finish before it begins. Streaming systems are more flexible: using event-time processing, such as Dataflow, a downstream stage can start a portion of work as soon as the corresponding upstream portion completes, rather than waiting for all portions to complete.</p>
+
+<p>When an outage of this nature occurs, you will likely need to notify any dependent services. If the outage is user-visible, you may also have to notify your customers. When you’re debugging pipeline outages, it’s helpful to see the progress of current and past pipeline runs, and to have direct links to log files and a diagram of the flow of data. It’s also useful to be able to trace a unit of work through the system while analyzing its counters and statistics.</p>
+</div></section>
+
+<section data-pdf-bookmark="Corrupt data" data-type="sect3"><div class="sect3" id="corrupt_data">
+<h3>Corrupt data</h3>
+
+<p>If undetected, corrupt pipeline data (input and/or output) can cause user-facing issues.<a contenteditable="false" data-primary="corrupt data (in data processing pipeline)" data-type="indexterm" id="idm139660639115968"/> You can circumvent many user-facing issues by having tests that identify <span class="keep-together">corrupt</span> data in place, and using logic that alerts you to potential corruption. For <span class="keep-together">example</span>, pipeline systems can implement blocking policies and abuse/spam detection to automatically or manually filter out bad sources of data.</p>
+
+<p>Corrupt data can have many causes: software bugs, data incompatibility, unavailable regions, configuration bugs, and so on. There are two main steps involved in fixing corrupt data:</p>
+
+<ol>
+	<li>
+	<p>Mitigate the impact by preventing further corrupt data from entering the system.</p>
+	</li>
+	<li>
+	<p>Restore your data from a previously known good version, or reprocess to repair the data.</p>
+	</li>
+</ol>
+
+<p>If a single region is serving corrupt data, you may need to drain your serving jobs and/or data processing from that region. If a software or configuration bug is at fault, you may need to quickly roll back the relevant binary. Often, data corruption can cause windows of data that are incorrect and need to be reprocessed once the underlying issue has been fixed, such as fixing a software bug in a pipeline binary. To reduce the cost of reprocessing, consider selective reprocessing—read in and process only the user or account information impacted by the data corruption. Alternatively, you could persist some intermediate data that can serve as a checkpoint to avoid reprocessing a pipeline from end to end.</p>
+
+<p>If the output of your pipeline is corrupt, downstream jobs may propagate the corrupt data or serving jobs may serve incorrect data. Even with the best testing, development, and release practices in place, a software or configuration bug can introduce data corruption. We recommend that you plan for this eventuality and have the ability to quickly reprocess and restore your data. Recovering from this kind of data corruption is labor-intensive and difficult to automate.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Potential Causes" data-type="sect2"><div class="sect2" id="potential_causes">
+<h2>Potential Causes</h2>
+
+<section data-pdf-bookmark="Pipeline dependencies" data-type="sect3"><div class="sect3" id="pipeline_dependencies">
+<h3>Pipeline dependencies</h3>
+
+<p>When you’re trying to determine the cause of an outage, it’s useful to investigate pipeline dependencies, such<a contenteditable="false" data-primary="data processing pipelines" data-secondary="failures, prevention and response" data-tertiary="potential causes" data-type="indexterm" id="idm139660639094560"/> as storage, network systems, or other services.<a contenteditable="false" data-primary="failures" data-secondary="data processing pipeline, prevention and response" data-tertiary="potential causes" data-type="indexterm" id="idm139660639092672"/><a contenteditable="false" data-primary="dependencies" data-secondary="in data processing pipeline, causing failures" data-type="indexterm" id="idm139660639093216"/> These dependencies may be throttling your requests/traffic or, if they are out of resources, refusing any new data. The rate of input/output can slow for a variety of reasons:</p>
+
+<ul>
+	<li>
+	<p>The output sink or storage could be refusing writes of a piece of data.</p>
+	</li>
+	<li>
+	<p>There could be a particular hotspot data range that cannot complete.</p>
+	</li>
+	<li>
+	<p>There might be a storage bug.</p>
+	</li>
+</ul>
+
+<p>Some pipeline dependency issues won’t resolve themselves. It’s important to file a ticket or bug, and to allow for enough time to add more resources or address traffic patterns. Implementing load balancing and dropping low-priority data may help mitigate the impact.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pipeline application or configuration" data-type="sect3"><div class="sect3" id="pipeline_application_or_configuration">
+<h3>Pipeline application or configuration</h3>
+
+<p>A pipeline failure could be the result of a bottleneck, a bug in your pipeline jobs, or a bug in the configurations <a contenteditable="false" data-primary="configuration" data-secondary="data processing pipeline, causing failures" data-type="indexterm" id="idm139660639090064"/>themselves (e.g., CPU-intensive processing, performance regression, out-of-memory failures, abusive data prone to hotspotting, or configs that point to the incorrect input/output locations). Depending on the cause, there are several possible solutions:</p>
+
+<ul>
+	<li>
+	<p>Roll back the binary/config, cherry-pick a fix, or repair any permission issues.</p>
+	</li>
+	<li>
+	<p>Consider restructuring the data that’s causing the issue.</p>
+	</li>
+</ul>
+
+<p>Application or <a contenteditable="false" data-primary="application errors in data processing pipeline" data-type="indexterm" id="idm139660639085888"/>configuration errors can introduce data incorrectness or lead to delayed data. These kinds of errors are the most common causes of outages. We recommend spending time on pipeline development and ensuring that new binaries and configurations perform well in a nonproduction environment before they are fully deployed.</p>
+</div></section>
+
+<section data-pdf-bookmark="Unexpected resource growth" data-type="sect3"><div class="sect3" id="unexpected_resource_growth">
+<h3>Unexpected resource growth</h3>
+
+<p>A sudden and unplanned jump in system load may cause a pipeline to fail.<a contenteditable="false" data-primary="resources" data-secondary="unexpected growth in data processing pipeline, causing failures" data-type="indexterm" id="idm139660639080656"/> You may need additional unplanned resources to keep your service running. Automatic scaling of your application jobs can help meet the demand of new load, but you should also be aware that an increased pipeline load can also put a strain on downstream dependencies—you may also need to plan for more storage and/or network resources.</p>
+
+<p>Good resource planning and accurate growth prediction can help in these cases, but such predictions may not always be correct. We recommend becoming familiar with the process of requesting additional emergency resources. Depending on the nature of your pipeline’s deployment and the quantity of resources required, the time needed to acquire these resources can be substantial. Therefore, we recommend preparing interim solutions to keep your service up and running—for example, prioritize different classes of data through your pipeline.</p>
+</div></section>
+
+<section data-pdf-bookmark="Region-level outage" data-type="sect3"><div class="sect3" id="region_level_outage">
+<h3>Region-level outage</h3>
+
+<p>A regional outage is bad for all pipelines, but singly homed pipelines are particularly vulnerable.<a contenteditable="false" data-primary="region-level outages in data processing pipeline" data-type="indexterm" id="idm139660639071392"/> If your pipeline runs in a single region that suddenly becomes unavailable, the pipeline will stop until the region comes back up. If you have multihomed pipelines with automatic failover, your response may be as simple as draining processing or serving from an affected region until the outage is over. When a region is down, data can become stranded or delayed, resulting in incorrect output from your pipeline. As a result, the correctness of the data output from any dependent jobs or services may <a contenteditable="false" data-primary="failures" data-secondary="data processing pipeline, prevention and response" data-startref="ix_faildpp" data-type="indexterm" id="idm139660639077808"/>be compromised.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="failures, prevention and response" data-startref="ix_dppipefail" data-type="indexterm" id="idm139660639071984"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study: Spotify" data-type="sect1"><div class="sect1" id="case_study_spotify">
+<h1>Case Study: Spotify</h1>
+
+<p><em>by Igor Maravić</em></p>
+
+<p>Spotify is the leading music streaming company in the world. Every day, tens of millions of people use Spotify to listen to their favorite songs, share music with their friends, and discover new artists.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-type="indexterm" id="ix_dppipecsSP"/><a contenteditable="false" data-primary="Spotify case study" data-type="indexterm" id="ix_Spotcs"/></p>
+
+<p>This case study describes our event delivery system, which is responsible for reliably collecting instrumentation data generated from Spotify applications. The data produced by this system helps us to better understand our end users and to provide them with the right music at the right time.</p>
+
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>In this case study, a “customer” refers to the development teams within Spotify that use data from the event delivery system. “End user” refers to individuals that use the Spotify service to listen to music.</p>
+</div>
+
+<section data-pdf-bookmark="Event Delivery" data-type="sect2"><div class="sect2" id="event_delivery">
+<h2>Event Delivery</h2>
+
+<p>We refer to end-user interactions as <em>events</em>. <a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery" data-type="indexterm" id="idm139660639061600"/>Every<a contenteditable="false" data-primary="events" data-secondary="event delivery in Spotify case study" data-type="indexterm" id="idm139660639058960"/> time a <a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-tertiary="event delivery" data-type="indexterm" id="idm139660639057536"/>user listens to a song, clicks an ad, or follows a playlist, we record an event. Spotify captures and publishes hundreds of billions of events (of multiple types) to our servers daily. These events have many uses at Spotify, from A/B test analysis to showing play counts to powering personalized discovery playlists. Most importantly, we pay royalties to artists based on delivered events.<sup><a data-type="noteref" href="ch13.html#ch13fn10" id="ch13fn10-marker">6</a></sup> It’s imperative that we have a reliable means of event storage and delivery.</p>
+
+<p>Before we can process event data, that data needs to be collected and delivered to persistent storage. We use an event delivery system to reliably collect and persist all published events. The event delivery system is one of the core pillars of our data infrastructure, as almost all of our data processing depends—either directly or indirectly—on the data it delivers.</p>
+
+<p>All delivered events are partitioned by type and publishing time. As shown in <a data-type="xref" href="#delivered_hourly_buckets">Figure 13-5</a>, events published during any given hour are grouped together and stored in a designated directory, called a <em>delivered hourly bucket</em>. These buckets are then grouped into event-type directories. This partitioning scheme simplifies data access control, ownership, retention, and consumption at Spotify.</p>
+
+<figure><div class="figure" id="delivered_hourly_buckets"><img alt="Delivered hourly buckets" src="assets/tsrw_1305.png"/>
+<h6><span class="label">Figure 13-5. </span>Delivered hourly buckets</h6>
+</div></figure>
+
+<p>Hourly buckets are the only interface our data jobs have with the event delivery system. As a result, we measure performance and define SLOs for our event delivery <span class="keep-together">system</span> based on how well we deliver hourly buckets per event type.</p>
+
+
+</div></section>
+
+<section data-pdf-bookmark="Event Delivery System Design and Architecture" data-type="sect2"><div class="sect2" id="event_delivery_system_design_and_architec">
+<h2>Event Delivery System Design and Architecture</h2>
+
+<p>Our hourly buckets reside on Google Cloud Storage (GCS).<a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system design and architecture" data-type="indexterm" id="idm139660639044704"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-tertiary="event delivery system design and architecture" data-type="indexterm" id="idm139660639052160"/> Early in the design process, we decided to decouple data collection from data delivery within the system. To achieve this, we used a globally distributed persistent queue, Google Cloud <a href="https://cloud.google.com/pubsub/">Pub/Sub</a>, as an intermediate layer. Once decoupled, data collection and delivery act as independent failure domains, which limits the impact of any production issues and results in a more resilient system. <a data-type="xref" href="#event_delivery_system_architecture">Figure 13-6</a> depicts the architecture of our event delivery system.</p>
+
+<figure><div class="figure" id="event_delivery_system_architecture"><img alt="Event delivery system architecture" src="assets/tsrw_1306.png"/>
+<h6><span class="label">Figure 13-6. </span>Event delivery system architecture</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Data collection" data-type="sect3"><div class="sect3" id="data_collection">
+<h3>Data collection</h3>
+
+<p>Produced events<sup><a data-type="noteref" href="ch13.html#ch13fn11" id="ch13fn11-marker">7</a></sup> are grouped by event types. <a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system design and architecture" data-tertiary="data collection" data-type="indexterm" id="idm139660639035296"/>Each event type describes a user action in the Spotify application. For example, one event type could refer to a user subscribing to a playlist, while another event type could refer to a user starting playback of a song. To ensure that separate event types don’t impact each other, the system has full event type isolation. Individual events from different event types are published to their <a href="http://bit.ly/2HcNruH">allocated topics</a> in Google Cloud Pub/Sub. Publishing is performed by our microservices, which run <a contenteditable="false" data-primary="Google Compute Engine (GCE)" data-type="indexterm" id="idm139660639032608"/>both in Spotify datacenters and on <a href="http://bit.ly/2szT2Ga">Google Compute Engine (GCE)</a>. In order to be delivered, each published event stream is handled by a dedicated instance of an ETL process.</p>
+</div></section>
+
+<section data-pdf-bookmark="Extract Transform Load" data-type="sect3"><div class="sect3" id="extract_transform_load">
+<h3>Extract Transform Load</h3>
+
+<p>The ETL process is responsible for delivering published events to <a contenteditable="false" data-primary="extract, transform, load (ETL) model" data-secondary="in Spotify case study" data-type="indexterm" id="idm139660639028736"/>the correct hourly buckets on GCS.<a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system design and architecture" data-tertiary="extract, transform, load process" data-type="indexterm" id="idm139660639030352"/> The ETL process has three steps/components:</p>
+
+<ol>
+	<li>
+	<p>A dedicated microservice consumes events from the event stream.</p>
+	</li>
+	<li>
+	<p>Another microservice assigns events to their hourly partitions.</p>
+	</li>
+	<li>
+	<p>A batch data job running on Dataproc deduplicates events from their hourly partitions and persists them to their final location on GCS.</p>
+	</li>
+</ol>
+
+<p>Each ETL component has a single responsibility, which makes the components easier to develop, test, and operate.</p>
+</div></section>
+
+<section data-pdf-bookmark="Data delivery" data-type="sect3"><div class="sect3" id="data_delivery">
+<h3>Data delivery</h3>
+
+<p>Event type delivery is dynamically enabled or disabled directly by our customers (other engineering teams at Spotify). <a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system design and architecture" data-tertiary="data delivery" data-type="indexterm" id="idm139660639020032"/>Delivery is controlled via simple configuration. In the configuration, customers define which event types should be delivered. As delivery of each event type is turned on or off, a microservice dynamically acquires and releases the Google GCE resources on which the ETL runs. The following code shows an example event type that a customer can enable/disable:</p>
+
+<pre data-type="programlisting">
+events:
+    -CollectionUpdate
+    -AddedToCollection
+    -RemovedFromCollection
+</pre>
+
+<p>When a customer enables delivery of a new event type, we don’t know in advance what quantity of resources are required to guarantee the delivery. Consequently, manually determining necessary resources is very expensive. To achieve optimal resource utilization for delivery of different event types,<a contenteditable="false" data-primary="Google Compute Engine (GCE)" data-secondary="Autoscaler" data-type="indexterm" id="idm139660639011152"/> we use GCE <a href="http://bit.ly/2kGlZN7">Autoscaler</a>.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Event Delivery System Operation" data-type="sect2"><div class="sect2" id="event_delivery_system_operation">
+<h2>Event Delivery System Operation</h2>
+
+<p>Defining and <a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-tertiary="event delivery system operation" data-type="indexterm" id="ix_dppipeevdelop"/>communicating SLOs for our <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="for Spotify event delivery system operation" data-type="indexterm" id="idm139660639008560"/>event delivery <a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system operation" data-type="indexterm" id="ix_Spotcsevdel"/>system helps in three ways:</p>
+
+<dl>
+	<dt><dfn>Design and development</dfn></dt>
+	<dd><p>When developing our systems, having clear SLOs in place gives us goals to work toward. These goals help us make pragmatic design choices and optimize our systems for simplicity.</p></dd>
+	<dt><dfn>Identify performance issues</dfn></dt>
+	<dd><p>Once our systems are deployed in production, SLOs help us to identify which parts of the system aren’t performing well and where we need to focus our efforts.</p></dd>
+	<dt><dfn>Set customer expectations</dfn></dt>
+	<dd><p>SLOs allow us to manage our customer expectations and avoid unnecessary support requests. When the limits of our system are clear to our customers, they are empowered to decide how to design, build, and operate their own systems that depend on our data.</p></dd>
+</dl>
+
+<p>We provide our customers with three SLO types for our event delivery system: timeliness, completeness, and skewness (discussed next). These SLOs are based on hourly data buckets provided by GCS. To be as objective as possible and to avoid bloating event delivery with features that have nothing to do with it, we measure all SLOs using independent external systems (e.g., Datamon, a data visualization tool explained in the next section).</p>
+
+<section data-pdf-bookmark="Timeliness" data-type="sect3"><div class="sect3" id="timeliness">
+<h3>Timeliness</h3>
+
+<p>Our timeliness SLO is defined as the <a contenteditable="false" data-primary="timeliness SLO (Spotify case study)" data-type="indexterm" id="idm139660638998912"/>maximum delay of delivering an hourly bucket of data. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="for Spotify event delivery system operation" data-tertiary="timeliness SLO" data-type="indexterm" id="idm139660638997200"/>Delivery delay is calculated as the time difference between when the bucket was delivered and the earliest theoretical time the bucket could have been closed. <a data-type="xref" href="#event_time_partitioning">Figure 13-7</a> provides an example of this delivery delay. The diagram shows the buckets for hours 12, 13, and 14. If the bucket for hour 13 was closed at 14:53, we would say the closing delay was 53 minutes.</p>
+
+<figure><div class="figure" id="event_time_partitioning"><img alt="Event time partitioning" src="assets/tsrw_1307.png"/>
+<h6><span class="label">Figure 13-7. </span>Event time partitioning</h6>
+</div></figure>
+
+<p>Timeliness of data delivery is the metric we use to evaluate the performance of our data pipelines. To measure and visualize timeliness, we use a tool called Datamon, our internal data monitoring tool that was built around the notion of hourly buckets. <a data-type="xref" href="#datamon_for_spotifyapostrophes_data_monit">Figure 13-8</a> shows a typical Datamon UI. Each green rectangle (in grayscale, the vast majority of the rectangles) represents an on-time hourly bucket. Gray rectangles (clustered here on the righthand side) indicate buckets that have not been delivered, while red rectangles (3 dark rectangles on the very top row) indicate buckets that weren’t delivered within the required SLO. Days when all hours were successfully delivered are shown as a single green rectangle.</p>
+
+<figure><div class="figure" id="datamon_for_spotifyapostrophes_data_monit"><img alt="Datamon for Spotify’s data monitoring system" src="assets/tsrw_1308.png"/>
+<h6><span class="label">Figure 13-8. </span>Datamon for Spotify’s data monitoring system</h6>
+</div></figure>
+
+<p>Downstream data jobs can’t start their processing until the hourly buckets on which they depend are delivered. Each data job periodically checks the delivery status of its dependencies before processing the data. Any delay in delivery affects the timeliness of downstream jobs. Our customers care deeply about having data delivered in a timely fashion. To help us prioritize delivery of events during an incident, our event delivery system’s timeliness SLO is split into three priority tiers: high, normal, and low. Our customers configure to the appropriate tier for their event type.</p>
+</div></section>
+
+<section data-pdf-bookmark="Skewness" data-type="sect3"><div class="sect3" id="skewness">
+<h3>Skewness</h3>
+
+<p>We define our skewness SLO as the maximal percentage of <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="for Spotify event delivery system operation" data-tertiary="skewness SLO" data-type="indexterm" id="idm139660638988384"/>data that can be misplaced on a daily basis.<a contenteditable="false" data-primary="skewness SLO (Spotify case study)" data-type="indexterm" id="idm139660638986480"/> Skewness (and completeness) are concepts specific to our event delivery system and are not present in our other data pipelines. Defining an SLO for these concepts was a key requirement when we were designing our event delivery system, as it processes (among other event types) finance-bearing events. For all other events, best-effort delivery is good enough and we don’t expose a corresponding SLO. Whether or not an event is finance-bearing is determined by customer configuration.</p>
+
+<p>To determine when an hourly bucket should be delivered, our event delivery system uses heuristics. By definition, heuristics aren’t always completely correct. As a result, undelivered events from previously delivered buckets might be delivered to an incorrect future hourly bucket. This misplaced event is referred to as a <em>skew</em>. A skew can negatively impact jobs, since they might first underreport and then overreport values for some time periods. <a data-type="xref" href="#delivery_of_skewed_data">Figure 13-9</a> shows an example of skewed data delivery.</p>
+
+<figure><div class="figure" id="delivery_of_skewed_data"><img alt="Delivery of skewed data" src="assets/tsrw_1309.png"/>
+<h6><span class="label">Figure 13-9. </span>Delivery of skewed data</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Completeness" data-type="sect3"><div class="sect3" id="completeness">
+<h3>Completeness</h3>
+
+<p>Events can be lost in a distributed system in many ways—for example, a new release of our software may contain a bug, a cloud service may go down, or a developer might accidentally delete some persisted events.<a contenteditable="false" data-primary="completeness SLO (Spotify case study)" data-type="indexterm" id="idm139660638972080"/> To ensure we are alerted about data loss, we measure completeness. We define completeness as the percentage of events that are delivered after they are successfully published to the system.</p>
+
+<p>We report on skewness and completeness daily. To measure these values, we use an internal auditing system that compares the counts for all published and delivered events. Any mismatch is reported, and we take appropriate action.</p>
+
+<p>In order to have timeliness, skewness, and completeness SLO guarantees, we assign events to our hourly buckets at the time they were received at our servers, not when they were produced on the clients. If our users are in offline mode, produced events can be buffered for up to 30 days on the clients before being published. Additionally, users can modify the system time on their device, which can result in inaccurately timestamped events. For these reasons, we use the timestamp from Spotify servers.</p>
+
+<p>We don’t provide any SLOs regarding the data quality or accuracy of events delivered via our event delivery system. We observed that in a majority of cases, quality depends on the content of each event, which is populated by the business logic of our customers. To allow our system to scale with the number of customers, we keep it focused exclusively on delivering data. In this regard, we use the analogy that event delivery should behave like a postal service: your mail should be delivered on time, intact, and unopened. We leave the responsibility of providing quality SLOs to our internal teams that own the business logic and therefore understand the contents of the data.<a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-startref="ix_dppipeevdelop" data-tertiary="event delivery system operation" data-type="indexterm" id="idm139660638962704"/><a contenteditable="false" data-primary="Spotify case study" data-secondary="event delivery system operation" data-startref="ix_Spotcsevdel" data-type="indexterm" id="idm139660638979056"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Customer Integration and Support" data-type="sect2"><div class="sect2" id="customer_integration_and_support">
+<h2>Customer Integration and Support</h2>
+
+<p>Many Spotify teams interact with the event delivery system daily.<a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-type="indexterm" id="ix_Spotcscus"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-tertiary="customer integration and support" data-type="indexterm" id="ix_dppipecsSPcus"/> To encourage adoption and decrease the learning curve, we took the following steps to simplify user interaction with the event delivery system:</p>
+
+<dl>
+	<dt>Event delivery as a fully managed service</dt>
+	<dd>
+	<p>We wanted to avoid exposing the complexity of the system to our customers, allowing them to focus on the specific problems they’re trying to solve. We strived to hide any system complexities behind a well-defined and easy-to-understand API.</p>
+	</dd>
+	<dt>Limited functionality</dt>
+	<dd>
+	<p>To keep our APIs simple, we support only a limited set of functionalities. Events can be published only in a specific in-house format, and can be delivered only to hourly buckets with a single serialization format. These simple APIs cover the majority of our use cases.</p>
+	</dd>
+	<dt>Delivery of each event needs to be explicitly enabled</dt>
+	<dd>
+	<p>When a customer enables delivery of an event, they define whether the event is financial-bearing and its associated timeliness requirements. Furthermore, event ownership needs to be explicitly defined as part of the enabling process. We strongly believe that holding our internal teams accountable for events they <span class="keep-together">produce</span> results in higher data quality. Explicit ownership of the events also gives us a clear channel of communication during incidents.</p>
+	</dd>
+</dl>
+
+<section data-pdf-bookmark="Documentation" data-type="sect3"><div class="sect3" id="documentation">
+<h3>Documentation</h3>
+
+<p>No matter how simple interacting with the system is, good documentation is required to provide a good customer experience. <a contenteditable="false" data-primary="documentation" data-secondary="Spotify case study, customer integration and support" data-type="indexterm" id="idm139660638965328"/><a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-tertiary="documentation" data-type="indexterm" id="idm139660638966928"/>Subpar and stale documentation is a common problem in fast-paced companies like Spotify. To address this, we treat our documentation like any other software product: all support requests that come to our team are treated either as issues with our documentation or as issues in the actual product. Most support requests are related to the system’s public APIs. Some examples of questions we try to answer when writing our documentation include:</p>
+
+<ul>
+	<li>
+	<p>How is the delivery of an event type enabled?</p>
+	</li>
+	<li>
+	<p>Where is the data delivered?</p>
+	</li>
+	<li>
+	<p>How is the data partitioned?</p>
+	</li>
+	<li>
+	<p>What are our SLOs?</p>
+	</li>
+	<li>
+	<p>What kind of support should our customers expect during incidents?</p>
+	</li>
+</ul>
+
+<p>Our goal is to minimize the amount of support requests we receive as our customer base grows.</p>
+</div></section>
+
+<section data-pdf-bookmark="System monitoring" data-type="sect3"><div class="sect3" id="system_monitoring">
+<h3>System monitoring</h3>
+
+<p>Monitoring our SLOs provides high-level insights into the general health of the system.<a contenteditable="false" data-primary="monitoring" data-secondary="system monitoring in Spotify case study" data-type="indexterm" id="idm139660638940064"/><a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-tertiary="system monitoring" data-type="indexterm" id="idm139660638941872"/> Our reliable catch-all monitoring solution ensures we always get alerted when something goes wrong. The main problem with using an SLO violation as criteria for monitoring is that we get alerted <em>after</em> our customers have been affected. To avoid this, we need sufficient operational monitoring of our system to resolve or mitigate issues before an SLO is broken.</p>
+
+<p>We monitor the various components of our system separately, starting with basic system metrics, then building to more complex ones. For example, we monitor CPU usage as a signal for instance health. CPU usage is not always the most critical resource, but it works well as a basic signal.</p>
+
+<p>Sometimes system monitoring is insufficient when we’re trying to understand and fix production issues. To supplement our monitoring data, we also maintain application logs. These logs contain important information related to the operation and health of the component they describe. We take great care to ensure we gather only the correct amount of logging data, as it’s easy for irrelevant logs to drown useful ones. For example, a bad logging implementation might log all the incoming requests for a high-volume component that deals with incoming requests. Assuming that most of the requests are similar, logging every request doesn’t add much value. Additionally, when too many requests are logged, it becomes difficult to find other log entries, disk fills up faster, and the overall performance of our service starts to degrade. A better approach is to either rate-limit the amount of logged requests, or to log only interesting requests (like the ones that result in unhandled exceptions).</p>
+
+<p>Debugging components in production by reading through application logs is challenging, and should be a last resort.</p>
+</div></section>
+
+<section data-pdf-bookmark="Capacity planning" data-type="sect3"><div class="sect3" id="capacity_planning">
+<h3>Capacity planning</h3>
+
+<p>Reliable round-the-clock operation of the event delivery system requires the correct amount of allocated resources, especially<a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-tertiary="capacity planning" data-type="indexterm" id="idm139660638931744"/> since the components<a contenteditable="false" data-primary="capacity planning" data-secondary="in Spotify case study" data-type="indexterm" id="idm139660638933264"/> are deployed into a single GCP project and they share a common quota pool. We use capacity planning to determine how many resources each system component needs.</p>
+
+<p>For the majority of our system components, capacity planning is based on CPU usage. We provision each component to have 50% of CPU usage during peak hours. This provision acts as a safety margin that allows our system to handle unexpected bursts of traffic. When Spotify ran its own datacenters, we provided each component with static resources. This led to a waste of resources during off-peak hours and an inability to handle large bursts in traffic.<a contenteditable="false" data-primary="autoscaling" data-secondary="in Spotify case study" data-type="indexterm" id="idm139660638933744"/><a contenteditable="false" data-primary="Google Compute Engine (GCE)" data-secondary="Autoscaler" data-type="indexterm" id="idm139660638928960"/> To improve resource utilization, we use GCE Autoscaler for some of our stateless components.</p>
+
+<p>We had some growing pains in the early days of implementing Autoscaler; under certain conditions, Autoscaler can cause failures. For example, we use CPU usage as a metric to perform autoscaling. Autoscaler itself depends on a strong correlation between CPU usage and the amount of work performed by each component instance. If the relationship is broken—either through the addition of CPU-hungry daemons to each component instance or due to component instances extensively burning CPU without doing any work—Autoscaler will start far too many instances.</p>
+
+<p>When Autoscaler is presented with constantly increasing CPU usage that has no correlation with the amount of work performed, it will scale indefinitely until it uses all of the resources it can find. To prevent Autoscaler from using up all of our quota, we implemented some workarounds:</p>
+
+<ul>
+	<li>
+	<p>We limit the maximum number of instances Autoscaler can use.</p>
+	</li>
+	<li>
+	<p>We heavily restrict the CPU usage of all daemons running on an instance.</p>
+	</li>
+	<li>
+	<p>We aggressively throttle a component’s CPU usage as soon as we detect that no useful work is being done.</p>
+	</li>
+</ul>
+
+<p>Even when using Autoscaler, we need to conduct capacity planning. We need to ensure that we have enough quota, and that the maximum number of instances Autoscaler can use is set high enough to serve traffic during peaks, but low enough to limit the impact of “runaway” autoscaling.</p>
+</div></section>
+
+<section data-pdf-bookmark="Development process" data-type="sect3"><div class="sect3" id="development_process">
+<h3>Development process</h3>
+
+<p>To ship new features and improvements swiftly, we developed the event delivery system (shown in <a data-type="xref" href="#development_process-id00071">Figure 13-10</a>) following the <a href="http://bit.ly/2J9F19p">continuous integration</a> and <a href="http://bit.ly/2snAaey">continuous delivery</a> (CI/CD) process.<a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-tertiary="development process" data-type="indexterm" id="idm139660638920720"/><a contenteditable="false" data-primary="development" data-secondary="development process in Spotify case study" data-type="indexterm" id="idm139660638913024"/> According to this process, valid, proven, or reviewed system changes are deployed as soon as they’re made. Having sufficient test coverage is a prerequisite for each change to be successfully deployed without negatively impacting our SLOs.</p>
+
+<p>We write tests following a <a href="http://bit.ly/2kEMSRM">“testing pyramid” philosophy</a>. This <a contenteditable="false" data-primary="testing" data-secondary="testing pyramid philosophy in Spotify development process" data-type="indexterm" id="idm139660638911376"/>means that for each of our components, we have plenty of unit tests that focus on components’ inner workings—in addition to a smaller number of integration tests that focus on components’ public API. At the highest level of the testing pyramid, we have a system-wide, end-to-end test. In this end-to-end test, all components are treated as black boxes so the system in the test environment resembles the one in production as much as possible.</p>
+
+<p>After initial development, every change goes through a peer review. As a part of the review process, all tests are executed on a shared CI/CD server, and the results are presented to the developers. Changes can be merged only after the reviewers approve the change and all the tests have successfully passed. As soon as the change is merged, the deployment process is triggered.</p>
+
+<p>The event delivery system is a critical component in Spotify’s infrastructure. If it stopped delivering data, all data processing in Spotify would stall. For this reason, we decided to take a more conservative approach to deployments and deploy each change in stages. We require a manual approval before a deployment can move from one stage to another.</p>
+
+<figure><div class="figure" id="development_process-id00071"><img alt="Development process" src="assets/tsrw_1310.png"/>
+<h6><span class="label">Figure 13-10. </span>Development process</h6>
+</div></figure>
+
+<p>During the first deployment stage, the change is deployed to the staging environment. This low-risk staging system doesn’t handle production traffic. For testing purposes, a representative fraction of production traffic is mirrored in the staging system, which is a replica of the system running in production. At the second deployment stage, the change is deployed to a small subset of production instances, or canaries. We perform a full production deployment only after we ensure that everything went well, both in staging and canaries (see <a data-type="xref" href="ch16.html#canarying_releases">Chapter 16</a>).</p>
+</div></section>
+
+<section data-pdf-bookmark="Incident handling" data-type="sect3"><div class="sect3" id="incident_handling">
+<h3>Incident handling</h3>
+
+<p>When dealing with an incident, our first priority is to mitigate the damage and return the system to a stable previous state.<a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-tertiary="incident handling" data-type="indexterm" id="idm139660638896272"/><a contenteditable="false" data-primary="incidents" data-secondary="incident handling in Spotify case study" data-type="indexterm" id="idm139660638904784"/> To avoid making the situation worse, we refrain from deploying any major changes to our components during an incident. The exception to this rule is if we conclude that the incident was caused by recently deployed new code. In such cases, we immediately roll the system back to a previous working version.</p>
+
+<p>Today, the most common operational failures we encounter are caused either by a system malfunction (e.g., we introduce a software bug or a performance regression) or a failure with an external service on which we depend (e.g., an update to a service API isn’t backward-compatible or a service breaks its SLO). We use many battle-tested Google Cloud and internal Spotify services, like Cloud Pub/Sub and <a href="https://github.com/spotify/helios">Helios</a>, to speed up development of our system and to reduce our operational load. In the event of an incident caused by an external service, we have a dedicated on-call team<sup><a data-type="noteref" href="ch13.html#ch13fn12" id="ch13fn12-marker">8</a></sup> who provides support. One drawback of using external services is that we can’t do much to mitigate the problem ourselves. Furthemore, communicating the issue to a third party takes valuable time during an incident. Nevertheless, we believe that the ability to delegate responsibility is worth the occasional feeling of powerlessness.</p>
+
+<p>Unexpected system behavior under heavy load is another common source of operational failure. Testing services under exact production conditions is impossible, so it’s hard to predict all of the edge cases that can happen. It can also be difficult to emulate the load our components face in production. Heavy load in combination with unforeseen edge cases can lead to interesting failure scenarios, such as the Autoscaler example described earlier in <a data-type="xref" href="#capacity_planning">“Capacity planning”</a>.</p>
+
+<p>Operational system failures can cause our SLOs to break. If our data freshness SLO is broken, no customer action is expected; customers must simply wait for their data to arrive. However, if our skewness or completeness SLOs are breached, we might need to involve customers, as data quality is compromised. When we detect either completeness or skewness issues, the impacted events require reprocessing to be delivered correctly:</p>
+
+<ul>
+	<li>
+	<p>To deal with incompleteness, events need to be redelivered from the last checkpoint known to be good.</p>
+	</li>
+	<li>
+	<p>To deal with excessive skewness, already delivered events are reshuffled and assigned to their correct hourly buckets.</p>
+	</li>
+</ul>
+
+<p>Both redelivery and reshuffling of events are done manually. After the delivered events are modified, we strongly advise our customers to reprocess them to produce data of sufficient quality. <a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-startref="ix_dppipecsSPcus" data-tertiary="customer integration and support" data-type="indexterm" id="idm139660638891712"/><a contenteditable="false" data-primary="Spotify case study" data-secondary="customer integration and support" data-startref="ix_Spotcscus" data-type="indexterm" id="idm139660638886688"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Summary" data-type="sect2"><div class="sect2" id="summary-id00072">
+<h2>Summary</h2>
+
+<p>Spotify’s event delivery system has evolved over the years. Because previous iterations were far less reliable, our engineers were paged every few nights. We spent the majority of our development sprints on incident remediations and postmortems. When designing the current incarnation, we focused on building a modularized system that does one core thing well: deliver events. Additionally, we wanted to provide event delivery as a product to the rest of Spotify. To achieve this, we needed to define and meet SLOs so that we could set clear expectations for our customers.</p>
+
+<p>We employ a range of strategies to keep the service up and running—from well-documented on-call procedures to using well-proven external services (such as Google Cloud Pub/Sub). Furthermore, a single team is responsible for the development and operation of the system throughout its entire lifecycle. This development structure allows us to use the team experience we gain from maintaining the system to continually improve it.</p>
+
+<p>As a result of these efforts, we now have a reliable system that allows us to focus our time on meeting more ambitious completeness, skewness, and timeliness SLOs. This results in better usability and a better overall customer experience.<a contenteditable="false" data-primary="Spotify case study" data-startref="ix_Spotcs" data-type="indexterm" id="idm139660638880096"/><a contenteditable="false" data-primary="data processing pipelines" data-secondary="case study, Spotify" data-startref="ix_dppipecsSP" data-type="indexterm" id="idm139660638873568"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00073">
+<h1>Conclusion</h1>
+
+<p>Applying SRE best practices to pipelines can help you make smart design choices and develop automation tools so that pipelines are easy to operate, scale more effectively, and are more reliable. Spotify’s event delivery system is an example of a pipeline built and operated with core SRE principles in mind, using a variety of technologies—from in-house, Google Cloud, and third parties—chosen to meet the customer’s need for timely data processing. Without proper care for operational best practices, pipelines may be more prone to failure and require a lot of manual work, especially during periods of growth, migrations, feature launches, or cleanup after outages. As with any complex system design, it is important to know your requirements and the SLOs you have chosen to keep, assess the available technology, and document the design and how to perform common tasks.<a contenteditable="false" data-primary="data processing pipelines" data-startref="ix_dppipe" data-type="indexterm" id="idm139660638880640"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch13fn1"><sup><a href="ch13.html#ch13fn1-marker">1</a></sup> See Umeshwar Dayal et al., “Data Integration Flows for Business Intelligence,” in <em>Proceedings of the 12th International Conference on Extending Database Technology: Advances in Database Technology</em> (New York: ACM, 2000), 1–11.</p><p data-type="footnote" id="ch13fn2"><sup><a href="ch13.html#ch13fn2-marker">2</a></sup> For more details about factoring dependencies into your service’s reliability, see Ben Treynor et al., “The Calculus of Service Availability,” <em>ACM Queue</em> 15, no. 2 (2017), <a href="https://queue.acm.org/detail.cfm?id=3096459"><em class="hyperlink">https://queue.acm.org/detail.cfm?id=3096459</em></a>.</p><p data-type="footnote" id="ch13fn3"><sup><a href="ch13.html#ch13fn3-marker">3</a></sup> <a href="https://cloud.google.com/dataproc/">Cloud Dataproc</a> is a fully managed cloud service for running Apache Spark and Apache Hadoop clusters.</p><p data-type="footnote" id="ch13fn4"><sup><a href="ch13.html#ch13fn4-marker">4</a></sup> <a href="https://cloud.google.com/dataflow/">Cloud Dataflow</a> is a fully managed cloud service for transforming data in stream and batch modes, with equal reliability and expressiveness.</p><p data-type="footnote" id="ch13fn5"><sup><a href="ch13.html#ch13fn5-marker">5</a></sup> <a href="https://cloud.google.com/dataflow/docs/concepts/regional-endpoints">Regional endpoints</a> control workers, and store and handle metadata for a Cloud Dataflow job.</p><p data-type="footnote" id="ch13fn10"><sup><a href="ch13.html#ch13fn10-marker">6</a></sup> Delivered events are events that have been delivered to persistent storage and are exposed in such a way that they can be consumed by customers of the event delivery system (e.g., data jobs).</p><p data-type="footnote" id="ch13fn11"><sup><a href="ch13.html#ch13fn11-marker">7</a></sup> Produced events are both the events that have been delivered and the events that are currently flowing through the event delivery system.</p><p data-type="footnote" id="ch13fn12"><sup><a href="ch13.html#ch13fn12-marker">8</a></sup> The external service provider guarantees SLAs and has its own on-call team to ensure the product is meeting these SLAs.</p></div></div></section></body></html>

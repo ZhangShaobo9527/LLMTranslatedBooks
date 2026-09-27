@@ -1,0 +1,370 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Canarying Releases</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 16. Canarying Releases" data-type="chapter" epub:type="chapter"><div class="chapter" id="canarying_releases">
+<h1><span class="label">Chapter 16. </span>Canarying Releases</h1>
+
+<p class="byline">By Alec Warner and Štěpán Davidovič<br/>
+with Alex Hidalgo, Betsy Beyer, Kyle Smith, and Matt Duftler</p>
+
+<p><em>Release engineering</em> is a term we use to describe all the processes and artifacts related to getting code from a repository into a running production system.<a contenteditable="false" data-primary="canarying releases" data-type="indexterm" id="ix_canrel"/><a contenteditable="false" data-primary="release engineering" data-type="indexterm" id="idm139660638275264"/> Automating releases can help avoid many of the traditional pitfalls associated with release engineering: the toil of repetitive and manual tasks, the inconsistency of a nonautomated process, the inability of knowing the exact state of a rollout, and the difficulty of rolling back. <a contenteditable="false" data-primary="continuous integration and continuous delivery (CI/CD)" data-type="indexterm" id="idm139660638274080"/>The automation of release engineering has been well covered in other literature—for example, books on continuous integration and continuous delivery <span class="keep-together">(CI/CD)</span>.<sup><a data-type="noteref" href="ch16.html#ch16fn1" id="ch16fn1-marker">1</a></sup></p>
+
+<p>We define <em>canarying</em> as a partial and time-limited deployment of a change in a service and its evaluation. This evaluation helps us decide whether or not to proceed with the rollout. The part of the service that receives the change is “the canary,” and the remainder of the service is “the control.” The logic underpinning this approach is that usually the canary deployment is performed on a <em>much</em> smaller subset of production, or affects a much smaller subset of the user base than the control portion. Canarying is effectively an A/B testing process.<a contenteditable="false" data-primary="releases" data-secondary="canarying" data-see="canarying releases" data-type="indexterm" id="idm139660638268160"/></p>
+
+<p>We’ll first cover the basics of release engineering and the benefits of automating releases to establish a shared vocabulary.</p>
+
+<section class="pagebreak-before" data-pdf-bookmark="Release Engineering Principles" data-type="sect1"><div class="sect1" id="release_engineering_principles">
+<h1>Release Engineering Principles</h1>
+
+<p>The basic principles of release engineering <a contenteditable="false" data-primary="release engineering" data-secondary="principles" data-type="indexterm" id="ix_relengr"/>are as <a contenteditable="false" data-primary="canarying releases" data-secondary="release engineering principles" data-type="indexterm" id="ix_canrelreprin"/>follows:</p>
+
+<dl>
+	<dt>Reproducible builds</dt>
+	<dd>
+	<p>The build system should be able to take the build inputs (source code, assets, and so on) and produce repeatable artifacts. <a contenteditable="false" data-primary="reproducible builds" data-type="indexterm" id="idm139660638255808"/>The code built from the same inputs last week should produce the same output this week.</p>
+	</dd>
+	<dt>Automated builds</dt>
+	<dd>
+	<p>Once code is checked in, automation should produce build artifacts and upload them to a storage system.<a contenteditable="false" data-primary="automated builds" data-type="indexterm" id="idm139660638250896"/></p>
+	</dd>
+	<dt>Automated tests</dt>
+	<dd>
+	<p>Once the automated build system builds artifacts, a test suite of some kind should ensure they function.<a contenteditable="false" data-primary="testing" data-secondary="automated tests" data-type="indexterm" id="idm139660638250384"/></p>
+	</dd>
+	<dt>Automated deployments</dt>
+	<dd>
+	<p>Deployments should be performed by computers, not humans.<a contenteditable="false" data-primary="deployments" data-secondary="automated" data-type="indexterm" id="idm139660638246304"/></p>
+	</dd>
+	<dt>Small deployments</dt>
+	<dd>
+	<p>Build artifacts should contain small, self-contained changes.<a contenteditable="false" data-primary="deployments" data-secondary="small" data-type="indexterm" id="idm139660638243552"/></p>
+	</dd>
+</dl>
+
+<p>These principles provide specific benefits to operators:</p>
+
+<ul>
+	<li>
+	<p>Reducing operational load on engineers by removing manual and repetitive tasks.<a contenteditable="false" data-primary="operations" data-secondary="benefits provided by release engineering principles" data-type="indexterm" id="idm139660638240368"/></p>
+	</li>
+	<li>
+	<p>Enforcing peer review and version control, since automation is generally <span class="keep-together">code-based</span>.</p>
+	</li>
+	<li>
+	<p>Establishing consistent, repeatable, automated processes, resulting in fewer <span class="keep-together">mistakes</span>.</p>
+	</li>
+	<li>
+	<p>Enabling monitoring of the release pipeline, allowing for measurement and continuous improvement <a contenteditable="false" data-primary="monitoring" data-secondary="of release pipeline" data-type="indexterm" id="idm139660638233952"/>by addressing questions like:</p>
+
+	<ul>
+		<li>
+		<p>How long does it take a release to reach production?</p>
+		</li>
+		<li>
+		<p>How often are releases successful? A successful release is a release made available to customers with no severe defects or SLO violations.</p>
+		</li>
+		<li>
+		<p>What changes can be made to catch defects as early in the pipeline as <span class="keep-together">possible</span>?</p>
+		</li>
+		<li>
+		<p>Which steps can be parallelized or further optimized?</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>CI/CD coupled with release automation <a contenteditable="false" data-primary="continuous integration and continuous delivery (CI/CD)" data-secondary="coupled with release automation, virtuous cycle of" data-type="indexterm" id="idm139660638228528"/>can deliver continuous improvements to the development cycle, as shown in <a data-type="xref" href="#virtuous_cycle_of_cisoliduscd">Figure 16-1</a>. When releases are automated, you can release more often. For software with a nontrivial rate of change, releasing more often means fewer changes are bundled in any given release artifact. Smaller, self-contained release artifacts make it cheaper and easier to roll back any given release artifact in the event of a bug. Quicker release cadences mean that bug fixes reach users faster.</p>
+
+<figure><div class="figure" id="virtuous_cycle_of_cisoliduscd"><img alt="The virtuous cycle of CI/CD" src="assets/tsrw_1601.png"/>
+<h6><span class="label">Figure 16-1. </span>The virtuous cycle of CI/CD</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Balancing Release Velocity and Reliability" data-type="sect1"><div class="sect1" id="balancing_release_velocity_and_reliabilit">
+<h1>Balancing Release Velocity and Reliability</h1>
+
+<p>Release velocity (hereafter called “shipping”) and <a contenteditable="false" data-primary="release engineering" data-secondary="principles" data-startref="ix_relengr" data-type="indexterm" id="idm139660638221424"/>reliability<a contenteditable="false" data-primary="canarying releases" data-secondary="release engineering principles" data-startref="ix_canrelreprin" data-type="indexterm" id="idm139660638220000"/> are often treated as opposing goals.<a contenteditable="false" data-primary="canarying releases" data-secondary="balancing release velocity and reliability" data-type="indexterm" id="idm139660638218176"/><a contenteditable="false" data-primary="reliability" data-secondary="balancing release velocity and" data-type="indexterm" id="idm139660638216784"/> The business wants to ship new features and product improvements as quickly as possible with 100% reliability! While that goal is not achievable (as 100% is never the right target for reliability; see <a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a>), it is possible to ship as quickly as possible while meeting specific reliability goals for a given product.</p>
+
+<p>The first step toward this goal is understanding the impact of shipping on software reliability. In Google’s experience, a majority of incidents are triggered by binary or configuration pushes (see <a data-type="xref" href="app03.html#results_of_postmortem_analysis">Appendix C</a>). Many kinds of software changes can result in a system failure—for example, changes in the behavior of an underlying component, changes in the behavior of a dependency (such as an API), or a change in configuration like DNS.</p>
+
+<p>Despite the risk inherent in making changes to software, these changes—bug fixes, security patches, and new features—are necessary for the business to succeed. Instead of advocating against change, you can use the concept of SLOs and error budgets to measure the impact of releases on your reliability. Your goal should be to ship software as quickly as possible while meeting the reliability targets your users expect. <span class="keep-together">The following</span> section discusses how you can use a canary process to achieve these goals.</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="separating_components_that_change_at_diff">
+<h5>Separating Components That Change at Different Rates</h5>
+
+<p>Your services are composed of multiple components with different rates of change: binaries or code, environments such as JVM, kernel/OS, libraries, service config or flags, feature/experiment config, and user config.<a contenteditable="false" data-primary="components" data-secondary="separating components that change at different rates" data-type="indexterm" id="idm139660638207872"/><a contenteditable="false" data-primary="canarying releases" data-secondary="separating components that change at different rates" data-type="indexterm" id="idm139660638207120"/> If you have only one way to deploy changes, actually allowing these components to change independently may be <span class="keep-together">difficult</span>.</p>
+
+<p>Feature flag or experiment frameworks like <a href="http://bit.ly/2H9ofW9">Gertrude</a>, <a href="http://bit.ly/2LNpu0B">Feature</a>, and <a href="http://bit.ly/2kIx3JO">PlanOut</a> allow you to separate feature launches from binary releases.<a contenteditable="false" data-primary="features" data-secondary="separating feature launches from binary releases" data-type="indexterm" id="idm139660638200496"/> If a binary release includes multiple features, you can enable them one at a time by changing the experiment configuration. That way, you don’t have to batch all of these changes into one big change or perform an individual release for each feature. More importantly, if only some of the new features don’t behave as expected, you can selectively disable those features until the next build/release cycle can deploy a new binary.</p>
+
+<p>You can apply the principles of feature flags/experiments to any type of change to your service, not just software releases.</p>
+</div></aside>
+</div></section>
+
+<section data-pdf-bookmark="What Is Canarying?" data-type="sect1"><div class="sect1" id="what_is_canaryingquestion_mark">
+<h1>What Is Canarying?</h1>
+
+<p>The term <em>canarying</em> refers to the <a href="http://bit.ly/2kIwYWw">practice of bringing canaries into coal mines to determine if the mine is safe for humans</a>. Because the birds are smaller and breathe faster than humans, they are intoxicated by dangerous gases faster than their human handlers.<a contenteditable="false" data-primary="canarying releases" data-secondary="canarying, defined" data-type="indexterm" id="idm139660638196032"/></p>
+
+<p>Even if your release pipeline is fully automated, you won’t be able to detect all release-related defects until real traffic is hitting the service. By the time a release is ready to be deployed to production, your testing strategy should instill reasonable confidence that the release is safe and works as intended. However, your test environments aren’t 100% identical to production, and your tests probably don’t cover 100% of possible scenarios. Some defects will reach production. If a release deploys instantly everywhere, any defects will deploy in the same way.</p>
+
+<p>This scenario might be acceptable if you can detect and resolve the defects quickly. However, you have a safer alternative: initially expose just some of your production traffic to the new release using a canary. Canarying allows the deployment pipeline to detect defects as quickly as possible with as little impact to your service as possible.</p>
+</div></section>
+
+<section data-pdf-bookmark="Release Engineering and Canarying" data-type="sect1"><div class="sect1" id="release_engineering_and_canarying">
+<h1>Release Engineering and Canarying</h1>
+
+<p>When deploying a new version of a system or its key components (such as configuration or data), we bundle changes—changes that typically have not been exposed to real-world inputs, such as user-facing traffic or batch processing of user-supplied data.<a contenteditable="false" data-primary="canarying releases" data-secondary="release engineering and canarying" data-type="indexterm" id="idm139660638193568"/><a contenteditable="false" data-primary="release engineering" data-secondary="and canarying" data-type="indexterm" id="idm139660638190096"/> Changes bring new features and capabilities, but they also bring risk that is exposed at the time of deployment. Our goal is to mitigate this risk by testing each change on a small portion of traffic to gain confidence that it has no ill effects. We will discuss evaluation processes later in this chapter.</p>
+
+<p>The canary process also lets us gain confidence in our change as we expose it to larger and larger amounts of traffic. Introducing the change to actual production traffic also enables us to identify problems that might not be visible in testing frameworks like unit testing or load testing, which are often more artificial.</p>
+
+<p>We will examine the process of canarying and its evaluation using a worked example, while steering clear of a deep dive into statistics. Instead, we focus on the process as a whole and typical practical considerations. We use a simple application on App Engine to illustrate various aspects of the rollout.</p>
+
+<section data-pdf-bookmark="Requirements of a Canary Process" data-type="sect2"><div class="sect2" id="requirements_of_a_canary_process">
+<h2>Requirements of a Canary Process</h2>
+
+<p>Canarying for a given service requires <a contenteditable="false" data-primary="canarying releases" data-secondary="release engineering and canarying" data-tertiary="requirements of canary process" data-type="indexterm" id="idm139660638187136"/>specific capabilities:</p>
+
+<ul>
+	<li>
+	<p>A method to deploy the canary change to a subset of the population of the <span class="keep-together">service</span>.<sup><a data-type="noteref" href="ch16.html#ch16fn2" id="ch16fn2-marker">2</a></sup></p>
+	</li>
+	<li>
+	<p>An evaluation process to evaluate if the canaried change is “good” or “bad.”</p>
+	</li>
+	<li>
+	<p>Integration of the canary evaluations into the release process.</p>
+	</li>
+</ul>
+
+<p>Ultimately, the canary process demonstrates value when canaries detect bad release candidates with high confidence, and identify good releases without false positives.</p>
+</div></section>
+
+<section data-pdf-bookmark="Our Example Setup" data-type="sect2"><div class="sect2" id="our_example_setup">
+<h2>Our Example Setup</h2>
+
+<p>We’ll use a simple frontend web service application to illustrate some canarying concepts. <a contenteditable="false" data-primary="canarying releases" data-secondary="release engineering and canarying" data-tertiary="example setup" data-type="indexterm" id="idm139660638171856"/>The application offers an HTTP-based API that consumers can use to manipulate various data (simple information like the price of a product). The example application has some tunable parameters that we can use to simulate various production symptoms, to be evaluated by the canary process. For example, we can make the application return errors for 20% of requests, or we can stipulate that 5% of requests take at least two seconds.</p>
+
+<p>We illustrate the canary process using an application deployed on Google App Engine, but the principles apply to any environment. While the example application is fairly contrived, in real-world scenarios, similar applications share common signals with our example that can be used in a canary process.</p>
+
+<p>Our example service has two potential versions: <em>live</em> and <em>release candidate</em>. The live version is the version currently deployed in production, and the release candidate is a newly built version. <a contenteditable="false" data-primary="release candidate version" data-type="indexterm" id="idm139660638165616"/><a contenteditable="false" data-primary="live version" data-type="indexterm" id="idm139660638171088"/>We use these versions to illustrate various rollout concepts and how to implement canaries to make the rollout process safer.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="A Roll Forward Deployment Versus a Simple Canary Deployment" data-type="sect1"><div class="sect1" id="roll_forward_deployment_versus_a_simple_c">
+<h1>A Roll Forward Deployment Versus a Simple Canary Deployment</h1>
+
+<p>Let’s first look at a deployment with no canary process, so we can later compare it to a canaried deployment in terms of error budget savings and general impact when a breakage occurs. <a contenteditable="false" data-primary="canarying releases" data-secondary="roll forward deployment vs. simple canary deployment" data-type="indexterm" id="ix_canrelrollfwd"/><a contenteditable="false" data-primary="roll forward deployment vs. simple canary deployment" data-type="indexterm" id="ix_rollfwd"/><a contenteditable="false" data-primary="deployments" data-secondary="roll forward deployment vs. simple canary deployment" data-type="indexterm" id="ix_deployrfcan"/>Our deployment process features a development environment. Once we feel the code is working in the development environment, we deploy that version in the production environment.</p>
+
+<p>Shortly after our deployment, our monitoring starts reporting a high rate of errors (see <a data-type="xref" href="#high_rate_of_errors_after_deployment">Figure 16-2</a>, where we intentionally configured our sample application to fail 20% of requests to simulate a defect in the example service). For the sake of this example, let’s say that our deployment process doesn’t provide us the option to roll back to a previously known good configuration. Our best option to fix the errors is to find defects in the production version, patch them, and deploy a new version during the outage. This course of action will almost certainly prolong the user impact of the bug.</p>
+
+<figure><div class="figure" id="high_rate_of_errors_after_deployment"><img alt="High rate of errors after deployment" src="assets/tsrw_1602.png"/>
+<h6><span class="label">Figure 16-2. </span>High rate of errors after deployment</h6>
+</div></figure>
+
+<p>To improve upon this initial deployment process, we can utilize canaries in our rollout strategy to reduce the impact of a bad code push. Instead of deploying to production all at once, we need a way to create a small segment of production that runs our release candidate. Then we can send a small portion of the traffic to that segment of production (the canary) and compare it against the other segment (the control). Using this method, we can spot defects in the release candidate before all of production is affected.</p>
+
+<p>The simple canary deployment in our App Engine example <a href="http://bit.ly/2syNcVx">splits traffic</a> between specific labeled versions of our application. You can split traffic using App Engine, or any number of other methods, such as backend weights on a load balancer, proxy configurations, or round-robin DNS records.</p>
+
+<p><a data-type="xref" href="#error_rate_of_canary_deploymentsemicolon">Figure 16-3</a> shows that the impact of the change is greatly reduced when we use a canary; in fact, the errors are barely visible! This raises an interesting issue: the canary evaluation is difficult to see and track compared to the overall traffic trend.</p>
+
+<figure><div class="figure" id="error_rate_of_canary_deploymentsemicolon"><img alt="Error rate of canary deployment; because the canary population is a small subset of production, the overall error rate is reduced" src="assets/tsrw_1603.png"/>
+<h6><span class="label">Figure 16-3. </span>Error rate of canary deployment; because the canary population is a small subset of production, the overall error rate is reduced</h6>
+</div></figure>
+
+<p>To get a clearer picture of the errors we need to track at a reasonable scale, we can look at our key metric (HTTP response codes) by App Engine application version, as shown in <a data-type="xref" href="#http_response_codes_by_app_engine_version">Figure 16-4</a>. When we look at per-version breakdown, we can plainly see the errors the new version introduces. We can also observe from <a data-type="xref" href="#http_response_codes_by_app_engine_version">Figure 16-4</a> that the live version is serving very few errors.</p>
+
+<p>We can now tune our deployment to automatically react based on the HTTP error rate by App Engine version. If the error rate of the canary metric is too far from the control error rate, this signals the canary deployment is “bad.” In response, we should pause and roll back the deployment, or perhaps contact a human to help troubleshoot the issue. If the error ratios are similar, we can proceed with the deployment as normal. In the case of <a data-type="xref" href="#http_response_codes_by_app_engine_version">Figure 16-4</a>, our canary deployment is clearly bad and we should roll it back.</p>
+
+<figure><div class="figure" id="http_response_codes_by_app_engine_version"><img alt="HTTP response codes by App Engine version; the release candidate serves the vast majority of the errors, while the live version produces a low number of errors at a steady state (note: the graph uses a base-10 log scale)" src="assets/tsrw_1604.png"/>
+<h6><span class="label">Figure 16-4. </span>HTTP response codes by App Engine version; the release candidate serves the vast majority of the errors, while the live version produces a low number of errors at a steady state (note: the graph uses a base-10 log scale)</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Canary Implementation" data-type="sect1"><div class="sect1" id="canary_implementation">
+<h1>Canary Implementation</h1>
+
+<p>Now that we’ve seen <a contenteditable="false" data-primary="canarying releases" data-secondary="roll forward deployment vs. simple canary deployment" data-startref="ix_canrelrollfwd" data-type="indexterm" id="idm139660638143600"/>a fairly <a contenteditable="false" data-primary="roll forward deployment vs. simple canary deployment" data-startref="ix_rollfwd" data-type="indexterm" id="idm139660638141824"/>trivial canary <a contenteditable="false" data-primary="deployments" data-secondary="roll forward deployment vs. simple canary deployment" data-startref="ix_deployrfcan" data-type="indexterm" id="idm139660638140288"/>deployment implementation, let’s dig deeper into the parameters that we need to understand for a successful canary <span class="keep-together">process</span>.<a contenteditable="false" data-primary="canarying releases" data-secondary="canary implementation" data-type="indexterm" id="ix_canrelimpl"/></p>
+
+<section data-pdf-bookmark="Minimizing Risk to SLOs and the Error Budget" data-type="sect2"><div class="sect2" id="minimizing_risk_to_slos_and_the_error_bud">
+<h2>Minimizing Risk to SLOs and the Error Budget</h2>
+
+<p><a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a> discusses how SLOs reflect business requirements around service availability. <a contenteditable="false" data-primary="canarying releases" data-secondary="canary implementation" data-tertiary="minimizing risk to SLOs and error budget" data-type="indexterm" id="idm139660638127952"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="minimizing risk to by canarying releases" data-type="indexterm" id="idm139660638129008"/>These requirements also apply to canary implementations. The canary process risks only a small fragment of our error budget, which is limited by time and the size of the canary population.</p>
+
+<p>Global deployment can place the SLO at risk fairly quickly. If we deploy the candidate from our trivial example, we would risk failing 20% of requests.<a contenteditable="false" data-primary="error budgets" data-secondary="minimizing risk to by canarying releases" data-type="indexterm" id="idm139660638123120"/> If we instead use a canary population of 5%, we serve 20% errors for 5% of traffic, resulting in a 1% overall error rate (as seen earlier in <a data-type="xref" href="#error_rate_of_canary_deploymentsemicolon">Figure 16-3</a>). This strategy allows us to conserve our error budget—impact on the budget is directly proportional to the amount of traffic exposed to defects. We can assume that detection and rollback take about the same time for both the naive deployment and the canary deployment, but when we integrate a canary process into our deployment, we learn valuable information about our new version at a much lower cost to our system.</p>
+
+<p>This is a very simple model that assumes uniform load.<a contenteditable="false" data-primary="availability" data-secondary="during canary deployment" data-type="indexterm" id="idm139660638121088"/> It also assumes that we can spend our entire error budget (beyond what we’ve already included in the organic measurement of current availability) on canaries. Rather than <em>actual</em> availability, here we consider only unavailability introduced by new releases. Our model also assumes a 100% failure rate because this is a worst-case scenario.<sup><a data-type="noteref" href="ch16.html#ch16fn3" id="ch16fn3-marker">3</a></sup> It is likely that defects in the canary deployment will not affect 100% of system usage. We also allow overall system availability to go below SLO for the duration of the canary deployment.<sup><a data-type="noteref" href="ch16.html#ch16fn4" id="ch16fn4-marker">4</a></sup></p>
+
+<p>This model has clear flaws, but is a solid starting point that you can adjust to match business needs.<sup><a data-type="noteref" href="ch16.html#ch16fn5" id="ch16fn5-marker">5</a></sup> We recommend using the simplest model that meets your technical and business objectives. In our experience, focusing on making the model as technically correct as possible often leads to overinvestment in modeling. For services with high rates of complexity, overly complex models can lead to incessant model tuning for no real benefit.</p>
+</div></section>
+
+<section data-pdf-bookmark="Choosing a Canary Population and Duration" data-type="sect2"><div class="sect2" id="choosing_a_canary_population_and_duration">
+<h2>Choosing a Canary Population and Duration</h2>
+
+<p>When choosing an appropriate canary duration, you need to factor in development velocity.<a contenteditable="false" data-primary="canarying releases" data-secondary="canary implementation" data-tertiary="choosing canary population and duration" data-type="indexterm" id="idm139660638110496"/> If you release daily, you can’t let your canary last for a week while running only one canary deployment at a time. If you deploy weekly, you have time to perform fairly long canaries. If you deploy continuously (for example, 20 times in a day), your canary duration must be significantly shorter. On a related note, while we can run multiple canary deployments simultaneously, doing so adds significant mental effort to track system state. This can become problematic during any nonstandard circumstances, when reasoning about the system’s state quickly is important. Running simultaneous canaries also increases the risk of signal contamination if the canaries overlap. We strongly advise running only one canary deployment at a time.</p>
+
+<p>For basic evaluation, we do not need a terribly large canary population in order to detect key critical conditions.<sup><a data-type="noteref" href="ch16.html#ch16fn6" id="ch16fn6-marker">6</a></sup> However, a representative canary process requires decisions across many dimensions:</p>
+
+<dl>
+	<dt>Size and duration</dt>
+	<dd>
+	<p>It should be sizeable and last long enough to be representative of the overall deployment. Terminating a canary deployment after receiving just a handful of queries doesn’t provide a useful signal for systems characterized by diverse queries with varied functionality. The higher the processing rate, the less time is required to get a representative sample in order to ensure the observed behavior is actually attributable to the canaried change, and not just a random artifact.</p>
+	</dd>
+	<dt>Traffic volume</dt>
+	<dd>
+	<p>We need to receive enough traffic on the system to ensure it has handled a representative sample, and that the system has a chance to react negatively to the inputs. Typically, the more homogeneous the requests, the less traffic volume you need.</p>
+	</dd>
+	<dt>Time of day</dt>
+	<dd>
+	<p>Performance defects typically manifest only under heavy load,<sup><a data-type="noteref" href="ch16.html#ch16fn7" id="ch16fn7-marker">7</a></sup> so deploying at an off-peak time likely wouldn’t trigger performance-related defects.</p>
+	</dd>
+	<dt>Metrics to evaluate</dt>
+	<dd>
+	<p>The representativeness of a canary is tightly connected to the metrics we choose to evaluate (which we’ll discuss later in this chapter). We can evaluate trivial metrics like query success quickly, but other metrics (such as queue depth) may need more time or a large canary population to provide a clear signal.</p>
+	</dd>
+</dl>
+
+<p>Frustratingly, these requirements can be mutually at odds. Canarying is a balancing act, informed both by cold analysis of worst-case scenarios and the past realistic track record of a system. Once you’ve gathered metrics from past canaries, you can choose canary parameters based upon typical canary evaluation failure rates rather than hypothetical worst-case scenarios.<a contenteditable="false" data-primary="canarying releases" data-secondary="canary implementation" data-startref="ix_canrelimpl" data-type="indexterm" id="idm139660638094080"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Selecting and Evaluating Metrics" data-type="sect1"><div class="sect1" id="selecting_and_evaluating_metrics">
+<h1>Selecting and Evaluating Metrics</h1>
+
+<p>So far, we have been looking at the success ratio, a very clear and obvious metric for canary evaluation.<a contenteditable="false" data-primary="metrics" data-secondary="selecting and evaluating for canary deployments" data-type="indexterm" id="ix_mtrccan"/><a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-type="indexterm" id="ix_canrelmtr"/> But intuitively, we know this single metric is not sufficient for a meaningful canary process. If we serve all requests at 10 times the latency, or use 10 times as much memory while doing so, we might also have a problem. Not all metrics are good candidates for evaluating a canary. What properties of metrics are best suited for evaluating whether a canary is good or bad?</p>
+
+<section data-pdf-bookmark="Metrics Should Indicate Problems" data-type="sect2"><div class="sect2" id="metrics_should_indicate_problems">
+<h2>Metrics Should Indicate Problems</h2>
+
+<p>First and foremost, the metric needs to be able to indicate problems<a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-tertiary="metrics indicating problems" data-type="indexterm" id="idm139660638088128"/> in the service. This is tricky because what constitutes a “problem” isn’t always objective. We can probably consider a failed user request problematic.<sup><a data-type="noteref" href="ch16.html#ch16fn8" id="ch16fn8-marker">8</a></sup> But what if a request takes 10% longer, or the system requires 10% more memory? We typically recommend using SLIs as a place to start thinking about canary metrics. Good SLIs <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="canary metrics and" data-type="indexterm" id="idm139660638086768"/>tend to have strong attribution to service health. If SLIs are already being measured to drive SLO compliance, we can reuse that work.</p>
+
+<p>Almost any metric can be problematic when taken to the extreme, but there’s also a cost to adding too many metrics to your canary process. We need to correctly define a notion of acceptable behavior for each of the metrics. If the idea of acceptable behavior is overly strict, we will get lots of false positives; that is, we will think a canary deployment is bad, even though it isn’t. Conversely, if a definition of acceptable behavior is too loose, we will be more likely to let a bad canary deployment go undetected. Choosing what’s acceptable behavior correctly can be an expensive process—it’s time-consuming and requires analysis. When it’s done poorly, however, your results can completely mislead you. Also, you need to reevaluate expectations on a regular basis as the service, its feature set, and its behavior evolve.</p>
+
+<p>We should stack-rank the metrics we want to evaluate based on our opinion of how well they indicate actual user-perceivable problems in the system. Select the top few metrics to use in canary evaluations (perhaps no more than a dozen). Too many metrics can bring diminishing returns, and at some point, the returns are outweighed by the cost of maintaining them, or the negative impact on trust in the release process if they are not maintained.</p>
+
+<p>To make this guideline more tangible, let’s look at our example service. It has many metrics we might evaluate: CPU usage, memory footprint, HTTP return codes (200s, 300s, etc.), latency of response, correctness, and so on. In this case, our best metrics are likely the HTTP return codes and latency of response because their degradation most closely maps to an actual problem that impacts users. In this scenario, metrics for CPU usage aren’t as useful: an increase in resource usage doesn’t necessarily impact a service and may result in a flaky or noisy canary process. This can result in the canary process being disabled or ignored by operators, which can defeat the point of having a canary process in the first place. In the case of frontend services, we intuitively know that being slower or failing to respond are typically reliable signals that there are problems in the service.</p>
+
+<p>HTTP return codes contain interesting tricky cases, such as code 404, which tells us the resource was not found. This could happen because users get the wrong URL (imagine a broken URL getting shared on a popular discussion board), or because the server incorrectly stops serving a resource. Often we can work around problems like this by excluding 400-level codes from our canary evaluation and adding black-box monitoring to test for the presence of a particular URL. We can then include the black-box data as part of our canary analysis to help isolate our canary process from odd user behaviors.</p>
+</div></section>
+
+<section data-pdf-bookmark="Metrics Should Be Representative and Attributable" data-type="sect2"><div class="sect2" id="metrics_should_be_representative_and_attr">
+<h2>Metrics Should Be Representative and Attributable</h2>
+
+<p>The source of changes in the observed metrics should be clearly attributable to the change we are canarying, and should not be influenced by external factors.<a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-tertiary="representative and attributable metrics" data-type="indexterm" id="idm139660638081760"/></p>
+
+<p>In a large population (for example, many servers or many containers), we are likely to have outliers—oversubscribed machines, machines running different kernels with different performance characteristics, or machines on an overloaded segment of the network. The difference between the canary population and the control is just as much a function of the change we have deployed as the difference between the two infrastructures on which we deploy.</p>
+
+<p>Managing canaries is a balancing act between a number of forces. Increasing the size of the canary population is one way to decrease impact of this problem (as discussed earlier). When we reach what we consider a reasonable canary population size for our system, we need to consider whether the metrics we have chosen could show high variance.</p>
+
+<p>We should also be aware of shared failure domains between our canary and control environments; a bad canary could negatively impact the control, while bad behavior in the system might lead us to incorrectly evaluate the canary. Similarly, make sure that your metrics are well isolated. Consider a system that runs both our application and other processes. A dramatic increase in CPU usage of the system as a whole would make for a poor metric, as other processes in the system (database load, log rotation, etc.) might be causing that increase. A better metric would be CPU time spent as the process served the request. An even better metric would be CPU time spent serving the request over the window of time the serving process was actually scheduled on a CPU. While a heavily oversubscribed machine colocated with our process is obviously a problem (and monitoring should catch it!), it isn’t caused by the change we’re canarying, so it should not be flagged as a canary deployment <span class="keep-together">failure</span>.</p>
+
+<p>Canaries also need to be attributable; that is, you should also be able to tie the canary metric to SLIs. If a metric can change wildly with no impact to service, it’s unlikely to make a good canary metric.</p>
+</div></section>
+
+<section data-pdf-bookmark="Before/After Evaluation Is Risky" data-type="sect2"><div class="sect2" id="beforesolidusafter_evaluation_is_risky">
+<h2>Before/After Evaluation Is Risky</h2>
+
+<p>A before/after canary process is an extension of the attribution problem. In this process, the old system is fully <a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-tertiary="before/after evaluation, riskiness of" data-type="indexterm" id="idm139660638077616"/>replaced by the new system, and your canary evaluation compares system behavior before and after the change over a set period of time. One might call this process a “canary deployment in time-space,” where you choose the A/B groups by segmenting time instead of segmenting the population by machines, cookies, or other means. Because time is one of the biggest sources of change in observed metrics, it is difficult to assess degradation of performance with before/after evaluation.</p>
+
+<p>While the canary deployment might have caused the degradation, the degradation may very well have happened in the control system too. This scenario becomes even more problematic if we attempt to run a canary deployment over a longer period of time. For example, if we perform a release on Monday, we may be comparing behavior during a business day to behavior during a weekend, introducing a large amount of noise. In this example, users may use the service very differently over the weekend, thereby introducing noise in the canary process.</p>
+
+<p>The before/after process itself introduces a question of whether a big error spike (as introduced by a before/after evaluation) is better than a small but possibly longer rate of errors (as introduced by a small canary). If the new release is completely broken, how quickly can we detect and revert? A before/after canary may detect the problem faster, but the overall time to recovery may still be quite substantial and similar to a smaller canary. During that time, users suffer.</p>
+</div></section>
+
+<section data-pdf-bookmark="Use a Gradual Canary for Better Metric Selection" data-type="sect2"><div class="sect2" id="use_a_gradual_canary_for_better_metric_se">
+<h2>Use a Gradual Canary for Better Metric Selection</h2>
+
+<p>Metrics that don’t meet our ideal properties may still bring great value. We can introduce these metrics by using a more nuanced canary process.<a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-tertiary="using gradual canary for better metric selection" data-type="indexterm" id="idm139660638059808"/></p>
+
+<p>Instead of simply evaluating a single canary stage, we can use a canary containing multiple stages that reflect our ability to reason about the metrics. In the first stage, we have no confidence or knowledge about the behavior of this release. We therefore want to use a small stage in order to minimize negative impact. In a small canary, we prefer metrics that are the clearest indication of a problem—application crashes, request failures, and the like. Once this stage passes successfully, the next stage will have a larger canary population to increase confidence in our analysis of the impact of the changes.<a contenteditable="false" data-primary="canarying releases" data-secondary="selecting and evaluating metrics" data-startref="ix_canrelmtr" data-type="indexterm" id="idm139660638056144"/><a contenteditable="false" data-primary="metrics" data-secondary="selecting and evaluating for canary deployments" data-startref="ix_mtrccan" data-type="indexterm" id="idm139660638053936"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Dependencies and Isolation" data-type="sect1"><div class="sect1" id="dependencies_and_isolation">
+<h1>Dependencies and Isolation</h1>
+
+<p>The system being tested will not operate in a complete vacuum.<a contenteditable="false" data-primary="canarying releases" data-secondary="dependencies and isolation" data-type="indexterm" id="idm139660638064032"/> For practical reasons, the canary population and the control may share backends, frontends, networks, data stores, and other infrastructure.<a contenteditable="false" data-primary="dependencies" data-secondary="canarying releases and" data-type="indexterm" id="idm139660638062752"/> There may even be extremely nonobvious interactions with the client. For example, imagine two consecutive requests sent by a single client. The first request may be handled by the canary deployment. The response by the canary may change the content of the second request, which may land on the control, altering the control’s behavior.</p>
+
+<p>Imperfect isolation has several consequences. <a contenteditable="false" data-primary="data isolation" data-secondary="canarying releases and" data-type="indexterm" id="idm139660638051728"/>Most importantly, we need to be aware that if the canarying process provides results that indicate we should stop a production change and investigate the situation, the canary deployment isn’t necessarily at fault. This fact is true of canarying in general, but in practice, it’s frequently enforced by isolation issues.</p>
+
+<p>Additionally, imperfect isolation means that bad behavior of the canary deployment can also negatively impact the control. Canarying is an A/B comparison, and it’s possible that both A and B can change in tandem; this may cause confusion in the canary evaluation. It is important to also use absolute measures, such as defined SLOs, to ensure the system is operating correctly.</p>
+</div></section>
+
+<section data-pdf-bookmark="Canarying in Noninteractive Systems" data-type="sect1"><div class="sect1" id="canarying_in_noninteractive_systems">
+<h1>Canarying in Noninteractive Systems</h1>
+
+<p>The chapter has focused on an interactive request/response system, which in many ways is the simplest and most commonly discussed system design.<a contenteditable="false" data-primary="noninteractive systems, canarying in" data-type="indexterm" id="idm139660638041776"/><a contenteditable="false" data-primary="canarying releases" data-secondary="in noninteractive systems" data-type="indexterm" id="idm139660638046704"/> Other systems, such as asynchronous processing pipelines, are equally important, but have different canarying considerations, which we’ll enumerate briefly. For more information on canarying as related to data processing pipelines, see <a data-type="xref" href="ch13.html#data_processing_pipelines">Chapter 13</a>.</p>
+
+<p>First and foremost, the duration and deployment of the canary inherently depends on the duration of work unit processing. We’ve ignored this factor when it comes to interactive systems, assuming work unit processing will take no more than a few seconds, which is shorter than the canary duration. Work unit processing in noninteractive systems, such as rendering pipelines or video encoding, can take much longer. Accordingly, make sure the canary duration at minimum spans the duration of a single work unit.</p>
+
+<p>Isolation can become more complex for noninteractive systems.<a contenteditable="false" data-primary="data isolation" data-secondary="in noninteractive systems" data-type="indexterm" id="idm139660638032672"/> Many pipeline systems have a single work assigner and a fleet of workers with the application code. In multistage pipelines, a work unit is processed by a worker, then returned to the pool for the same or another worker to perform the next stage of processing. It is helpful for canary analysis to ensure that the workers processing a particular unit of work are always pulled from the same pool of workers—either the canary pool or the control pool. Otherwise, the signals get increasingly mixed (for more about the need to untangle signals, see <a data-type="xref" href="#requirements_on_monitoring_data">“Requirements on Monitoring Data”</a>).</p>
+
+<p>Finally, metric selection can be more complicated.<a contenteditable="false" data-primary="metrics" data-secondary="selection for canarying in noninteractive systems" data-type="indexterm" id="idm139660638049296"/> We may be interested in end-to-end time to process the work unit (similar to latency in interactive systems), as well as quality of the processing itself (which is, of course, completely application-specific).</p>
+
+<p>Given these caveats, the general concept of canarying remains viable, and the same high-level principles apply.</p>
+</div></section>
+
+<section data-pdf-bookmark="Requirements on Monitoring Data" data-type="sect1"><div class="sect1" id="requirements_on_monitoring_data">
+<h1>Requirements on Monitoring Data</h1>
+
+<p>When conducting canary evaluation, you must be able to compare the canary signals to the control signals.<a contenteditable="false" data-primary="monitoring" data-secondary="requirements in canary evaluation" data-type="indexterm" id="idm139660638030096"/><a contenteditable="false" data-primary="canarying releases" data-secondary="requirements on monitoring data" data-type="indexterm" id="idm139660638036592"/> Often, this requires some care in structuring the monitoring system—effective comparisons are straightforward and produce meaningful results.</p>
+
+<p>Consider our earlier example of a canary deployment to 5% of the population that runs at a 20% error rate. Because monitoring likely looks at the system as a whole, it will detect an overall error rate of only 1%. Depending on the system, this signal might be indistinguishable from other sources of errors (see <a data-type="xref" href="#error_rate_of_canary_deploymentsemicolon">Figure 16-3</a>).</p>
+
+<p>If we break down metrics by population servicing the request (the canary versus the control), we can observe the separate metrics (see <a data-type="xref" href="#http_response_codes_by_app_engine_version">Figure 16-4</a>). We can plainly see the error rate in the control versus the canary, a stark illustration of what a full deployment would bring. Here we see that monitoring that reasons well about an entire service isn’t sufficient to analyze our canary. When collecting monitoring data, it is important to be able to perform fine-grained breakdowns that enable you to differentiate metrics between the canary and control populations.</p>
+
+<p>Another challenge with collecting metrics is that canary deployments are time-limited by design.<a contenteditable="false" data-primary="metrics" data-secondary="collecting in canary deployments, time limits on" data-type="indexterm" id="idm139660638023872"/> This can cause problems when metrics are aggregated over specific periods. <a contenteditable="false" data-primary="errors" data-secondary="errors per hour metric in canary deployment" data-type="indexterm" id="idm139660638022608"/>Consider the metric <em>errors per hour</em>. We can calculate this metric by summing the requests over the past hour. If we use this metric to evaluate our canary, we might encounter problems, as described in the following timeline:</p>
+
+<ol class="pagebreak-before">
+	<li>
+	<p>An unrelated event causes some errors to occur.</p>
+	</li>
+	<li>
+	<p>A canary is deployed to 5% of the population; the canary duration is 30 minutes.</p>
+	</li>
+	<li>
+	<p>The canary system starts to watch the errors-per-hour metric to see if the deployment is good or bad.</p>
+	</li>
+	<li>
+	<p>The deployment is detected as bad because the errors-per-hour metric is significantly different from the errors per hour of the control population.</p>
+	</li>
+</ol>
+
+<p>This scenario is a result of using a metric that is computed hourly to evaluate a deployment that is only 30 minutes long. As a result, the canary process provides a very muddied signal. When using metrics to evaluate canary success, make sure the intervals of your metrics are either the same as or less than your canary duration.</p>
+</div></section>
+
+<section data-pdf-bookmark="Related Concepts" data-type="sect1"><div class="sect1" id="related_concepts">
+<h1>Related Concepts</h1>
+
+<p>Often, our conversations with customers touch upon using blue/green deployment, artificial load generation, and/or traffic teeing in production.<a contenteditable="false" data-primary="canarying releases" data-secondary="related concepts" data-type="indexterm" id="idm139660638012240"/> These concepts are similar to canarying, so while they’re not strictly canary processes, they might be used as such.</p>
+
+<section data-pdf-bookmark="Blue/Green Deployment" data-type="sect2"><div class="sect2" id="bluesolidusgreen_deployment">
+<h2>Blue/Green Deployment</h2>
+
+<p>Blue/green deployment maintains two instances of a system: one that is serving traffic (green), and another that is ready to serve traffic (blue). <a contenteditable="false" data-primary="canarying releases" data-secondary="related concepts" data-tertiary="blue/green deployment" data-type="indexterm" id="idm139660638012944"/><a contenteditable="false" data-primary="deployments" data-secondary="blue/green" data-type="indexterm" id="idm139660638008768"/><a contenteditable="false" data-primary="blue/green deployment" data-type="indexterm" id="idm139660638007168"/>After deploying a new release in the blue environment, you can then move traffic to it. The cutover doesn’t require downtime, and rollback is a trivial reversal of the router change. One downside is that this setup uses twice as many resources as a more “traditional” deployment. In this setup, you are effectively performing a before/after canary (discussed earlier).</p>
+
+<p>You can use blue/green deployments more or less as normal canaries by utilizing both blue and green deployments simultaneously (rather than independently). In this strategy, you can deploy the canary to the blue (standby) instance and slowly split traffic between green and blue environments. Both your evaluations and the metrics that compare the blue environment to the green environment should be tied to traffic control. This setup resembles an A/B canary, where the green environment is the control, the blue environment is the canary deployment, and the canary population is controlled by the amount of traffic sent to each.</p>
+</div></section>
+
+<section data-pdf-bookmark="Artificial Load Generation" data-type="sect2"><div class="sect2" id="artificial_load_generation">
+<h2>Artificial Load Generation</h2>
+
+<p>Instead of exposing live user traffic to a canary deployment, it may be tempting to err on the side of safety and use artificial load generation.<a contenteditable="false" data-primary="artificial load generation" data-type="indexterm" id="idm139660638001600"/><a contenteditable="false" data-primary="load" data-secondary="artificial generation of" data-type="indexterm" id="idm139660638003360"/><a contenteditable="false" data-primary="canarying releases" data-secondary="related concepts" data-tertiary="artificial load generation" data-type="indexterm" id="idm139660638001904"/> Often, you can run load tests in multiple deployment stages (QA, preproduction, and even in production). While these activities don’t qualify as canarying according to our definition, they are still viable approaches to finding defects with some caveats.</p>
+
+<p>Testing with synthetic load does a good job of maximizing code coverage, but doesn’t provide good state coverage. It can be especially hard to artificially simulate load in mutable systems (systems with caches, cookies, request affinity, etc.). Artificial load also might not accurately model organic traffic shifts that happen in a real system. Some regressions may manifest only during events not included in the artificial load, leading to gaps in coverage.</p>
+
+<p>Artificial load also works poorly in mutable systems. For example, it may be downright dangerous to attempt to generate artificial load on a billing system: the system might start sending callouts to credit card providers, which would then start actively charging customers. While we can avoid testing dangerous code paths, the lack of testing on these paths reduces our test coverage.</p>
+</div></section>
+
+<section data-pdf-bookmark="Traffic Teeing" data-type="sect2"><div class="sect2" id="traffic_teeing">
+<h2>Traffic Teeing</h2>
+
+<p>If artificial load is not representative, we could copy the traffic and send it to both the production system and the system in the test environment.<a contenteditable="false" data-primary="canarying releases" data-secondary="related concepts" data-tertiary="traffic teeing" data-type="indexterm" id="idm139660637992144"/> This technique is referred to as <em>teeing</em>.<a contenteditable="false" data-primary="traffic teeing" data-type="indexterm" id="idm139660637989456"/> While the production system serves the actual traffic and delivers responses to users, the canary deployment serves the copy and discards the responses. You might even compare the canary responses to the actual responses and run further analysis.</p>
+
+<p>This strategy can provide representative traffic, but is often more complicated to set up than a more straightforward canary process.<a contenteditable="false" data-primary="stateful systems" data-secondary="traffic teeing in" data-type="indexterm" id="idm139660637998448"/> Traffic teeing also doesn’t adequately identify risk in stateful systems; copies of traffic may introduce unexpected influences between the seemingly independent deployments. For example, if the canary deployment and production systems share a cache, an artificially inflated cache hit rate would invalidate performance measurements for the canary metrics.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00080">
+<h1>Conclusion</h1>
+
+<p>You can use a number of tools and approaches to automate your releases and introduce canarying into your pipeline. No single testing methodology is a panacea, and testing strategies should be informed by the requirements and behavior of the system. Canarying can be a simple, robust, and easily integratable way to supplement testing. When you catch system defects early, users are minimally impacted. Canarying can also provide confidence in frequent releases and improve development velocity. Just as testing methodology must evolve alongside system requirements and design, so must canarying.<a contenteditable="false" data-primary="canarying releases" data-startref="ix_canrel" data-type="indexterm" id="idm139660637981552"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch16fn1"><sup><a href="ch16.html#ch16fn1-marker">1</a></sup> The authors of this chapter are fans of Jez Humble and David Farley’s book <em>Continuous Delivery: Reliable Software Releases Through Build, Test, and Deployment Automation</em> (Boston: Pearson, 2011).</p><p data-type="footnote" id="ch16fn2"><sup><a href="ch16.html#ch16fn2-marker">2</a></sup> The fraction of total service load you run on the canary should be proportional to the size of the canary <span class="keep-together">population</span>.</p><p data-type="footnote" id="ch16fn3"><sup><a href="ch16.html#ch16fn3-marker">3</a></sup> At least as far as availability is concerned. This analysis obviously does not cover the impact of incidents, such as a data leak.</p><p data-type="footnote" id="ch16fn4"><sup><a href="ch16.html#ch16fn4-marker">4</a></sup> For a sufficiently small canary, where the fraction of service equals the difference between actual availability and SLO, we can canary nonstop with confidence. This is our use of the error budget.</p><p data-type="footnote" id="ch16fn5"><sup><a href="ch16.html#ch16fn5-marker">5</a></sup> As British statistician George Box said, “Essentially, all models are wrong, but some are useful.” George E. P. Box and Norman R. Draper, <em>Empirical Model-Building and Response Surfaces</em> (New York: John Wiley and Sons, 1987).</p><p data-type="footnote" id="ch16fn6"><sup><a href="ch16.html#ch16fn6-marker">6</a></sup> See a discussion of real-world outages at <a href="http://bit.ly/2LgorFz"><em class="hyperlink">http://bit.ly/2LgorFz</em></a>.</p><p data-type="footnote" id="ch16fn7"><sup><a href="ch16.html#ch16fn7-marker">7</a></sup> For example, consider resource contention problems, such as database write conflicts or locking in multithreaded applications.</p><p data-type="footnote" id="ch16fn8"><sup><a href="ch16.html#ch16fn8-marker">8</a></sup> A failed user request isn’t necessarily problematic. User requests can fail because the user requested something unreasonable, such as accessing a nonexistent URL. We need to be disciplined in distinguishing errors like these from problems in the systems.</p></div></div></section></body></html>

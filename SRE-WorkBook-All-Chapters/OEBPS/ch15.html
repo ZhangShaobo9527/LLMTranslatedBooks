@@ -1,0 +1,716 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Configuration Specifics</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 15. Configuration Specifics" data-type="chapter" epub:type="chapter"><div class="chapter" id="configuration_specifics">
+<h1><span class="label">Chapter 15. </span>Configuration Specifics</h1>
+
+<p class="byline">By Dave Cunningham and Misha Brukman<br/>
+with Christophe Kalt and Betsy Beyer</p>
+
+<p>Managing production systems is one of the many ways SREs provide value to an organization. The task of configuring and running applications in production requires insight into how those systems are put together and how they work. When things go wrong, the on-call engineer needs to know exactly where the configurations are and how to change them. This responsibility can become a burden if a team or organization hasn’t invested in addressing configuration-related toil.</p>
+
+<p>This book covers the subject of toil at length (see <a data-type="xref" href="ch06.html#eliminating_toil">Chapter 6</a>). If your SRE team is burdened with a lot of configuration-related toil, we hope that implementing some of the ideas presented in this chapter will help you reclaim some of the time you spend making configuration changes.</p>
+
+<section data-pdf-bookmark="Configuration-Induced Toil" data-type="sect1"><div class="sect1" id="configuration_induced_toil">
+<h1>Configuration-Induced Toil</h1>
+
+<p>At the start of a project’s lifecycle, configuration is usually relatively lightweight and straightforward. <a contenteditable="false" data-primary="configuration" data-secondary="configuration-induced toil" data-type="indexterm" id="idm139660638670736"/>You might have a few files in a <em>data-only</em> format like <a href="http://bit.ly/2HbuBo2">INI</a>, <a href="http://json.org">JSON</a>, <a href="http://yaml.org">YAML</a>, or XML. <a contenteditable="false" data-primary="toil" data-secondary="configuration-induced" data-type="indexterm" id="idm139660638664112"/>Managing these files requires little toil. As the number of applications, servers, and variations increases over time, configuration can become very complex and verbose. For example, you might have originally “changed a setting” by editing one configuration file, but now you have to update configuration files in multiple locations. Reading such configuration is also hard, as important differences are hidden in a sea of irrelevant duplicated details. We can characterize<a contenteditable="false" data-primary="replication toil" data-type="indexterm" id="idm139660638654800"/> this configuration-related toil as <em>replication toil</em>: the mundane task of managing configuration replicated across a system. This kind of toil isn’t limited to large organizations and huge systems—it’s especially common to microservice architectures with many independently configured components.</p>
+
+<p>Engineers often respond to replication toil by building automation or a configuration framework. They aim to remove duplication in the config system, and to make configuration easier to understand and maintain. Reusing techniques from software engineering, this approach often makes use of a “configuration language.” Google SRE has created a number of configuration languages with the aim of reducing toil for our largest and most complex production systems.</p>
+
+<p>Unfortunately, this tactic doesn’t necessarily eliminate configuration toil. Freed from an overwhelming number of individual configs, the project (and its config corpus) grows with renewed energy.<a contenteditable="false" data-primary="complexity toil" data-type="indexterm" id="idm139660638662112"/> Inevitably, you run up against <em>complexity toil</em>: the challenging and frustrating task of dealing with the emergent and sometimes undesirable behaviors of complex automation. This kind of toil typically materializes in larger organizations (10+ engineers) and compounds with growth. The earlier you can tackle complexity toil, the better; the size and complexity of configuration will only grow over time.</p>
+</div></section>
+
+<section data-pdf-bookmark="Reducing Configuration-Induced Toil" data-type="sect1"><div class="sect1" id="reducing_configuration_induced_toil">
+<h1>Reducing Configuration-Induced Toil</h1>
+
+<p>If your project is riddled with configuration-related toil, you have a few basic strategies for <a contenteditable="false" data-primary="toil" data-secondary="configuration-induced" data-tertiary="reducing" data-type="indexterm" id="idm139660638660048"/>improving <a contenteditable="false" data-primary="configuration" data-secondary="configuration-induced toil" data-tertiary="reducing" data-type="indexterm" id="idm139660638660416"/>the situation.</p>
+
+<p>In rare cases, and if your application is custom-built, you might opt to remove the configuration altogether. The application may be naturally better than a configuration language at handling certain aspects of configuration: it might make sense for the application to assign defaults because it has access to information about the machine, or to vary some values dynamically because it can scale according to load.</p>
+
+<p>If removing configuration is not an option, and <em>replication toil</em> is becoming a problem, consider automation to reduce the duplication in your configuration corpus. <a contenteditable="false" data-primary="replication toil" data-secondary="automating for configuration" data-type="indexterm" id="idm139660638647104"/>You might integrate a new configuration language, or you might need to improve or replace your existing configuration setup.<sup><a data-type="noteref" href="ch15.html#ch15fn1" id="ch15fn1-marker">1</a></sup> The next section, <a data-type="xref" href="#critical_properties_and_pitfalls_of_confi">“Critical Properties and Pitfalls of Configuration Systems”</a>, provides some guidance on choosing <span class="keep-together">or designing</span> that system.</p>
+
+<p>If you go the route of setting up a new configuration framework, you’ll need to integrate the configuration language with the application that needs to be configured. <a data-type="xref" href="#integrating_an_existing_application_kuber">“Integrating an Existing Application: Kubernetes”</a> uses Kubernetes as an example of an existing application to be integrated, and <a data-type="xref" href="#integrating_custom_applications_left_pare">“Integrating Custom Applications (In-House Software)”</a> gives some more general advice. These <span class="keep-together">sections</span> walk through some examples using Jsonnet (which we chose as a representative configuration language for illustration purposes).</p>
+
+<p>Once you have a configuration system in place to help with replication toil—whether you’re already committed to your existing solution, or you choose to implement a new configuration language—the best practices in <a data-type="xref" href="#effectively_operating_a_configuration_sys">“Effectively Operating a Configuration System”</a>, <a data-type="xref" href="#when_to_evaluate_configuration">“When to Evaluate Configuration”</a>, and <span class="keep-together"><a data-type="xref" href="#guarding_against_abusive_configuration">“Guarding Against Abusive Configuration”</a></span> should be helpful in optimizing your setup, no matter which language you’re using. Adopting those processes and tools can help minimize complexity toil.</p>
+</div></section>
+
+<section data-pdf-bookmark="Critical Properties and Pitfalls of Configuration Systems" data-type="sect1"><div class="sect1" id="critical_properties_and_pitfalls_of_confi">
+<h1>Critical Properties and Pitfalls of Configuration Systems</h1>
+
+<p><a data-type="xref" href="ch14.html#configuration_design_and_best_practices">Chapter 14</a> outlined some critical properties of any configuration system.<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-type="indexterm" id="ix_cfgcrit"/> In addition to generic ideal requirements like lightweightness, ease of learning, simplicity, and expressive power, an efficient configuration system must:</p>
+
+<ul>
+	<li>
+	<p>Support configuration health, engineer confidence, and productivity via <em>tooling</em> for managing the config files (linters, debuggers, formatters, IDE integration, etc.).</p>
+	</li>
+	<li>
+	<p>Provide <em>hermetic</em> evaluation of configuration for rollbacks and general <span class="keep-together">replayability</span>.</p>
+	</li>
+	<li>
+	<p><em>Separate config and data</em> to allow for easy analysis of the config and a range of configuration interfaces.</p>
+	</li>
+</ul>
+
+<p>It is not widely understood that these properties are critical, and arriving at our current understanding was indeed a journey. During this journey, Google invented several configuration systems that lacked these critical properties. We were not alone, either. Despite the great variety of popular configuration systems, it is difficult to find one that does not fall foul of at least one of the following pitfalls.</p>
+
+<section data-pdf-bookmark="Pitfall 1: Failing to Recognize Configuration as a Programming Language Problem" data-type="sect2"><div class="sect2" id="pitfall_1_failing_to_recognize_configurat">
+<h2>Pitfall 1: Failing to Recognize Configuration as a Programming Language Problem</h2>
+
+<p>If you’re not intentionally designing a language, then it’s highly unlikely the “language” you’ll end up with is a <a contenteditable="false" data-primary="languages, configuration" data-secondary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638622368"/>good one.<a contenteditable="false" data-primary="programming languages" data-secondary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638623456"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638620256"/></p>
+
+<p>While configuration languages describe data rather than behavior, they still have the other characteristics of programming languages. If our configuration strategy starts with the objective of using a data-only format, programming language features tend to creep through the back door.<a contenteditable="false" data-primary="data-only languages (configuration)" data-type="indexterm" id="idm139660638617680"/> Rather than remaining a <em>data-only</em> language, the format becomes an esoteric and complex <em>programming</em> language.</p>
+
+<p>For example, some systems add a <code>count</code> attribute to the schema of a virtual machine (VM) being provisioned. This attribute is not a property of the VM itself, but instead indicates that you want more than one of them. While useful, this is a feature of a programming language, not a data format, because it requires an external evaluator or interpreter. A classical programming language approach would use logic outside the artifact, such as a <code>for</code> loop or list comprehension, to generate more VMs as required.</p>
+
+<p>Another example is a configuration language that accrues <a href="http://bit.ly/2LQyXnZ">string interpolation rules</a> instead of supporting general expressions. <a contenteditable="false" data-primary="string interpolation" data-type="indexterm" id="idm139660638611472"/>The strings appear to be “just data,” although they can actually contain complex code, including data structure operations, checksums, base64 encoding, and so on.</p>
+
+<p>The popular YAML + Jinja solution also has drawbacks. Simple pure-data formats such as XML, JSON, YAML, and text-formatted protocol buffers are excellent choices for pure-data use cases. <a contenteditable="false" data-primary="protocol buffers" data-type="indexterm" id="idm139660638607744"/><a contenteditable="false" data-primary="templates" data-secondary="templating engines, using for configuration" data-type="indexterm" id="idm139660638606688"/>Likewise, textual templating engines such as Jinja2 or Go templates are excellent for HTML templating. But when combined in a configuration language, they become difficult for both humans and tools to maintain and analyze. In all of these cases, this pitfall leaves us with a complex esoteric “language” that isn’t suited to tooling.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 2: Designing Accidental or Ad Hoc Language Features" data-type="sect2"><div class="sect2" id="pitfall_2_designing_accidental_or_ad_hoc">
+<h2>Pitfall 2: Designing Accidental or Ad Hoc Language Features</h2>
+
+<p>SREs typically feel configuration usability problems when operating systems at scale.<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="designing accidental or ad hoc language features" data-type="indexterm" id="idm139660638603776"/> A new language won’t have good tooling support (IDE support, good linters), and developing custom tooling is painful if the language has undocumented or esoteric semantics.<a contenteditable="false" data-primary="programming languages" data-secondary="designing accidental or ad hoc language features in configuration system" data-type="indexterm" id="idm139660638604096"/></p>
+
+<p>Adding ad hoc programming language features to a simple config format over time might create a feature-complete solution, but ad hoc languages are more complex and usually have less expressive power than their formally designed equivalents. They also risk developing gotchas and idiosyncrasies because their authors couldn’t consider the interaction between features ahead of time.</p>
+
+<p>Instead of hoping your configuration system won’t grow complex enough to need simple programming constructs, it’s better to consider these requirements at the initial design phase.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 3: Building Too Much Domain-Specific Optimization" data-type="sect2"><div class="sect2" id="pitfall_3_building_too_much_domain_specif">
+<h2>Pitfall 3: Building Too Much Domain-Specific Optimization</h2>
+
+<p>The smaller the user base is for a new domain-specific solution, the longer you have to wait to accumulate enough users to justify building tooling.<a contenteditable="false" data-primary="domain-specific optimization (excessive) in configurations" data-type="indexterm" id="idm139660638599200"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="building too much domain-specific optimization" data-type="indexterm" id="idm139660638601248"/> Engineers are unwilling to spend time understanding the language properly because it has little applicability outside this domain. Learning resources like <a href="https://stackoverflow.com/">Stack Overflow</a> are less likely to be available.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 4: Interleaving “Configuration Evaluation” with “Side Effects”" data-type="sect2"><div class="sect2" id="pitfall_4_interleaving_quotation_markconf">
+<h2>Pitfall 4: Interleaving “Configuration Evaluation” with “Side Effects”</h2>
+
+<p>Side effects include either making changes to external systems, or consulting out-of-band data sources (DNS, VM IDs, latest build versions) during configuration runs.<a contenteditable="false" data-primary="side effects, interleaving with configuration evaluation" data-type="indexterm" id="idm139660638591472"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="interleaving configuration evaluation with side effects" data-type="indexterm" id="idm139660638590800"/></p>
+
+<p>Systems that allow these side effects <em>violate hermeticity,</em> and also prevent the <em>separation of config from data.</em> In an extreme case, it is impossible to debug your config without spending money by reserving cloud resources. In order to allow separation of config and data, first evaluate the config, then make the resulting data available to the user to analyze, and only then allow for side effects.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 5: Using an Existing General-Purpose Scripting Language Like Python, Ruby, or Lua" data-type="sect2"><div class="sect2" id="pitfall_5_using_an_existing_general_purpo">
+<h2>Pitfall 5: Using an Existing General-Purpose Scripting Language Like Python, Ruby, or Lua</h2>
+
+<p>This seems like a trivial way to avoid the first four pitfalls, but implementations that use a general-purpose scripting language are heavyweight and/or need intrusive sandboxing to ensure hermeticity. <a contenteditable="false" data-primary="scripting languages, general-purpose, using for configuration system" data-type="indexterm" id="idm139660638582448"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="using general-purpose scripting languages" data-type="indexterm" id="idm139660638583728"/><a contenteditable="false" data-primary="programming languages" data-secondary="using existing general-purpose scripting languages for configuration" data-type="indexterm" id="idm139660638585248"/><a contenteditable="false" data-primary="languages, configuration" data-secondary="using existing general-purpose scripting languges for configuration" data-type="indexterm" id="idm139660638580608"/>Since general-purpose languages can access the local system, security considerations may also call for sandboxing.</p>
+
+<p>Additionally, we can’t assume that the people maintaining configuration will be familiar with all of these languages.</p>
+
+<p>The desire to avoid these pitfalls led to the development of reusable domain-specific languages (DSLs) for<a contenteditable="false" data-primary="domain-specific languages (DSLs) for configuration" data-type="indexterm" id="idm139660638578576"/> configuration, such as <a href="http://bit.ly/2xyUPRT">HOCON</a>, <a href="http://bit.ly/2kIuDec"><span class="keep-together">Flabbergast</span></a>, <a href="http://bit.ly/2J9Bx6E">Dhall</a>, and <a href="http://jsonnet.org"><span class="keep-together">Jsonnet</span></a>. We recommend using an existing DSL for configuration. Even if a DSL seems too powerful for your needs, you may need the additional functionality at some point, and you can always restrict the functionality of the language using an in-house style guide.</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_very_quick_introduction_to_jsonnet">
+<h5>A Very Quick Introduction to Jsonnet</h5>
+
+<p>Jsonnet is a hermetic open source DSL that can be used as a library or command-line tool to provide configuration for any application. <a contenteditable="false" data-primary="Jsonnet" data-secondary="quick introduction to" data-type="indexterm" id="idm139660638569712"/>It is used widely both inside and outside Google.<sup><a data-type="noteref" href="ch15.html#ch15fn2" id="ch15fn2-marker">2</a></sup></p>
+
+<p>The language is designed to be familiar to programmers: it uses Python-like syntax, object orientation, and functional constructs. It is an extension of JSON, meaning that a JSON file is simply a Jsonnet program that outputs itself. Jsonnet is more permissive with quotes and commas than JSON, and supports comments. More importantly, it adds computational constructs.</p>
+
+<p>While you don’t need to be particularly familiar with Jsonnet syntax to follow the rest of this chapter, spending just a few moments reading the <a href="http://bit.ly/2xIUZWX">online tutorial</a> can help orient you.</p>
+</div></aside>
+
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>There is no dominant configuration language at Google or among our reader base, but we needed to choose <em>some</em> language that allows us to provide examples.<a contenteditable="false" data-primary="Jsonnet" data-type="indexterm" id="idm139660638566288"/> This chapter uses Jsonnet to show practical examples of the recommendations we provide in <a data-type="xref" href="ch14.html#configuration_design_and_best_practices">Chapter 14</a>.</p>
+
+<p>If you aren’t already committed to a particular configuration language and want to use Jsonnet, you can directly apply the examples in this chapter. In all cases, we’ve done our best to make it as easy as possible for you to abstract the underlying lesson from the code examples.</p>
+
+<p>Additionally, some of the examples explore concepts (like Turing completeness) that you might expect to find in a programming book. We have taken great care to dive only as deep as required to explain a subtlety that has actually bitten us in production. In most complex systems—and certainly with respect to configurations—the failures are at the edges.<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-startref="ix_cfgcrit" data-type="indexterm" id="idm139660638564800"/></p>
+</div>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Integrating a Configuration Language" data-type="sect1"><div class="sect1" id="integrating_a_configuration_language">
+<h1>Integrating a Configuration Language</h1>
+
+<p>This section uses Jsonnet to discuss how to integrate a configuration language with the application you need to<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-type="indexterm" id="idm139660638553120"/> configure, but <a contenteditable="false" data-primary="languages, configuration" data-secondary="integrating a configuration language" data-type="indexterm" id="idm139660638557680"/>the same techniques also transfer to other configuration languages.</p>
+
+<section data-pdf-bookmark="Generating Config in Specific Formats" data-type="sect2"><div class="sect2" id="generating_config_in_specific_formats">
+<h2>Generating Config in Specific Formats</h2>
+
+<p>A configuration language might natively output in the correct format. For example, Jsonnet outputs JSON, which is compatible with many applications.<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-tertiary="generating config in specific formats" data-type="indexterm" id="idm139660638551616"/><a contenteditable="false" data-primary="JSON" data-type="indexterm" id="idm139660638549872"/> JSON is also sufficient for consumers of languages that extend<a contenteditable="false" data-primary="JavaScript" data-type="indexterm" id="idm139660638547488"/> JSON, such as JavaScript, <a contenteditable="false" data-primary="YAML" data-type="indexterm" id="idm139660638548160"/>YAML, or <a href="https://github.com/hashicorp/hcl">HashiCorp’s Configuration Language</a>. If this is your situation, you don’t need to perform any further integration work.<a contenteditable="false" data-primary="HashiCorp Configuration Language" data-type="indexterm" id="idm139660638543792"/></p>
+
+<p>For other configuration formats that are not natively supported:</p>
+
+<ol>
+	<li>
+	<p>You need to find a way to represent configuration data within the configuration language. Usually, this is not hard because configuration values like maps, lists, strings, and other primitive values are generic and available in all languages.</p>
+	</li>
+	<li>
+	<p>Once this data is represented in the config language, you can use the constructs of that language to reduce duplication (and thus, toil).</p>
+	</li>
+	<li>
+	<p>You need to write (or reuse) a serialization function for the necessary output format. For example, the Jsonnet standard library has functions for outputting INI and XML from its internal JSON-like representation. <a contenteditable="false" data-primary="Jsonnet" data-secondary="library functions for outputting INI and XML" data-type="indexterm" id="idm139660638538064"/>If configuration data resists representation within the configuration language (for example, a Bash script), you can use basic string templating techniques as a last resort. You can find practical examples at <a href="http://bit.ly/2La0zDe"><em class="hyperlink">http://bit.ly/2La0zDe</em></a>.</p>
+	</li>
+</ol>
+</div></section>
+
+<section data-pdf-bookmark="Driving Multiple Applications" data-type="sect2"><div class="sect2" id="driving_multiple_applications">
+<h2>Driving Multiple Applications</h2>
+
+<p>Once you can drive arbitrary existing applications from the config language, you might be able to target several applications from the same config.<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-tertiary="driving multiple applications" data-type="indexterm" id="idm139660638539584"/> If your applications use different config formats, you’ll need to perform some conversion work. Once you’re able to generate configuration in the necessary formats, you can easily unify, synchronize, and eliminate repetition across your entire config corpus. Given the prevalence of JSON and JSON-based formats, you may not even have to generate different formats—for example, this is true if you use a deployment architecture that uses <a href="http://bit.ly/2JkMq9f">GCP Deployment Manager</a>, <a href="https://amzn.to/2kFPkHF">AWS Cloud Formation</a>, or <a href="https://www.terraform.io/">Terraform</a> for base infrastructure, plus Kubernetes for containers.</p>
+
+<p>At this point, you can:</p>
+
+<ul>
+	<li>
+	<p>Output an Nginx web server configuration and a Terraform firewall configuration from a single Jsonnet evaluation that defines the port only once.</p>
+	</li>
+	<li>
+	<p>Configure your monitoring dashboards, retention policies, and alert notification pipelines from the same files.</p>
+	</li>
+	<li>
+	<p>Manage the performance tradeoff between VM startup scripts and disk image-building scripts by moving initialization commands from one list to another.</p>
+	</li>
+</ul>
+
+<p>After you unite disparate configs in one place, you have many opportunities to refine and abstract the config. Configs can even be nested—for example, a <a href="https://cassandra.apache.org/">Cassandra config</a> may be embedded inside the Deployment Manager config of its base infrastructure or inside a Kubernetes ConfigMap. A good configuration language can handle any awkward string quoting and generally make this operation natural and simple.</p>
+
+<p>To make it easy to write many different files for various applications, Jsonnet has a mode that expects config execution to yield a single JSON object that maps filenames to file content (formatted as needed). You can simulate this facility in other configuration languages by emitting a map from string to string and using a postprocessing step or wrapper script to write the files.</p>
+</div></section>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="Integrating an Existing Application: Kubernetes" data-type="sect1"><div class="sect1" id="integrating_an_existing_application_kuber">
+<h1>Integrating an Existing Application: Kubernetes</h1>
+
+<p>Kubernetes makes for an interesting case study<a contenteditable="false" data-primary="Kubernetes" data-type="indexterm" id="ix_Kubint"/> for a couple <a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-type="indexterm" id="ix_cfgintKub"/>of reasons:</p>
+
+<ul>
+	<li>
+	<p>Jobs running on Kubernetes need to be configured, and their configuration can become complex.</p>
+	</li>
+	<li>
+	<p>Kubernetes does not come with a bundled configuration language (not even an ad hoc one, thankfully).</p>
+	</li>
+</ul>
+
+<p>Kubernetes users with minimally complex objects simply use YAML. Users with larger infrastructure extend their Kubernetes workflow with languages like Jsonnet to provide the abstraction facilities needed at that scale.</p>
+
+<section data-pdf-bookmark="What Kubernetes Provides" data-type="sect2"><div class="sect2" id="what_kubernetes_provides">
+<h2>What Kubernetes Provides</h2>
+
+<p>Kubernetes is an open source system for orchestrating containerized workloads on a cluster of machines.<a contenteditable="false" data-primary="Kubernetes" data-secondary="capabilities of" data-type="indexterm" id="idm139660638511712"/> Its API allows you to manage the containers themselves and many important details, such as communication between containers, communication in/out of the cluster, load balancing, storage, progressive rollout, and autoscaling. Each item of configuration <a contenteditable="false" data-primary="JSON" data-secondary="configuration items in Kubernetes represented as JSON objects" data-type="indexterm" id="idm139660638512240"/>is represented with a JSON object that can be managed via an API endpoint. The command-line tool kubectl lets you read these objects from disk and send them to the API.</p>
+
+<p>On disk, the JSON objects are actually encoded as YAML streams.<sup><a data-type="noteref" href="ch15.html#ch15fn3" id="ch15fn3-marker">3</a></sup> YAML is easily readable and converts easily to JSON via commonly available libraries. The out-of-the-box user experience involves writing YAML files that represent Kubernetes objects and running kubectl to deploy them to a cluster.<a contenteditable="false" data-primary="YAML" data-secondary="JSON object encoded as YAML streams in Kubernetes" data-type="indexterm" id="idm139660638508000"/></p>
+
+<p>To learn about best practices for configuring Kubernetes, see the <a href="http://bit.ly/2J4kqr5">Kubernetes documentation on that topic</a>.</p>
+</div></section>
+
+<section data-pdf-bookmark="Example Kubernetes Config" data-type="sect2"><div class="sect2" id="example_kubernetes_config">
+<h2>Example Kubernetes Config</h2>
+
+<p>YAML, the user interface to Kubernetes configuration, provides some simple features like comments, and has a concise syntax that most people prefer to raw JSON. <a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-tertiary="example Kubernetes config" data-type="indexterm" id="idm139660638502816"/><a contenteditable="false" data-primary="Kubernetes" data-secondary="example Kubernetes config" data-type="indexterm" id="idm139660638501296"/>However, YAML falls short when it comes to abstraction: it only provides anchors,<sup><a data-type="noteref" href="ch15.html#ch15fn4" id="ch15fn4-marker">4</a></sup> which are rarely useful in practice and are not supported by Kubernetes.</p>
+
+<p>Suppose you want to replicate a Kubernetes object four times with different namespaces, labels, and other minor variations. Following the best practices of immutable infrastructure, you store the config of all four variants, duplicating the other identical aspects of the configuration. The following code snippet presents one variant (for the sake of brevity, we omit the other three files):</p>
+
+<pre data-type="programlisting">
+<strong># example1.yaml</strong>
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: guestbook
+    tier: frontend
+  name: frontend
+  namespace: prod
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: guestbook
+    tier: frontend
+  sessionAffinity: None
+  type: NodePort
+</pre>
+
+<p>The variants are hard to read and maintain because the important differences are obscured.</p>
+</div></section>
+
+<section data-pdf-bookmark="Integrating the Configuration Language" data-type="sect2"><div class="sect2" id="integrating_the_configuration_language">
+<h2>Integrating the Configuration Language</h2>
+
+<p>As discussed in <a data-type="xref" href="#configuration_induced_toil">“Configuration-Induced Toil”</a>, managing a large number of YAML files can take a significant amount of time.<a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-tertiary="integrating the configuration language" data-type="indexterm" id="idm139660638491648"/><a contenteditable="false" data-primary="Kubernetes" data-secondary="integrating the configuration language" data-type="indexterm" id="idm139660638492528"/><a contenteditable="false" data-primary="languages, configuration" data-secondary="integrating in Kubernetes" data-type="indexterm" id="idm139660638489104"/> A configuration language can help simplify this task. The most straightforward approach is to emit a single Kubernetes object from each execution of Jsonnet, then pipe the resulting JSON directly into kubectl, which processes the JSON as if it’s YAML.<a contenteditable="false" data-primary="Jsonnet" data-secondary="using with Kubernetes configurations" data-type="indexterm" id="idm139660638489424"/><a contenteditable="false" data-primary="YAML" data-secondary="configs written in, JSON and" data-type="indexterm" id="idm139660638487664"/> Alternatively, you could emit a YAML stream (a sequence of such objects<sup><a data-type="noteref" href="ch15.html#ch15fn5" id="ch15fn5-marker">5</a></sup>) or a single kubectl list object, or have Jsonnet emit multiple files from the same config. For further discussion, see the <a href="http://bit.ly/2snCIcC"><span class="keep-together">Jsonnet</span> website</a>.</p>
+
+<p>Developers should be aware that in general, YAML allows you to write configs that are not expressible in JSON (and therefore, can’t be generated by Jsonnet). YAML configs can contain exceptional IEEE floating-point values like NaN, or objects with nonstring fields like arrays, other objects, or null. In practice, these features are very rarely used, and Kubernetes doesn’t allow them because the config must be JSON-encoded when sent to the API.</p>
+
+<p>The following snippet shows what our example Kubernetes configuration would look like in Jsonnet:</p>
+
+<pre data-type="programlisting">
+<strong>// templates.libsonnet</strong>
+{
+  MyTemplate:: {
+    local service = self,
+    tier:: error 'Needs tier',
+    apiVersion: 'v1',
+    kind: 'Service',
+
+    local selector_labels = { app: 'guestbook', tier: service.tier },
+
+    metadata: {
+      labels: selector_labels,
+      name: 'guestbook-' + service.tier,
+      namespace: 'default',
+    },
+
+    spec: {
+      externalTrafficPolicy: 'Cluster',
+      ports: [{
+        port: 80,
+        protocol: 'TCP',
+        targetPort: 80,
+      }],
+      selector: selector_labels,
+      sessionAffinity: 'None',
+      type: 'NodePort',
+    },
+  },
+}
+
+<strong>// example1.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'frontend',
+}
+
+<strong>// example2.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'backend',
+  metadata+: {
+    namespace: 'prod',
+  },
+}
+
+<strong>// example3.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'frontend',
+  metadata+: {
+    namespace: 'prod',
+    labels+: { foo: 'bar' },
+  },
+}
+
+<strong>// example4.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'backend',
+}
+</pre>
+
+<p>Note the following:</p>
+
+<ul>
+	<li>
+	<p>We express all four variants by instantiating an abstract template four times, but you could also use functional abstractions.</p>
+	</li>
+	<li>
+	<p>While we use a separate Jsonnet file for each instance, you might also consolidate them in a single file.</p>
+	</li>
+	<li>
+	<p>In the abstract template, the namespace defaults to <code>default</code> and the tier must be overridden.</p>
+	</li>
+	<li>
+	<p>At first glance, the Jsonnet is slightly more verbose, but reduces toil as the number of template instantiations grows.</p>
+	</li>
+</ul>
+
+<p>Within <code>MyTemplate</code>, the <code>local</code> keyword defines a variable <code>service</code>, which is initialized to <code>self</code> (a reference to the closest enclosing object). This allows you to refer to the object from within nested objects, where <code>self</code> is redefined.</p>
+
+<p>The <code>tier</code> field has two colons (rather than the regular JSON single colon) and is hidden (not output) in the generated JSON. Otherwise, Kubernetes will reject <code>tier</code> as an unrecognized field. Hidden fields can still be overridden and referenced—in this case, as <code>service.tier</code>.</p>
+
+<p>The template cannot be used by itself because referencing <code>service.tier</code> triggers the <code>error</code> construct, which raises a runtime error with the given text. To avoid the error, each instance of the template overrides the <code>tier</code> field with some other expression. In other words, this pattern expresses something similar to a pure virtual/abstract method.</p>
+
+<p>Using functions for abstraction means that config can only be parameterized. In contrast, templates allow you to override any field from the parent. As described in <a data-type="xref" href="ch14.html#configuration_design_and_best_practices">Chapter 14</a>, while simplicity should be fundamental to your design, the ability to escape simplicity is important. <a contenteditable="false" data-primary="simplicity" data-secondary="escaping in configuration" data-type="indexterm" id="idm139660638462992"/><a contenteditable="false" data-primary="templates" data-secondary="using for configurations" data-type="indexterm" id="idm139660638459632"/>Template overrides provide a useful escape hatch to change specific details that might normally be considered too low-level. For example:</p>
+
+<pre data-type="programlisting">
+templates.MyTemplate {
+  tier: 'frontend',
+  spec+: {
+    sessionAffinity: 'ClientIP',
+  },
+}
+</pre>
+
+<p>Here’s a typical workflow to convert an existing<a contenteditable="false" data-primary="Jsonnet" data-secondary="converting existing template to" data-type="indexterm" id="idm139660638456736"/> template to Jsonnet:</p>
+
+<ol>
+	<li>
+	<p>Convert one of the YAML variants to JSON.</p>
+	</li>
+	<li>
+	<p>Run the resulting JSON through the Jsonnet formatter.</p>
+	</li>
+	<li>
+	<p>Manually add Jsonnet constructs to abstract and instantiate the code (as shown in the example).</p>
+	</li>
+</ol>
+
+<p>The example showed how to remove duplication while retaining certain fields that were different. Using a configuration language becomes more compelling as differences become more subtle (e.g., strings are slightly different) or challenging to express (e.g., configuration has structural differences like additional elements in arrays, or the same difference applied across all elements of an array).</p>
+
+<p>In general, abstracting commonalities across different configurations promotes separation of concerns and has the same benefits as modularity in programming languages. You can take advantage of abstraction capabilities for a number of different use cases:</p>
+
+<ul>
+	<li>
+	<p>A single team might need to create multiple versions of their configuration that are <em>almost</em> (but not quite) the same—for example, when managing deployments across varied environments (prod/stage/dev/test), tuning deployments on different architectures, or adjusting capacity in different geographies.</p>
+	</li>
+	<li>
+	<p>An organization might have an infrastructure team that maintains reusable components—API serving frameworks, cache servers, or MapReduces—that are used by the application teams. For each component, the infrastructure team can maintain a template that defines the Kubernetes objects needed to run that component at scale. Each application team can instantiate that template to add the particulars of their application.<a contenteditable="false" data-primary="Kubernetes" data-startref="ix_Kubint" data-type="indexterm" id="idm139660638445296"/><a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-startref="ix_cfgintKub" data-type="indexterm" id="idm139660638450464"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Integrating Custom Applications (In-House Software)" data-type="sect1"><div class="sect1" id="integrating_custom_applications_left_pare">
+<h1>Integrating Custom Applications (In-House Software)</h1>
+
+<p>If your infrastructure utilizes any custom applications (i.e., software developed in-house, as opposed to off-the-shelf solutions), then you can design those applications to coexist with a reusable configuration language.<a contenteditable="false" data-primary="configuration" data-secondary="integrating custom applications" data-type="indexterm" id="ix_cfgintcusapp"/> The suggestions in this section should improve the overall user configuration experience when you are writing config files or interacting with the generated config data (e.g., for debugging purposes, or when integrating with other tools). They should also simplify the application’s design and separate configuration from data.</p>
+
+<p>Your broad strategy for approaching custom applications should be to:</p>
+
+<ul>
+	<li>
+	<p>Let the config language handle what it’s designed for: the language aspect of the problem.</p>
+	</li>
+	<li>
+	<p>Let your application handle all other functionality.</p>
+	</li>
+</ul>
+
+<p>The following best practices include examples that use Jsonnet, but the same recommendations apply to other languages:<a contenteditable="false" data-primary="Jsonnet" data-type="indexterm" id="idm139660638437632"/></p>
+
+<ul>
+	<li>
+	<p>Consume a single pure data file, and let the config language split the config into files using imports. This means the config language implementation only has to emit (and the application only has to consume) a single file. Also, since applications can combine files in different ways, this strategy explicitly and clearly delineates how the files are combined to form the application configuration.</p>
+	</li>
+	<li>
+	<p>Represent collections of named entities using objects, where the field contains the object name and the value contains the rest of the entity. Avoid using an array of objects where each element<a contenteditable="false" data-primary="JSON" data-secondary="examples of bad and good JSON output by Jsonnet" data-type="indexterm" id="idm139660638431104"/> has a name field.</p>
+
+	<p>Bad JSON:</p>
+
+	<pre data-type="programlisting">
+[
+  { "name": "cat", ... },
+  { "name": "dog", ... }
+]
+</pre>
+
+	<p>Good JSON:</p>
+
+	<pre data-type="programlisting">
+{
+  "cat": { ... },
+  "dog": { ... }
+}
+</pre>
+
+	<p>This strategy makes the collection (and individual animals) easier to extend, and you can reference entities by name (e.g., <code>animals.cat</code>) instead of referencing brittle indexes (e.g., <code>animals[0]</code>).</p>
+	</li>
+	<li>
+	<p>Avoid grouping entities by type at the top level. Structure the JSON so that logically related configuration is grouped in the same subtree. This allows abstraction (at the config language level) to follow functional boundaries.</p>
+
+	<p class="pagebreak-before">Bad JSON:</p>
+
+	<pre data-type="programlisting">
+{
+  "pots": { "pot1": { ... }, "pot2": { ... } },
+  "lids": { "lid1": { ... }, "lid2": { ... } }
+}
+</pre>
+
+	<p>Good JSON:</p>
+
+	<pre data-type="programlisting">
+{
+  "pot_assembly1": { "pot": { ... }, "lid": { ... } },
+  "pot_assembly2": { "pot": { ... }, "lid": { ... } }
+}
+</pre>
+
+	<p>At the config language level, this strategy enables abstractions like the following:</p>
+
+	<pre data-type="programlisting">
+local kitchen = import 'kitchen.libsonnet';
+{
+  pot_assembly1: kitchen.CrockPot,
+  pot_assembly2: kitchen.SaucePan { pot+: { color: 'red' } },
+}
+</pre>
+	</li>
+	<li>
+	<p>Generally keep the data representation design simple:</p>
+
+	<ul>
+		<li>
+		<p>Avoid embedding language features in the data representation (as mentioned in <a data-type="xref" href="#pitfall_1_failing_to_recognize_configurat">“Pitfall 1: Failing to Recognize Configuration as a Programming Language Problem”</a>). These types of abstractions will be underpowered and only create confusion, since they force users to decide whether to use the abstraction features in the data representation or in the configuration <span class="keep-together">language</span>.</p>
+		</li>
+		<li>
+		<p>Don’t worry about overly verbose data representation. Solutions to reduce verbosity introduce complexity, and the problem can be managed in the configuration language.</p>
+		</li>
+		<li>
+		<p>Avoid interpreting custom string interpolation syntax, such as conditionals or placeholder references in strings, in your application. Sometimes interpretation is unavoidable—for example, when you need to describe actions that are performed after the pure data version of the config is generated (alerts, handlers, etc.). But otherwise, let the config language do as much of the language-level work as possible.</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>As mentioned earlier, if you <em>can</em> remove configuration altogether, doing so is always your best option. Although the configuration language can hide the complexity of the underlying model by using templates with default values, the generated config data is not completely hidden—it may be processed by tools, inspected by humans, or loaded into config databases. For the same reason, don’t rely on the configuration language to fix inconsistent naming, plurals, or mistakes in the underlying model—fix them in the model itself. If you can’t fix inconsistencies in the model, it is better to live with them at the language level to avoid even more inconsistency.</p>
+
+<p>In our experience, configuration changes tend to dominate outage root causes over time in a system (see our list of top causes of outages in <a data-type="xref" href="app03.html#results_of_postmortem_analysis">Appendix C</a>). Validating your config changes is a key step to maintaining reliability. We recommend validating the generated config data immediately after configuration execution. Syntactic validation alone (i.e., checking whether JSON is parsable) won’t find many bugs. After generic schema validation, check properties that are specific to your application’s domain—for example, whether required fields are present, referenced filenames exist, and provided values are within allowed ranges.</p>
+
+<p>You can <a contenteditable="false" data-primary="Jsonnet" data-secondary="validating JSON with JSONschema" data-type="indexterm" id="idm139660638415808"/>validate Jsonnet’s JSON with <a href="http://json-schema.org/">JSONschema</a>. For applications using <a href="http://bit.ly/2szjO1l">protocol buffers</a>, you can easily generate the canonical JSON form of these buffers from Jsonnet, and the protocol buffer implementation will validate during deserialization.<a contenteditable="false" data-primary="protocol buffers" data-type="indexterm" id="idm139660638413392"/></p>
+
+<p>No matter how you decide to validate, do not ignore unrecognized field names, as they may indicate a typo at the configuration language level. Jsonnet can mask fields that should not be output using the <code>::</code> syntax. It’s also a good idea to perform the same validation in a precommit hook.<a contenteditable="false" data-primary="configuration" data-secondary="integrating custom applications" data-startref="ix_cfgintcusapp" data-type="indexterm" id="idm139660638410864"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Effectively Operating a Configuration System" data-type="sect1"><div class="sect1" id="effectively_operating_a_configuration_sys">
+<h1>Effectively Operating a Configuration System</h1>
+
+<p>When implementing “configuration as code” in any language, <a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-type="indexterm" id="ix_cfgopsys"/>we recommend following the discipline and processes that aid software engineering generally.</p>
+
+<section data-pdf-bookmark="Versioning" data-type="sect2"><div class="sect2" id="versioning">
+<h2>Versioning</h2>
+
+<p>Configuration languages usually trigger engineers to write libraries of templates and utility functions. <a contenteditable="false" data-primary="versioning, using with configurations" data-type="indexterm" id="idm139660638399040"/>Often, one team maintains <a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="versioning" data-type="indexterm" id="idm139660638397744"/>these libraries, but many other teams may consume them. When you need to make a breaking change to the library, you have two choices:</p>
+
+<ul>
+	<li>
+	<p>Commit a global update of all client code, refactoring the code so that it still works (this may not be organizationally possible).</p>
+	</li>
+	<li>
+	<p>Version the library so that different consumers can use different versions and migrate independently. Consumers who opt to use deprecated versions won’t get the benefits of the new versions and will incur technical debt—someday, they will have to refactor their code to use the new library.</p>
+	</li>
+</ul>
+
+<p>Most languages, including Jsonnet, do not provide any specific support for versioning; instead, you can easily use directories.<a contenteditable="false" data-primary="Jsonnet" data-secondary="versioning in" data-type="indexterm" id="idm139660638391600"/> For a practical example in Jsonnet, see the <a href="http://bit.ly/2snzCW0">ksonnet-lib repository</a>, where the version is the first component of the imported path:</p>
+
+<pre data-type="programlisting">
+local k = import 'ksonnet.beta.2/k.libsonnet';
+</pre>
+</div></section>
+
+<section data-pdf-bookmark="Source Control" data-type="sect2"><div class="sect2" id="source_control">
+<h2>Source Control</h2>
+
+<p><a data-type="xref" href="ch14.html#configuration_design_and_best_practices">Chapter 14</a> advocates keeping a historical record of config changes (including who made them) and ensuring that rollbacks are easy and reliable.<a contenteditable="false" data-primary="source control, using with configurations" data-type="indexterm" id="idm139660638386592"/><a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="using source control" data-type="indexterm" id="idm139660638385232"/> Checking configuration into source control brings all these capabilities, plus the ability to code review config changes.</p>
+</div></section>
+
+<section data-pdf-bookmark="Tooling" data-type="sect2"><div class="sect2" id="tooling">
+<h2>Tooling</h2>
+
+<p>Consider how you will enforce style and lint your configurations, and investigate if there’s an editor plug-in that integrates these tools into your workflow. <a contenteditable="false" data-primary="tools" data-secondary="for configuration systems" data-type="indexterm" id="idm139660638381616"/>Your goals here are to maintain a consistent style across all authors, to improve readability, and to detect errors. Some editors support post-write hooks that can run formatters and other external tools for you. You can also use precommit hooks to run the same tools to ensure checked-in config is high quality.</p>
+</div></section>
+
+<section data-pdf-bookmark="Testing" data-type="sect2"><div class="sect2" id="testing">
+<h2>Testing</h2>
+
+<p>We recommend implementing unit tests for upstream template libraries.<a contenteditable="false" data-primary="templates" data-secondary="testing templates in a configuration system" data-type="indexterm" id="idm139660638376336"/><a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="testing" data-type="indexterm" id="idm139660638377312"/><a contenteditable="false" data-primary="testing" data-secondary="for configuration systems" data-type="indexterm" id="idm139660638373776"/> Make sure the libraries generate the expected concrete configuration when instantiated in various ways. Similarly, libraries of functions should include unit tests so they can be maintained with confidence.</p>
+
+<p>In Jsonnet, you can <a contenteditable="false" data-primary="Jsonnet" data-secondary="writing tests as Jsonnet files" data-type="indexterm" id="idm139660638372144"/>write tests as Jsonnet files that:</p>
+
+<ol>
+	<li>
+	<p>Import the library to be tested.</p>
+	</li>
+	<li>
+	<p>Exercise the library.</p>
+	</li>
+	<li>
+	<p>Use either the <code>assert</code> statement or the standard library <code>assertEqual</code> function to validate its output. The latter presents any mismatching values in its error <span class="keep-together">messages</span>.</p>
+	</li>
+</ol>
+
+<p>The following example tests the <code>joinName</code> function and <code>MyTemplate</code>:</p>
+
+<pre data-type="programlisting">
+<strong>// utils_test.jsonnet</strong>
+local utils = import 'utils.libsonnet';
+
+std.assertEqual(utils.joinName(['foo', 'bar']), 'foo-bar') &amp;&amp;
+std.assertEqual(utils.MyTemplate { tier: 'frontend' }, { ... })
+</pre>
+
+<p>For larger test suites, you can take advantage of a <a href="http://bit.ly/2xzbOTZ">more comprehensive unit test framework developed by Jsonnet community members</a>. You can use this framework to define and run suites of tests in a structured manner—for example, to report the set of all failing tests instead of aborting execution at the first failing assertion.<a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-startref="ix_cfgopsys" data-type="indexterm" id="idm139660638360768"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="When to Evaluate Configuration" data-type="sect1"><div class="sect1" id="when_to_evaluate_configuration">
+<h1>When to Evaluate Configuration</h1>
+
+<p>Our critical properties include <em>hermeticity</em>; that is, configuration languages must generate the same config data regardless of where or when they execute.<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-type="indexterm" id="ix_cfgeval"/> As described in <a data-type="xref" href="ch14.html#configuration_design_and_best_practices">Chapter 14</a> a system can be hard or impossible to roll back if it depends on resources that can change outside of its hermetic environment.<a contenteditable="false" data-primary="Jsonnet" data-secondary="generating JSON for configuration evaluation" data-type="indexterm" id="ix_Jsonnet"/> Generally, hermeticism means that Jsonnet code is always interchangeable with the expanded JSON it represents. Accordingly, you can generate JSON from Jsonnet at any time between when the Jsonnet is updated and when you need the JSON—even each time you need the JSON.</p>
+
+<p>We recommend storing configuration in version control. Then your earliest opportunity to validate the config is before check-in. At the other extreme, an application can evaluate the config when it needs the JSON data. As a middle-of-the-road option, you can evaluate at build time. Each of these options has various tradeoffs, and you should optimize according to the specifics of your use case.</p>
+
+<section data-pdf-bookmark="Very Early: Checking in the JSON" data-type="sect2"><div class="sect2" id="very_early_checking_in_the_json">
+<h2>Very Early: Checking in the JSON</h2>
+
+<p>You can generate JSON from the Jsonnet code before<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="early evaluation, checking in the JSON" data-type="indexterm" id="idm139660638349152"/> checking both in to version control. The typical workflow is as follows:</p>
+
+<ol>
+	<li>
+	<p>Modify the Jsonnet files.</p>
+	</li>
+	<li>
+	<p>Run the Jsonnet command-line tool (perhaps wrapped in a script) to regenerate JSON files.</p>
+	</li>
+	<li>
+	<p>Use a precommit hook to ensure that the Jsonnet code and JSON output are always consistent.</p>
+	</li>
+	<li>
+	<p>Package everything into a pull request for a code review.</p>
+	</li>
+</ol>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros">
+<h3>Pros</h3>
+
+<ul>
+	<li>
+	<p>The reviewer can sanity-check the concrete changes—for example, a refactoring should not affect the generated JSON at all.</p>
+	</li>
+	<li>
+	<p>You can inspect line annotations by multiple authors across different versions at both the generated and abstracted level. This is useful for auditing changes.</p>
+	</li>
+	<li>
+	<p>You don’t need to run Jsonnet at runtime, which can help to limit complexity, binary size, and/or risk exposure.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons">
+<h3>Cons</h3>
+
+<ul>
+	<li>
+	<p>The generated JSON is not necessarily readable—for example, if it embeds long strings.</p>
+	</li>
+	<li>
+	<p>The JSON may not be suitable for checking into version control for other reasons—for example, if it’s too large or contains secrets.</p>
+	</li>
+	<li>
+	<p>Merge conflicts may arise if many concurrent edits to separate Jsonnet files converge to a single JSON file.</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Middle of the Road: Evaluate at Build Time" data-type="sect2"><div class="sect2" id="middle_of_the_road_evaluate_at_build_time">
+<h2>Middle of the Road: Evaluate at Build Time</h2>
+
+<p>You can avoid checking JSON into source control by running the Jsonnet command-line utility at build time and embedding the generated JSON into the release artifact (e.g., as a tarball).<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="middle of the road, evaluation at build time" data-type="indexterm" id="idm139660638330928"/> The application code simply reads the JSON file from disk at initialization time. If you’re using Bazel, you can easily achieve this using the <a href="http://bit.ly/2xz0QxH">Jsonnet Bazel rules</a>. At Google, we commonly favor this approach because of the pros listed next.</p>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros-id00075">
+<h3>Pros</h3>
+
+<ul>
+	<li>
+	<p>You have the ability to control runtime complexity, binary size, and risk exposure without having to rebuild the JSON files in each pull request.</p>
+	</li>
+	<li>
+	<p>There’s no risk of desynchronization between originating Jsonnet code and resulting JSON.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons-id00076">
+<h3>Cons</h3>
+
+<ul>
+	<li>
+	<p>The build is more complex.</p>
+	</li>
+	<li>
+	<p>It’s harder to evaluate the concrete change during code review.</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Late: Evaluate at Runtime" data-type="sect2"><div class="sect2" id="late_evaluate_at_runtime">
+<h2>Late: Evaluate at Runtime</h2>
+
+<p>Linking the Jsonnet library allows the application itself to interpret<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="late evaluation at runtime" data-type="indexterm" id="idm139660638317120"/> the config at any time, yielding an in-memory representation of the generated JSON config.</p>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros-id00077">
+<h3>Pros</h3>
+
+<ul>
+	<li>
+	<p>It’s simpler, as you don’t need a prior evaluation.</p>
+	</li>
+	<li>
+	<p>You gain the ability to evaluate Jsonnet code provided by the user during <span class="keep-together">execution</span>.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons-id00078">
+<h3>Cons</h3>
+
+<ul>
+	<li>
+	<p>Any linked library increases the footprint and risk exposure.</p>
+	</li>
+	<li>
+	<p>Configuration bugs may be discovered at runtime, which is too late.</p>
+	</li>
+	<li>
+	<p>If the Jsonnet code is untrusted, you must take special care. (We discuss why in <a data-type="xref" href="#guarding_against_abusive_configuration">“Guarding Against Abusive Configuration”</a>.)</p>
+	</li>
+</ul>
+
+<p>To follow our running example, when should you run Jsonnet if you’re generating Kubernetes objects?</p>
+
+<p>The answer depends on your implementation. If you’re building something like ksonnet (a client-side command-line tool that runs Jsonnet code from the local filesystem), the easiest solution is to link the Jsonnet library into the tool and evaluate the Jsonnet in process. Doing so is safe because code runs on the author’s own machine.</p>
+
+<p><a href="http://Box.com">Box.com</a>’s infrastructure uses Git hooks to push configuration changes to production. To avoid executing Jsonnet on the server, the Git hooks act on generated JSON that’s kept in the repository. For a deployment management daemon like Helm or Spinnaker, your only choice is to evaluate the Jsonnet on the server at runtime (with the caveats described in the next section).<a contenteditable="false" data-primary="Jsonnet" data-secondary="generating JSON for configuration evaluation" data-startref="ix_Jsonnet" data-type="indexterm" id="idm139660638299440"/><a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-startref="ix_cfgeval" data-type="indexterm" id="idm139660638297568"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Guarding Against Abusive Configuration" data-type="sect1"><div class="sect1" id="guarding_against_abusive_configuration">
+<h1>Guarding Against Abusive Configuration</h1>
+
+<p>Unlike long-running services, configuration execution should quickly terminate with the resulting config. Unfortunately, due to bugs or deliberate attacks, configuration may take an arbitrary amount of CPU time or memory.<a contenteditable="false" data-primary="configuration" data-secondary="guarding against abusive configuration" data-type="indexterm" id="idm139660638295520"/><a contenteditable="false" data-primary="Jsonnet" data-secondary="guarding against abusive configurations in" data-type="indexterm" id="idm139660638302864"/> To illustrate why, consider the following nonterminating Jsonnet program:</p>
+
+<pre data-type="programlisting">
+local f(x) = f(x + 1); f(0)
+</pre>
+
+<p>A program that uses unbounded memory is similar:</p>
+
+<pre data-type="programlisting">
+local f(x) = f(x + [1]); f([])
+</pre>
+
+<p>You can write equivalent examples using objects instead of functions, or in other configuration languages.</p>
+
+<p>You might try to avoid overconsuming resources by restricting the language so that it is no longer <a href="http://bit.ly/2J4jgfi">Turing complete</a>. However, enforcing that all <span class="keep-together">configurations</span> terminate doesn’t necessarily prevent overconsuming resources. It’s easy to write a program that consumes enough time or memory to be practically nonterminating. For <span class="keep-together">example</span>:</p>
+
+<pre data-type="programlisting">
+local f(x) = if x == 0 then [] else [f(x - 1), f(x - 1)]; f(100)
+</pre>
+
+<p>In fact, <a href="http://bit.ly/2szYkl5">such programs exist</a> even with simple config formats like XML and YAML.</p>
+
+<p>In practice, the risk of these scenarios depends on the situation. On the less problematic side, suppose a command-line tool uses Jsonnet to build Kubernetes objects and then deploys those objects.<a contenteditable="false" data-primary="Kubernetes" data-secondary="using Jsonnet to build and deploy objects" data-type="indexterm" id="idm139660638287760"/> In this case, the Jsonnet code is trusted: accidents that produce nontermination are rare, and you can use Ctrl-C to mitigate them. Accidental memory exhaustion is extremely unlikely. At the other extreme, with a service like Helm or Spinnaker, which accepts arbitrary config code from an end user and evaluates it in a request handler, you must be very careful to avoid DOS attacks that might tie up request handlers or exhaust memory.</p>
+
+<p>If you evaluate untrusted Jsonnet code in a request handler, you can avoid such attacks by sandboxing the Jsonnet execution. One easy strategy is to use a separate process and <code>ulimit</code> (or its non-UNIX equivalent).<a contenteditable="false" data-primary="ulimit utility" data-type="indexterm" id="idm139660638282096"/> Typically, you need to fork to the command-line executable instead of linking the Jsonnet library. As a result, programs that do not complete within given resources fail safely and inform the end user. For additional defense against C++ memory exploits, you can use the native Go implementation of Jsonnet.</p>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00079">
+<h1>Conclusion</h1>
+
+<p>Whether you use Jsonnet, adopt another configuration language, or develop your own, we hope that you can apply these best practices to manage the complexity and operational load required to configure your production system with confidence.</p>
+
+<p>At a minimum, the critical properties of a configuration language are good <em>tooling</em>, <em>hermetic</em> configurations, and <em>separation of configuration and data</em>.</p>
+
+<p>Your system may not be complex enough to need a configuration language. Transitioning to a domain-specific language like Jsonnet is a strategy to consider when your complexity increases. Doing so will allow you to provide a consistent and well-structured interface, and will free up your SRE team’s time to work on other important projects.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch15fn1"><sup><a href="ch15.html#ch15fn1-marker">1</a></sup> Note that you may be able to write software to convert your old configuration language to the new language; however, if your original source language is nonstandard or broken, this isn’t a viable option.</p><p data-type="footnote" id="ch15fn2"><sup><a href="ch15.html#ch15fn2-marker">2</a></sup> While fields from computational biology to video games use Jsonnet, the most enthusiastic adopters are from the Kubernetes community. Box.com uses Jsonnet to describe the workloads that run on their Kubernetes-based internal infrastructure platform. Databricks and Bitnami also use the language extensively.</p><p data-type="footnote" id="ch15fn3"><sup><a href="ch15.html#ch15fn3-marker">3</a></sup> A YAML stream is a file that contains many YAML documents separated by <code>"---"</code>.</p><p data-type="footnote" id="ch15fn4"><sup><a href="ch15.html#ch15fn4-marker">4</a></sup> YAML Specification §6.9.2.</p><p data-type="footnote" id="ch15fn5"><sup><a href="ch15.html#ch15fn5-marker">5</a></sup> In the YAML specification, <em>objects</em> are known as <em>documents</em>.</p></div></div></section></body></html>

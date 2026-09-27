@@ -1,0 +1,388 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Identifying and Recovering from Overload</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 17. Identifying and Recovering from Overload" data-type="chapter" epub:type="chapter"><div class="chapter" id="identifying_and_recovering_from_overload">
+<h1><span class="label">Chapter 17. </span>Identifying and Recovering from Overload</h1>
+
+<p class="byline">By Maria-Hendrike Peetz, Luis Quesada Torres, and Marilia Melo with Diane Bates</p>
+
+<p>When an SRE team is running smoothly, team members should feel like they can comfortably handle all of their work.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-type="indexterm" id="ix_ovrld"/> They should be able to work on tickets and still have time to work on long-term projects that make it easier to manage the service in the future.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="work overload" data-see="overload, identifying and recovering from" data-type="indexterm" id="idm139660637977040"/> </p>
+
+<p>But sometimes circumstances get in the way of a team’s work goals. Team members take time off for long-term illnesses or move to new teams. Organizations hand down new production-wide programs for SRE. Changes to the service or the larger system introduce new technical challenges. As workload increases, team members start working longer hours to handle tickets and pages and spend less time on engineering work. The whole team starts to feel stressed and frustrated as they work harder but don’t feel like they are making progress. Stress, in turn, causes people to make more mistakes, impacting reliability and, ultimately, end users. In short, the team loses its ability to regulate its daily work and effectively manage the service.</p>
+
+<p>At this point, the team needs to find a way out of this overloaded state. They need to rebalance their workload so that team members can focus on essential engineering work.</p>
+
+<p><em>Operational load</em> (or <em>operational workload</em>) is a term that <a contenteditable="false" data-primary="operational load (or operational workload)" data-type="indexterm" id="idm139660637960480"/>describes the ongoing maintenance tasks that keep systems and services running at optimal performance. There are three distinct types of operational load: <em>pages</em>, <em>tickets</em>, and <em>ongoing operational responsibilities</em>. Pages typically require immediate attention, and tickets related to urgent problems can have tight deadlines. Both pages and urgent tickets interrupt SREs from working on engineering projects that support the team’s operational responsibilities.<a contenteditable="false" data-primary="interrupts" data-type="indexterm" id="idm139660637968576"/> For that reason, we refer to them as <em>interrupts</em>. <a href="http://bit.ly/2LQYspl">Chapter 29</a> of <em>Site Reliability Engineering</em> discusses techniques to manage the interrupts that naturally arise when a team is maintaining a complex system in a functional state.</p>
+
+<p>When operational load outstrips a team’s ability to manage it, the team ends up in a state of <em>operational overload</em> (also called <em>work overload</em>). A<a contenteditable="false" data-primary="operational overload (or work overload)" data-type="indexterm" id="idm139660637970208"/> team<a contenteditable="false" data-primary="work overload" data-seealso="overload, identifying and recovering from" data-type="indexterm" id="idm139660637964352"/> is in a state of operational overload when it can’t make progress toward key priorities because urgent issues continually preempt project work. In addition to detracting from the team’s priorities and service improvements, overload can increase the chance that engineers make errors.<sup><a data-type="noteref" href="ch17.html#ch17fn1" id="ch17fn1-marker">1</a></sup></p>
+
+<p>The threshold of operational overload can vary from team to team. Google SRE teams cap operational work at 50% of an engineer’s time. A successful SRE team must have confidence that over the long term, they will be able to complete the engineering projects required to reduce the operational load for the services they manage.</p>
+
+<p>This chapter describes how teams at Google progressed from a difficult situation characterized by operational overload to a well-managed workload. Two case studies show the detrimental effect of operational overload on team health, and how the teams made changes to their daily tasks so they could focus on long-term impactful projects. In Case Study 1, overload results when remaining members on a shrinking team are unable to keep up with the workload. In Case Study 2, a team suffers from <em>perceived overload</em>—a state that has the same effects as operational overload, but starts as a misperception of the real workload.<a contenteditable="false" data-primary="perceived overload" data-type="indexterm" id="idm139660637954256"/></p>
+
+<p>While these case studies highlight specific actions that worked for two Google SRE teams, the section <a data-type="xref" href="#strategies_for_mitigating_overload">“Strategies for Mitigating Overload”</a> provides practices for identifying and mitigating overload that apply to any company or organization. Therefore, this chapter should be useful to managers of overloaded teams, or any SRE team concerned about overload.</p>
+
+<section data-pdf-bookmark="From Load to Overload" data-type="sect1"><div class="sect1" id="from_load_to_overload">
+<h1>From Load to Overload</h1>
+
+<p>Regardless of its origin, overload is an occupational stress that can cripple productivity.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="from load to overload" data-type="indexterm" id="ix_ovrldfrom"/> Left unchecked, <a href="http://bit.ly/2sozmWE">it can cause serious illness</a>. For SRE teams, operational load is typically a combination of cognitively difficult tasks (like debugging memory leaks or segmentation faults) and many small tasks that require frequent context switches (working through quota requests, starting binary rollouts, etc.).</p>
+
+<p>Work overload often happens when a team doesn’t have enough time to handle all these tasks—an objective reality when the number of tasks assigned to a team can’t be completed within the given deadline for each task. Perceived overload is more subjective, and happens when individuals on the team <em>feel</em> that they have too much work. This usually happens when several organizational or work changes take place over a short period of time, but the team has little opportunity to communicate with leadership about the changes.</p>
+
+<p>It’s never clear what problems will develop when you’re on-call, or what your workload will be. On the one hand, a single, seemingly innocent ticket about running out of disk space might lead to an in-depth investigation of a recurring garbage collection job. On the other hand, a pager storm with 20+ pages might turn out to be a case of bad monitoring. When it’s hard to estimate or predict your workload, you can easily fall victim to cognitive biases and misjudge your workload—for example, you might gauge a ticket queue as too large to finish during your on-call shift.<a contenteditable="false" data-primary="perceived overload" data-type="indexterm" id="idm139660637941936"/> Even if you can finish all the tickets quickly and the actual workload is low, you <em>feel</em> overloaded when you first look at the ticket queue. This perceived overload<sup><a data-type="noteref" href="ch17.html#ch17fn2" id="ch17fn2-marker">2</a></sup> itself has a psychological component that affects your approach and attitude toward your work. If you <em>don’t</em> start your day with the preconception that there’s too much work, you’re more likely to dive in and start working your way through the ticket queue. Perhaps you work all day and don’t finish your workload (thus facing work overload), but you make a lot more progress than if you had started your day feeling overwhelmed.</p>
+
+<p>Accumulating many interrupts can lead to work overload, but it doesn’t have to. But when frequent interruptions are paired with external stress factors, a large workload (or even a small workload) can easily turn into perceived overload.<a contenteditable="false" data-primary="interrupts" data-secondary="work overload and" data-type="indexterm" id="idm139660637933296"/> This stress might stem from the fear of disappointing other team members, job insecurity, work-related or personal conflicts, illness, or health-related issues like the lack of sleep or exercise.</p>
+
+<p>If your work isn’t properly prioritized, every task can seem equally urgent, leading to both actual and perceived overload. In the case of actual overload, the urgency of tickets and alerts might cause team members to work until they resolve the problem, even if doing so means continuous long hours. When a team faces perceived overload, reprioritizing can help decrease the amount of urgent work, creating space for them to tackle the sources of overload through project work.</p>
+
+<p>When analyzing your specific situation, you shouldn’t necessarily assume that the workload itself needs to change. Instead, we recommend first quantifying the work your team faces, and how it has (or hasn’t) changed over time. For example, you might measure workload by the number of tickets and pages the team handles. If your workload hasn’t actually changed over time, the team might feel overloaded simply because they perceive the work as overwhelming. To get a more holistic view of the team’s current workload, you can collect a one-time snapshot by asking every member to list all the work tasks they face. Then take a look at psychological stress factors your team faces, such as organizational changes or reprioritization. Once you’ve done your research, you have a stable basis for making decisions about changing the workload.</p>
+
+<p><a data-type="xref" href="#strategies_for_mitigating_overload">“Strategies for Mitigating Overload”</a> talks more about how to identify <span class="keep-together">overload</span>, both real and perceived. First, we present two case studies of teams that recognized that they were in overload and took steps to alleviate it.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="from load to overload" data-startref="ix_ovrldfrom" data-type="indexterm" id="idm139660637931040"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 1: Work Overload When Half a Team Leaves" data-type="sect1"><div class="sect1" id="case_study_1_work_overload_when_half_a_te">
+<h1>Case Study 1: Work Overload When Half a Team Leaves</h1>
+
+<section data-pdf-bookmark="Background" data-type="sect2"><div class="sect2" id="background-id00081">
+<h2>Background</h2>
+
+<p>One of Google’s internal storage SRE teams was in charge of backends for multiple services, including Gmail, Google Drive, and Google Groups, and many other internal or user-facing services.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-type="indexterm" id="ix_ovrldcs1"/><a contenteditable="false" data-primary="SRE teams" data-secondary="work overload when half a team leaves, case study" data-type="indexterm" id="ix_SREteamovr"/> We experienced a crisis in mid-2016 when two-thirds of the team—including the most senior engineer (the manager)—transferred to other opportunities within a relatively short window, for genuinely entirely unrelated reasons. This event obviously led to a huge workload management problem: fewer SREs available to cover the same operational and project work quickly resulted in overload. Our work was also bottlenecked because each team member’s expertise was siloed to a different area of production. While the addition of new team members and three interns would improve our workload in the long term, ramping up those engineers would take a serious investment of time and energy.</p>
+</div></section>
+
+<section data-pdf-bookmark="Problem Statement" data-type="sect2"><div class="sect2" id="problem_statement-id00082">
+<h2>Problem Statement</h2>
+
+<p>The preceding factors significantly decreased team productivity.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="problem statement" data-type="indexterm" id="idm139660637918064"/> We started to fall behind on project work, and tickets related to the many services we managed began to pile up. We didn’t have the bandwidth to address this backlog, as all of our work was consumed by higher-priority tasks. It wouldn’t be long before we weren’t able to undertake all of the critical and urgent work we needed to. Meanwhile, our team was slated to receive more high-priority work soon.</p>
+
+<p>If we didn’t move some work off our plate, it was only a matter of time before we accidentally began to drop important work. However, as soon as we started offloading work, we hit some psychological barriers:</p>
+
+<ul>
+	<li>
+	<p>Dropping any work that was in progress felt like we had just wasted our efforts. Most of the backlog seemed to be either critical or worth the effort to us, so it just didn’t feel right to cancel or delay projects indefinitely. <a contenteditable="false" data-primary="sunk cost fallacy" data-type="indexterm" id="idm139660637913840"/>We didn’t realize we were in the grip of a <a href="http://bit.ly/2Hdgf6t">sunk cost fallacy</a>.</p>
+	</li>
+	<li>
+	<p>Putting effort into automating processes or fixing the root cause of the workload was not as critical as immediately dealing with high-priority interrupts. When this work was added to the top of an already huge pile, all of the work felt <span class="keep-together">overwhelming</span>.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="What We Decided to Do" data-type="sect2"><div class="sect2" id="what_we_decided_to_do-id00083">
+<h2>What We Decided to Do</h2>
+
+<p>We gathered the team in a room and listed all the team’s responsibilities, including project backlog, operational work, and tickets.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660637907760"/> Then we triaged every list item. Viewing every single one of our work tasks (even though the list barely fit on the whiteboard) helped us identify and redefine our actual priorities. We were then able to find ways to minimize, hand off, or eliminate lower-priority work items.</p>
+</div></section>
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="implementation-id00084">
+<h2>Implementation</h2>
+
+<p>We identified low-effort automation that, while not critical, would significantly reduce operational load once deployed.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="implementation of the solution" data-type="indexterm" id="idm139660637900512"/></p>
+
+<p>We also identified common problems that we could document that would enable self-service. Writing the procedures our customers needed didn’t take long, and removed some repetitive work from our queue.</p>
+
+<p>We closed as many of our backlogged tickets as we reasonably could. Most of these tickets turned out to be obsolete, redundant, or not as urgent as they claimed. Some tickets were monitoring artifacts that were nonactionable, so we fixed the relevant monitoring. In some cases, we were actively addressing issues that weren’t critical. We set these issues aside to work on more urgent tickets, but first documented our progress so we wouldn’t lose context before we were able to work on them again.</p>
+
+<p>When in doubt, we dropped a task, but marked it for a second phase of triage. Once our plates were (almost) empty, we revisited this tentative list to decide what tasks to resume. It turned out that almost none of these tasks were impactful or important enough to resume.</p>
+
+<p>In two days—one day of intensive triage plus one day of documenting processes and implementing automation—our much smaller team addressed a backlog of several months of interrupts. We could then deal with the few remaining interrupts, which were related to active issues in production.</p>
+</div></section>
+
+<section data-pdf-bookmark="Lessons Learned" data-type="sect2"><div class="sect2" id="lessons_learned-id00085">
+<h2>Lessons Learned</h2>
+
+<p>Our team learned that identifying and scoping overload is the first step toward fixing it. <a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-tertiary="lessons learned" data-type="indexterm" id="idm139660637897968"/>We needed to get everyone in a room and reevaluate the backlog before we could help our team get back to a healthy state.</p>
+
+<p>In order to avoid a new pile-up of interrupts, we started triaging interrupts once every two weeks.<a contenteditable="false" data-primary="interrupts" data-secondary="triaging" data-type="indexterm" id="idm139660637894128"/><a contenteditable="false" data-primary="triaging interrupts" data-type="indexterm" id="idm139660637893568"/> Our technical lead periodically checks the task queue and evaluates whether the team is at risk of becoming overloaded. We decided that each team member should have 10 or fewer open tickets to avoid overload. If the team lead notices that team members have more than 10 tickets, they can do one or some combination of the following:</p>
+
+<ul>
+	<li>
+	<p>Remind the team to close out stale tickets.</p>
+	</li>
+	<li>
+	<p>Sync with overloaded team members and offload tickets from them.</p>
+	</li>
+	<li>
+	<p>Prompt individual team members to address their ticket queue.</p>
+	</li>
+	<li>
+	<p>Organize a team-wide one-day ticket fix-it.</p>
+	</li>
+	<li>
+	<p>Assign work to fix the sources of tickets, or operational work to reduce future tickets.<a contenteditable="false" data-primary="SRE teams" data-secondary="work overload when half a team leaves, case study" data-startref="ix_SREteamovr" data-type="indexterm" id="idm139660637884640"/><a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, work overload when half a team leaves" data-startref="ix_ovrldcs1" data-type="indexterm" id="idm139660637884000"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 2: Perceived Overload After Organizational and Workload Changes" data-type="sect1"><div class="sect1" id="case_study_2_perceived_overload_after_org">
+<h1>Case Study 2: Perceived Overload After Organizational and Workload Changes</h1>
+
+<section data-pdf-bookmark="Background" data-type="sect2"><div class="sect2" id="background-id00086">
+<h2>Background</h2>
+
+<p>The Google SRE team in this case study was split between two locations, with six or seven on-call engineers<a contenteditable="false" data-primary="perceived overload" data-secondary="after organizational and workload changes, case study" data-type="indexterm" id="ix_percovr"/> at each <a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-type="indexterm" id="ix_ovrlcs2"/>site (for more discussion on team size, see <a href="http://bit.ly/2JgUBU7">Chapter 11</a> of <em>Site Reliability Engineering</em>. While the Sydney team was operationally healthy, the Zürich team was overloaded.</p>
+
+<p>Before the Zürich team went into overload, we were stable and content. The number of services we managed was relatively stable, and each was varied and high maintenance. While the SLOs of the services we supported were mismatched with the SLOs of their external dependencies, this mismatch hadn’t caused any issues. We were working on a number of projects to improve the services we managed (for example, improving load balancing).</p>
+
+<p>Simultaneous triggers sent the Zürich team into overload: we started onboarding new services that were noisier and less integrated into Google’s general infrastructure, and the technical lead manager and another team member left our team, leaving it two people short. The combination of the additional workload and knowledge drain triggered more problems:</p>
+
+<ul>
+	<li>
+	<p>Untuned monitoring for the new services and the migration-related monitoring resulted in more pages per shift. This buildup was gradual, so we didn’t notice the uptick as it occurred.</p>
+	</li>
+	<li>
+	<p>SREs felt relatively helpless with the new services. We didn’t know enough about them to react appropriately, and often needed to ask the development team questions. While the overload perhaps warranted handing a service back to developers, our team had never handed back a service, so we didn’t really consider this a viable option.</p>
+	</li>
+	<li>
+	<p>A smaller on-call rotation of five people cut into the hours we normally spent on operational work.</p>
+	</li>
+	<li>
+	<p>New ticket alerts were surfacing problems that existed before the recent team changes. While we had simply ignored these problems in the past, we were now required to move ignored email alerts to tickets. Project planning hadn’t taken this new source of technical debt into account.</p>
+	</li>
+	<li>
+	<p>A new ticket SLO required us to handle tickets within <a contenteditable="false" data-primary="tickets" data-secondary="new ticket SLO in perceived overload case study" data-type="indexterm" id="idm139660637863680"/>three days, meaning that on-callers had to resolve tickets created during their on-call shift much sooner.<sup><a data-type="noteref" href="ch17.html#ch17fn3" id="ch17fn3-marker">3</a></sup> The SLO aimed to reduce the number of tickets being added to our (mostly ignored) backlog, but created a side effect that was perhaps even worse. Now SREs felt that they couldn’t get the rest they needed after a shift because they had to immediately tackle follow-up work. The higher priority placed on these tickets also meant that SREs didn’t have enough time for other operational work.</p>
+	</li>
+</ul>
+
+<p>During this time, our team was assigned to a new manager who also managed two other teams. The new manager was not part of the on-call rotation and therefore didn’t directly feel the stress team members were experiencing. When the team explained the situation to the manager, nothing changed. Team members felt that they weren’t being heard, which left them feeling distant from the management team.</p>
+
+<p>The overload from tickets continued for months, making team members grumpy, until a cascade of unhappiness spread across the team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Problem Statement" data-type="sect2"><div class="sect2" id="problem_statement-id00087">
+<h2>Problem Statement</h2>
+
+<p>After losing two people and receiving additional and varied work, our team felt overloaded. <a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="problem statement" data-type="indexterm" id="idm139660637859328"/>When we tried to communicate this feeling to our direct manager, the manager disagreed. As the long hours continued, exhaustion set in. Productivity was declining and tasks started accruing faster than the team could resolve them. The perceived overload now became objective overload, making the situation worse.</p>
+
+<p>The emotional stress caused by overload was lowering morale and causing some team members to burn out. As individuals dealt with the physical effects from overwork (illness and lower productivity), other people on the team had to pick up more work. The work assigned in weekly team meetings wasn’t getting done.</p>
+
+<p>We then started assuming we couldn’t depend on other people to get their work done, which eroded feelings of trust and dependability within the team.<a contenteditable="false" data-primary="psychological safety" data-secondary="interpersonal risk taking" data-type="indexterm" id="idm139660637851008"/><a contenteditable="false" data-primary="interpersonal risk taking" data-type="indexterm" id="idm139660637860224"/> As a result, we did not feel safe about <em>interpersonal risk taking</em>, an important factor in psychological safety (see <a href="http://bit.ly/2JgUBU7">Chapter 11</a> in <em>Site Reliability Engineering</em>). Team members didn’t feel accepted and respected by other team members, so they didn’t freely collaborate with each other. As psychological safety diminished on the team, collaboration stopped, slowing down information sharing and causing further inefficiencies.</p>
+
+<p>Team surveys also revealed a loss of psychological safety—team members said they didn’t feel like they belonged on the team. They no longer cared about their own career development, and the promotion rate on the team dropped to an all-time low.</p>
+
+<p>We finally hit a breaking point when upper management assigned us new mandatory company-wide projects. At this point, we renewed our conversations with management about overload with renewed vigor. A series of discussions revealed that our unhappy situation wasn’t just a result of too much work—our perceptions of team safety led us to stop trusting and collaborating with each other.</p>
+</div></section>
+
+<section data-pdf-bookmark="What We Decided to Do" data-type="sect2"><div class="sect2" id="what_we_decided_to_do-id00088">
+<h2>What We Decided to Do</h2>
+
+<p>Upper management assigned our team a new manager who wasn’t shared among three teams.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660637848832"/><a contenteditable="false" data-primary="participatory management" data-type="indexterm" id="idm139660637842240"/> The new manager used a <a href="http://bit.ly/2kFehmx">participatory management style</a> to improve psychological safety on the team so that we could once again collaborate. This method empowers team members to actively participate in solving team problems. The entire team, including our direct manager, engaged in a set of simple team-building exercises to improve the effectiveness of our team (some of which were as simple as drinking tea together).<sup><a data-type="noteref" href="ch17.html#ch17fn4" id="ch17fn4-marker">4</a></sup> As a result, we were able to draft a set of goals:</p>
+
+<dl>
+	<dt><dfn>Short term</dfn></dt>
+	<dd><p>Relieve stress and improve psychological safety to establish a healthy work atmosphere.</p></dd>
+	<dt><dfn>Medium term</dfn></dt>
+	<dd>
+	<p>Build confidence of individual team members through training.</p>
+
+	<p>Find the root cause of the issues that are causing overload.</p>
+	</dd>
+	<dt><dfn>Long term</dfn></dt>
+	<dd><p>Resolve ongoing problems that contributed to the cascade.</p></dd>
+</dl>
+
+<p>In order to set these goals, we had to first achieve some kind of baseline psychological safety within the team. As morale improved, we began to share knowledge and build on each other’s ideas to figure out ways to get our workload under control.</p>
+</div></section>
+
+<section data-pdf-bookmark="Implementation" data-type="sect2"><div class="sect2" id="implementation-id00089">
+<h2>Implementation</h2>
+
+<section data-pdf-bookmark="Short-term actions" data-type="sect3"><div class="sect3" id="short_term_actions">
+<h3>Short-term actions</h3>
+
+<p>Long-term stress, whether caused by <a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="short-term actions to address" data-type="indexterm" id="idm139660637832880"/>overwork or perceptions of team safety, decreases productivity and impacts people’s health. Therefore, our most important short-term action was to provide stress relief and improve trust and psychological safety. Once relieved of some stress, team members could think more clearly and participate in driving the whole team forward. Within a month of identifying the overload, we implemented the following:</p>
+
+<ul>
+	<li>
+	<p><strong>Started a semiregular round table to discuss issues.</strong> The team released frustration and brainstormed possible causes of the overload.</p>
+	</li>
+	<li>
+	<p><strong>Found a better metric for measuring load.</strong> We decided to improve upon our original metric of number of pages. We auto-assigned tickets to on-callers, and the on-caller was responsible for these tickets even after their shift ended. Our new metric measured how much time an on-caller needed to resolve a ticket after their shift.</p>
+	</li>
+	<li>
+	<p><strong>Audited and removed spamming alerts.</strong> We reviewed alerts and removed the ones that didn’t represent user-facing problems.</p>
+	</li>
+	<li>
+	<p><strong>Silenced alerts generously.</strong> The team deliberately didn’t try to find the source for every single alert, but focused on relieving the stress from being paged and ticketed continuously for issues we already knew about. We used the following strategy:</p>
+
+	<ul>
+		<li>
+		<p>Alerts that surfaced were silenced until they were fixed.</p>
+		</li>
+		<li>
+		<p>Alerts could be silenced only for a limited period of time (typically a day, sometimes up to a week). Otherwise, they might mask outages.</p>
+		</li>
+		<li>
+		<p>Alerts that couldn’t be fixed within a few minutes were assigned to a tracking ticket.</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p><strong>Added a direct manager dedicated to a single team.</strong> Making a well-respected team member the new manager reestablished trust in management. Rather than managing three teams, the new manager could focus more time on the individual team and its members.</p>
+	</li>
+	<li>
+	<p><strong>Rebalanced the team.</strong> We introduced a new perspective and on-call relief by adding technically experienced SREs that didn’t have preconceptions about the team or organization. Finding appropriate people was by no means an easy task, but was well worth the effort.</p>
+	</li>
+	<li>
+	<p><strong>Instituted team events like lunches and board game sessions.</strong> Talking about non-work-related topics and laughing together eased tension on the team and improved psychological safety.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Mid-term actions" data-type="sect3"><div class="sect3" id="mid_term_actions">
+<h3>Mid-term actions</h3>
+
+<p>Short-term solutions alone wouldn’t sustain a healthy atmosphere—for example, one of our short-term tactics<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="mid-term actions to address" data-type="indexterm" id="idm139660637815856"/> was to silence alerts without actually fixing the cause. Within three months, we also took the following actions:</p>
+
+<ul>
+	<li>
+	<p><strong>Limited operational work to on-call time as much as possible</strong> (see <a href="http://bit.ly/2LQYspl">Chapter 29</a> in <em>Site Reliability Engineering</em>) so the team could concentrate on permanent fixes and project work.</p>
+	</li>
+	<li>
+	<p><strong>Returned responsibility for one service back to its development team.</strong></p>
+	</li>
+	<li>
+	<p><strong>Trained each other (and new team members).</strong> While training requires<a contenteditable="false" data-primary="training" data-secondary="to reduce perceived work overload" data-type="indexterm" id="idm139660637807440"/> an investment of time and energy, disseminating knowledge meant that all team members (and future hires) could troubleshoot and fix issues more quickly in the future. Training coworkers improved our confidence, because we came to realize that we actually knew quite a bit about the services. As they gained knowledge, team members started to find new ways to manage services, improving their reliability and reducing overload.</p>
+	</li>
+	<li>
+	<p><strong>Brought in SREs from the remote team to staff some of our on-call shifts and participate in training.</strong> They noticed the strain on the team and provided some valuable new perspective.</p>
+	</li>
+	<li>
+	<p><strong>Backfilled the two open roles on the team.</strong></p>
+	</li>
+	<li>
+	<p><strong>Tackled each alert as the silences expired.</strong> We discussed repetitive pages and pages that resulted in no action at length in the weekly production meeting, which led us to tune alerts and/or fix the underlying problems. While these were important (and obvious) actions, we only had the space to analyze and take action once the alert was silenced and not creating constant noise.</p>
+	</li>
+	<li>
+	<p><strong>Organized listening events.</strong> Management (including the skip-level manager and team leads) made a conscious effort to listen to the team’s pain points and to find a team-driven solution.</p>
+	</li>
+	<li>
+	<p><strong>Added perspective.</strong> Hope is not a strategy, but it certainly helps team morale. With the promise of new members joining the on-call rotation, a shift to clearer priorities, and an end to noise-generating projects, the team’s mood improved.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Long-term actions" data-type="sect3"><div class="sect3" id="long_term_actions">
+<h3>Long-term actions</h3>
+
+<p>To help maintain our newfound stability, we are currently aligning our SLOs with the SLOs of their service backends, and working toward making the services more uniform.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="long-term actions to address" data-type="indexterm" id="idm139660637794064"/> Uniformity has a double benefit: it decreases cognitive load for SREs and makes it easier to write automation that can be used across services. We’re also reviewing services that have been around for a long time and updating them to current production standards. For example, some services are operating poorly under load that’s increased significantly over the years. Some services need to be updated per changes to their backend services’ policies. Other services simply haven’t been updated for several years.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Effects" data-type="sect2"><div class="sect2" id="effects">
+<h2>Effects</h2>
+
+<p>A few months after our first brainstorming meeting, results began to surface: on-call shifts became quieter, and our team managed to quickly and efficiently deal with a difficult incident collaboratively as a group.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="results of actions" data-type="indexterm" id="idm139660637792848"/> A bit later, new team members arrived. When we discussed psychological safety during a round-table session, the new members said they couldn’t imagine that the team ever had such problems. In fact, they saw our team as a warm and safe place to work. About one year after the original escalation, little of the original overload remained and an anonymous survey showed that team members now felt the team was effective and safe.</p>
+</div></section>
+
+<section data-pdf-bookmark="Lessons Learned" data-type="sect2"><div class="sect2" id="lessons_learned-id00090">
+<h2>Lessons Learned</h2>
+
+<p>Workplace changes can have a psychological impact on the people on the team—after all, your teammates are not machines.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-tertiary="lessons learned" data-type="indexterm" id="idm139660637784256"/> You need to attend to the team’s stress levels so that people start trusting each other enough to work together; otherwise, the team can enter a vicious cycle of overload that causes stress, which in turn prevents you from tackling overload.</p>
+
+<p>Perceived overload <em>is</em>, in fact, overload, and has as much impact to a team as work overload caused by other factors. In our case, our sister team in Sydney didn’t experience the same issues, and the number of pages we fielded didn’t actually change very much compared to previous years. Instead, the loss of two team members, increased cognitive load, increased ticket noise, and a new three-day SLO on tickets led the team to perceive overload. In the end, the difference between objective and perceived overload didn’t matter: the perceived overload of a few team members can very quickly lead to overload for the whole team.<a contenteditable="false" data-primary="perceived overload" data-secondary="after organizational and workload changes, case study" data-startref="ix_percovr" data-type="indexterm" id="idm139660637786576"/><a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="case study, perceived overload after organizational and workload changes" data-startref="ix_ovrlcs2" data-type="indexterm" id="idm139660637773296"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Strategies for Mitigating Overload" data-type="sect1"><div class="sect1" id="strategies_for_mitigating_overload">
+<h1>Strategies for Mitigating Overload</h1>
+
+<p>An outside perspective can sometimes quite easily identify when a team is overloaded.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-type="indexterm" id="ix_ovrldmit"/> Similarly, it’s easy to comment on what actions should have been taken in retrospect. But how do you identify overload when you’re in the middle of experiencing it? The path toward a healthy, friendly, and happy work atmosphere can be hard to visualize when you’re mired in overload. This section describes practices for both identifying and mitigating overload on your team.</p>
+
+<section data-pdf-bookmark="Recognizing the Symptoms of Overload" data-type="sect2"><div class="sect2" id="recognizing_the_symptoms_of_overload">
+<h2>Recognizing the Symptoms of Overload</h2>
+
+<p>It’s pretty easy to <a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-tertiary="recognizing symptoms of overload" data-type="indexterm" id="idm139660637770960"/>identify an overloaded team <a contenteditable="false" data-primary="symptoms of overload" data-type="indexterm" id="idm139660637778704"/>if you know the symptoms of overload:</p>
+
+<dl>
+	<dt>Decreased team morale</dt>
+	<dd>
+	<p>Overload might manifest as rants and complaints. Surveys on relevant topics (job conditions, work satisfaction, projects, peers, and managers) usually reflect team morale and yield more negative results when a team is overloaded. Regular active listening sessions with team leaders can surface issues that you weren’t aware of. An essential element of active listening is to listen without judgment.</p>
+	</dd>
+	<dt>Team members working long hours, and/or working when sick</dt>
+	<dd>
+	<p>Working overtime without compensation can be a psychosocial stressor. Leaders should set a good example: work contractual hours and stay home when sick.</p>
+	</dd>
+	<dt>More frequent illness<sup><a data-type="noteref" href="ch17.html#ch17fn5" id="ch17fn5-marker">5</a></sup></dt>
+	<dd>
+	<p>Overworked team members tend to get run down and sick more often.</p>
+	</dd>
+	<dt>An unhealthy tasks queue</dt>
+	<dd>
+	<p>We recommend regularly reviewing your team’s tasks queue to see how many tickets are backlogged, who is dealing with which issues, and what tasks can be delayed or dropped. If the team is missing deadlines, or if urgent matters prevent you from performing this review regularly, the team is very likely accumulating interrupts faster than it can attend to them.</p>
+	</dd>
+	<dt>Imbalanced metrics</dt>
+	<dd>
+	<p>A few key <a contenteditable="false" data-primary="metrics" data-secondary="indicating work overload" data-type="indexterm" id="idm139660637768224"/>metrics might indicate that your team is overloaded:</p>
+
+	<ul>
+		<li>
+		<p>Long time periods to close a single issue</p>
+		</li>
+		<li>
+		<p>High proportion of time spent on toil</p>
+		</li>
+		<li>
+		<p>Large number of days to close issues originating from an on-call session</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+
+<p>The team should work together to decide what measures to use.<a contenteditable="false" data-primary="toil" data-secondary="metrics in work overload" data-type="indexterm" id="idm139660637755408"/> There is no one-size-fits-all approach; every team’s overload is reflected in different ways. As a manager, don’t impose a measure on the team without getting an idea of each individual’s workload and work habits. Team members might feel that you don’t understand the work if you insist on using a specific measure. For example, if you’re evaluating load by the number of days it takes to fix an issue, one person might work a full day fixing an issue, while another person might distribute the work across several days, along with other work.</p>
+</div></section>
+
+<section data-pdf-bookmark="Reducing Overload and Restoring Team Health" data-type="sect2"><div class="sect2" id="reducing_overload_and_restoring_team_heal">
+<h2>Reducing Overload and Restoring Team Health</h2>
+
+<p>After reading through the criteria, you might think your team is already overloaded. Don’t despair!<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-tertiary="reducing overload and restoring team health" data-type="indexterm" id="idm139660637751168"/> This section provides a list of ideas to get your team back to a healthy state.</p>
+
+<p>In general, giving team members more <a contenteditable="false" data-primary="perceived overload" data-secondary="reducing by giving team members more control and power" data-type="indexterm" id="idm139660637752240"/>control and power reduces perceived overload.<sup><a data-type="noteref" href="ch17.html#ch17fn6" id="ch17fn6-marker">6</a></sup> While managers might be tempted to resort to micro-management in stressful situations, it’s important to keep the team in the loop and work on prioritization together in order to increase the level of performance and job satisfaction.<sup><a data-type="noteref" href="ch17.html#ch17fn7" id="ch17fn7-marker">7</a></sup> This model assumes a <a href="http://bit.ly/2LPemR2">baseline of a functional team</a>, where you have (at minimum) a somewhat healthy relationship between management and team members, and between team members.<a contenteditable="false" data-primary="baseline of a functional team" data-type="indexterm" id="idm139660637742496"/></p>
+
+<section data-pdf-bookmark="Identify and alleviate psychosocial stressors" data-type="sect3"><div class="sect3" id="identify_and_alleviate_psychosocial_stres">
+<h3>Identify and alleviate psychosocial stressors</h3>
+
+<p>When it comes to fixing a dysfunctional team, first and foremost, individual team members need to regain their sense of<a contenteditable="false" data-primary="stressors (psychological), identifying and alleviating" data-type="indexterm" id="idm139660637740800"/> psychological safety.<a contenteditable="false" data-primary="psychological safety" data-secondary="regaining by identifying and alleviating psychological stressors" data-type="indexterm" id="idm139660637739632"/> A team can function only as well as its individual members.</p>
+
+<p>You can start by identifying and alleviating psychosocial stressors<sup><a data-type="noteref" href="ch17.html#ch17fn8" id="ch17fn8-marker">8</a></sup> for each individual and the team as a whole. Which of these factors do you actually have control over? You can’t control whether or not a team member has a major illness, but you <em>can</em> control the size of your team’s backlog (as seen in Case Study 1) or silence pages (as in Case Study 2).</p>
+
+<p>Communicate with your partner product developer teams, and let them know your team is overloaded. They might be able to give a helping hand, provide compassion, or even take over entire projects.</p>
+
+<p>When your team members rely on each other and achieve a certain level of <a href="http://bit.ly/2H9Tssg">psychological safety</a> (such that they’re able to take interpersonal risks), you can give more responsibility to individual team members<em>.</em> Uncovering areas of expertise and assigning point people and technical leads to specific technologies increases their self-confidence and therefore enables them to take risks.</p>
+
+<p>Decision making should be transparent and, if possible, democratic. Each team member should have a feeling of control over the situation. For example, the brainstorming session in Case Study 2 helped the team identify and discuss issues.</p>
+</div></section>
+
+<section data-pdf-bookmark="Prioritize and triage within one quarter" data-type="sect3"><div class="sect3" id="prioritize_and_triage_within_one_quarter">
+<h3>Prioritize and triage within one quarter</h3>
+
+<p>A healthy team can prioritize and triage issues. <a contenteditable="false" data-primary="prioritizing and triaging issues" data-type="indexterm" id="idm139660637728752"/>Case Study 1 provides a good example of this exercise: the team sat together in a room and reviewed their backlog. The review helped them realize they were overloaded. They reprioritized their work, and worked on the tasks that would quickly reduce some of the overload. The team in Case Study 2 now meets at the end of each quarter to plan and prioritize existing and future work together.</p>
+
+<p>If possible, we recommend that SREs schedule <em>interrupt-free time</em> (no on-call) on their calendars, so that they have time to work on qualitatively difficult tasks like developing automation and investigating the root causes of interrupts. In Case Study 2, when the remote team gave the on-call some relief, team members then had precious time to focus on their projects.</p>
+
+<p>If absolutely <a contenteditable="false" data-primary="dropping work" data-type="indexterm" id="idm139660637730192"/>necessary, drop work: in Case Study 2, the team dropped on-call support for one of their services by returning this responsibility to the development team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Protect yourself in the future" data-type="sect3"><div class="sect3" id="protect_yourself_in_the_future">
+<h3>Protect yourself in the future</h3>
+
+<p>We strongly recommend establishing <a contenteditable="false" data-primary="metrics" data-secondary="establishing to evaluate team workload" data-type="indexterm" id="idm139660637725072"/>metrics to evaluate<a contenteditable="false" data-primary="future protection from overload" data-type="indexterm" id="idm139660637723712"/> the team’s workload. Regularly review the metrics to make sure they are measuring the right things.</p>
+
+<p>Once your team emerges from overload, you can prevent future overload by taking steps to monitor or resolve the underlying problems. For example, the team in Case Study 1 now maintains a lightweight triage process to detect a growing backlog of tasks. The team in Case Study 2 is currently working on a long-term plan to align backend and service SLOs.</p>
+
+<p>When your team is in overload, prioritize project work that pays down repetitive toil even more than you would if you weren’t overloaded. You will profit in the future.</p>
+
+<p>Finally, everyone on the team should feel responsible for the early warning signs (see <a data-type="xref" href="#recognizing_the_symptoms_of_overload">“Recognizing the Symptoms of Overload”</a>) that indicate a possible overload situation. Managers should sit down and talk with team members if they feel that the team is moving toward overload.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-secondary="mitigation strategies" data-startref="ix_ovrldmit" data-type="indexterm" id="idm139660637719488"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00091">
+<h1>Conclusion</h1>
+
+<p>In a perfect world, SRE teams would always be able to manage interrupts with the tactics described in our first book. But we’re only human, and sometimes our teams don’t reach that ideal. This chapter examined some of the ways that overload can consume a team and discussed how to detect and respond when it does.</p>
+
+<p>Particularly when it comes to operational work, excessive interrupts can very easily cause a team to slip from a normal workload to overload. Frequent interrupts can lead to overload, and overload negatively affects health and productivity. Overload creates psychosocial stressors for team members, which impacts work even further, causing a self-enforcing cycle.</p>
+
+<p>Perceived overload is a special form of overload that can’t be measured by the amount of toil or operational work. It is hard to pinpoint and to eliminate.</p>
+
+<p>In order to keep a team’s workload in balance, it’s important to constantly monitor (perceived or nonperceived) overload. To better serve your users and do good work, you need to first show respect to yourself and your team. Maintaining a healthy balance in your daily work goes a long way in helping you and your team accomplish that goal.<a contenteditable="false" data-primary="overload, identifying and recovering from" data-startref="ix_ovrld" data-type="indexterm" id="idm139660637706480"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch17fn1"><sup><a href="ch17.html#ch17fn1-marker">1</a></sup> Kara A. Latorella, <em>Investigating Interruptions: Implications for Flightdeck Performance</em> (Hampton, VA: Langley Research Center, 1999), <a href="https://go.nasa.gov/2Jc50Nh"><em class="hyperlink">https://go.nasa.gov/2Jc50Nh</em></a>; NTSB, <em>Aircraft Accident Report: NWA DC-9-82 N312RC, Detroit Metro, 16 August 1987 (No. NTSB/AAR-88/05)</em> (Washington, DC: National Transportation Safety Board, 1988), <a href="http://libraryonline.erau.edu/online-full-text/ntsb/aircraft-accident-reports/AAR88-05.pdf"><em class="hyperlink">http://libraryonline.erau.edu/online-full-text/ntsb/aircraft-accident-reports/AAR88-05.pdf</em></a>.</p><p data-type="footnote" id="ch17fn2"><sup><a href="ch17.html#ch17fn2-marker">2</a></sup> Emmanuelle Brun and Malgorzata Milczarek, <em>Expert Forecast on Emerging Psychosocial Risks Related to Occupational Safety and Health</em> (Bilbao, Spain: European Agency for Safety and Health at Work, 2007), <a href="https://osha.europa.eu/en/tools-and-publications/publications/reports/7807118"><em class="hyperlink">https://osha.europa.eu/en/tools-and-publications/publications/reports/7807118</em></a>; M. Melchior, I. Niedhammer, L. F. Berkman, and M. Goldberg, “Do Psychosocial Work Factors and Social Relations Exert Independent Effects on Sickness Absence? A Six-Year Prospective Study of the GAZEL Cohort,” <em>Journal of Epidemiology and Community Health</em> 57, no. 4 (2003): 285–93, <a href="http://jech.bmj.com/content/jech/57/4/285.full.pdf"><em class="hyperlink">http://jech.bmj.com/content/jech/57/4/285.full.pdf</em></a>.</p><p data-type="footnote" id="ch17fn3"><sup><a href="ch17.html#ch17fn3-marker">3</a></sup> For context, according to estimates, an SRE needed at least one additional day of ticket follow-up per shift.</p><p data-type="footnote" id="ch17fn4"><sup><a href="ch17.html#ch17fn4-marker">4</a></sup> We used the Google program based on Project Aristotle: <a href="http://bit.ly/2LPemR2"><em class="hyperlink">http://bit.ly/2LPemR2</em></a>.</p><p data-type="footnote" id="ch17fn5"><sup><a href="ch17.html#ch17fn5-marker">5</a></sup> Kurt G. I. Wahlstedt and Christer Edling, “Organizational Changes at a Postal Sorting Terminal—Their Effects Upon Work Satisfaction, Psychosomatic Complaints and Sick Leave,” <em>Work and Stress</em> 11, no. 3 (1997): 279–91.</p><p data-type="footnote" id="ch17fn6"><sup><a href="ch17.html#ch17fn6-marker">6</a></sup> Robert A. Karasek Jr., “Job Demands, Job Decision Latitude, and Mental Strain—Implications for Job Redesign,” <em>Administrative Science Quarterly</em> 24, no. 2 (1979): 285–308.</p><p data-type="footnote" id="ch17fn7"><sup><a href="ch17.html#ch17fn7-marker">7</a></sup> Frank W. Bond and David Bunce, “Job Control Mediates Change in a Work Reorganization Intervention for Stress Reduction,” <em>Journal of Occupational Health Psychology</em> 6, no. 4 (2001): 290–302; Toby D. Wall, Paul R. Jackson, and Keith Davids, “Operator Work Design and Robotics System Performance: A Serendipitous Field Study,” <em>Journal of Applied Psychology</em> 77, no. 3 (1992): 353–62.</p><p data-type="footnote" id="ch17fn8"><sup><a href="ch17.html#ch17fn8-marker">8</a></sup> Brun and Malgorzata, <em>Expert Forecast</em>.</p></div></div></section></body></html>

@@ -1,0 +1,1404 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Postmortem Culture: Learning from Failure</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 10. Postmortem Culture: Learning from Failure" data-type="chapter" epub:type="chapter"><div class="chapter" id="postmortem_culture_learning_from_failure">
+<h1><span class="label">Chapter 10. </span>Postmortem Culture: Learning from Failure</h1>
+
+<p class="byline">By Daniel Rogers, Murali Suriar, Sue Lueder,<br/>
+Pranjal Deo, and Divya Sudhakar<br/>
+with Gary O’Connor and Dave Rensin</p>
+
+<p>Our experience shows that a truly blameless postmortem culture results in more reliable systems—which is why we believe this practice is important to creating and maintaining a successful SRE<a contenteditable="false" data-primary="blameless postmortems" data-seealso="postmortems" data-type="indexterm" id="idm139660640850544"/> organization.<a contenteditable="false" data-primary="postmortems" data-type="indexterm" id="ix_pmrt"/></p>
+
+<p>Introducing postmortems into an organization is as much a cultural change as it is a technical one. <a contenteditable="false" data-primary="culture" data-secondary="learning from failure in postmortems" data-see="postmortems" data-type="indexterm" id="idm139660640846224"/>Making such a shift can seem daunting. The key takeaway from this chapter is that making this change is possible, and needn’t seem like an insurmountable challenge. Don’t emerge from an incident hoping that your systems will eventually remedy themselves. You can start small by introducing a very basic postmortem procedure, and then reflect and tune your process to best suit your organization—as with many things, there is no one size that fits all.</p>
+
+<p>When written well, acted upon, and widely shared, postmortems can be a very effective tool for driving positive organizational change and preventing repeat outages. To illustrate the principles of good postmortem writing, this chapter presents a case study of an actual outage that happened at Google. An example of a poorly written postmortem highlights the reasons why “bad” postmortem practices are damaging to an organization that’s trying to create a healthy postmortem culture. We then compare the bad postmortem with the actual postmortem that was written after the incident, highlighting the principles and best practices of a high-quality postmortem.</p>
+
+<p>The second part of this chapter shares what we’ve learned about creating incentives for nurturing of a robust postmortem culture and how to recognize (and remedy) the early signs that the culture is breaking down.</p>
+
+<p>Finally, we provide tools and templates that you can use to bootstrap a postmortem culture.</p>
+
+<p>For a comprehensive discussion on blameless postmortem philosophy, see <a href="http://bit.ly/2J2Po2W">Chapter 15</a> in our first book, <em>Site Reliability Engineering</em>.</p>
+
+<section data-pdf-bookmark="Case Study" data-type="sect1"><div class="sect1" id="case_study">
+<h1>Case Study</h1>
+
+<p>This case study features a routine rack decommission that led to an increase in service latency for our users.<a contenteditable="false" data-primary="postmortems" data-secondary="case study, rack decommission leading to service latency" data-type="indexterm" id="ix_pmrtcs"/> A bug in our maintenance automation, combined with insufficient rate limits, caused thousands of servers carrying production traffic to simultaneously go offline.</p>
+
+<p>While the majority of Google’s servers are located in our proprietary datacenters, we also have racks <a contenteditable="false" data-primary="colocation facilities (colos), racks of proxy/cache machines in" data-type="indexterm" id="idm139660640844976"/>of proxy/cache machines in colocation facilities (or “colos”). Racks in colos that contain our<a contenteditable="false" data-primary="satellites" data-type="indexterm" id="idm139660640840688"/> proxy machines are called <em>satellites</em>. Because satellites undergo regular maintenance and upgrades, a number of satellite racks are being installed or decommissioned at any point in time. At Google, these maintenance processes are largely automated.</p>
+
+<p>The decommission process overwrites the full content of all drives in the rack using a process we call <em>diskerase</em>. Once<a contenteditable="false" data-primary="diskerase" data-type="indexterm" id="idm139660640843264"/> a machine is sent to diskerase, the data it once stored is no longer retrievable. The steps for a typical rack decommission are as follows:</p>
+
+<pre data-type="programlisting">
+# Get all active machines in "satellite"
+machines = GetMachines(satellite)
+
+# Send all candidate machines matching "filter" to decom
+SendToDecom(candidates=GetAllSatelliteMachines(),
+            filter=machines)
+</pre>
+
+<p>Our case study begins with a satellite rack that was marked for decommissioning. The diskerase step of the decommission process finished successfully, but the automation responsible for the remainder of the machine decommission failed. To debug the failure, we retried the decommission process. The second decommission ran as follows:</p>
+
+<pre data-type="programlisting">
+# Get all active machines in "satellite"
+machines = GetMachines(satellite)
+
+<strong># "machines" is an empty list, because the decom flow has already run.</strong>
+<strong># API bug: an empty list is treated as "no filter", rather than "act on no</strong>
+<strong># machines"</strong>
+
+# Send all candidate machines matching "filter" to decom
+SendToDecom(candidates=GetAllSatelliteMachines(),
+            filter=machines)
+
+# Send all machines in "candidates" to diskerase.
+</pre>
+
+<p>Within minutes, the disks of all satellite machines, globally, were erased. The machines were rendered inert and could no longer accept connections from users, so subsequent user connections were routed directly to our datacenters. As a result, users experienced a slight increase in latency. Thanks to good capacity planning, very few of our users noticed the issue during the two days it took us to reinstall machines in the affected colo racks. Following the incident, we spent several weeks auditing and adding more sanity checks to our automation to make our decommission workflow idempotent.</p>
+
+<p>Three years after this outage, we experienced a similar incident: a number of satellites were drained, resulting in increased user latency. The action items implemented from the original postmortem dramatically reduced the blast radius and rate of the second incident.</p>
+
+<p>Suppose you were the person responsible for writing the postmortem for this case study. What would you want to know, and what actions would you propose to prevent this outage from happening again?<a contenteditable="false" data-primary="postmortems" data-secondary="case study, rack decommission leading to service latency" data-startref="ix_pmrtcs" data-type="indexterm" id="idm139660640821088"/></p>
+
+<p>Let’s start with a not-so-great postmortem for this<a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-type="indexterm" id="ix_pmrtbad"/> incident.</p>
+</div></section>
+
+<section data-pdf-bookmark="Bad Postmortem" data-type="sect1"><div class="sect1" id="bad_postmortem">
+<h1>Bad Postmortem</h1>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="postmortem_all_satellite_machines_sent_to">
+<h5>Postmortem: All Satellite Machines Sent to Diskerase</h5>
+
+<p><strong>2014-August-11</strong></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>Owner:</strong></td>
+			<td>maxone@, logantwo@, sydneythree@, dylanfour@</td>
+		</tr>
+		<tr>
+			<td><strong>Shared with:</strong></td>
+			<td>satellite-infra-team@</td>
+		</tr>
+		<tr>
+			<td><strong>Status:</strong></td>
+			<td>Final</td>
+		</tr>
+		<tr>
+			<td><strong>Incident date:</strong></td>
+			<td>2014-August-11</td>
+		</tr>
+		<tr>
+			<td><strong>Published:</strong></td>
+			<td>2014-December-30</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Executive Summary</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>Impact:</strong></td>
+			<td>All Satellite machines are sent to diskerase, which practically wiped out Google Edge.</td>
+		</tr>
+		<tr>
+			<td><strong>Root cause:</strong></td>
+			<td>dylanfour@ ignored the automation setup and ran the cluster turnup logic manually, which triggered an existing bug.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Problem Summary</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>Duration of problem:</strong></td>
+			<td>40min</td>
+		</tr>
+		<tr>
+			<td><strong>Product(s) affected:</strong></td>
+			<td>satellite-infra-team</td>
+		</tr>
+		<tr>
+			<td><strong>% of product affected:</strong></td>
+			<td>All satellite clusters.</td>
+		</tr>
+		<tr>
+			<td><strong>User impact:</strong></td>
+			<td>All queries that normally go to satellites were served from the core instead, causing increased latency.</td>
+		</tr>
+		<tr>
+			<td><strong>Revenue impact:</strong></td>
+			<td>Some ads were not served due to the lost queries. Exact revenue impact unknown at this time.</td>
+		</tr>
+		<tr>
+			<td><strong>Detection:</strong></td>
+			<td>Monitoring alert.</td>
+		</tr>
+		<tr>
+			<td><strong>Resolution:</strong></td>
+			<td>Diverting traffic to core followed by manual repair of edge clusters.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Background (optional)</b></p>
+
+<p> </p>
+
+<p><b>Impact</b></p>
+
+<dl>
+	<dt><dfn>User impact</dfn></dt>
+	<dd><p>All queries that normally go to satellites were instead served from the core, causing increased latency to user traffic.</p></dd>
+	<dt><dfn>Revenue impact</dfn></dt>
+	<dd><p>Some ads were not served due to the lost queries.</p></dd>
+</dl>
+
+<p><b>Root Causes and Trigger</b></p>
+
+<p>Cluster turnup/turndown automation is not meant to be idempotent. The tool has safeguards to ensure that certain steps cannot be run more than once. Unfortunately, there is nothing to stop someone from running the code manually as many times as they want. None of the documentation mentioned this gotcha. As a result, most team members think it’s okay to run the process multiple times if it doesn’t work.</p>
+
+<p>This is exactly what happened during a routine decommissioning of a rack. The rack was being replaced with a new Iota-based satellite. dylanfour@ completely ignored the fact that the turnup had already executed once and was stuck in the first attempt. Due to careless ignorance, they triggered a bad interaction that assigned all the satellite machines to the diskerase team.</p>
+
+<p><b>Recovery Efforts</b></p>
+
+<p> </p>
+
+<p><b>Lessons Learned</b></p>
+
+<p>Things that went well</p>
+
+<ul>
+	<li>
+	<p>Alerting caught the issue immediately.</p>
+	</li>
+	<li>
+	<p>Incident management went well.</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">Things that went poorly</p>
+
+<ul>
+	<li>
+	<p>The team (especially maxone@, logantwo@) never wrote any documentation to tell SREs not to run the automation multiple times, which is ridiculous.</p>
+	</li>
+	<li>
+	<p>On-call did not act soon enough to prevent most satellite machines from being erased. This is not the first time that on-call failed to react in time.</p>
+	</li>
+</ul>
+
+<p>Where we got lucky</p>
+
+<ul>
+	<li>
+	<p>Core was able to serve all the traffic that normally would have gone to the Edge. I can’t believe we survived this one!!!</p>
+	</li>
+</ul>
+
+<p><b>Action Items</b></p>
+
+<table class="border">
+	<thead>
+		<tr>
+			<th><strong>Action item</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Make automation better.</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td>logantwo@</td>
+			<td> </td>
+		</tr>
+		<tr>
+			<td>Improve paging and alerting.</td>
+			<td>detect</td>
+			<td>P2</td>
+			<td> </td>
+			<td> </td>
+		</tr>
+		<tr>
+			<td>sydneythree@ needs to learn proper cross-site handoff protocol so nobody has to work on duplicate issues.</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td> </td>
+			<td>BUG6789</td>
+		</tr>
+		<tr>
+			<td>Train humans not to run unsafe commands.</td>
+			<td>prevent</td>
+			<td>P2</td>
+			<td> </td>
+			<td> </td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Glossary</b></p>
+</div></aside>
+
+<section data-pdf-bookmark="Why Is This Postmortem Bad?" data-type="sect2"><div class="sect2" id="why_is_this_postmortem_badquestion_mark">
+<h2>Why Is This Postmortem Bad?</h2>
+
+<p>The <a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-startref="ix_pmrtbad" data-type="indexterm" id="idm139660640756688"/>example “bad” postmortem contains a number of common failure modes that we try to avoid. <a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-tertiary="flaws in" data-type="indexterm" id="ix_pmrtbadwhy"/>The following sections explain how to improve upon this <span class="keep-together">postmortem</span>.</p>
+
+<section data-pdf-bookmark="Missing context" data-type="sect3"><div class="sect3" id="missing_context">
+<h3>Missing context</h3>
+
+<p>From the outset, our example postmortem introduces terminology that’s specific to traffic serving (e.g., “satellites”) and lower layers of machine <a contenteditable="false" data-primary="context, missing, in bad postmortem" data-type="indexterm" id="idm139660640753376"/>management automation at Google (e.g., “diskerase”). If you need to provide additional context as part of the postmortem, use the Background and/or Glossary sections (which can link to longer documents). In this case, both sections were blank.</p>
+
+<p>If you don’t properly contextualize content when writing a postmortem, the document might be misunderstood or even ignored. It’s important to remember that your audience extends beyond the immediate team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Key details omitted" data-type="sect3"><div class="sect3" id="key_details_omitted">
+<h3>Key details omitted</h3>
+
+<p>Multiple sections contain high-level summaries <a contenteditable="false" data-primary="key details omitted in bad postmortem" data-type="indexterm" id="idm139660640746224"/>but lacked important details. For example:</p>
+
+<dl>
+	<dt>Problem summary</dt>
+	<dd>
+	<p>For outages affecting multiple services,<a contenteditable="false" data-primary="problem summary (postmortems)" data-type="indexterm" id="idm139660640741808"/> you should present numbers to give a consistent representation of impact. <a contenteditable="false" data-primary="outages" data-secondary="problem summary in postmortems" data-type="indexterm" id="idm139660640739680"/>The only numerical data our example provides is the duration of the problem. We don’t have enough details to estimate the size or impact of the outage. Even if there is no concrete data, a well-informed estimate is better than no data at all. After all, if you don’t know how to measure it, then you can’t know it’s fixed!</p>
+	</dd>
+	<dt>Root causes and trigger</dt>
+	<dd>
+	<p>Identifying the root causes and trigger is one of the most important reasons to write a postmortem. <a contenteditable="false" data-primary="root causes and trigger (in postmortems)" data-type="indexterm" id="idm139660640736336"/>Our example contains a small paragraph that describes the root causes and trigger, but it doesn’t explore the lower-level details of the issue.</p>
+	</dd>
+	<dt>Recovery efforts</dt>
+	<dd>
+	<p>A postmortem acts as the record of an incident for its readers. A good postmortem will let readers know<a contenteditable="false" data-primary="recovery efforts (in postmortems)" data-type="indexterm" id="idm139660640733536"/> what happened, how the issue was mitigated, and how users were impacted. The answers to many of these questions are typically found in the Recovery Efforts section, which was left empty in our example.</p>
+	</dd>
+</dl>
+
+<p>If an outage merits a postmortem, you should also take the time to accurately capture and document the necessary details. The reader should get a complete view of the outage and, more importantly, learn something new.</p>
+</div></section>
+
+<section data-pdf-bookmark="Key action item characteristics missing" data-type="sect3"><div class="sect3" id="key_action_item_characteristics_missing">
+<h3>Key action item characteristics missing</h3>
+
+<p>The Action Items (AIs) section of our example is missing the core aspects of an actionable plan to prevent recurrence.<a contenteditable="false" data-primary="action items in postmortems" data-type="indexterm" id="idm139660640729360"/> For example:</p>
+
+<ul>
+	<li>
+	<p>The action items are mostly mitigative. To minimize the likelihood of the outage recurring, you should include some <a contenteditable="false" data-primary="preventative actions in postmortems" data-type="indexterm" id="idm139660640730672"/>preventative action items and fixes. The one “preventative” action item suggests we “make humans less error-prone.” In general, trying to change human behavior is less reliable than changing automated systems and processes. (Or as Dan Milstein <a href="http://bit.ly/2syrmBF">once quipped</a>: “Let’s plan for a future where we’re all as stupid as we are today.”)</p>
+	</li>
+	<li>
+	<p>All of the action items have been tagged with an equal priority. There’s no way to determine which action to tackle first.</p>
+	</li>
+	<li>
+	<p>The first two action items in the list use ambiguous phrases like “Improve” and “Make better.” These terms are vague and open to interpretation. Using unclear language makes it difficult to measure and understand success criteria.</p>
+	</li>
+	<li>
+	<p>Only one action item was assigned a tracking bug. Without a formal tracking process, action items from postmortems are often forgotten, resulting in outages.</p>
+	</li>
+</ul>
+
+<div class="note1" data-type="note" epub:type="note"><h6>Note</h6>
+<p>In the words of Ben Treynor Sloss, Google’s VP for 24/7 Operations: “To our users, a postmortem without subsequent action is indistinguishable from no postmortem. Therefore, all postmortems which follow a user-affecting outage must have at least one P[01] bug associated with them. I personally review exceptions. There are very few exceptions.”</p>
+</div>
+</div></section>
+
+<section data-pdf-bookmark="Counterproductive finger pointing" data-type="sect3"><div class="sect3" id="counterproductive_finger_pointing">
+<h3>Counterproductive finger pointing</h3>
+
+<p>Every postmortem has the potential to lapse into a blameful narrative. Let’s take a look at some <a contenteditable="false" data-primary="finger pointing in postmortems" data-type="indexterm" id="idm139660640717040"/>examples:</p>
+
+<dl>
+	<dt>Things that went poorly</dt>
+	<dd>
+	<p>The entire team is blamed for the outage, while two members (maxone@ and logantwo@) are specifically called out.</p>
+	</dd>
+	<dt>Action items</dt>
+	<dd>
+	<p>The last item in the list targets sydneythree@ for succumbing to pressure and mismanaging the cross-site handoff.</p>
+	</dd>
+	<dt>Root causes and trigger</dt>
+	<dd>
+	<p>dylanfour@ is held solely responsible for the outage.</p>
+	</dd>
+</dl>
+
+<p>It may seem like a good idea to highlight individuals in a postmortem. Instead, this practice leads team members to become risk-averse because they’re afraid of being publicly shamed. They may be motivated to cover up facts critical to understanding and preventing recurrence.</p>
+</div></section>
+
+<section data-pdf-bookmark="Animated language" data-type="sect3"><div class="sect3" id="animated_language">
+<h3>Animated language</h3>
+
+<p>A postmortem is a factual artifact that should be free from personal judgments and subjective language.<a contenteditable="false" data-primary="animated (undesirable) language in postmortems" data-type="indexterm" id="idm139660640709568"/><a contenteditable="false" data-primary="superfluous (undesirable) language in postmortems" data-type="indexterm" id="idm139660640708816"/> It should consider multiple perspectives and be respectful of others. Our example postmortem contains multiple examples of undesirable language:</p>
+
+<dl>
+	<dt>Root causes and trigger</dt>
+	<dd>
+	<p>Superfluous language (e.g., “careless ignorance”)</p>
+	</dd>
+	<dt>Things that went poorly</dt>
+	<dd>
+	<p>Animated text (e.g., “which is ridiculous”)</p>
+	</dd>
+	<dt>Where we got lucky</dt>
+	<dd>
+	<p>An exclamation of disbelief (e.g., “I can’t believe we survived this one!!!”)</p>
+	</dd>
+</dl>
+
+<p>Animated language and dramatic descriptions of events distract from the key message and erode psychological safety. Instead, provide verifiable data to justify the severity of a statement.</p>
+</div></section>
+
+<section data-pdf-bookmark="Missing ownership" data-type="sect3"><div class="sect3" id="missing_ownership">
+<h3>Missing ownership</h3>
+
+<p>Declaring official ownership results in accountability, which leads to action. <a contenteditable="false" data-primary="ownership" data-secondary="missing, in bad postmortem example" data-type="indexterm" id="idm139660640699280"/>Our example postmortem contains several examples of missing ownership:</p>
+
+<ul>
+	<li>
+	<p>The postmortem lists four owners. Ideally, an owner is a single point of contact who is responsible for the postmortem, follow-up, and completion.</p>
+	</li>
+	<li>
+	<p>The Action Items section has little or no ownership for its entries. Actions items without clear owners are less likely to be resolved.</p>
+	</li>
+</ul>
+
+<p>It’s better to have a single owner and multiple collaborators.</p>
+</div></section>
+
+<section data-pdf-bookmark="Limited audience" data-type="sect3"><div class="sect3" id="limited_audience">
+<h3>Limited audience</h3>
+
+<p>Our example postmortem was shared only among members of the team.<a contenteditable="false" data-primary="limited audience in bad postmortem example" data-type="indexterm" id="idm139660640692608"/> By default, the document should have been accessible to everyone at the company. We recommend proactively sharing your postmortem as widely as possible—perhaps even with your customers. The value of a postmortem is proportional to the learning it creates. The more people that can learn from past incidents, the less likely they are to be repeated. A thoughtful and honest postmortem is also a key tool in restoring shaken trust.</p>
+
+<p>As your experience and comfort grows, you will also likely expand your “audience” to nonhumans. Mature postmortem cultures often add machine-readable tags (and other metadata) to enable downstream analytics.</p>
+</div></section>
+
+<section data-pdf-bookmark="Delayed publication" data-type="sect3"><div class="sect3" id="delayed_publication">
+<h3>Delayed publication</h3>
+
+<p>Our example postmortem was published four months after the incident.<a contenteditable="false" data-primary="publication of postmortems" data-type="indexterm" id="idm139660640690384"/> In the interim, had the incident recurred (which in reality, did happen), team members likely would have forgotten key details that a timely postmortem <a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-startref="ix_pmrtbadwhy" data-tertiary="flaw in" data-type="indexterm" id="idm139660640689536"/>would have captured. </p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Good Postmortem" data-type="sect1"><div class="sect1" id="good_postmortem">
+<h1>Good Postmortem</h1>
+
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>This is an actual postmortem. <a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-type="indexterm" id="ix_pmrtgood"/>In some cases, we fictionalized names of individuals and teams. We also replaced actual values with placeholders to protect sensitive capacity information. In the postmortems that you create for your internal consumption, you should absolutely include specific numbers!</p>
+</div>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="postmortem_all_satellite_machines-id00048">
+<h5>Postmortem: All Satellite Machines Sent to Diskerase</h5>
+
+<p><strong>2014-August-11</strong></p>
+
+<table>
+	<tbody>
+		<tr>
+			<td><strong>Owner:</strong></td>
+			<td>
+			<p>Postmortem: maxone@, logantwo@</p>
+
+			<p>Datacenter Automation: sydneythree@</p>
+
+			<p>Network: dylanfour@</p>
+
+			<p>Server Management: finfive@</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>Shared with:</strong></td>
+			<td><a href="mailto:all_engineering_employees@google.com">all_engineering_employees@google.com</a></td>
+		</tr>
+		<tr>
+			<td><strong>Status:</strong></td>
+			<td>Final</td>
+		</tr>
+		<tr>
+			<td><strong>Incident date:</strong></td>
+			<td>Mon, August 11, 2014, 17:10 to 17:50 PST8PDT</td>
+		</tr>
+		<tr>
+			<td><strong>Published:</strong></td>
+			<td>Fri, August 15, 2014</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Executive Summary</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>Impact:</strong></td>
+			<td>
+			<p>Frontend queries dropped</p>
+
+			<p>Some ads were not served</p>
+
+			<p>There was a latency increase for all services normally served from satellite for nearly two days</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>Root cause:</strong></td>
+			<td>A bug in turndown automation caused all satellite machines, instead of just one rack of satellite machines, to be sent to diskerase. This resulted in all satellite machines entering the decom workflow, which wiped their disks. The result was a global satellite frontend outage.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Problem Summary</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>Duration of problem:</strong></td>
+			<td>
+			<p>Main outage: Mon, August 11, 17:10 to 17:50 PST8PDT</p>
+
+			<p>Reconstruction work and residual pains through Wed, August 13, 07:46 PST8PDT, then the incident was closed.</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>Product(s) affected:</strong></td>
+			<td>Frontend Infrastructure, specifically all satellite locations.</td>
+		</tr>
+		<tr>
+			<td><strong>% of product affected:</strong></td>
+			<td>Global—all traffic normally served from satellites (typically 60% of global queries).</td>
+		</tr>
+		<tr>
+			<td><strong>User impact:</strong></td>
+			<td>
+			<p>[Value redacted] frontend queries dropped over a period of 40 minutes ([value redacted] QPS averaged over the period, [value redacted] % of global traffic).</p>
+
+			<p>Latency increase for all services normally served from satellite for nearly two days.</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>Revenue impact:</strong></td>
+			<td>The exact revenue impact unknown at this time.</td>
+		</tr>
+		<tr>
+			<td><strong>Detection:</strong></td>
+			<td>Blackbox alerting: traffic-team was paged with “satellite <code>a12bcd34</code> failing too many HTTP requests” for ~every satellite in the world.</td>
+		</tr>
+		<tr>
+			<td><strong>Resolution:</strong></td>
+			<td>The outage itself was rapidly mitigated by moving all of Google’s frontend traffic to core clusters, at the cost of additional latency for user traffic.</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Background (optional)</b></p>
+
+<p>If you’re unfamiliar with frontend traffic serving and the lower layers of serving automation at Google, read the glossary before you continue.</p>
+
+<p><b>Impact</b></p>
+
+<p>User impact</p>
+
+<ul>
+	<li>
+	<p>[Value redacted] frontend queries dropped over a period of [value redacted] minutes. [Value redacted] QPS averaged over the period, [value redacted] % of global traffic. Our monitoring suggests a much larger crater; however, the data was unreliable as it ceased monitoring satellites that were still serving, thinking they were turned down. The appendix describes how the above numbers were estimated.</p>
+	</li>
+	<li>
+	<p>There was a latency increase for all services normally served from satellite for nearly two days:</p>
+
+	<ul>
+		<li>
+		<p>[Value redacted] ms RTT spikes for countries near core clusters</p>
+		</li>
+		<li>
+		<p>Up to+[value redacted] ms for locations relying more heavily on satellites (e.g., Australia, New Zealand, India)</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>Revenue impact</p>
+
+<p>Some ads were not served due to the lost queries. The exact revenue impact is unknown at this time:</p>
+
+<ul>
+	<li>
+	<p>Display and video: The data has very wide error bars due to day-on-day fluctuations, but we estimate between [value redacted] % and [value redacted] % of revenue loss on the day of the outage.</p>
+	</li>
+	<li>
+	<p>Search: [Value redacted] % to [value redacted] % loss between 17:00 to 18:00, again with wide error bars.</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">Team impact</p>
+
+<ul>
+	<li>
+	<p>The Traffic team spent ~48 hours with all hands on deck rebuilding satellites.</p>
+	</li>
+	<li>
+	<p>NST had a higher-than-normal interrupt/pager load because they needed to traffic-engineer overloaded peering links.</p>
+	</li>
+	<li>
+	<p>Some services may have seen increased responses served at their frontends due to reduced cache hit rate in the GFEs.</p>
+
+	<ul>
+		<li>
+		<p>For example, see this thread [link] about [cache-dependent service].</p>
+		</li>
+		<li>
+		<p>[Cache-dependent service] saw their cache hit rate at the GFEs drop from [value redacted ] % to [value redacted] % before slowly recovering.</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>Incident document</p>
+
+<p>[The link to our incident tracking document has been redacted.]</p>
+
+<p><b>Root Causes and Trigger</b></p>
+
+<p>A longstanding input validation bug in the Traffic Admin server was triggered by the manual reexecution of a workflow to decommission the <code>a12bcd34</code> satellite. The bug removed the machine constraint on the decom action, sending all satellite machines to decommission.</p>
+
+<p>From there, datacenter automation executed the decom workflow, wiping the hard drives of the majority of satellite machines before this action could be stopped.</p>
+
+<p>The Traffic Admin server provides a <code>ReleaseSatelliteMachines</code> RPC. This handler initiates satellite decommission using three MDB API calls:</p>
+
+<ul>
+	<li>
+	<p>Look up the rack name associated with the edge node (e.g., <code>a12bcd34</code> -&gt; &lt;rack name&gt;).</p>
+	</li>
+	<li>
+	<p>Look up the machine names associated with the rack (&lt;rack&gt; -&gt; &lt;machine 1&gt;, &lt;machine 2&gt;, etc.).</p>
+	</li>
+	<li>
+	<p>Reassign those machines to diskerase, which indirectly triggers the decommission workflow.</p>
+	</li>
+</ul>
+
+<p>This procedure is not idempotent, due to a known behavior of the MDB API combined with a missing safety check. If a satellite node was previously successfully sent to decom, step 2 above returns an empty list, which is interpreted in step 3 as the absence of a constraint on a machine hostname.</p>
+
+<p>This dangerous behavior has been around for a while, but was hidden by the workflow that invokes the unsafe operation: the workflow step invoking the RPC is marked “run once,” meaning that the workflow engine will not reexecute the RPC once it has succeeded.</p>
+
+<p>However, “run once” semantics don’t apply across multiple instances of a workflow. When the Cluster Turnup team manually started another run of the workflow for <code>a12bcd34</code>, this action triggered the <code>admin_server</code> bug.</p>
+
+<p><b>Timeline/Recovery Efforts</b></p>
+
+<p>[The link to our Timeline log has been elided for book publication. In a real postmortem, this information would always be included.]</p>
+
+<p><b>Lessons Learned</b></p>
+
+<p>Things that went well</p>
+
+<ul>
+	<li>
+	<p>Evacuating the edge. GFEs in core are explicitly capacity-planned to allow this to happen, as is the production backbone (aside from peering links; see the Outage list in the next section). This edge evacuation allowed the Traffic team to mitigate promptly without fear.</p>
+	</li>
+	<li>
+	<p>Automatic mitigation of catastrophic satellite failure. Cover routes automatically pull traffic from failing satellites back to core clusters, and satellites drain themselves when abnormal churn is detected.</p>
+	</li>
+	<li>
+	<p>Satellite decom/diskerase worked very effectively and rapidly, albeit as a <a href="http://bit.ly/2syHumz">confused deputy</a>.</p>
+	</li>
+	<li>
+	<p>The outage triggered a quick IMAG response via OMG and the tool proved useful for ongoing incident tracking. The cross-team response was excellent, and OMG further helped keep everyone talking to each other.</p>
+	</li>
+</ul>
+
+<p>Things that went poorly</p>
+
+<p>Outage</p>
+
+<ul>
+	<li>
+	<p>The Traffic Admin server lacked the appropriate sanity checks on the commands it sent to MDB. All commands should be idempotent, or at least fail-safe on repeat invocations.</p>
+	</li>
+	<li>
+	<p>MDB did not object to the missing hostname constraint in the ownership change request.</p>
+	</li>
+	<li>
+	<p>The decom workflow doesn’t cross-check decom requests with other data sources (e.g., planned rack decoms). As a result, there were no objections to the request to trash (many) geographically diverse machines.</p>
+	</li>
+	<li>
+	<p>The decom workflow is not rate-limited. Once the machines entered decom, disk erase and other decom steps proceeded at maximum speed.</p>
+	</li>
+	<li>
+	<p>Some peering links between Google and the world were overloaded as a result of the egress traffic shifting to different locations when satellites stopped serving, and their queries were instead served from core. This resulted in short bursts of congestion to select peers until satellites were restored, and mitigation work by NST to match.</p>
+	</li>
+</ul>
+
+<p>Recovery</p>
+
+<ul>
+	<li>
+	<p>Reinstalls of satellite machines were slow and unreliable. Reinstallations use TFTP to transmit data, which works poorly when transmitting to satellites at the end of high-latency links.</p>
+	</li>
+	<li>
+	<p>The Autoreplacer infrastructure was not able to handle the simultaneous setup of [value redacted] of GFEs at the time of the outage. Matching the velocity of automated setups required the labor of many SREs working in parallel performing manual setups. The factors below contributed to the initial slowness of the automation:</p>
+
+	<ul>
+		<li>
+		<p>Overly strict SSH timeouts prevented reliable Autoreplacer operation on very remote satellites.</p>
+		</li>
+		<li>
+		<p>A slow kernel upgrade process was executed regardless of whether the machine already had the correct version.</p>
+		</li>
+		<li>
+		<p>A concurrency regression in Autoreplacer prevented running more than two machine setup tasks per worker machine.</p>
+		</li>
+		<li>
+		<p>Confusion about the behavior of the Autoreplacer wasted time and effort.</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>The monitoring configuration delta safety checks (25% change) did not trigger when 23% of the targets were removed, but did trigger when the same contents (29% of what remained) were readded. This caused a 30-minute delay in reenabling monitoring of the satellites.</p>
+	</li>
+	<li>
+	<p>“The installer” has limited staffing. As a result, making changes is difficult and slow.</p>
+	</li>
+	<li>
+	<p>Use of superuser powers to claw machines back from diskerase left a lot of zombie state, causing ongoing cleanup pain.</p>
+	</li>
+</ul>
+
+<p>Where we got lucky</p>
+
+<ul>
+	<li>
+	<p>GFEs in core clusters are managed very differently from satellite GFEs. As a result, they were not affected by the decom rampage.</p>
+	</li>
+	<li>
+	<p>Similarly, YouTube’s CDN is run as a distinct piece of infrastructure, so YouTube video serving was not affected. Had this failed, the outage would have been much more severe and prolonged.</p>
+	</li>
+</ul>
+
+<p><b>Action Items</b></p>
+
+<p>Due to the wide-reaching nature of this incident, we split action items into five themes:</p>
+
+<ol class="pagebreak-before">
+	<li>
+	<p>Prevention/risk education</p>
+	</li>
+	<li>
+	<p>Emergency response</p>
+	</li>
+	<li>
+	<p>Monitoring/alerting</p>
+	</li>
+	<li>
+	<p>Satellite/edge provisioning</p>
+	</li>
+	<li>
+	<p>Cleanup/miscellaneous</p>
+	</li>
+</ol>
+
+<table class="border" id="preventionsolidusrisk_education">
+	<caption><span class="label">Table 10-1. </span>Prevention/risk education</caption>
+	<thead>
+		<tr>
+			<th><strong>Action items</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Audit all systems capable of turning live servers into paperweights (i.e., not just repairs and diskerase workflow).</td>
+			<td>investigate</td>
+			<td>P1</td>
+			<td>sydneythree@</td>
+			<td>BUG1234</td>
+		</tr>
+		<tr>
+			<td>File bugs to track implementation of bad input rejection to all systems identified in BUG1234.</td>
+			<td>prevent</td>
+			<td>P1</td>
+			<td>sydneythree@</td>
+			<td>BUG1235</td>
+		</tr>
+		<tr>
+			<td>Disallow any single operation from affecting servers spanning namespace/class boundaries.</td>
+			<td>mitigate</td>
+			<td>P1</td>
+			<td>maxone@</td>
+			<td>BUG1236</td>
+		</tr>
+		<tr>
+			<td>Traffic admin server needs a safety check to not operate on more than [value redacted] number of nodes.</td>
+			<td>mitigate</td>
+			<td>P1</td>
+			<td>dylanfour@</td>
+			<td>BUG1237</td>
+		</tr>
+		<tr>
+			<td>Traffic admin server should ask &lt;safety check service&gt; to approve destructive work.</td>
+			<td>prevent</td>
+			<td>P0</td>
+			<td>logantwo@</td>
+			<td>BUG1238</td>
+		</tr>
+		<tr>
+			<td>MDB should reject operations that do not provide values for an expected-present constraint.</td>
+			<td>prevent</td>
+			<td>P0</td>
+			<td>louseven@</td>
+			<td>BUG1239</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="emergency_response">
+	<caption><span class="label">Table 10-2. </span>Emergency response</caption>
+	<thead>
+		<tr>
+			<th><strong>Action items</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Ensure that serving from core does not overload egress network links.</td>
+			<td>repair</td>
+			<td>P2</td>
+			<td>rileysix@</td>
+			<td>BUG1240</td>
+		</tr>
+		<tr>
+			<td>Ensure decom workflow problems are noted under [the link to our emergency stop doc has been redacted] and [the link to our escalations contact page has been redacted].</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td>logantwo@</td>
+			<td>BUG1241</td>
+		</tr>
+		<tr>
+			<td>Add a big-red-button<sup><a data-type="noteref" href="ch10.html#ch10fn1" id="ch10fn1-marker">a</a></sup> disable approach to decom workflows.</td>
+			<td>mitigate</td>
+			<td>P0</td>
+			<td>maxone@</td>
+			<td>BUG1242</td>
+		</tr>
+	</tbody>
+<tbody><tr class="footnotes"><td colspan="5"><p data-type="footnote" id="ch10fn1"><sup><a href="ch10.html#ch10fn1-marker">a</a></sup> A general term for a shut-down switch (e.g., an emergency power-off button) to be used in catastrophic circumstances to avert further damage.</p></td></tr></tbody></table>
+
+<table class="border" id="monitoringsolidusalerting">
+	<caption><span class="label">Table 10-3. </span>Monitoring/alerting</caption>
+	<thead>
+		<tr>
+			<th><strong>Action items</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Monitoring target safety checks should not allow you to push a change that cannot be rolled back.</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td>dylanfour@</td>
+			<td>BUG1243</td>
+		</tr>
+		<tr>
+			<td>Add an alert when more than [value redacted] % of our machines have been taken away from us. Machines were taken from satellites at 16:38 while the world started paging only at around 17:10.</td>
+			<td>detect</td>
+			<td>P1</td>
+			<td>rileysix@</td>
+			<td>BUG1244</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="satellitesolidusedge_provisioning">
+	<caption><span class="label">Table 10-4. </span>Satellite/edge provisioning</caption>
+	<thead>
+		<tr>
+			<th><strong>Action items</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Use iPXE to use HTTPS to make reinstalls more reliable/faster.</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td>dylanfour@</td>
+			<td>BUG1245</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="cleanupsolidusmiscellaneous">
+	<caption><span class="label">Table 10-5. </span>Cleanup/miscellaneous</caption>
+	<thead>
+		<tr>
+			<th><strong>Action items</strong></th>
+			<th><strong>Type</strong></th>
+			<th><strong>Priority</strong></th>
+			<th><strong>Owner</strong></th>
+			<th><strong>Tracking bug</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Review MDB-related code in our tools and bring the admin server backup to unwedge turnups/turndowns.</td>
+			<td>repair</td>
+			<td>P2</td>
+			<td>rileysix@</td>
+			<td>BUG1246</td>
+		</tr>
+		<tr>
+			<td>
+			<p>Schedule DiRT tests:</p>
+
+			<ul>
+				<li>
+				<p>Bring back satellite after diskerase.</p>
+				</li>
+				<li>
+				<p>Do the same for YouTube CDN.</p>
+				</li>
+			</ul>
+			</td>
+			<td>mitigate</td>
+			<td>P2</td>
+			<td>louseven@</td>
+			<td>BUG1247</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>Glossary</b></p>
+
+<dl>
+	<dt><dfn>Admin server</dfn></dt>
+	<dd><p>An RPC server that enables automation to execute privileged operations for frontend serving infrastructure.<a contenteditable="false" data-primary="glossary in good postmortem example" data-type="indexterm" id="idm139660640509296"/> The automation server is most visibly involved in the implementation of PCRs and cluster turnups/turndowns.</p></dd>
+	<dt><dfn>Autoreplacer</dfn></dt>
+	<dd><p>A system that moves non-Borgified servers from machine to machine. It’s used to keep services running in the face of machine failures, and also to support forklifts and colo reconfigs.</p></dd>
+	<dt><dfn>Borg</dfn></dt>
+	<dd><p>A cluster management system designed to manage tasks and machine resources on a massive scale. Borg owns all of the machines in a Borg cell, and assigns tasks to machines that have resources available.</p></dd>
+	<dt><dfn>Decom</dfn></dt>
+	<dd><p>An abbreviation of <em>decommissioning</em>. Decom of equipment is a process that is relevant to many operational teams.</p></dd>
+	<dt><dfn>Diskerase</dfn></dt>
+	<dd><p>A process (and associated hardware/software systems) to securely wipe production hard drives before they leave Google datacenters. Diskerase is a step in the decom workflow.</p></dd>
+	<dt><dfn>GFE (Google Front End)</dfn></dt>
+	<dd><p>The server that the outside world connects to for (almost) all Google services.</p></dd>
+	<dt><dfn>IMAG (Incident Management at Google)</dfn></dt>
+	<dd><p>A program that establishes a standard, consistent way to handle all types of incidents—from system outages to natural disasters—and organize an effective response.</p></dd>
+	<dt><dfn>MDB (Machine Database)</dfn></dt>
+	<dd><p>A system that stores all sorts of information about the state of Google machine inventory.</p></dd>
+	<dt><dfn>OMG (Outage Management at Google)</dfn></dt>
+	<dd><p>An incident management dashboard/tool that serves as a central place for tracking and managing all ongoing incidents at Google.</p></dd>
+	<dt><dfn>Satellites</dfn></dt>
+	<dd><p>Small, inexpensive racks of machine that serve only nonvideo, frontend traffic from the edge of Google’s network. Almost none of the traditional production cluster infrastructure is available for satellites. Satellites are distinct from the CDN that serves YouTube video content from the edge of Google’s network, and from other places on the wider internet. YouTube CDN was not affected by this incident.</p></dd>
+</dl>
+
+<p><b>Appendix</b></p>
+
+<dl>
+	<dt><dfn>Why is <code>ReleaseSatelliteMachines</code> not idempotent?</dfn></dt>
+	<dd><p>[The response to this question has been elided.]</p></dd>
+	<dt><dfn>What happened after the Admin Server assigned all satellites to the diskerase-team?</dfn></dt>
+	<dd><p>[The response to this question has been elided.]</p></dd>
+	<dt><dfn>What was the true <a href="http://bit.ly/2JksYtc">QPS</a> loss during the outage?</dfn></dt>
+	<dd><p>[The response to this question has been elided.]</p></dd>
+	<dt><dfn>IRC logs</dfn></dt>
+	<dd><p>[The IRC logs have been elided.]</p></dd>
+</dl>
+
+<p class="pagebreak-before"><b>Graphs</b></p>
+
+<dl>
+	<dt><dfn>Faster latency statistics—what have satellites ever done for us?</dfn></dt>
+	<dd>
+	<p>Empirically from this outage, satellites shave [value redacted] ms latency off many locations near core clusters, and up to [value redacted] ms off locations further from our backbone:</p>
+
+	<p>[The explanation of the graphs has been elided.]</p>
+	</dd>
+	<dt><dfn>Core vs. Edge serving load</dfn></dt>
+	<dd><p>A nice illustration of the reconstruction effort. Being able to once again serve 50% of traffic from the edge took about 36 hours, and returning to the normal traffic balance took an additional 12 hours (see <a data-type="xref" href="#core_vsdot_edge_qpsbreakdown">Figure 10-1</a> and <a data-type="xref" href="#core_vsdot_edge_qpsbreakdown_left_parenth">Figure 10-2</a>).</p></dd>
+</dl>
+
+<dl>
+	<dt><dfn>Peering strain from traffic shifts</dfn></dt>
+	<dd>
+	<p>[Graph elided.]</p>
+
+	<p>The graph shows packet loss aggregated by network region. There were a few short spikes during the event itself, but the majority of the loss occurred as various regions entered peak with little/no satellite coverage.</p>
+	</dd>
+	<dt><dfn>Person vs. Machine, the GFE edition</dfn></dt>
+	<dd><p>[Graph explanation of human vs. automated machine setup rates elided.]</p></dd>
+</dl>
+
+<figure><div class="figure" id="core_vsdot_edge_qpsbreakdown"><img alt="Core vs. Edge QPS breakdown" src="assets/tsrw_1001.png"/>
+<h6><span class="label">Figure 10-1. </span>Core vs. Edge QPS breakdown</h6>
+</div></figure>
+
+<figure><div class="figure" id="core_vsdot_edge_qpsbreakdown_left_parenth"><img alt="Core vs. Edge QPS breakdown (alternate representation)" src="assets/tsrw_1002.png"/>
+<h6><span class="label">Figure 10-2. </span>Core vs. Edge QPS breakdown (alternate representation)</h6>
+</div></figure>
+</div></aside>
+
+<section data-pdf-bookmark="Why Is This Postmortem Better?" data-type="sect2"><div class="sect2" id="why_is_this_postmortem_betterquestion_mar">
+<h2>Why Is This Postmortem Better?</h2>
+
+<p>This postmortem<a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-startref="ix_pmrtgood" data-type="indexterm" id="idm139660640679088"/> exemplifies several good<a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-tertiary="good writing practices used" data-type="indexterm" id="idm139660640470880"/> writing practices.</p>
+
+<section data-pdf-bookmark="Clarity" data-type="sect3"><div class="sect3" id="clarity">
+<h3>Clarity</h3>
+
+<p>The postmortem is well organized and <a contenteditable="false" data-primary="clarity in good postmortem example" data-type="indexterm" id="idm139660640467408"/>explains key terms in sufficient detail. For example:</p>
+
+<dl>
+	<dt>Glossary</dt>
+	<dd>
+	<p>A well-written glossary makes the postmortem accessible and comprehensible to a broad audience.<a contenteditable="false" data-primary="glossary in good postmortem example" data-type="indexterm" id="idm139660640462864"/></p>
+	</dd>
+	<dt>Action items</dt>
+	<dd>
+	<p>This was a large incident with many action items. Grouping action items by theme makes <a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-type="indexterm" id="idm139660640460784"/>it easier to assign owners and priorities.</p>
+	</dd>
+	<dt class="pagebreak-before">Quantifiable metrics</dt>
+	<dd>
+	<p>The postmortem presents useful data on the incident, such as cache hit ratios, traffic levels, and duration of the impact.<a contenteditable="false" data-primary="metrics" data-secondary="quantifiable, in good postmortem example" data-type="indexterm" id="idm139660640459088"/> Relevant sections of the data are presented with links back to the original sources. This data transparency removes ambiguity and provides context for the reader.</p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Concrete action items" data-type="sect3"><div class="sect3" id="concrete_action_items">
+<h3>Concrete action items</h3>
+
+<p>A postmortem with no action items is ineffective. <a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-tertiary="concrete action items" data-type="indexterm" id="idm139660640454160"/>These action items have a few notable characteristics:</p>
+
+<dl>
+	<dt>Ownership</dt>
+	<dd>
+	<p>All action items have both an owner <a contenteditable="false" data-primary="ownership" data-secondary="action items in good postmortem example" data-type="indexterm" id="idm139660640451008"/>and a tracking number.</p>
+	</dd>
+	<dt>Prioritization</dt>
+	<dd>
+	<p>All action items are assigned a priority level.</p>
+	</dd>
+	<dt>Measurability</dt>
+	<dd>
+	<p>The action items have a <a contenteditable="false" data-primary="measurements" data-secondary="measurability in action items in postmortems" data-type="indexterm" id="idm139660640446784"/>verifiable end state (e.g., “Add an alert when more than X% of our machines have been taken away from us”).</p>
+	</dd>
+	<dt>Preventative action</dt>
+	<dd>
+	<p>Each action item “theme” has Prevent/Mitigate action items that help avoid outage <a contenteditable="false" data-primary="preventative actions in postmortems" data-type="indexterm" id="idm139660640442656"/>recurrence (for example, “Disallow any single operation from affecting servers spanning namespace/class boundaries”).</p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Blamelessness" data-type="sect3"><div class="sect3" id="blamelessness">
+<h3>Blamelessness</h3>
+
+<p>The authors focused on the gaps in system design that permitted undesirable failure modes.<a contenteditable="false" data-primary="blameless postmortems" data-secondary="blamelessness in good postmortem example" data-type="indexterm" id="idm139660640438736"/> For example:</p>
+
+<dl>
+	<dt>Things that went poorly</dt>
+	<dd>
+	<p>No individual or team is blamed for the incident.</p>
+	</dd>
+	<dt>Root cause and trigger</dt>
+	<dd>
+	<p>Focuses on “what” went wrong, not “who” caused the incident.<a contenteditable="false" data-primary="root causes and trigger (in postmortems)" data-type="indexterm" id="idm139660640434576"/></p>
+	</dd>
+	<dt>Action items</dt>
+	<dd>
+	<p>Are aimed at improving <a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-tertiary="blamelessness of" data-type="indexterm" id="idm139660640433216"/>the system instead of improving people.</p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Depth" data-type="sect3"><div class="sect3" id="depth">
+<h3>Depth</h3>
+
+<p>Rather than only investigating the proximate<a contenteditable="false" data-primary="depth in postmortems" data-type="indexterm" id="idm139660640428640"/> area of the system failure, the postmortem explores the impact and system flaws across multiple teams. Specifically:</p>
+
+<dl>
+	<dt>Impact</dt>
+	<dd>
+	<p>This section contains lots of details from various perspectives, making it balanced and objective.</p>
+	</dd>
+	<dt>Root cause and trigger</dt>
+	<dd>
+	<p>This section performs a deep dive on the incident and arrives at a root cause and trigger.</p>
+	</dd>
+	<dt>Data-driven conclusions</dt>
+	<dd>
+	<p>All of the conclusions presented are based on facts and data. Any data used to arrive at a conclusion is linked from the document.</p>
+	</dd>
+	<dt>Additional resources</dt>
+	<dd>
+	<p>These present further useful information in the form of graphs. Graphs are explained to give context to readers who aren’t familiar with the system.</p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Promptness" data-type="sect3"><div class="sect3" id="promptness">
+<h3>Promptness</h3>
+
+<p>The postmortem was written and circulated less than a week after the incident was closed. <a contenteditable="false" data-primary="publication of postmortems" data-type="indexterm" id="idm139660640417968"/>A prompt postmortem tends to be more accurate because information is fresh in the contributors’ minds. The people who were affected by the outage are waiting for an explanation and some demonstration that you have things under control. The longer you wait, the more they will fill the gap with the products of their imagination. That seldom works in your favor!</p>
+</div></section>
+
+<section data-pdf-bookmark="Conciseness" data-type="sect3"><div class="sect3" id="conciseness">
+<h3>Conciseness</h3>
+
+<p>The incident was a global one, impacting multiple systems. <a contenteditable="false" data-primary="conciseness in postmortems" data-type="indexterm" id="idm139660640415536"/>As a result, the postmortem recorded and subsequently parsed a lot of data. Lengthy data sources, such as chat transcripts and system logs, were abstracted, with the unedited versions linked from the main document. Overall, the postmortem strikes a balance between verbosity and readability.</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Organizational Incentives" data-type="sect1"><div class="sect1" id="organizational_incentives">
+<h1>Organizational Incentives</h1>
+
+<p>Ideally, senior leadership should support and encourage effective postmortems. <a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-type="indexterm" id="ix_pmrtorg"/>This section describes how an organization can incentivize a healthy postmortem culture. We highlight warning signs that the culture is failing and offer some solutions. We also provide tools and templates to streamline and automate the postmortem process.</p>
+
+<section data-pdf-bookmark="Model and Enforce Blameless Behavior" data-type="sect2"><div class="sect2" id="model_and_enforce_blameless_behavior">
+<h2>Model and Enforce Blameless Behavior</h2>
+
+<p>To properly support postmortem culture, engineering leaders should consistently exemplify blameless <a contenteditable="false" data-primary="blameless postmortems" data-secondary="modeling and enforcing blameless behavior" data-type="indexterm" id="idm139660640406736"/>behavior <a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="modeling and enforcing blameless behavior" data-type="indexterm" id="idm139660640407104"/>and encourage blamelessness in every aspect of postmortem discussion. You can use a few concrete strategies to enforce blameless behavior in an organization.</p>
+
+<section data-pdf-bookmark="Use blameless language" data-type="sect3"><div class="sect3" id="use_blameless_language">
+<h3>Use blameless language</h3>
+
+<p>Blameful language stifles collaboration between teams. <a contenteditable="false" data-primary="blameless language" data-type="indexterm" id="idm139660640402736"/>Consider the following scenario:</p>
+
+<blockquote>
+<p>Sandy missed a service Foo training and wasn’t sure how to run a particular update command. The delay ultimately prolonged an outage.</p>
+
+<p>SRE Jesse [to Sandy’s manager]: “You’re the manager; why aren’t you making sure that everyone finishes the training?”</p>
+</blockquote>
+
+<p>The exchange includes a leading question that will instantly put the recipient on the defensive. A more balanced response would be:</p>
+
+<blockquote>
+<p>SRE Jesse [to Sandy’s manager]: “Reading the postmortem, I see that the on-caller missed an important training that would have allowed them to resolve the outage more quickly. Maybe team members should be required to complete this training before joining the on-call rotation? Or we could remind them that if they get stuck to please quickly escalate. After all, escalation is not a sin—especially if it helps lower customer pain! Long term, we shouldn’t really rely so much on training, as it’s easy to forget in the heat of the moment.”</p>
+</blockquote>
+</div></section>
+
+<section data-pdf-bookmark="Include all incident participants in postmortem authoring" data-type="sect3"><div class="sect3" id="include_all_incident_participants_in_post">
+<h3>Include all incident participants in postmortem authoring</h3>
+
+<p>It can be easy to overlook key<a contenteditable="false" data-primary="authoring of postmortems, including all participants in" data-type="indexterm" id="idm139660640396576"/> contributing factors to an outage when the postmortem is written in isolation or by a single team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Gather feedback" data-type="sect3"><div class="sect3" id="gather_feedback">
+<h3>Gather feedback</h3>
+
+<p>A clear review process and communication plan for postmortems can help prevent blameful language and perspectives from propagating within an organization. For a suggested structured review process, see the section <a data-type="xref" href="#postmortem_checklist">“Postmortem checklist”</a>.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Reward Postmortem Outcomes" data-type="sect2"><div class="sect2" id="reward_postmortem_outcomes">
+<h2>Reward Postmortem Outcomes</h2>
+
+<p>When well written,<a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="rewarding postmortem outcomes" data-type="indexterm" id="idm139660640392000"/> acted upon, and widely shared, postmortems are an effective vehicle for driving positive organizational change and preventing repeat outages. Consider the following strategies to incentivize postmortem culture.</p>
+
+<section data-pdf-bookmark="Reward action item closeout" data-type="sect3"><div class="sect3" id="reward_action_item_closeout">
+<h3>Reward action item closeout</h3>
+
+<p>If you reward engineers for writing postmortems, but not <a contenteditable="false" data-primary="action items in postmortems" data-secondary="rewarding closeout of" data-type="indexterm" id="idm139660640385024"/>for closing the associated action items, you risk an unvirtuous cycle of unclosed postmortems. Ensure that incentives are balanced between writing the postmortem and successfully implementing its action plan.</p>
+</div></section>
+
+<section data-pdf-bookmark="Reward positive organizational change" data-type="sect3"><div class="sect3" id="reward_positive_organizational_change">
+<h3>Reward positive organizational change</h3>
+
+<p>You can incentivize widespread implementation of postmortem lessons by presenting postmortems as an opportunity<a contenteditable="false" data-primary="organizational change (positive), rewarding" data-type="indexterm" id="idm139660640382816"/> to expand impact across an organization. Reward this level of impact with peer bonuses, positive performance reviews, promotion, and the like.</p>
+</div></section>
+
+<section data-pdf-bookmark="Highlight improved reliability" data-type="sect3"><div class="sect3" id="highlight_improved_reliability">
+<h3>Highlight improved reliability</h3>
+
+<p>Over time, an effective postmortem culture leads to fewer outages and more reliable systems.<a contenteditable="false" data-primary="reliability" data-secondary="improvements in, resulting from postmortems" data-type="indexterm" id="idm139660640376928"/> As a result, teams can focus on feature velocity instead of infrastructure patching. It’s intrinsically motivating to highlight these improvements in reports, presentations, and performance reviews.</p>
+</div></section>
+
+<section data-pdf-bookmark="Hold up postmortem owners as leaders" data-type="sect3"><div class="sect3" id="hold_up_postmortem_owners_as_leaders">
+<h3>Hold up postmortem owners as leaders</h3>
+
+<p>Celebrating postmortems through emails or meetings, or by giving the authors an opportunity to present lessons<a contenteditable="false" data-primary="ownership" data-secondary="viewing postmortem owners as leaders" data-type="indexterm" id="idm139660640373952"/> learned to an audience, can appeal to individuals that appreciate public accolades. Setting up the owner as an “expert” on a type of failure and its avoidance can be rewarding for many engineers who seek peer acknowledgment. For example, you might hear someone say, “Talk to Sara, she’s an expert now. She just coauthored a postmortem where she figured out how to fix that gap!”</p>
+</div></section>
+
+<section data-pdf-bookmark="Gamification" data-type="sect3"><div class="sect3" id="gamification">
+<h3>Gamification</h3>
+
+<p>Some individuals are incentivized by a sense of accomplishment and progress toward a larger goal, such as fixing system weaknesses and increasing reliability. For these individuals, a scoreboard or burndown of postmortem action items can be an incentive. <a contenteditable="false" data-primary="action items in postmortems" data-secondary="gamification of postmortem action items" data-type="indexterm" id="idm139660640368368"/>At Google, we hold “FixIt” weeks twice a year. SREs who close the most postmortem action items receive small tokens of appreciation and (of course) bragging rights. <a data-type="xref" href="#postmortem_leaderboard">Figure 10-3</a> shows an example of a postmortem leaderboard.</p>
+
+<figure><div class="figure" id="postmortem_leaderboard"><img alt="Postmortem leaderboard" src="assets/tsrw_1003.png"/>
+<h6><span class="label">Figure 10-3. </span>Postmortem leaderboard</h6>
+</div></figure>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Share Postmortems Openly" data-type="sect2"><div class="sect2" id="share_postmortems_openly">
+<h2>Share Postmortems Openly</h2>
+
+<p>In order to maintain a healthy postmortem culture within an organization, it’s important to share postmortems as widely as possible. <a contenteditable="false" data-primary="sharing postmortems openly" data-type="indexterm" id="idm139660640364176"/><a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="sharing postmortems openly" data-type="indexterm" id="idm139660640362880"/>Implementing even one of the following tactics can help.</p>
+
+<section data-pdf-bookmark="Share announcements across the organization" data-type="sect3"><div class="sect3" id="share_announcements_across_the_organizati">
+<h3>Share announcements across the organization</h3>
+
+<p>Announce the availability of the postmortem draft on your internal communication channels, email, Slack, and the like. If you have a regular company all-hands, make it a practice to share a recent postmortem of interest.</p>
+</div></section>
+
+<section data-pdf-bookmark="Conduct cross-team reviews" data-type="sect3"><div class="sect3" id="conduct_cross_team_reviews">
+<h3>Conduct cross-team reviews</h3>
+
+<p>Conduct cross-team reviews of postmortems.<a contenteditable="false" data-primary="cross-team reviews of postmortems" data-type="indexterm" id="idm139660640356800"/> In these reviews, a team walks though their incident while other teams ask questions and learn vicariously. At Google, several offices have informal Postmortem Reading Clubs that are open to all employees.</p>
+
+<p>In addition, a cross-functional group of developers, SREs, and organizational leaders reviews the overall postmortem process. These folks meet monthly to review the effectiveness of the postmortem process and template.</p>
+</div></section>
+
+<section data-pdf-bookmark="Hold training exercises" data-type="sect3"><div class="sect3" id="hold_training_exercises">
+<h3>Hold training exercises</h3>
+
+<p>Use the <a href="http://bit.ly/2JiOazR">Wheel of Misfortune</a> when training new engineers: a cast of engineers reenacts a previous postmortem, assuming roles laid out in the postmortem.<a contenteditable="false" data-primary="training" data-secondary="using postmortems to train new engineers" data-type="indexterm" id="idm139660640350544"/> The original Incident Commander attends to help make the experience as “real” as possible.</p>
+</div></section>
+
+<section data-pdf-bookmark="Report incidents and outages weekly" data-type="sect3"><div class="sect3" id="report_incidents_and_outages_weekly">
+<h3>Report incidents and outages weekly</h3>
+
+<p>Create a weekly outage report containing the incidents and outages from the past seven days.<a contenteditable="false" data-primary="outages" data-secondary="reporting weekly" data-type="indexterm" id="idm139660640346720"/><a contenteditable="false" data-primary="incidents" data-secondary="weekly reporting of" data-type="indexterm" id="idm139660640347936"/> Share the report with as wide an audience as possible. From the weekly outages, compile and share a periodic greatest hits report.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Respond to Postmortem Culture Failures" data-type="sect2"><div class="sect2" id="respond_to_postmortem_culture_failures">
+<h2>Respond to Postmortem Culture Failures</h2>
+
+<p>The breakdown of postmortem<a contenteditable="false" data-primary="culture" data-secondary="responding to postmortem culture failures" data-type="indexterm" id="idm139660640342976"/> culture may not always be obvious. <a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="responding to postmortem culture failures" data-type="indexterm" id="idm139660640341488"/>The following are some common failure patterns <a contenteditable="false" data-primary="blameless postmortems" data-secondary="responding to culture failures in" data-type="indexterm" id="idm139660640339168"/>and recommended solutions.</p>
+
+<section data-pdf-bookmark="Avoiding association" data-type="sect3"><div class="sect3" id="avoiding_association">
+<h3>Avoiding association</h3>
+
+<p>Disengaging from the postmortem process is a sign that postmortem culture at an organization is failing. For example, suppose SRE Director Parker overhears the following conversation:</p>
+
+<blockquote>
+<p>SWE Sam: Wow, did you hear about that huge blow-up?</p>
+
+<p>SWE Riley: Yeah, it was terrible. They’ll have to write a postmortem now.</p>
+
+<p>SWE Sam: Oh no! I’m so glad I’m not involved with that.</p>
+
+<p>SWE Riley: Yeah, I really wouldn’t want to be in the meeting where that one is <span class="keep-together">discussed</span>.</p>
+</blockquote>
+
+<p>Ensuring that high-visibility postmortems are <a href="#postmortem_checklist">reviewed</a> for blameful prose can help prevent this kind of avoidance. In addition, sharing high-quality examples and discussing how those involved were rewarded can help reengage individuals.</p>
+</div></section>
+
+<section data-pdf-bookmark="Failing to reinforce the culture" data-type="sect3"><div class="sect3" id="failing_to_reinforce_the_culture">
+<h3>Failing to reinforce the culture</h3>
+
+<p>Responding when a senior executive <a contenteditable="false" data-primary="blameful language, mitigating damage of" data-type="indexterm" id="idm139660640329424"/>uses blameful language can be challenging. Consider the following statement made by senior leadership at a meeting about an <span class="keep-together">outage</span>:</p>
+
+<blockquote>
+<p>VP Ash: I know we are supposed to be blameless, but this is a safe space. Someone must have known beforehand this was a bad idea, so why didn’t you listen to that <span class="keep-together">person</span>?</p>
+</blockquote>
+
+<p>Mitigate the damage by moving the narrative in a more constructive direction. For example:</p>
+
+<blockquote>
+<p>SRE Dana: Hmmm, I’m sure everyone had the best intent, so to keep it blameless, maybe we ask generically if there were any warning signs we could have heeded, and why we might have dismissed them.</p>
+</blockquote>
+
+<p>Individuals act in good faith and make decisions based on the best information available. Investigating the source of misleading information is much more beneficial to the organization than assigning blame. (If you have encountered Agile principles, this should <a href="http://bit.ly/2sthid8">be familiar to you</a>.)</p>
+</div></section>
+
+<section data-pdf-bookmark="Lacking time to write postmortems" data-type="sect3"><div class="sect3" id="lacking_time_to_write_postmortems">
+<h3>Lacking time to write postmortems</h3>
+
+<p>Quality postmortems take time to write.<a contenteditable="false" data-primary="time for postmortems, lacking" data-type="indexterm" id="idm139660640322512"/> When a team is overloaded with other tasks, the quality of postmortems suffers. Subpar postmortems with incomplete action items make a recurrence far more likely. Postmortems are letters you write to future team members: it’s very important to keep a consistent quality bar, lest you accidentally teach future teammates a bad lesson. Prioritize postmortem work, track the postmortem completion and review, and allow teams adequate time to implement the associated action plan. The tooling we discuss in the section <a data-type="xref" href="#tools_and_templates">“Tools and Templates”</a> can help with these activities.</p>
+</div></section>
+
+<section data-pdf-bookmark="Repeating incidents" data-type="sect3"><div class="sect3" id="repeating_incidents">
+<h3>Repeating incidents</h3>
+
+<p>If teams are experiencing failures that mirror previous incidents, it’s time to dig deeper. <a contenteditable="false" data-primary="repeating incidents, finding causes of" data-type="indexterm" id="idm139660640316320"/><a contenteditable="false" data-primary="incidents" data-secondary="finding causes of repeating incidents" data-type="indexterm" id="idm139660640317648"/>Consider asking questions like:</p>
+
+<ul>
+	<li>
+	<p>Are action items taking too long to close?</p>
+	</li>
+	<li>
+	<p>Is feature velocity trumping reliability fixes?</p>
+	</li>
+	<li>
+	<p>Are the right action items being captured in the first place?</p>
+	</li>
+	<li>
+	<p>Is the faulty service overdue for a refactor?</p>
+	</li>
+	<li>
+	<p>Are people putting Band-Aids on a more serious problem?</p>
+	</li>
+</ul>
+
+<p>If you uncovered a systemic process or technical problem, it’s time to take a step back and consider the overall service health. Bring the postmortem collaborators from each similar incident together to discuss the best course of action to prevent repeats.<a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-startref="ix_pmrtorg" data-type="indexterm" id="idm139660640315088"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Tools and Templates" data-type="sect1"><div class="sect1" id="tools_and_templates">
+<h1>Tools and Templates</h1>
+
+<p>A set of tools and templates can bootstrap a postmortem culture by making writing postmortems and managing the associated data easier.<a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-type="indexterm" id="idm139660640302448"/> There are a number of resources from Google and other companies that you can leverage in this space.</p>
+
+<section data-pdf-bookmark="Postmortem Templates" data-type="sect2"><div class="sect2" id="postmortem_templates">
+<h2>Postmortem Templates</h2>
+
+<p>Templates make it easier to write complete postmortems and share them across an organization. <a contenteditable="false" data-primary="templates" data-secondary="for postmortems" data-type="indexterm" id="idm139660640298512"/>Using a standard format makes postmortems more accessible for readers outside the domain. You can customize the template to fit your needs. For example, it may be useful to capture team-specific metadata like hardware make/model for a datacenter team, or Android versions affected for a mobile team. You can then add customizations as the team matures and performs more sophisticated postmortems.</p>
+
+<section data-pdf-bookmark="Google’s template" data-type="sect3"><div class="sect3" id="googleapostrophes_template">
+<h3>Google’s template</h3>
+
+<p>Google has shared a version of<a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-tertiary="Google template" data-type="indexterm" id="idm139660640296992"/> our postmortem <a contenteditable="false" data-primary="Google’s template for postmortems" data-type="indexterm" id="idm139660640294976"/>template in Google Docs format at <a href="http://g.co/SiteReliabilityWorkbookMaterials"><em>http://g.co/SiteReliabilityWorkbookMaterials</em></a>. Internally, we primarily use Docs to write postmortems because it facilitates collaboration via shared editing rights and comments. Some of our internal tools prepopulate this template with metadata to make the postmortem easier to write.<a contenteditable="false" data-primary="Google Apps Script" data-type="indexterm" id="idm139660640293712"/> We leverage <a href="https://developers.google.com/apps-script/">Google Apps Script</a> to automate parts of the authoring, and capture a lot of the data into specific sections and tables to make it easier for our postmortem repository to parse out data for analysis.</p>
+</div></section>
+
+<section data-pdf-bookmark="Other industry templates" data-type="sect3"><div class="sect3" id="other_industry_templates">
+<h3>Other industry templates</h3>
+
+<p>Several other companies and individuals have shared their <a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-tertiary="other industry templates" data-type="indexterm" id="idm139660640288304"/>postmortem templates:</p>
+
+<ul>
+	<li>
+	<p><a href="http://bit.ly/2J6FaP7">Pager Duty</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2kIhFNC">An adaptation of the original Google Site Reliability Engineering book template</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2svJA7R">A list of four templates hosted on GitHub</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2LcOzRy">GitHub user Julian Dunn</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2spHl5P">Server Fault</a></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem Tooling" data-type="sect2"><div class="sect2" id="postmortem_tooling">
+<h2>Postmortem Tooling</h2>
+
+<p>As of this writing, Google’s postmortem <a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-type="indexterm" id="idm139660640275952"/>management <a contenteditable="false" data-primary="tools" data-secondary="for postmortems" data-type="indexterm" id="idm139660640276784"/>tooling is not available for external use (check our <a href="https://cloudplatform.googleblog.com/">blog</a> for the latest updates). We can, however, explain how our tools facilitate postmortem culture.</p>
+
+<section data-pdf-bookmark="Postmortem creation" data-type="sect3"><div class="sect3" id="postmortem_creation">
+<h3>Postmortem creation</h3>
+
+<p>Our incident management tooling collects and stores a lot of useful data about an incident and pushes that data automatically into the postmortem.<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="postmortem creation" data-type="indexterm" id="idm139660640271696"/> Examples of data we push includes:</p>
+
+<ul>
+	<li>
+	<p>Incident Commander and other roles</p>
+	</li>
+	<li>
+	<p>Detailed incident timeline and IRC logs</p>
+	</li>
+	<li>
+	<p>Services affected and root-cause services</p>
+	</li>
+	<li>
+	<p>Incident severity</p>
+	</li>
+	<li>
+	<p>Incident detection mechanisms</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem checklist" data-type="sect3"><div class="sect3" id="postmortem_checklist">
+<h3>Postmortem checklist</h3>
+
+<p>To help authors ensure a postmortem is properly completed, we provide a postmortem <a contenteditable="false" data-primary="checklist for postmortems" data-type="indexterm" id="idm139660640260784"/>checklist that walks<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="checklist" data-type="indexterm" id="idm139660640261744"/> the owner through key steps. Here are just a few example checks on the list:</p>
+
+<ul>
+	<li>
+	<p>Perform a complete assessment of incident impact.</p>
+	</li>
+	<li>
+	<p>Conduct sufficiently detailed root-cause analysis to drive action item planning.</p>
+	</li>
+	<li>
+	<p>Ensure action items are vetted and approved by the technical leads of the service.</p>
+	</li>
+	<li>
+	<p>Share the postmortem with the wider organization.</p>
+	</li>
+</ul>
+
+<p>The full checklist is available at <a href="http://g.co/SiteReliabilityWorkbookMaterials"><em>http://g.co/SiteReliabilityWorkbookMaterials</em></a>.</p>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem storage" data-type="sect3"><div class="sect3" id="postmortem_storage">
+<h3>Postmortem storage</h3>
+
+<p>We store postmortems in a tool called Requiem so it’s easy <a contenteditable="false" data-primary="Requiem (postmortem storage tool)" data-type="indexterm" id="idm139660640250192"/>for any Googler to find them. <a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="storage" data-type="indexterm" id="idm139660640251024"/>Our incident management tool automatically pushes all postmortems to Requiem, and anyone in the organization can post their postmortem for all to see. We have thousands of postmortems stored, dating back to 2009. Requiem parses out metadata from individual postmortems and makes it available for searching, analysis, and reporting.</p>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem follow-up" data-type="sect3"><div class="sect3" id="postmortem_follow_up">
+<h3>Postmortem follow-up</h3>
+
+<p>Our postmortems are stored in Requiem’s database.<a contenteditable="false" data-primary="follow-up to postmortems" data-type="indexterm" id="idm139660640245792"/><a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="follow-up on postmortems" data-type="indexterm" id="idm139660640246496"/> Any resulting action items are filed as bugs in our centralized bug tracking system. Consequently, we can monitor the closure of action items from each postmortem. With this level of tracking, we can ensure that action items don’t slip through the cracks, leading to increasingly unstable <a contenteditable="false" data-primary="action items in postmortems" data-secondary="monitoring tool for" data-type="indexterm" id="idm139660640243824"/>services. <a data-type="xref" href="#postmortem_action_itemmonitoring">Figure 10-4</a> shows a mockup of postmortem action item monitoring enabled by our tooling.</p>
+
+<figure><div class="figure" id="postmortem_action_itemmonitoring"><img alt="Postmortem action item monitoring" src="assets/tsrw_1004.png"/>
+<h6><span class="label">Figure 10-4. </span>Postmortem action item monitoring</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem analysis" data-type="sect3"><div class="sect3" id="postmortem_analysis">
+<h3>Postmortem analysis</h3>
+
+<p>Our postmortem management tool stores<a contenteditable="false" data-primary="analysis of postmortems" data-type="indexterm" id="idm139660640236208"/> its information <a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="postmortem analysis" data-type="indexterm" id="idm139660640235264"/>in a database for analysis. Teams can use the data to write reports about their postmortem trends and identify their most vulnerable systems. This helps us uncover underlying sources of instability or incident management dysfunctions that may otherwise go unnoticed. For example, <a data-type="xref" href="#postmortem_analysis-id00057">Figure 10-5</a> shows charts that were built with our analysis tooling. These charts show us trends like how many postmortems we have per month per organization, incident mean duration, time to detect, time to resolve, and blast radius.</p>
+
+<figure><div class="figure" id="postmortem_analysis-id00057"><img alt="Postmortem analysis" src="assets/tsrw_1005.png"/>
+<h6><span class="label">Figure 10-5. </span>Postmortem analysis</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Other industry tools" data-type="sect3"><div class="sect3" id="other_industry_tools">
+<h3>Other industry tools</h3>
+
+<p>Here are some third-party tools that can help you<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="other industry tools" data-type="indexterm" id="idm139660640227200"/> create, organize, and analyze <span class="keep-together">postmortems</span>:</p>
+
+<ul>
+	<li>
+	<p><a href="http://bit.ly/2xvrCqK">Pager Duty Postmortems</a></p>
+	</li>
+	<li>
+	<p><a href="https://github.com/etsy/morgue">Morgue by Etsy</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2J87dcR">VictorOps</a></p>
+	</li>
+</ul>
+
+<p>Although it’s impossible to fully automate every step of writing postmortems, we’ve found that postmortem templates and tooling make the process run more smoothly. These tools free up time, allowing authors to focus on the critical aspects of the postmortem, such as root-cause analysis and action item planning.</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00058">
+<h1>Conclusion</h1>
+
+<p>Ongoing investment in cultivating a postmortem culture pays dividends in the form of fewer outages, a better overall experience for users, and more trust from the people that depend on you. Consistent application of these practices results in better system design, less downtime, and more effective and happier engineers. If the worst does happen and an incident recurs, you will suffer less damage and recover faster and have even more data to continue reinforcing production.<a contenteditable="false" data-primary="postmortems" data-startref="ix_pmrt" data-type="indexterm" id="idm139660640215584"/></p>
+</div></section>
+</div></section></body></html>

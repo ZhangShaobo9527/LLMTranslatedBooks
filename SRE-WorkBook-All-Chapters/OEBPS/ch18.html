@@ -1,0 +1,591 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>SRE Engagement Model</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 18. SRE Engagement Model" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_engagement_model">
+<h1><span class="label">Chapter 18. </span>SRE Engagement Model</h1>
+
+<p class="byline">By Michael Wildpaner, Gráinne Sheerin, Daniel Rogers,<br/>
+and Surya Prashanth Sanagavarapu (New York Times)<br/>
+with Adrian Hilton and Shylaja Nukala</p>
+
+<p><a href="http://bit.ly/2Lc14wG">Chapter 32</a> in our first SRE book describes technical and procedural approaches that an SRE team can take to analyze and improve the reliability of a service. <a contenteditable="false" data-primary="SRE engagement model" data-type="indexterm" id="ix_SREeng"/>These strategies include Production Readiness Reviews (PRRs), early engagement, and continuous improvement.<a contenteditable="false" data-primary="Production Readiness Reviews (PRRs)" data-type="indexterm" id="idm139660637709360"/></p>
+
+<p>Simply put, SRE principles aim to maximize the engineering velocity of developer teams while keeping products reliable. This two-fold goal is good for the product users and good for the company. But there’s a limit to how much even the best SRE team can accomplish, and the SRE model is less effective when the domain is too large and overly complex.<a contenteditable="false" data-primary="microservices" data-secondary="limiting how much an SRE team can accomplish" data-type="indexterm" id="idm139660637702416"/> The current microservices movement makes this dynamic even more acute—a small company can easily have more microservices than a single SRE team can handle. Given a large production landscape, and with the knowledge that they can’t cover every service, an SRE team must decide where to focus their attention to achieve the best results. Product development and SRE teams can collaborate to identify the correct point of focus.</p>
+
+<p>This chapter adopts the perspective of an SRE team that’s intending to provide support for a new service. We look at how to engage most effectively with the service, and with the developer and product teams who own it. Although SRE engagement often builds around one or more services, the engagement entails much more than the services themselves—it focuses on understanding the aims of developer and product teams and finding the right way to support them.</p>
+
+<p>Most of this discussion is applicable regardless of your organization’s scale. While we use the word <em>team</em> frequently, a team could theoretically start off as a single person (although that person would be quite busy). Regardless of your team’s size, it’s important to proactively define the role of SRE and manage communication and collaboration with product development.</p>
+
+<section data-pdf-bookmark="The Service Lifecycle" data-type="sect1"><div class="sect1" id="service_lifecycle">
+<h1>The Service Lifecycle</h1>
+
+<p>As described in the <a href="http://bit.ly/2LexAhJ">preface</a> to the first SRE book, an SRE team’s contributions to service reliability happen throughout all phases of the service lifecycle.<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-type="indexterm" id="ix_serlife"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="service lifecycle" data-type="indexterm" id="ix_SREengserlf"/> Their application of production knowledge and experience can substantially improve the reliability of a service well before any SRE picks up the pager for the <span class="keep-together">service</span>.</p>
+
+<p><a data-type="xref" href="#level_of_sre_engagement_during_the_servic">Figure 18-1</a> shows the ideal levels of SRE engagement over the course of a service’s life. However, an SRE team might begin their engagement with a service at any stage in the lifecycle. For example, if the development team begins planning a replacement service for an SRE-supported service, SRE might be involved in the new service very early on. Alternatively, an SRE team might formally engage with a service once it has been generally available for months or years and is now facing reliability or scaling challenges. This section provides guidance on how SRE teams can effectively contribute at each phase.</p>
+
+<figure><div class="figure" id="level_of_sre_engagement_during_the_servic"><img alt="Level of SRE engagement during the service lifecycle" src="assets/tsrw_1801.png"/>
+<h6><span class="label">Figure 18-1. </span>Level of SRE engagement during the service lifecycle</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Phase 1: Architecture and Design" data-type="sect2"><div class="sect2" id="phase_1_architecture_and_design">
+<h2>Phase 1: Architecture and Design</h2>
+
+<p>SRE can influence the<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="architecture and design phase" data-type="indexterm" id="idm139660637685088"/> architecture and design of <a contenteditable="false" data-primary="architecture  and design phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637683616"/>a software system <a contenteditable="false" data-primary="design phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637682384"/>in different ways:</p>
+
+<ul>
+	<li>
+	<p>Creating best practices, such as resilience to various single points of failure, that a developer team can employ when building a new product</p>
+	</li>
+	<li>
+	<p>Documenting the dos and don’ts of particular infrastructure systems (based upon prior experience) so developers can choose their building blocks wisely, use them correctly, and avoid known pitfalls</p>
+	</li>
+	<li>
+	<p>Providing early engagement consulting to discuss specific architectures and design choices in detail, and to help validate assumptions with the help of targeted prototypes</p>
+	</li>
+	<li>
+	<p>Joining the developer team and participating in development work</p>
+	</li>
+	<li>
+	<p>Codesigning part of the service</p>
+	</li>
+</ul>
+
+<p>Fixing architectural mistakes becomes more difficult later in the development cycle. Early SRE engagement can help avoid costly redesigns that become necessary when systems interact with real-world users and need to scale in response to service growth.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 2: Active Development" data-type="sect2"><div class="sect2" id="phase_2_active_development">
+<h2>Phase 2: Active Development</h2>
+
+<p>As the product takes shape during active<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="active development phase" data-type="indexterm" id="idm139660637672096"/> development, SREs can <a contenteditable="false" data-primary="active development phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637670624"/>start <em>productionizing</em> the service—getting it in shape to be released into production. Productionalization typically includes capacity planning, setting up extra resources for redundancy, planning for spike and overload handling,<a contenteditable="false" data-primary="productionizing a service" data-type="indexterm" id="idm139660637667760"/> implementing load balancing, and putting in place sustainable operational practices like monitoring, alerting, and performance tuning.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 3: Limited Availability" data-type="sect2"><div class="sect2" id="phase_3_limited_availability">
+<h2>Phase 3: Limited Availability</h2>
+
+<p>As a service progresses toward Beta, the number of users, variety of use cases, intensity of usage, and availability and performance demands increase.<a contenteditable="false" data-primary="limited availability phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637666096"/><a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="limited availability phase" data-type="indexterm" id="idm139660637664656"/> At this stage, SRE can help measure and evaluate reliability. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining before general availability phase of service lifecycle" data-type="indexterm" id="idm139660637661712"/>We strongly recommend defining SLOs before general availability (GA) so that the service teams have an objective measure of how reliable the service is. The product team still has the option to withdraw a product that can’t meet its target reliability.</p>
+
+<p>During this phase, the SRE team can also help scale the <a contenteditable="false" data-primary="scaling" data-secondary="during limited availability phase of service lifecycle" data-type="indexterm" id="idm139660637659712"/>system by building a capacity model, acquiring resources for upcoming launch phases, and automating turnups and in-place service resizing. SRE can ensure proper monitoring coverage and help create alerts that ideally match the upcoming service SLOs.</p>
+
+<p>While service usage is still changing, the SRE team can expect an increased amount of work during incident response and operational duties because the teams are still learning how the service works and how to manage its failure modes. We recommend sharing this work between the developer and SRE teams. That way, the developer team gains operational experience with the service and the SREs gain experience with the service in general. Operational work and incident management will inform the system changes and updates the service owners need to make before GA.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 4: General Availability" data-type="sect2"><div class="sect2" id="phase_4_general_availability">
+<h2>Phase 4: General Availability</h2>
+
+<p>In this phase, the service has passed the Production Readiness <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="general availability phase" data-type="indexterm" id="idm139660637655952"/>Review (see <a href="http://bit.ly/2Lc14wG">Chapter 32</a> in <em>Site Reliability Engineering</em> for more details) and <a contenteditable="false" data-primary="general availability phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637653600"/>is accepting all users. While SRE typically performs the majority of operational work, the developer team should continue to field a small part of all operational and incident response work so they don’t lose perspective on these aspects of the service. They might permanently include one developer in the on-call rotation to help the developers keep track of operational load.</p>
+
+<p>In the early phase of GA, as the developer team focuses on maturing the service and launching the first batches of new features, it also needs to stay in the loop to understand system properties under real load. In the later stages of GA, the developer team provides small incremental features and fixes, some of which are informed by operational needs and any production incidents that occur.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 5: Deprecation" data-type="sect2"><div class="sect2" id="phase_5_deprecation">
+<h2>Phase 5: Deprecation</h2>
+
+<p>No system runs forever.<a contenteditable="false" data-primary="deprecation phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637645056"/> If and when a better replacement system is available,<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="deprecation phase" data-type="indexterm" id="idm139660637650832"/> the existing system is closed for new users and all engineering focuses on transitioning users from the existing system to the new one. SRE operates the existing system mostly without involvement from the developer team, and supports the transition with development and operational work.</p>
+
+<p>While SRE effort required for the existing system is reduced, SRE is effectively supporting two full systems. Headcount and staffing should be adjusted accordingly.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 6: Abandoned" data-type="sect2"><div class="sect2" id="phase_6_abandoned">
+<h2>Phase 6: Abandoned</h2>
+
+<p>Once a service is abandoned, the developer team typically resumes operational support. <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="abandoned phase" data-type="indexterm" id="idm139660637649008"/><a contenteditable="false" data-primary="abandoned phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637649264"/>SRE supports service incidents on a best-effort basis. For a service with internal users, SRE hands over service management to any remaining users. This chapter provides two case studies of how SRE can hand back a service to developer teams.</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 7: Unsupported" data-type="sect2"><div class="sect2" id="phase_7_unsupported">
+<h2>Phase 7: Unsupported</h2>
+
+<p>There are no more users, <a contenteditable="false" data-primary="unsupported phase, service lifecycle" data-type="indexterm" id="idm139660637638320"/>and the service has <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="unsupported phase" data-type="indexterm" id="idm139660637637216"/>been shut down. SRE helps to delete references to the service in production configurations and in <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-startref="ix_serlife" data-type="indexterm" id="idm139660637633360"/>documentation.<a contenteditable="false" data-primary="SRE engagement model" data-secondary="service lifecycle" data-startref="ix_SREengserlf" data-type="indexterm" id="idm139660637634528"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Setting Up the Relationship" data-type="sect1"><div class="sect1" id="setting_up_the_relationship">
+<h1>Setting Up the Relationship</h1>
+
+<p>A service does not exist in a vacuum: the SRE team engages with the developer team that builds the service and the <a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-type="indexterm" id="ix_devSRE"/>product team that determines<a contenteditable="false" data-primary="SRE engagement model" data-secondary="setting up relationship with development team" data-type="indexterm" id="ix_SREengrel"/> how it should evolve. This section recommends some strategies and tactics for building and maintaining good working relationships with those teams.</p>
+
+<section data-pdf-bookmark="Communicating Business and Production Priorities" data-type="sect2"><div class="sect2" id="communicating_business_and_production_pri">
+<h2>Communicating Business and Production Priorities</h2>
+
+<p>Before you can help someone, you need to understand their needs.<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="communicating business and production priorities" data-type="indexterm" id="idm139660637623120"/> To that end, SREs need to understand what the product developers expect the SRE engagement to achieve. <a contenteditable="false" data-primary="priorities" data-secondary="business and production, understanding" data-type="indexterm" id="idm139660637623648"/><a contenteditable="false" data-primary="production" data-secondary="priorities, communication by SRE and developer teams" data-type="indexterm" id="idm139660637621264"/>When engaging with a developer team, SREs should build a deep understanding of the product and business goals. <a contenteditable="false" data-primary="business priorities, communicating between SRE and developer teams" data-type="indexterm" id="idm139660637624448"/>SREs should be able to articulate their role and how SRE engagement can enable developers to execute toward these goals.</p>
+
+<p>Teams need to regularly talk with each other about business and production priorities. The SRE and developer leadership teams should ideally work as a unit, meeting regularly and exchanging views about technical and prioritization challenges. Sometimes SRE leads join the product development leadership team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Identifying Risks" data-type="sect2"><div class="sect2" id="identifying_risks">
+<h2>Identifying Risks</h2>
+
+<p>Because an SRE team is focused on system reliability, <a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="identifying risks" data-type="indexterm" id="idm139660637614384"/>they are well positioned to identify potential risks.<a contenteditable="false" data-primary="risks, identifying by SRE team to developer team" data-type="indexterm" id="idm139660637614752"/> Gauging the likelihood and potential impact of those risks as accurately as possible is important, as the cost of disrupting regular development and feature flow is significant to the product and to engineers.</p>
+</div></section>
+
+<section data-pdf-bookmark="Aligning Goals" data-type="sect2"><div class="sect2" id="aligning_goals">
+<h2>Aligning Goals</h2>
+
+<p>The developer and SRE teams both care about reliability, availability, performance, scalability, efficiency, and feature and launch velocity.<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="aligning goals" data-type="indexterm" id="ix_devSREalign"/><a contenteditable="false" data-primary="goals, aligning between SRE and development teams" data-type="indexterm" id="ix_goalalgn"/> However, SRE operates under different incentives, mainly favoring service long-term viability over new feature launches.</p>
+
+<p class="pagebreak-after">In our experience, developer and SRE teams can strike the right balance here by maintaining their individual foci but also explicitly supporting the goals of the other group. SREs can have an explicit goal to support the developer team’s release velocity and ensure the success of all approved launches. For example, SRE might state, “We will support you in releasing as quickly as is safe,” where “safe” generally implies staying within error budget. Developers should then commit to dedicating a reasonable percentage of engineering time to fixing and preventing the things that are breaking reliability: resolving ongoing service issues at the design and implementation level, paying down technical debt, and including SREs in new feature development early so that they can participate in design conversations.</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="shared_goals_sre_engagements_at_the_new_y">
+<h5>Shared Goals: SRE Engagements at the New York Times</h5>
+
+<p><em>by Surya Prashanth Sanagavarapu (New York Times)</em></p>
+
+<p>In our organization, SRE resources are in high demand when it comes to cloud migrations, production ramp-ups, and applications moving toward containers. In addition, SRE teams have their own backlogs to tackle. In the face of limited resources, these competing priorities define success for the SRE team. While hiring SREs is one obvious way to address the demand for SRE time, not every team has the luxury, experience, or time to do so.</p>
+
+<p>The core mission of the SRE function at the <em>New York Times</em> is to <em>empower product development teams</em> with tools and processes to maximize reliability and resilience in applications that support our newsroom, thus enabling distribution of high-quality journalism to readers. We adopted a <em>shared goals model</em> to achieve a balance between reducing the automation backlog and engaging with other teams.</p>
+
+<p>Before engaging with teams, we review our overall backlog for the current quarter/year and clearly define its work items and categories. For instance, our backlog items might include:</p>
+
+<ul>
+	<li>
+	<p>Add automation to set up baseline monitoring and alerting by hitting service status endpoints for applications.</p>
+	</li>
+	<li>
+	<p>Implement more reliable and/or faster build pipelines.</p>
+	</li>
+</ul>
+
+<p>When teams approach SREs for help, one of the factors we consider when prioritizing a request is whether a joint engagement might help reduce our backlog.</p>
+
+<p><b>Defining the Engagement</b></p>
+
+<p>Our SREs work with product development teams according to two different models:</p>
+
+<ul>
+	<li>
+	<p>A full-time basis</p>
+	</li>
+	<li>
+	<p>A part-time basis for fairly brief and constrained projects</p>
+	</li>
+</ul>
+
+<p>We define the type of engagement based upon the SRE team’s bandwidth. For full-time engagements, we prefer to embed an SRE in a product development team. This helps provide focus and time to relieve some burden from the product engineering teams. The SRE and product teams have maximum time to learn about each other as the developers ramp up on SRE skills and capabilities. For long-term engagements, we prioritize applications that best fit into our company strategy.</p>
+
+<p>When defining the engagement scope, we attempt to gauge the maturity of the team or the application in relation to SRE practices. We find that various teams are at different levels of maturity when it comes to thinking about SRE practices and principles. We are working on applying an application maturity model to help here.</p>
+
+<p><b>Setting Shared Goals and Expectations</b></p>
+
+<p>Setting the right expectations is critical for meeting deadlines and task completion. To this end, we work according to the following principles:</p>
+
+<ul>
+	<li>
+	<p>We emphasize that the application owners, not SREs, are directly responsible for making changes to an application.</p>
+	</li>
+	<li>
+	<p>SRE engagement is for company-wide benefit. Any new automation or tooling should improve common tools and automation used across the company and avoid one-off script development.</p>
+	</li>
+	<li>
+	<p>SREs should give the developer team a heads up about any new processes the engagement might introduce (for example, load testing).</p>
+	</li>
+	<li>
+	<p>The engagements may <a contenteditable="false" data-primary="Application Readiness Reviews (ARRs)" data-type="indexterm" id="idm139660637585440"/>involve Application Readiness Reviews (ARRs) and Production <a contenteditable="false" data-primary="Production Readiness Reviews (PRRs)" data-type="indexterm" id="idm139660637581568"/>Readiness Reviews (PRRs), as described in <a href="http://bit.ly/2Lc14wG">Chapter 32</a> of <em>Site Reliability Engineering</em>. Proposed changes from ARR and PRR must be prioritized jointly by the developers and the SREs.</p>
+	</li>
+	<li>
+	<p>SREs are not traditional operations engineers. They do not support manual work such as running a job for deployment.</p>
+	</li>
+</ul>
+
+<p>When we set shared goals, we write them jointly with the development team and divide the goals into milestones. If you are an Agile-based company, you might write <a href="http://bit.ly/2LOwI4u">epics</a> or stories. The SRE team can then map those goals into their own backlog.</p>
+
+<p>Our common pattern when setting goals is to:</p>
+
+<ol>
+	<li>
+	<p>Define the scope of the engagement.</p>
+
+	<ul>
+		<li>
+		<p><strong>Example 1:</strong> In the next quarter, I want all members of my team to handle GKE/GAE deployments, become comfortable with production environments, and be able to handle a production outage.</p>
+		</li>
+		<li>
+		<p><strong>Example 2:</strong> In the next quarter, I want SRE to work with the dev team to stabilize the app in terms of scaling and monitoring, and to develop runbooks and automation for outages.</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>Identify the end result success story, and call it out explicitly.</p>
+
+	<ul>
+		<li>
+		<p><strong>Example:</strong> After the engagement, the product development team can handle our service outages in Google Kubernetes Engine without escalation.</p>
+		</li>
+	</ul>
+	</li>
+</ol>
+
+<p><b>Sprints and Communication</b></p>
+
+<p>Any engagement with product development teams begins with a kickoff and planning meeting. Prior to kickoff, our SRE team reviews the application architecture and our shared goal to verify that the expected outcome is realistic within the given time frame. A joint planning meeting that creates epics and stories can be a good starting point for the engagement.</p>
+
+<p>A roadmap for this engagement might be:</p>
+
+<ol>
+	<li>
+	<p>Review the application architecture.</p>
+	</li>
+	<li>
+	<p>Define shared goals.</p>
+	</li>
+	<li>
+	<p>Hold the kickoff and planning session.</p>
+	</li>
+	<li>
+	<p>Implement development cycles to reach milestones.</p>
+	</li>
+	<li>
+	<p>Set up retrospectives to solicit engagement feedback.</p>
+	</li>
+	<li>
+	<p>Conduct Production Readiness Reviews.</p>
+	</li>
+	<li>
+	<p>Implement development cycles to reach milestones.</p>
+	</li>
+	<li>
+	<p>Plan and execute launches.</p>
+	</li>
+</ol>
+
+<p>We require that the teams define a feedback method and agree on its frequency. Both the SRE and development teams need feedback on what is working and what is not. For these engagements to be successful, we have found that providing a constant feedback loop outside of Agile sprint reviews via an agreed-upon method is useful—for example, setting up a biweekly retrospective or check-in with team managers. If an engagement isn’t working, we expect teams to not shy away from planning for <span class="keep-together">disengagement</span>.</p>
+
+<p><b>Measuring Impact</b></p>
+
+<p>We have found it important to measure the impact of the engagement to make sure that SREs are doing high-value work. We also measure the maturity level of each partner team so that the SREs can determine the most effective ways to work with them. One approach we adopted from working with Google’s Customer Reliability Engineering (CRE) team is to conduct a <em>point-in-time assessment</em> with leads of the product engineering team before starting the engagement.</p>
+
+<p>A point-in-time assessment consists of walking through a maturity matrix, gauging the maturity of the service along the various axes of concern to SRE (as described in <a href="http://bit.ly/2Lc14wG">Chapter 32</a> of <em>Site Reliability Engineering</em>), and agreeing on scores for functional areas such as observability, capacity planning, change management, and incident response. This also helps tailor the engagement more appropriately after we learn more about the team’s strengths, weaknesses, and blind spots.</p>
+
+<p>After the engagement ends and the development team is performing on its own, we perform the assessment again to measure the value SRE added. If we have a maturity model in place, we measure against the model to see if the engagement results in a higher level of maturity. As the engagement comes to an end, we plan for a celebration!<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-startref="ix_devSREalign" data-tertiary="aligning goals" data-type="indexterm" id="idm139660637558496"/><a contenteditable="false" data-primary="goals, aligning between SRE and development teams" data-startref="ix_goalalgn" data-type="indexterm" id="idm139660637555344"/></p>
+</div></aside>
+</div></section>
+
+<section data-pdf-bookmark="Setting Ground Rules" data-type="sect2"><div class="sect2" id="setting_ground_rules">
+<h2>Setting Ground Rules</h2>
+
+<p>At Google, every SRE team has two<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="setting ground rules" data-type="indexterm" id="idm139660637553184"/> major goals:</p>
+
+<dl>
+	<dt>Short term</dt>
+	<dd>
+	<p>Fulfill the product’s business needs by providing an operationally stable system that is available and scales with demand, with an eye on maintainability.<a contenteditable="false" data-primary="short term goals (SRE team)" data-type="indexterm" id="idm139660637546032"/></p>
+	</dd>
+	<dt>Long term</dt>
+	<dd>
+	<p>Optimize service operations to a level where ongoing human work is no longer needed,<a contenteditable="false" data-primary="long term goals (SRE team)" data-type="indexterm" id="idm139660637541936"/> so the SRE team can move on to work on the next high-value <span class="keep-together">engagement</span>.</p>
+	</dd>
+</dl>
+
+<p>To this end, the teams should agree upon some principles of cooperation, such as:</p>
+
+<ul>
+	<li>
+	<p>Definitions of (and a hard limit on) operational work.</p>
+	</li>
+	<li>
+	<p>An agreed-upon and measured SLO for the service that is used to prioritize engineering work for both the developer and SRE teams. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="by SRE and development teams for a service" data-type="indexterm" id="idm139660637538752"/>You <em>can</em> start without an SLO in place, but our experience shows that not establishing this context from the beginning of the relationship means you’ll have to backtrack to this step later. For an example of how engineering work proceeds less than ideally in the absence of an SLO, see <a data-type="xref" href="ch21.html#case_study_1_scaling_wazeem_dashfrom_ad_h">“Case Study 1: Scaling Waze—From Ad Hoc to Planned Change”</a>.</p>
+	</li>
+	<li>
+	<p>An agreed-upon quarterly error budget that determines release velocity and other safety parameters, such as excess service capacity to handle unexpected usage growth.<a contenteditable="false" data-primary="error budgets" data-secondary="agreed-upon by SRE and development teams for a service" data-type="indexterm" id="idm139660637534688"/></p>
+	</li>
+	<li>
+	<p>Developer involvement in daily operations to ensure that ongoing issues are visible, and that fixing their root causes is prioritized.<a contenteditable="false" data-primary="operations" data-secondary="developer involvement in" data-type="indexterm" id="idm139660637533392"/></p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Planning and Executing" data-type="sect2"><div class="sect2" id="planning_and_executing">
+<h2>Planning and Executing</h2>
+
+<p>Proactive planning and coordinated execution ensure that SRE teams meet expectations and product goals while optimizing operations and reducing operational cost.<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="planning and executing" data-type="indexterm" id="idm139660637528160"/> We suggest <a contenteditable="false" data-primary="planning by SRE and development teams" data-type="indexterm" id="idm139660637526400"/>planning at two (connected) levels:</p>
+
+<ul>
+	<li>
+	<p>With developer leadership, set priorities for products and services and publish yearly roadmaps.</p>
+	</li>
+	<li>
+	<p>Review and update roadmaps on a regular basis, <a contenteditable="false" data-primary="roadmaps" data-type="indexterm" id="idm139660637521568"/>and derive goals (quarterly or otherwise) that line up with the roadmap.</p>
+	</li>
+</ul>
+
+<p>Roadmaps ensure that each team has a long-term time horizon of clear, high-impact work. There can be good reasons to forego roadmaps (for example, if the development organization is changing too quickly). However, in a stable environment, the absence of a roadmap may be a signal that the SRE team can merge with another team, move service management work back to the development teams, expand scope, or dissolve.</p>
+
+<p>Holding ongoing strategy conversations with developer leadership helps to quickly identify shifts in focus, discuss new opportunities for SRE to add value to the business, or stop activities that are not cost-effective for the product.</p>
+
+<p>Roadmaps can focus on more than just improving the product. They can also address how to apply and improve common SRE technologies and processes to drive down operational cost.<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-startref="ix_devSRE" data-type="indexterm" id="idm139660637519936"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="setting up relationship with development team" data-startref="ix_SREengrel" data-type="indexterm" id="idm139660637515072"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Sustaining an Effective Ongoing Relationship" data-type="sect1"><div class="sect1" id="sustaining_an_effective_ongoing_relations">
+<h1>Sustaining an Effective Ongoing Relationship</h1>
+
+<p>Healthy and effective relationships require ongoing effort.<a contenteditable="false" data-primary="relationships, sustaining between SRE and other teams" data-type="indexterm" id="ix_relsus"/> The strategies outlined in this section have worked well for us.<a contenteditable="false" data-primary="development" data-secondary="sustaining an effective ongoing relationship between SRE and development teams" data-type="indexterm" id="ix_devSREsus"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="sustaining an effective ongoing relationship" data-type="indexterm" id="ix_SREengrelsus"/></p>
+
+<section data-pdf-bookmark="Investing Time in Working Better Together" data-type="sect2"><div class="sect2" id="investing_time_in_working_better_together">
+<h2>Investing Time in Working Better Together</h2>
+
+<p>The simple act of spending time with each other helps SREs and developers collaborate more effectively. We recommend that SREs meet regularly with their counterparts for the services they run. It’s also a good idea for SREs to meet periodically with other SRE teams who run services that either send traffic to the service or provide common infrastructure that the service uses. The SRE team can then escalate confidently and quickly during outages or disagreements because the teams know each other and have already set expectations of how escalations should be initiated and managed.</p>
+</div></section>
+
+<section data-pdf-bookmark="Maintaining an Open Line of Communication" data-type="sect2"><div class="sect2" id="maintaining_an_open_line_of_communication">
+<h2>Maintaining an Open Line of Communication</h2>
+
+<p>In addition to the day-to-day communication between teams, we’ve found a couple methods of more formal information exchange to be particularly helpful over the course of the engagement.<a contenteditable="false" data-primary="communication" data-secondary="maintaining open line between SRE and other teams" data-type="indexterm" id="idm139660637505264"/> </p>
+
+<p>SREs can give a quarterly “state of production” talk to product development leadership to help them understand where they should invest resources and how exactly SRE is helping their product or service. In a similar vein, developers can give a periodic “state of the product” talk to the SRE team or involve SRE in the developer team’s executive presentations. This gives the SRE team an overview of what the developer team has accomplished over the last quarter (and lets the SREs see how their own work enabled that). It also provides an update on where the product is going over the next few quarters, and where the product lead sees SRE engaging to make that happen.</p>
+</div></section>
+
+<section data-pdf-bookmark="Performing Regular Service Reviews" data-type="sect2"><div class="sect2" id="performing_regular_service_reviews">
+<h2>Performing Regular Service Reviews</h2>
+
+<p>As the decision makers for the service’s future, the SRE and developer team leads responsible for the service should meet face-to-face at least once a year.<a contenteditable="false" data-primary="service reviews (regular), performing" data-type="indexterm" id="idm139660637500384"/> Meeting more frequently than this can be challenging—for example, because it may involve intercontinental travel. During this meeting, we typically share our roadmaps for the next 12–18 months and discuss new projects and launches.</p>
+
+<p>SRE teams sometimes facilitate a retrospective exercise, where the leads discuss what the teams want to <em>stop doing</em>, <em>keep doing</em>, and <em>start doing</em>. Items can appear in more than one area, and all opinions are valid. These sessions need active facilitation because the best results come from full-team participation. This is often rated the most useful session in the service meeting because it yields details that can drive significant service changes.</p>
+</div></section>
+
+<section data-pdf-bookmark="Reassessing When Ground Rules Start to Slip" data-type="sect2"><div class="sect2" id="reassessing_when_ground_rules_start_to_sl">
+<h2>Reassessing When Ground Rules Start to Slip</h2>
+
+<p>If cooperation in any of the agreed-upon areas (see <a data-type="xref" href="#setting_ground_rules">“Setting Ground Rules”</a>) begins to regress, both developers and SRE need to change priorities to get the service back in shape. We have found that, depending on the urgency, this can mean any of the following:</p>
+
+<ul>
+	<li>
+	<p>The teams identify specific engineers who must drop their lower-priority tasks to focus on the regression.<a contenteditable="false" data-primary="reliability" data-secondary="reliability hackathon for products at risk" data-type="indexterm" id="idm139660637491136"/></p>
+	</li>
+	<li>
+	<p>Both teams call a “reliability hackathon,” but usual team priorities continue outside of the hackathon days.</p>
+	</li>
+	<li>
+	<p>A feature freeze is declared and the majority of both teams focus on resolving the regression.</p>
+	</li>
+	<li>
+	<p>Technical leadership determines that the reliability of the product is at acute risk, and the teams call an “all hands on deck” response.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Adjusting Priorities According to Your SLOs and Error Budget" data-type="sect2"><div class="sect2" id="adjusting_priorities_according_to_your_sl">
+<h2>Adjusting Priorities According to Your SLOs and Error Budget</h2>
+
+<p>The subtle art of crafting a well-defined SLO helps a team prioritize appropriately.  If a <a contenteditable="false" data-primary="priorities" data-secondary="adjusting according to SLOs and error budget" data-type="indexterm" id="idm139660637482208"/>service is in danger of missing the SLO or has exhausted the error budget, <a contenteditable="false" data-primary="error budgets" data-secondary="adjusting priorities according to" data-type="indexterm" id="idm139660637481248"/>both teams can work with high priority to get the service back into safety. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="adjusting priorities according to" data-type="indexterm" id="idm139660637479648"/>They can address the situation through both tactical measures (for example, overprovisioning to address traffic-related performance regressions) and more strategic software fixes (such as optimizations, caching, and graceful degradation).</p>
+
+<p>If a service is well within SLO and has ample error budget left, we recommend using the spare error budget to increase feature velocity rather than spending overproportional efforts on service improvements.</p>
+</div></section>
+
+<section data-pdf-bookmark="Handling Mistakes Appropriately" data-type="sect2"><div class="sect2" id="handling_mistakes_appropriately">
+<h2>Handling Mistakes Appropriately</h2>
+
+<p>Humans inevitably make mistakes. <a contenteditable="false" data-primary="mistakes, handling appropriately" data-type="indexterm" id="idm139660637476896"/><a contenteditable="false" data-primary="failures" data-secondary="handling mistakes appropriately" data-type="indexterm" id="idm139660637476048"/>Consistent with our <a href="http://bit.ly/2J2Po2W">postmortem culture</a>, we don’t blame people, and instead focus on system behavior. Your mileage may vary, but we have had success with the following tactics.</p>
+
+<section data-pdf-bookmark="Sleep on it" data-type="sect3"><div class="sect3" id="sleep_on_it">
+<h3>Sleep on it</h3>
+
+<p>If possible, don’t conduct follow-up conversations when you’re tired or emotions are high. During high-stress situations, people can easily misinterpret tone in written communication like emails. Readers will remember how the words made them feel, not necessarily what was written. When you’re communicating across locations, it’s often worth the time to set up a video chat so that you can see facial expressions and hear the tone of voice that helps disambiguate words.</p>
+</div></section>
+
+<section data-pdf-bookmark="Meet in person (or as close to it as possible) to resolve issues" data-type="sect3"><div class="sect3" id="meet_in_person_left_parenthesisor_as_clos">
+<h3>Meet in person (or as close to it as possible) to resolve issues</h3>
+
+<p>Interactions conducted solely via code reviews or documentation can quickly become drawn out and frustrating.<a contenteditable="false" data-primary="meeting in person to resolve issues" data-type="indexterm" id="idm139660637469712"/> When a behavior or decision from another team is at odds with our expectations, we talk with them about our assumptions and ask about missing context.</p>
+</div></section>
+
+<section data-pdf-bookmark="Be positive" data-type="sect3"><div class="sect3" id="be_positive">
+<h3>Be positive</h3>
+
+<p>Thank people for their positive behaviors.<a contenteditable="false" data-primary="positive behaviors" data-type="indexterm" id="idm139660637465552"/> Doing so can be simple—for example, during code reviews, design reviews, and failure scenario training, we ask engineers to call out what was good and explain why. You might also recognize good code comments or thank people for their time when they invest in a rigorous design review.</p>
+</div></section>
+
+<section data-pdf-bookmark="Understand differences in communication" data-type="sect3"><div class="sect3" id="understand_differences_in_communication">
+<h3>Understand differences in communication</h3>
+
+<p>Different teams have different<a contenteditable="false" data-primary="communication" data-secondary="between teams, understanding differences in" data-type="indexterm" id="idm139660637463728"/> internal expectations for how information is disseminated.<a contenteditable="false" data-primary="relationships, sustaining between SRE and other teams" data-startref="ix_relsus" data-type="indexterm" id="idm139660637460656"/> Understanding these <a contenteditable="false" data-primary="development" data-secondary="sustaining an effective ongoing relationship between SRE and development teams" data-startref="ix_devSREsus" data-type="indexterm" id="idm139660637461808"/>differences can help strengthen <a contenteditable="false" data-primary="SRE engagement model" data-secondary="sustaining an effective ongoing relationship" data-startref="ix_SREengrelsus" data-type="indexterm" id="idm139660637456704"/>relationships.</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Scaling SRE to Larger Environments" data-type="sect1"><div class="sect1" id="scaling_sre_to_larger_environments">
+<h1>Scaling SRE to Larger Environments</h1>
+
+<p>The scenarios we’ve discussed so far involve a single SRE team, a single developer team, and one service. <a contenteditable="false" data-primary="scaling" data-secondary="of SRE to larger environments" data-type="indexterm" id="ix_scaleSRE"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="scaling SRE to larger environments" data-type="indexterm" id="ix_SREengscale"/>Larger companies, or even small companies that use a microservices model, may need to scale some or all of these numbers.</p>
+
+<section data-pdf-bookmark="Supporting Multiple Services with a Single SRE Team" data-type="sect2"><div class="sect2" id="supporting_multiple_services_with_a_singl">
+<h2>Supporting Multiple Services with a Single SRE Team</h2>
+
+<p>Because SREs have specialized skills and are a scarce resource, <a contenteditable="false" data-primary="services" data-secondary="multiple, supporting with single SRE team" data-type="indexterm" id="idm139660637446160"/>Google generally maintains an SRE-to-developer ratio of &lt; 10%.<a contenteditable="false" data-primary="SRE teams" data-secondary="single team supporting multiple services" data-type="indexterm" id="idm139660637444544"/> Therefore, one SRE team commonly works with multiple developer teams in their product area (PA).<a contenteditable="false" data-primary="development" data-secondary="SRE-to-developer ratio and support of multiple services by single SRE team" data-type="indexterm" id="idm139660637444880"/></p>
+
+<p>If SREs are scarce relative to the number of services that merit SRE support, an SRE team can focus their efforts on one service, or on a few services from a small number of developer teams.</p>
+
+<p>In our experience, you can scale limited SRE resources to many services if those services have the following characteristics:</p>
+
+<ul>
+	<li>
+	<p>Services are part of a single product. This provides end-to-end ownership of the user experience and alignment with the user.</p>
+	</li>
+	<li>
+	<p>Services are built on similar tech stacks. This minimizes cognitive load and enables effective reuse of technical skills.</p>
+	</li>
+	<li>
+	<p>Services are built by the same developer team or a small number of related developer teams. This minimizes the number of relationships and makes it easier to align priorities.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Structuring a Multiple SRE Team Environment" data-type="sect2"><div class="sect2" id="structuring_a_multiple_sre_team_environme">
+<h2>Structuring a Multiple SRE Team Environment</h2>
+
+<p>If your company is big enough to have multiple SRE teams, and <a contenteditable="false" data-primary="SRE teams" data-secondary="structuring multiple SRE team environment" data-type="indexterm" id="idm139660637434624"/>perhaps multiple products, you need to choose a structure for how SRE and the product groups relate.</p>
+
+<p>Within Google, we support a complex developer organization. As shown in <a data-type="xref" href="#large_scale_dev_to_sre_team_relationships">Figure 18-2</a>, each PA consists of multiple product groups that each contain multiple products. The SRE organization shadows the developer organization hierarchically, with shared priorities and best practices at each level. This model works when all teams in a group, or all groups in a PA, share the same or similar specific business goals, and when every product group has both a product leader and an SRE lead.</p>
+
+<figure><div class="figure" id="large_scale_dev_to_sre_team_relationships"><img alt="Large-scale dev-to-SRE team relationships (per product area)" src="assets/tsrw_1802.png"/>
+<h6><span class="label">Figure 18-2. </span>Large-scale developer-to-SRE team relationships (per product area)</h6>
+</div></figure>
+
+<p>If your organization has multiple SRE teams, you’ll need to group them in some way. The two main approaches we’ve seen work well are:</p>
+
+<ul>
+	<li>
+	<p>Group the teams within a product, so they don’t have to coordinate with too many different developer teams.</p>
+	</li>
+	<li>
+	<p>Group the teams within a technology stack (e.g., “storage” or “networking”).</p>
+	</li>
+</ul>
+
+<p>To prevent churn in SRE teams during developer reorgs, we recommend organizing SRE teams according to technology rather than developer PA reporting structure. For example, many teams that support storage systems are structured and operate in the same way. Grouping storage systems in technology-focused product groups may make more sense even if they come from different parts of the developer organization.</p>
+</div></section>
+
+<section data-pdf-bookmark="Adapting SRE Team Structures to Changing Circumstances" data-type="sect2"><div class="sect2" id="adapting_sre_team_structures_to_changing">
+<h2>Adapting SRE Team Structures to Changing Circumstances</h2>
+
+<p>If you need to modify the structure of your SRE teams to reflect changing <a contenteditable="false" data-primary="SRE teams" data-secondary="adjusting structures to changing circumstances" data-type="indexterm" id="idm139660637423488"/>PA needs, we recommend creating, splitting (sharding), merging, and dissolving SRE teams based on service needs and engineering and operational load. Each SRE team should have a clear charter that reflects their services, technology, and operations. When a single SRE team has too many services, rather than building new teams from scratch, we prefer to shard the existing team into multiple teams to transfer culture and grow existing leadership. Changes like this are inevitably disruptive to existing teams, so we’d recommend that you restructure teams only when necessary.</p>
+</div></section>
+
+<section data-pdf-bookmark="Running Cohesive Distributed SRE Teams" data-type="sect2"><div class="sect2" id="running_cohesive_distributed_sre_teams">
+<h2>Running Cohesive Distributed SRE Teams</h2>
+
+<p>If you need to ensure 24/7 coverage and business continuity, and you have a global presence, it’s worth trying to distribute your SRE teams around the globe to provide even coverage.<a contenteditable="false" data-primary="SRE teams" data-secondary="cohesive distributed SRE teams, running" data-type="indexterm" id="idm139660637428432"/><a contenteditable="false" data-primary="distributed SRE teams, running" data-type="indexterm" id="idm139660637422080"/> If you have a number of globally distributed teams, we recommend colocating teams based upon adjacency and upon similarity of services and shared technology. We’ve found that singleton teams are generally less effective and more vulnerable to the effects of reorgs outside the team—we create such teams only if clearly defined business needs call for them and we’ve considered all other options.</p>
+
+<p>Many companies don’t have the resources for full global coverage, but even if you’re split only across buildings (never mind continents), it’s important to create and maintain a two-location arrangement.</p>
+
+<p>It’s also important to create and maintain organizational standards that drive planning and execution and foster and maintain a shared team culture. To this end, we find it useful to gather the entire team in one physical location periodically—for example, at an org-wide summit every 12–18 months.</p>
+
+<p>Sometimes it doesn’t make sense for everyone on the team to own certain responsibilities—for example, conducting regular test restores from backups or implementing cross-company technical mandates. When balancing these responsibilities between a team’s distributed sites, keep the following strategies in mind:</p>
+
+<ul>
+	<li>
+	<p>Assign individual responsibilities to single locations, but rotate them regularly (e.g., yearly).</p>
+	</li>
+	<li>
+	<p>Share every responsibility between locations, making an active effort to balance the involvement and workload.</p>
+	</li>
+	<li>
+	<p>Don’t lock a responsibility to a single location for multiple years. We’ve found that the costs of this configuration ultimately outweigh the benefits. Although that location will tend to become really good at executing those responsibilities, this fosters an “us versus them” mentality, hinders distribution of knowledge, and presents a risk for business continuity.</p>
+	</li>
+</ul>
+
+<p>All of <a contenteditable="false" data-primary="scaling" data-secondary="of SRE to larger environments" data-startref="ix_scaleSRE" data-type="indexterm" id="idm139660637415696"/>these strategies require locations to maintain tactical and strategic <a contenteditable="false" data-primary="SRE engagement model" data-secondary="scaling SRE to larger environments" data-startref="ix_SREengscale" data-type="indexterm" id="idm139660637408016"/>communication.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Ending the Relationship" data-type="sect1"><div class="sect1" id="ending_the_relationship">
+<h1>Ending the Relationship</h1>
+
+<p>SRE engagements aren’t necessarily indefinite.<a contenteditable="false" data-primary="SRE engagement model" data-secondary="ending the relationship" data-type="indexterm" id="ix_SREengend"/> SREs provide value by doing impactful engineering work.<a contenteditable="false" data-primary="ending SRE engagements" data-type="indexterm" id="ix_endSRE"/> If the work is no longer impactful (i.e., the value proposition of an SRE engagement goes away), or if the majority of the work is no longer on the engineering (versus operations) side, you may need to revisit the ongoing SRE engagement. In general, individual SREs will move away from toil-heavy teams to teams with more interesting engineering work.</p>
+
+<p>On a team level, you might hand back a service if SRE no longer provides sufficient business value to merit the costs. For example:</p>
+
+<ul>
+	<li>
+	<p>If a service has been optimized to a level where ongoing SRE engagement is no longer necessary</p>
+	</li>
+	<li>
+	<p>If a service’s importance or relevance has diminished</p>
+	</li>
+	<li>
+	<p>If a service is reaching end of life</p>
+	</li>
+</ul>
+
+<p>The following case studies demonstrate how two Google SRE engagement models ended. The first ends with largely positive results, while the other ends with a more nuanced outcome.</p>
+
+<section data-pdf-bookmark="Case Study 1: Ares" data-type="sect2"><div class="sect2" id="case_study_1_ares">
+<h2>Case Study 1: Ares</h2>
+
+<p>Google’s Abuse SRE and Common Abuse Tool (CAT) teams <a contenteditable="false" data-primary="Abuse SRE and Common Abuse Tool (CAT) teams, Ares case study" data-type="indexterm" id="ix_AbuseSRECAT"/>provided anti-abuse protection for most Google properties and worked with customer-facing products to keep users safe.<a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, Ares" data-type="indexterm" id="ix_endSREcs"/> The Abuse SRE team applied engineering work to lower CAT’s operational support burden so that the developers were able to take a direct role in supporting their users. These users were the Googlers operating the properties defended by CAT, who had high expectations about the efficacy of CAT and its response time to problems or new threats.</p>
+
+<p>Efficient abuse fighting requires constant attention, rapid adaptive changes, and nimble flexibility in the face of new threats and attacks. These requirements clashed with the common SRE goals of reliable and planned feature development. CAT teams routinely needed to implement fast development and deploy new protections to properties under attack. However, Abuse SRE pushed back on requested changes, requesting more in-depth analysis of the consequences each new protection would have on the overall production system. Time constraints on consultations between teams and reviews compounded this tension.</p>
+
+<p>To hopefully improve the situation, Abuse SRE and CAT leadership engaged in a multiyear project to create a dedicated infrastructure team within CAT. The newly formed “Ares” team had a mandate to unify abuse-fighting infrastructure for Google properties. This team was staffed by CAT engineers who had production infrastructure knowledge and experience building and running large services. The teams started an exchange program to transfer production management knowledge from Abuse SRE to the CAT infrastructure team members.</p>
+
+<p>Abuse SREs taught the Ares team that the easiest way to launch a new service in production (when you’re already running large distributed services) is to minimize the additional cognitive load that the service imposes. To reduce this cognitive load, systems should be as homogeneous as possible. Deploying and managing a collection of production services together means they can share the same release structure, capacity planning, subservices for accessing storage, and so on. Following this advice, Ares redesigned the whole abuse-fighting stack, applying modularity concepts to shift toward a microservice model. They also built a new layer that provided abstractions for developers so that they didn’t have to worry about lower-level production details like monitoring, logging, and storage.</p>
+
+<p>At this point, the Ares team started to act more like an SRE team for CAT by administering the new abuse-fighting infrastructure. Meanwhile, Abuse SRE focused on the production deployment and efficient day-to-day operation of the overall abuse-fighting infrastructure.</p>
+
+<p>Collaboration between the Ares engineers and Abuse SRE resulted in the following improvements:</p>
+
+<ul>
+	<li>
+	<p>Because the CAT team now had “in-house” production experts that were also experts in abuse fighting, Abuse SRE no longer had to vet new feature integration. This greatly reduced time to production for new features. At the same time, the CAT team’s developer velocity increased because the new infrastructure abstracted away production management details.</p>
+	</li>
+	<li>
+	<p>The Abuse SRE team now had many fewer requests from the CAT team to launch new features, as most of the requests did not require infrastructure changes. The team also needed less knowledge to evaluate the impact of a new feature, since infrastructure changes were rarely required. When infrastructure changes were necessary, Abuse SRE only needed to clarify the implications on the infrastructure rather than specific feature functionality.</p>
+	</li>
+	<li>
+	<p>Products that needed to integrate with abuse-fighting infrastructure had a faster and more predictable turnaround time since a product integration was now equivalent in effort to a feature launch.</p>
+	</li>
+</ul>
+
+<p>At the end of this project, Abuse SREs disengaged from directly supporting CAT, focusing instead on the underlying infrastructure. This did not compromise CAT’s reliability or overburden the CAT team with additional operational work; instead, it increased CAT’s overall development velocity.</p>
+
+<p>Currently, Ares protects users across a large number of Google properties. Since the team’s inception, SREs and product development have partnered to make collaborative decisions on how infrastructure will work in production. This partnership was only possible because the Ares effort created a sense of shared destiny.<a contenteditable="false" data-primary="Abuse SRE and Common Abuse Tool (CAT) teams, Ares case study" data-startref="ix_AbuseSRECAT" data-type="indexterm" id="idm139660637387120"/><a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, Ares" data-startref="ix_endSREcs" data-type="indexterm" id="idm139660637389744"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 2: Data Analysis Pipeline" data-type="sect2"><div class="sect2" id="case_study_2_data_analysis_pipeline">
+<h2>Case Study 2: Data Analysis Pipeline</h2>
+
+<p>Sometimes the cost of maintaining an SRE support relationship is higher than the value (perceived or measured) that SREs provide.<a contenteditable="false" data-primary="data analysis pipeline, case study" data-type="indexterm" id="ix_dataanal"/><a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, data analysis pipeline" data-type="indexterm" id="idm139660637380096"/> In these cases, it makes sense to end the relationship by disbanding the SRE team.<sup><a data-type="noteref" href="ch18.html#ch18fn1" id="ch18fn1-marker">1</a></sup></p>
+
+<p>When the value of a relationship declines over time, it is extremely difficult to identify a point in time when it makes sense to terminate that relationship. Two teams at Google that supported a revenue-critical data analysis pipeline had to face this challenge. Figuring out that a parting of the ways was appropriate was not a trivial task, especially after a decade of cooperation. In retrospect, we were able to identify several patterns within the team interaction that were strong indicators that we needed to reconsider the relationship between the SRE team and the product team.</p>
+
+<section data-pdf-bookmark="The pivot" data-type="sect3"><div class="sect3" id="pivot">
+<h3>The pivot</h3>
+
+<p>Three years before the turndown, all involved parties recognized that their primary data analysis pipeline was running into scaling limitations. At that time, the developer team decided to start planning their new system and dedicated a small number of engineers to the new effort. As that effort began to coalesce, it made sense to deprioritize development of large, complex, or risky features for the existing system in favor of work on the new system. This had two important effects over time:</p>
+
+<ul>
+	<li>
+	<p>An informal rule was applied to new projects: if the project’s complexity or the risk involved in modifying the existing system to accommodate the project was sufficiently high, then it was better to make that investment in the new system.</p>
+	</li>
+	<li>
+	<p>As resources shifted to developing the new system, even relatively conservative changes to the existing system became more difficult. Nevertheless, usage continued to grow at an extremely high rate.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Communication breakdown" data-type="sect3"><div class="sect3" id="communication_breakdown">
+<h3>Communication breakdown</h3>
+
+<p>Keeping an existing system operational while a replacement system is simultaneously designed, built, and launched is challenging for any engineering team. Stresses naturally build between the people focused on new versus old systems, and teams need to make difficult prioritization decisions. These difficulties can be compounded when the teams are separated organizationally—for example, an SRE team focused on maintaining and operating an existing system and a developer team working on the next-generation system.</p>
+
+<p>Regular, open, and cooperative communication is vital throughout this entire cycle in order to maintain and preserve a good working relationship across teams. In this example, a gap in communication led to a breakdown in the working relationship between teams.</p>
+</div></section>
+
+<section data-pdf-bookmark="Decommission" data-type="sect3"><div class="sect3" id="decommission">
+<h3>Decommission</h3>
+
+<p>It took some time to realize that the disconnectedness between the SRE and developer teams was insurmountable. Ultimately, the simplest solution was to remove the organizational barrier and give the developer team full control over prioritizing work on old and new systems. The systems were expected to overlap for 18–24 months before the old system was fully phased out.</p>
+
+<p>Combining SRE and product development functions into a single team allowed upper management to be maximally responsive to their areas of accountability. Meanwhile, the team could decide how to balance operational needs and velocity. Although decommissioning two SRE teams was not a pleasant experience, doing so resolved the continual tension over where to invest engineering effort.</p>
+
+<p>Despite the inevitable extra operational load on the developer team, realigning ownership of the old system with people who had greater knowledge of service internals provided the opportunity to more quickly address operational problems. This team also had more insight into potential causes of outages, which generally resulted in more effective troubleshooting and quicker issue resolution. However, there were some unavoidable negative impacts while the developer team learned about the nuances of the operational work needed to support the service in a short amount of time. The SRE team’s final job was to make the transfer of this knowledge as smooth as possible, equipping the developer team to take on the work.</p>
+
+<p>It is worth noting that if the working relationship were healthier—with teams working together effectively to solve problems—SRE would have handed production work back to the developer team for a short period of time. After the system was restabilized and hardened for expected growth needs, SRE would normally reassume responsibility of the system. SRE and development teams need to be willing to address issues head on and identify points of tension that need resetting. Part of SRE’s job is to help maintain production excellence in the face of changing business needs, and often this means engaging with developers to find solutions to challenging problems.<a contenteditable="false" data-primary="data analysis pipeline, case study" data-startref="ix_dataanal" data-type="indexterm" id="idm139660637362672"/><a contenteditable="false" data-primary="ending SRE engagements" data-startref="ix_endSRE" data-type="indexterm" id="idm139660637367840"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="ending the relationship" data-startref="ix_SREengend" data-type="indexterm" id="idm139660637366624"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00092">
+<h1>Conclusion</h1>
+
+<p>The form of an SRE team’s engagement changes over the various phases of a service’s lifecycle. This chapter provided advice specific to each phase. Examples from both the Google and the <em>New York Times</em> SRE teams show that effectively managing the engagement is just as important as making good technical design decisions. Sometimes an SRE engagement should reach a natural conclusion. Case studies from Ares and a data analysis pipeline team provided examples of how this can happen, and how best to end the engagement.</p>
+
+<p>When it comes to best practices for setting up an effective relationship between SRE and product development teams, a shared sense of purpose and goals with regular and open communication is key. You can scale an SRE team’s impact in a number of ways, but these principles for relationship management should always hold true. For sustaining the long-term success of an engagement, investing in aligning team goals and understanding each <a contenteditable="false" data-primary="SRE engagement model" data-startref="ix_SREeng" data-type="indexterm" id="idm139660637357888"/>other’s objectives is as important as defending SLOs. </p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch18fn1"><sup><a href="ch18.html#ch18fn1-marker">1</a></sup> Google HR supports employees by finding new opportunities when such transitions occur.</p></div></div></section></body></html>

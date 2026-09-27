@@ -1,0 +1,227 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>SRE: Reaching Beyond Your Walls</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 19. SRE: Reaching Beyond Your Walls" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_reaching_beyond_your_walls">
+<h1><span class="label">Chapter 19. </span>SRE: Reaching Beyond Your Walls</h1>
+
+<p class="byline">By Dave Rensin<br/>
+with Betsy Beyer, Niall Richard Murphy, and Liz Fong-Jones</p>
+
+<p>It has been 14 years since we started practicing SRE at Google.<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="reaching beyond your walls" data-type="indexterm" id="ix_SREreach"/> Some of what has come in that time seems obvious in retrospect, while other developments came as something of a shock. The past two years since the publication of <a href="http://bit.ly/2kIcNYM">our first SRE book</a> have been especially interesting. The number of companies now practicing the SRE discipline and the amount of time we spend talking about it at conferences and with customers has grown beyond anything we previously <span class="keep-together">imagined</span>.</p>
+
+<p>That change in particular—the rapid expansion of the non-Google ecosystem around SRE—is the most exciting development, but it makes predicting the future of the SRE profession more difficult. Still, in our own SRE work at Google we are starting to see some trends that might inform an outline of the profession’s future. This chapter represents our effort to share what we, along with our SRE coworkers around the globe, have seen, and what we have concluded so far.</p>
+
+<section data-pdf-bookmark="Truths We Hold to Be Self-Evident" data-type="sect1"><div class="sect1" id="truths_we_hold_to_be_self_evident">
+<h1>Truths We Hold to Be Self-Evident</h1>
+
+<p>The only way to make any useful sense of the future is to start with a set of principles and work forward. Some of what follows should be uncontroversial. Other bits, not so much. In every case, though, these principles are based on real things <a href="http://bit.ly/2JcAIKg">we’re seeing in the world</a>.</p>
+
+<section data-pdf-bookmark="Reliability Is the Most Important Feature" data-type="sect2"><div class="sect2" id="reliability_is_the_most_important_feature">
+<h2>Reliability Is the Most Important Feature</h2>
+
+<p>People don’t normally disagree much with us when we assert that “reliability is the most important feature of<a contenteditable="false" data-primary="reliability" data-secondary="as most important feature" data-type="indexterm" id="idm139660637337488"/> any system”—as long as we take care to point out that “reliability” often covers a wide area.</p>
+
+<p>The argument is simple enough:</p>
+
+<ul>
+	<li>
+	<p>If a system isn’t reliable, users won’t trust it.</p>
+	</li>
+	<li>
+	<p>If users don’t trust a system, when given a choice, they won’t use it.</p>
+	</li>
+	<li>
+	<p>Since all software systems are governed by network effects, if a system has no users, it’s worth nothing.</p>
+	</li>
+	<li>
+	<p>You are what you measure, so choose your metrics carefully.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Your Users, Not Your Monitoring, Decide Your Reliability" data-type="sect2"><div class="sect2" id="your_userscomma_not_your_monitoringcomma">
+<h2>Your Users, Not Your Monitoring, Decide Your Reliability</h2>
+
+<p>Since the value of a system is related to its users, it stands to reason that the only measure of reliability that matters<a contenteditable="false" data-primary="reliability" data-secondary="decided by users, not monitoring" data-type="indexterm" id="idm139660637326992"/><a contenteditable="false" data-primary="users" data-secondary="deciding reliability" data-type="indexterm" id="idm139660637325504"/> is how your users experience reliability. <a contenteditable="false" data-primary="monitoring" data-secondary="decisions on reliability and" data-type="indexterm" id="idm139660637322800"/>If your user is worried that your platform is responsible for instability they’re experiencing, then telling them “our monitoring looks fine; the problem must be on your end” won’t make them any less grumpy. <a contenteditable="false" data-primary="peak-end rule" data-type="indexterm" id="idm139660637323648"/>They’re experiencing your system as unstable, and that’s what they will remember when the time comes to choose between you and your competitor. (This phenomenon is called the <a href="http://bit.ly/2sy1jul">peak-end rule</a>.)</p>
+
+<p>Your monitoring, logs, and alerting are valuable only insofar as they help you notice problems before your customers do.</p>
+</div></section>
+
+<section data-pdf-bookmark="If You Run a Platform, Then Reliability Is a Partnership" data-type="sect2"><div class="sect2" id="if_you_run_a_platformcomma_then_reliabili">
+<h2>If You Run a Platform, Then Reliability Is a Partnership</h2>
+
+<p><em>If</em> the only way for someone to use your system is via a visual user interface (e.g., a web page) <em>and</em> your system is consumed only <a contenteditable="false" data-primary="reliability" data-secondary="as a partnership if you run a platform" data-type="indexterm" id="idm139660637316592"/>by actual human beings (as opposed to machines), <em>then</em> the reliability your users experience is almost exclusively tied to the job you do as an SRE keeping your system healthy.</p>
+
+<p>However, once you add an API and some of your “users” are actually other machines, you are running a platform and the rules change.<a contenteditable="false" data-primary="platforms" data-secondary="running, reliability and" data-type="indexterm" id="idm139660637314480"/></p>
+
+<p>When your product acts as a platform, the reliability your users experience isn’t limited to the choices you make. Reliability becomes a partnership. If your users build or operate a system on your platform that never achieves better than 99% availability—even if you’re running your platform at 99.999% availability—then their <a href="http://bit.ly/2HbIiDl"><em>best-case</em> experience</a> is 98.99901%.</p>
+
+<p>The choices these users make directly affect the experience they have and associate with your service. You might not like it, but they will hold you accountable for whatever they experience—even if it’s not “your fault.”</p>
+</div></section>
+
+<section data-pdf-bookmark="Everything Important Eventually Becomes a Platform" data-type="sect2"><div class="sect2" id="everything_important_eventually_becomes_a">
+<h2>Everything Important Eventually Becomes a Platform</h2>
+
+<p>Since the value of your system increases with the number of people using it, you will want to find ways to reach other large established user pools.<a contenteditable="false" data-primary="platforms" data-secondary="everything important becomes a platform" data-type="indexterm" id="idm139660637310288"/> As you attract more users, other software systems will want to reach your audience, too.</p>
+
+<p>This is when other companies start making their machines talk to your machines via APIs.<a contenteditable="false" data-primary="APIs" data-secondary="machine consumable" data-type="indexterm" id="idm139660637303328"/> If your system is even remotely popular, integration is an inevitable step in your evolution.</p>
+
+<p>Even if you decide that you don’t care about other user communities, and decide to never create a machine-consumable API, you still won’t be able to avoid this future. Other people will simply <a href="http://bit.ly/2JoZwlR">wrap</a> your UI into a machine API and consume it. The only difference is that you’ll have no control over the outcome.</p>
+
+<p>Once your system becomes a gateway to a large collection of users, it becomes valuable. APIs—official or unofficial—will be a part of your future.</p>
+</div></section>
+
+<section data-pdf-bookmark="When Your Customers Have a Hard Time, You Have to Slow Down" data-type="sect2"><div class="sect2" id="when_your_customers_have_a_hard_timecomma">
+<h2>When Your Customers Have a Hard Time, You Have to Slow Down</h2>
+
+<p>When your customers have a hard time, their<a contenteditable="false" data-primary="customers" data-secondary="having a hard time" data-type="indexterm" id="idm139660637298752"/> frustration turns into friction for you. <a contenteditable="false" data-primary="users" data-secondary="helping past difficulties" data-type="indexterm" id="idm139660637297344"/>Even if you don’t have traditional modes of support (trouble tickets, email, phone, etc.), you will still spend time triaging questions and responding to complaints via StackOverflow, or even Twitter, Facebook, and other social platforms.</p>
+
+<p>Whatever energy you put into helping users past their difficult moments is energy you can’t invest in advancing your system. We have seen many teams (and companies) allow their time to be slowly absorbed by break/fix customer problems—leaving an ever-diminishing innovation budget. These teams are consumed by toil.</p>
+
+<p>Once in this state, it’s hard to dig out (see <a data-type="xref" href="ch06.html#eliminating_toil">Chapter 6</a>). A better plan is to get ahead of the impending toil.<a contenteditable="false" data-primary="toil" data-secondary="getting ahead of by helping customers" data-type="indexterm" id="idm139660637295872"/> You might be reading this and thinking, <em>Gee, I’m on an internal platform team. This doesn’t apply to me!</em></p>
+
+<p>We’re sorry to inform you that this <em>doubly</em> applies to you! In your case, your customers are the consumers of your system within your company.</p>
+
+<p>This leads us to the next conclusion.</p>
+</div></section>
+
+<section data-pdf-bookmark="You Will Need to Practice SRE with Your Customers" data-type="sect2"><div class="sect2" id="you_will_need_to_practice_sre_with_your_c">
+<h2>You Will Need to Practice SRE with Your Customers</h2>
+
+<p>If you want your customers to design and operate reliable systems using your platform, you have to teach them how to do it.<a contenteditable="false" data-primary="customers" data-secondary="practicing SRE with" data-type="indexterm" id="idm139660637288912"/><a contenteditable="false" data-primary="training" data-secondary="teaching customers" data-type="indexterm" id="idm139660637287472"/> Yes, this includes your <em>internal</em> customers, too. Just because you work on an internal platform team doesn’t mean you escape this dynamic—in fact, you’re likeliest to run into it first.</p>
+
+<p>Even if you could perfectly distill that information into highly scaled one-to-many forms (books, blog posts, architecture diagrams, videos, etc.), you still need a way to figure out what content and training to include. As you grow and improve your platform, those lessons will change. You will always need a way to keep these resources from getting stale.</p>
+
+<p>The best way to learn these lessons is to “do SRE” with your customers.</p>
+
+<p>That doesn’t necessarily mean you need to take the pagers for your customers’ systems, but you do need to undertake most of the work that normally leads up to pager handoff (meaning the system has met certain minimum viable reliability requirements), with at least a representative sample of your users.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="How to: SRE with Your Customers" data-type="sect1"><div class="sect1" id="how_to_sre_with_your_customers">
+<h1>How to: SRE with Your Customers</h1>
+
+<p>The idea of walking an SRE journey with your customers might seem a little daunting.<a contenteditable="false" data-primary="customers" data-secondary="SRE with, how to" data-type="indexterm" id="ix_cusSRE"/> You’re probably reading this book because you’re not entirely sure how to walk it yourself! No worries. It’s possible to do both at the same time. In fact, the former can help you accelerate the latter.</p>
+
+<p>Here are the steps we like to follow. They work pretty well for us, and we think they’ll be useful for you, too.</p>
+
+<section data-pdf-bookmark="Step 1: SLOs and SLIs Are How You Speak" data-type="sect2"><div class="sect2" id="step_1_slos_and_slis_are_how_you_speak">
+<h2>Step 1: SLOs and SLIs Are How You Speak</h2>
+
+<p>You want your customers to perceive your system as reliable. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-type="indexterm" id="idm139660637275792"/>Otherwise, you risk losing them. It stands to reason, therefore, that you should care a lot about <em>how</em> they form those opinions. What do they measure? How do they measure it? Most importantly, what <a href="https://oreil.ly/2snieke">promises</a> are they making to <em>their</em> customers?</p>
+
+<p>Your life will be a lot better if your customers measure SLIs and <a href="http://bit.ly/2KNCD9F">alert on SLOs</a>, and if they share those measurements with you. Otherwise, you will spend a lot of energy in conversations like this:</p>
+
+<blockquote>
+<p><strong>Customer:</strong> API call X usually takes time T, but now it’s taking time U. I think you are having a problem. Please look into it and get back to me immediately.</p>
+
+<p><strong>You:</strong> That performance seems in line with what we expect, and everything looks fine on our end. Is it a problem if API call X takes this long?</p>
+
+<p><strong>Customer:</strong> I don’t know. It doesn’t usually take this long, so obviously something has changed and we’re worried about it.</p>
+</blockquote>
+
+<p>This conversation will go round in circles and never reach a satisfactory answer. You will either spend a lot of time convincing your customer that they shouldn’t care, or you will spend a lot of time root-causing the change so you can convince your <span class="keep-together">customer</span> they shouldn’t care. In either case, you’re spending a lot of effort that you could be using elsewhere.</p>
+
+<p>The root cause of this problem is that the customer isn’t using SLOs to figure out if they should care about the performance they’re seeing. They’re just noticing an unexpected change and deciding to worry about it. Remember, in the absence of a stated SLO, your customer will inevitably invent one and not tell you until you don’t meet it! You’d much rather have this conversation:</p>
+
+<blockquote>
+<p><strong>Customer:</strong> We’re burning through our SLO for application FOO too quickly and the application is in jeopardy. SLIs X and Y seem to have fallen off a cliff. They both depend on your API X.</p>
+
+<p><strong>You:</strong> Okay. Let me look into how API X is performing in our system and/or how it’s performing specific to you.</p>
+</blockquote>
+
+<p>That’s a <em>much</em> more productive conversation because (a) it will happen only when the SLO is threatened, and (b) it relies on mutually understood metrics (SLIs) and targets (SLOs).</p>
+
+<p>If you’re running your systems using SRE practices, then you are speaking SLOs internally. Your life will be better and your customers will be happier if they are speaking SLOs, too, because it makes it easier for the two of you to talk.</p>
+
+<p>We recommend a simple exercise to make your working relationship with a customer a lot better: sit down with your customer.<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="explaining to customers" data-type="indexterm" id="idm139660637261360"/> Explain SLOs, SLIs, and error budgets—and especially how you practice them in your teams. Then help them describe the critical applications they’ve built on your platform in those terms.</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 2: Audit the Monitoring and Build Shared Dashboards" data-type="sect2"><div class="sect2" id="step_2_audit_the_monitoring_and_build_sha">
+<h2>Step 2: Audit the Monitoring and Build Shared Dashboards</h2>
+
+<p>Once your customers have picked some basic SLOs for their application, the next question is if they are <a href="http://bit.ly/2LgroWF">measuring the right things</a> to determine whether or not they’re meeting those goals.<a contenteditable="false" data-primary="monitoring" data-secondary="auditing and building shared dashboards in SRE with customers" data-type="indexterm" id="idm139660637257440"/> You should help them figure out if the measurements they’re using are appropriate.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-tertiary="auditing monitoring and building shared dashboards" data-type="indexterm" id="idm139660637254416"/></p>
+
+<p>In our experience, up to half of the things your customer is measuring (and alerting on) have zero impact on their SLOs. Your life will be better when you point this out to them and they turn off the offending alerting. It will mean fewer pages for them, and for you!</p>
+
+<p>The remaining measurements are useful candidate SLIs. Help your customer assemble those measurements to calculate their SLOs.</p>
+
+<p>Once you begin this exercise, you’ll quickly find that parts of the SLOs are <em>uncovered</em>—there aren’t relevant measurements in place to say anything useful about these dimensions. You should help your customer cover these parts of their SLOs, too.</p>
+
+<p>Now, your customers can start to say something about their application’s SLO performance on your platform.</p>
+
+<p>Finally, build a set of shared SLO dashboards with your customer.<a contenteditable="false" data-primary="dashboards" data-secondary="building shared SLO dashboards with customers" data-type="indexterm" id="idm139660637250736"/> You should be able to see their application SLOs, and you should share any information you have that’s relevant to how they’re experiencing your system performance. Your goal is that whenever your customer contacts you because their SLO seems threatened, you shouldn’t have to swap much additional information. All of that information should be in the shared monitoring.</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 3: Measure and Renegotiate" data-type="sect2"><div class="sect2" id="step_3_measure_and_renegotiate">
+<h2>Step 3: Measure and Renegotiate</h2>
+
+<p>Once you sort the measurements out, <a contenteditable="false" data-primary="measurements" data-secondary="in SRE with customers" data-type="indexterm" id="idm139660637242608"/>you should collect data for a month or two. Be prepared for the likelihood that your customer is in for a rude awakening. The application they thought was operating at “five 9s” (99.999%; <em>everybody</em> thinks they’re getting five 9s) is probably achieving only 99.5%–99.9% when measured against their shiny new SLOs.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-tertiary="measuring and renegotiating" data-type="indexterm" id="idm139660637247248"/> </p>
+
+<p>After the initial shock wears off, this is a great time to point out that their users aren’t yelling all the time, so they probably never needed the five 9s they haven’t really been getting.</p>
+
+<p>The key question is, how satisfied are their users with the application’s performance? If their users are happy, and there’s no evidence that improving performance or availability will increase user adoption/retention/usage, then you’re done. You should periodically ask yourself this question to make sure that your budgets and priorities are still correct. (See <a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a> for a more in-depth treatment of this topic.)</p>
+
+<p>If the customer thinks they still need to make things a little better, move on to the next step.</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 4: Design Reviews and Risk Analysis" data-type="sect2"><div class="sect2" id="step_4_design_reviews_and_risk_analysis">
+<h2>Step 4: Design Reviews and Risk Analysis</h2>
+
+<p>Sit down with your customer and really understand how their application is designed and operated. <a contenteditable="false" data-primary="reviews, designing in SRE with customers" data-type="indexterm" id="idm139660637236320"/><a contenteditable="false" data-primary="risk analysis in SRE with customers" data-type="indexterm" id="idm139660637235648"/>Do they have any hidden single point of failures (SPOFs)? Are their rollouts and rollbacks manual? Basically, conduct the same exercise you conduct for your own internal applications.</p>
+
+<p>Next, rank the issues you find by how much of their error budget each item consumes. (Read more about how to do that <a href="http://bit.ly/2LOwWZo">on the Google Cloud Platform Blog</a>.) Pay attention to which items your customer chooses to fix in order to “earn back the 9s” they want (e.g., to move from 99.5% to 99.9%).</p>
+
+<p>What you learn from these reviews will tell you:</p>
+
+<ul>
+	<li>
+	<p>How your customers consume your platform</p>
+	</li>
+	<li>
+	<p>What reliability mistakes they make when doing so</p>
+	</li>
+	<li>
+	<p>Which tradeoffs they choose when trying to improve</p>
+	</li>
+</ul>
+
+<p>This exercise will also help your customer set realistic expectations around the reliability they should experience with their current application. Their expectations will affect their perceptions, so setting them appropriately can only be helpful in earning and keeping their trust.</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 5: Practice, Practice, Practice" data-type="sect2"><div class="sect2" id="step_5_practicecomma_practicecomma_practi">
+<h2>Step 5: Practice, Practice, Practice</h2>
+
+<p>The final step is to create some operational rigor with your customer. <a contenteditable="false" data-primary="operations" data-secondary="creating operational rigor with customers" data-type="indexterm" id="idm139660637226432"/>Practice simulated<a contenteditable="false" data-primary="disaster and recovery testing, practicing with customers" data-type="indexterm" id="idm139660637227232"/> problems (Wheel of Misfortune exercises, <a href="http://bit.ly/2sAoKTX">disaster and recovery testing</a>, paper game days, etc.).<a contenteditable="false" data-primary="incident response" data-secondary="practicing in SRE with customers" data-type="indexterm" id="idm139660637223904"/><a contenteditable="false" data-primary="problems (simulated), practicing with customers" data-type="indexterm" id="idm139660637222208"/></p>
+
+<p>Develop a healthy muscle memory between the teams for effective ways to communicate during a crisis. It’s a great way to build trust, lower the MTTR, and learn about weird operational edge cases that you can integrate as enhancements into your platform features.</p>
+
+<p>When an incident does occur, don’t just share your postmortems with your customer.<a contenteditable="false" data-primary="postmortems" data-secondary="conducting joint postmortems with customers" data-type="indexterm" id="idm139660637219088"/> Actually conduct some <a href="http://bit.ly/2LhcdfY"><em>joint postmortems</em></a>. Doing so will also build trust and teach you some invaluable lessons.<a contenteditable="false" data-primary="customers" data-secondary="SRE with, how to" data-startref="ix_cusSRE" data-type="indexterm" id="idm139660637216672"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Be Thoughtful and Disciplined" data-type="sect2"><div class="sect2" id="be_thoughtful_and_disciplined">
+<h2>Be Thoughtful and Disciplined</h2>
+
+<p>It will quickly become impossible to carry out these steps with more than a small percentage of your customers. Please don’t try extending this model to everyone. Instead, make some principled decisions about how you will make selections. Here are some common approaches:</p>
+
+<dl>
+	<dt><dfn>Revenue coverage</dfn></dt>
+	<dd><p>Select the minimum number of customers to account for XX% of your revenue. If your revenue is heavily weighted to a few large customers, then this might be the right choice for you.<a contenteditable="false" data-primary="revenue coverage" data-type="indexterm" id="idm139660637208976"/></p></dd>
+	<dt><dfn>Feature coverage</dfn></dt>
+	<dd><p>Select the minimum number of customers to cover more than XX% of your platform features. <a contenteditable="false" data-primary="features" data-secondary="feature coverage in SRE with customers" data-type="indexterm" id="idm139660637207328"/>If you run a highly diverse platform with a long tail of customers doing a lot of different things, then this approach will help you avoid surprises.</p></dd>
+	<dt><dfn>Workload coverage</dfn></dt>
+	<dd><p>Your platform’s usage may be dominated by a few distinct use cases or customer types. <a contenteditable="false" data-primary="workloads" data-secondary="workload coverage" data-type="indexterm" id="idm139660637204384"/>Perhaps no individual customer in those types is dominant, but you can easily group them into cohorts. In that case, sampling one or two customers from each cohort is a good way to get platform coverage and discover operational differences between the use cases.</p></dd>
+</dl>
+
+<p>Whatever approach you choose, stick to it. Mixing and matching will confuse your stakeholders and quickly overwhelm your team.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00093">
+<h1>Conclusion</h1>
+
+<p>Over the last few years, the SRE profession and role has spread widely outside the walls of Google. Although we never expected this, we are nonetheless thrilled by it. We might be able to say something credible about how we think the discipline will evolve inside Google, but in the wild—well, that’s an <a href="http://bit.ly/2LfhBQq">“uncomfortably exciting” proposition</a>.</p>
+
+<p>One thing we feel pretty sure about is that as you adopt SRE principles into your organization, you will cross many of the same inflection points we did (and some we have not!)—including the need to blur the lines more between where your customers end and where you start.</p>
+
+<p>Engaging with individual customers at this level of operational depth is a rewarding new frontier for us, and we’re still very much on the path. (You can follow along online at the <a href="http://bit.ly/2xwZ2oQ">Google Cloud Platform Blog</a>.) The further we go, however, the more certain we are that this is a journey that you, too, will need to take.<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="reaching beyond your walls" data-startref="ix_SREreach" data-type="indexterm" id="idm139660637196352"/></p>
+</div></section>
+</div></section></body></html>

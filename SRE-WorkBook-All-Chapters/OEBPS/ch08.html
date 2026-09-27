@@ -1,0 +1,872 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>On-Call</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 8. On-Call" data-type="chapter" epub:type="chapter"><div class="chapter" id="on_call">
+<h1><span class="label">Chapter 8. </span>On-Call</h1>
+
+<p class="byline">By Ollie Cook, Sara Smollett, Andrea Spadaccini,<br/>
+Cara Donnelly, Jian Ma, and Garrett Plasky (Evernote)<br/>
+with Stephen Thorne and Jessie Yang</p>
+
+<p>Being on-call means being available during a set period of time, and being ready to respond to production incidents during that time with appropriate urgency. <em>Site Reliability Engineers</em> (SREs) are often required to take part in on-call rotations.<a contenteditable="false" data-primary="on-call" data-type="indexterm" id="ix_onc"/> During on-call shifts, SREs diagnose, mitigate, fix, or escalate incidents as needed. In addition, SREs are regularly responsible for nonurgent production duties.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="being on-call" data-see="on-call" data-type="indexterm" id="idm139660641737664"/></p>
+
+<p>At Google, being on-call is one of the defining characteristics of SRE. SRE teams mitigate incidents, repair production problems, and automate operational tasks. Since most of our SRE teams have not yet fully automated all their operational tasks, escalations need human points of contact—on-call engineers. Depending on how critical the supported systems are, or the state of development the systems are in, not all SRE teams may need to be on-call. In our experience, most SRE teams staff on-call shifts.</p>
+
+<p>On-call is a large and complex topic, saddled with many constraints and a limited margin for trial and error. <a href="http://bit.ly/2JgUBU7">Chapter 11</a> of our first book (<em>Site Reliability Engineering</em>), “Being On-Call,” already explored this topic. This chapter addresses specific feedback and questions we received about that chapter. These include the following:</p>
+
+<ul>
+	<li>
+	<p>“We are not Google; we’re much smaller. We don’t have as many people in the rotation, and we don’t have sites in different time zones. What you described in your first book is irrelevant to me.”</p>
+	</li>
+	<li>
+	<p>“We have a mixture of developers and DevOps for on-call rotation. What’s the best way to organize them? Split the responsibilities?”</p>
+	</li>
+	<li>
+	<p>“Our on-call engineer gets paged about a hundred times in a typical 24-hour shift. A lot of pages get ignored, while the real problems are buried under the pile. Where should we start?”</p>
+	</li>
+	<li>
+	<p>“We have a high turnover rate for on-call rotations. How do you address the knowledge gap within the team?”</p>
+	</li>
+	<li>
+	<p>“We want to reorg our DevOps team into SRE.<sup><a data-type="noteref" href="ch08.html#ch08fn1" id="ch08fn1-marker">1</a></sup> What’s the difference between SRE on-call, DevOps on-call, and developers on-call? Please be specific, because the DevOps team is very concerned about this.”</p>
+	</li>
+</ul>
+
+<p>We offer practical advice for these situations. Google is a large company with a mature SRE organization, but much of what we’ve learned over the years can be applied to any company or organization, regardless of size or maturity. Google has hundreds of on-call rotations across services of all sizes, and various on-call setups from simple to complicated. On-call is not exclusively an SRE function: many developer teams are directly on-call for their service. Each on-call setup meets the need of a particular service.</p>
+
+<p>This chapter describes on-call setups both within Google and outside of Google. While your setup and situation will likely differ from our specific examples, the essential concepts we cover are widely applicable.</p>
+
+<p>We then delve into the anatomy of pager load, explaining what causes pager load. We suggest strategies to optimize on-call setup and minimize that load.</p>
+
+<p>Finally, we share two examples of practices inside Google: on-call flexibility and on-call team dynamics. These practices show that no matter how mathematically sound an on-call setup is, you cannot solely rely on logistics of the on-call setup. Incentives and human nature play an important role, and should also be taken into account.</p>
+
+<section data-pdf-bookmark="Recap of “Being On-Call” Chapter of First SRE Book" data-type="sect1"><div class="sect1" id="recap_of_quotation_markbeing_on_callquota">
+<h1>Recap of “Being On-Call” Chapter of First SRE Book</h1>
+
+<p><em>Site Reliability Engineering</em>, in <a href="http://bit.ly/2JgUBU7">“Being On-Call”</a>, explains the principles behind on-call rotations at Google. This section discusses the main points of that chapter.</p>
+
+<p>At Google, the overall goal of being on-call is to provide coverage for critical services, while making sure that we never achieve reliability at the expense of an on-call engineer’s health.<a contenteditable="false" data-primary="on-call" data-secondary="recap from first SRE book" data-type="indexterm" id="idm139660641705840"/> As a result, SRE teams strive for <em>balance</em>. SRE work should be a healthy mix of duties: on-call and project work.<a contenteditable="false" data-primary="balance between on-call and project work for SREs" data-type="indexterm" id="idm139660641707856"/> Specifying that SREs spend at least 50% of their time on project work means that teams have time to tackle the projects required to strategically address any problems found in production. Team staffing must be adequate to ensure time for project work.</p>
+
+<p>We target a maximum of two incidents per on-call shift,<sup><a data-type="noteref" href="ch08.html#ch08fn2" id="ch08fn2-marker">2</a></sup> to ensure adequate time for follow-up. If the pager load gets too high, corrective action is warranted. (We explore pager load later in this chapter.)</p>
+
+<p><em>Psychological safety</em><sup><a data-type="noteref" href="ch08.html#ch08fn3" id="ch08fn3-marker">3</a></sup> is vital for effective on-call rotations. Since being on-call can be daunting and highly stressful, on-call engineers should be fully supported by a series of procedures and escalation paths to make their lives easier.<a contenteditable="false" data-primary="psychological safety" data-secondary="in on-call rotations" data-type="indexterm" id="idm139660641698448"/> </p>
+
+<p>On-call usually implies some amount of out-of-hours work. We believe this work should be compensated. While different companies may choose to handle this in different ways, Google offers time-off-in-lieu or cash compensation, capped at some proportion of the overall salary. The compensation scheme provides an incentive for being part of on-call, and ensures that engineers do not take on too many on-call shifts for economic reasons.</p>
+</div></section>
+
+<section data-pdf-bookmark="Example On-Call Setups Within Google and Outside Google" data-type="sect1"><div class="sect1" id="example_on_call_setups_within_google_and">
+<h1>Example On-Call Setups Within Google and Outside Google</h1>
+
+<p>This section describes real-world examples of on-call setups at Google and Evernote, a California company that develops a cross-platform app that helps individuals and teams create, assemble, and share information.<a contenteditable="false" data-primary="on-call" data-secondary="example setup within Google" data-type="indexterm" id="ix_oncexG"/> For each company, we explore the reasoning behind on-call setups, general on-call philosophy, and on-call practices.</p>
+
+<section data-pdf-bookmark="Google: Forming a New Team" data-type="sect2"><div class="sect2" id="google_forming_a_new_team">
+<h2>Google: Forming a New Team</h2>
+
+<section data-pdf-bookmark="Initial scenario" data-type="sect3"><div class="sect3" id="initial_scenario">
+<h3>Initial scenario</h3>
+
+<p>A few years ago, Sara, an SRE at Google Mountain View, started a new SRE team that needed to be on-call within three months.<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-type="indexterm" id="ix_SREteam"/><a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="initial scenario" data-type="indexterm" id="idm139660641686112"/> To put this in perspective, most SRE teams at Google do not expect new hires to be ready for on-call before three to nine months. The new Mountain View SRE team would support three Google Apps services that were previously supported by an SRE team in Kirkland, Washington (a two-hour flight from Mountain View). The Kirkland team had a sister SRE team in London, which would continue to support these services alongside the new Mountain View SRE team, and distributed product development teams.<sup><a data-type="noteref" href="ch08.html#ch08fn4" id="ch08fn4-marker">4</a></sup></p>
+
+<p>The new Mountain View SRE team came together quickly, assembling seven people:</p>
+
+<ul>
+	<li>
+	<p>Sara, an SRE tech lead</p>
+	</li>
+	<li>
+	<p>Mike, an experienced SRE from another SRE team</p>
+	</li>
+	<li>
+	<p>A transfer from a product development team who was new to SRE</p>
+	</li>
+	<li>
+	<p>Four new hires (“Nooglers”)</p>
+	</li>
+</ul>
+
+<p>Even when a team is mature, going on-call for new services is always challenging, and the new Mountain View SRE team was a relatively junior team. Nonetheless, the new team was able to onboard the services without sacrificing service quality or project velocity. They made immediate improvements to the services, including lowering machine costs by 40%, and fully automating release rollouts with canarying and other safety checks. The new team also continued to deliver reliable services, targeting 99.98% availability, or roughly 26 minutes of downtime per quarter.</p>
+
+<p>How did the new SRE team bootstrap themselves to accomplish so much? Through starter projects, mentoring, and training.</p>
+</div></section>
+
+<section data-pdf-bookmark="Training roadmap" data-type="sect3"><div class="sect3" id="training_roadmap">
+<h3>Training roadmap</h3>
+
+<p>Although the new SRE team didn’t know much about their services, Sara and Mike were familiar with Google’s production environment and SRE. <a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="training" data-type="indexterm" id="idm139660641674144"/><a contenteditable="false" data-primary="training" data-secondary="new SRE team at Google" data-type="indexterm" id="idm139660641673472"/>As the four Nooglers completed company orientation, Sara and Mike compiled a<a contenteditable="false" data-primary="checklist for new SRE team training" data-type="indexterm" id="idm139660641671152"/> checklist of two dozen focus areas for people to practice before going on-call, such as:</p>
+
+<ul>
+	<li>
+	<p>Administering production jobs</p>
+	</li>
+	<li>
+	<p>Understanding debugging info</p>
+	</li>
+	<li>
+	<p>“Draining” traffic away from a cluster</p>
+	</li>
+	<li>
+	<p>Rolling back a bad software push</p>
+	</li>
+	<li>
+	<p>Blocking or rate-limiting unwanted traffic</p>
+	</li>
+	<li>
+	<p>Bringing up additional serving capacity</p>
+	</li>
+	<li>
+	<p>Using the monitoring systems (for alerting and dashboards)</p>
+	</li>
+	<li>
+	<p>Describing the architecture, various components, and dependencies of the <span class="keep-together">services</span></p>
+	</li>
+</ul>
+
+<p>The Nooglers found some of this information on their own by researching existing documentation and <em>codelabs</em> (guided, hands-on coding tutorials) and gained understanding on relevant topics by working on their starter projects.<a contenteditable="false" data-primary="codelabs" data-type="indexterm" id="idm139660641661264"/> When a team member learned about specific topics relevant to the Nooglers’ starter projects, that person led a short, impromptu session to share that information with the rest of the team. Sara and Mike covered the remaining topics. The team also held lab sessions to <span class="keep-together">perform</span> common debugging and mitigation tasks to help everyone build muscle memory and gain confidence in their abilities.</p>
+
+<p>In addition to the checklist, the new SRE team ran a series of “deep dives” to dig into their services. The team browsed monitoring consoles, identified running jobs, and tried debugging recent pages. Sara and Mike explained that an engineer <em>didn’t</em> need years of expertise with each of the services to become reasonably proficient. They coached the team to explore a service from first principles, and encouraged Nooglers to become familiar with the services. They were open about the limits of their knowledge, and taught others when to ask for help.</p>
+
+<p>Throughout the ramp-up, the new SRE team wasn’t alone. Sara and Mike traveled to meet the other SRE teams and product developers and learn from them. The new SRE team met with the Kirkland and London teams by holding video conferences, exchanging email, and chatting over IRC. In addition, the team attended weekly production meetings, read daily on-call handoffs and postmortems, and browsed existing service documentation. A Kirkland SRE visited to give talks and answer questions. A London SRE put together a thorough set of disaster scenarios and ran them during Google’s disaster recovery training week (see the section <a href="http://bit.ly/2JiPfaV">“Preparedness and Disaster Testing”</a> in <em>Site Reliability Engineering</em>, Chapter 33).</p>
+
+<p>The team also practiced being on-call through “Wheel of Misfortune” training exercises (see the section <a href="http://bit.ly/2Hb8ONg">“Disaster Role Playing”</a> in <em>Site Reliability Engineering</em>, Chapter 28), where they role-played recent incidents to practice debugging production problems. During these sessions, all SREs were encouraged to offer suggestions on how to resolve mock production failures. After everyone ramped up, the team still held these sessions, rotating through each team member as the session leader. The team recorded these for future reference.</p>
+
+<p>Before going on-call, the team reviewed precise guidelines about the responsibilities of on-call engineers. For example:</p>
+
+<ul>
+	<li>
+	<p>At the start of each shift, the on-call engineer reads the handoff from the previous shift.</p>
+	</li>
+	<li>
+	<p>The on-call engineer minimizes user impact first, then makes sure the issues are fully addressed.</p>
+	</li>
+	<li>
+	<p>At the end of the shift, the on-call engineer sends a handoff email to the next engineer on-call.</p>
+	</li>
+</ul>
+
+<p>The guidelines also specified when to escalate to others, and how to write postmortems for large incidents.</p>
+
+<p>Finally, the team read and updated on-call <em>playbooks</em>. Playbooks contain high-level instructions on how to respond to automated alerts. They explain the severity and impact of the alert, and include debugging suggestions and possible actions to take to mitigate impact and fully resolve the alert. In SRE, whenever an alert is created, a corresponding playbook entry is usually created.<a contenteditable="false" data-primary="playbooks, maintaining" data-type="indexterm" id="idm139660641652752"/> These guides reduce stress, the mean time to repair (MTTR), and the risk of human error.</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="maintaining_playbooks">
+<h5>Maintaining Playbooks</h5>
+
+<p>Details in playbooks go out of date at the same rate as production environment changes. <a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="maintaining playbooks" data-type="indexterm" id="idm139660641641744"/>For daily releases, playbooks might need an update on any given day. Writing good documentation, like any form of communication, is hard. So how do you maintain playbooks?</p>
+
+<p>Some SREs at Google advocate keeping playbook entries general so they change slowly. For example, they may have just one entry for all “RPC Errors High” alerts, for a trained on-call engineer to read, in conjunction with an architecture diagram for the currently alerting service. Other SREs advocate for step-by-step playbooks to reduce human variability and drive down MTTR. If your team has conflicting views about playbook content, the playbooks might get pulled in many directions.</p>
+
+<p>This is a contentious topic. If you agree on nothing else, at least decide with your team what minimal, structured details your playbooks must have, and try to notice when your playbooks have accumulated a lot of information beyond these structured details. Pencil in a project to turn new, hard-won, production knowledge into automation or monitoring consoles. If your playbooks are a deterministic list of commands that the on-call engineer runs every time a particular alert fires, we recommend implementing automation.</p>
+</div></aside>
+
+<p>After two months, Sara, Mike, and the SRE transfer shadowed the on-call shifts of the outgoing Kirkland SRE team. At three months, they became the primary on-call, with the Kirkland SREs as backup. That way, they could easily escalate to the Kirkland SREs if needed. Next, the Nooglers shadowed the more experienced, local SREs and joined the rotation.</p>
+
+<p>Good documentation and the various strategies discussed earlier all helped the team form a solid foundation and ramp up quickly. Although on-call can be stressful, the teams’ confidence grew enough to take action without second-guessing themselves. There was psychological safety in knowing that their responses were based on the team’s collective knowledge, and that even when they escalated, the on-call engineers were still regarded as competent engineers.</p>
+</div></section>
+
+<section data-pdf-bookmark="Afterword" data-type="sect3"><div class="sect3" id="afterword">
+<h3>Afterword</h3>
+
+<p>While the Mountain View SREs were ramping up, they learned that their experienced, sister SRE team in<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="afterword" data-type="indexterm" id="idm139660641631648"/> London would be moving on to a new project, and a new team was being formed in Zürich to support the services previously supported by the London SRE team. For this second transition, the same basic approach the Mountain View SREs used proved successful. The previous investment by Mountain View SREs in developing onboarding and training materials helped the new Zürich SRE team ramp up.</p>
+
+<p>While the approach used by the Mountain View SREs made sense when a cohort of SREs were becoming a team, they needed a more lightweight approach when only one person joined the team at a given time. In anticipation of future turnover, the SREs created service architecture diagrams and formalized the basic training checklist into a series of exercises that could be completed semi-independently with minimal involvement from a mentor. These exercises included describing the storage layer, performing capacity increases, and reviewing how HTTP requests are routed.<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-startref="ix_SREteam" data-type="indexterm" id="idm139660641640400"/><a contenteditable="false" data-primary="on-call" data-secondary="example setup within Google" data-startref="ix_oncexG" data-type="indexterm" id="idm139660641639616"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Evernote: Finding Our Feet in the Cloud" data-type="sect2"><div class="sect2" id="evernote_finding_our_feet_in_the_cloud">
+<h2>Evernote: Finding Our Feet in the Cloud</h2>
+
+<section data-pdf-bookmark="Moving our on-prem infrastructure to the cloud" data-type="sect3"><div class="sect3" id="moving_our_on_prem_infrastructure_to_the">
+<h3>Moving our on-prem infrastructure to the cloud</h3>
+
+<p>We didn’t set out to reengineer our on-call process, but as with many things in life, necessity is the mother of invention. <a contenteditable="false" data-primary="on-call" data-secondary="example setups, Evernote case study" data-type="indexterm" id="ix_oncexEv"/><a contenteditable="false" data-primary="cloud environment" data-secondary="Evernote, on-call setup for cloud datacenters" data-type="indexterm" id="ix_cloudEv"/> Prior to December 2016, Evernote ran only on on-prem datacenters, built to support our monolithic application. Our network and servers were designed with a specific architecture and data flow in mind. This, combined with a host of other constraints, meant we lacked the flexibility needed to support a horizontal architecture.<a contenteditable="false" data-primary="Google Cloud Platform (GCP)" data-type="indexterm" id="idm139660641623232"/> Google Cloud Platform (GCP) provided a concrete solution to our problem. However, we still had one major hurdle to surmount: migrating all our production and supporting infrastructure to GCP. Fast-forward 70 days. Through a Herculean effort and many remarkable feats (for example, moving thousands of servers and 3.5 PB of data), we were happily settled in our new home. At this point, though, our job still wasn’t done: how were we going to monitor, alert, and—most importantly—respond to issues in our new environment?</p>
+</div></section>
+
+<section data-pdf-bookmark="Adjusting our on-call policies and processes" data-type="sect3"><div class="sect3" id="adjusting_our_on_call_policies_and_proces">
+<h3>Adjusting our on-call policies and processes</h3>
+
+<p>The move to the cloud unleashed the potential for our infrastructure to grow rapidly, but our on-call policies and processes were not yet set up to handle such growth. Once the migration wrapped up, we set out to remedy the problem. In our previous physical datacenter, we built redundancy into nearly every component. This meant that while component failure was common given our size, generally no individual component was capable of negatively impacting users. The infrastructure was very stable because we controlled it—any small bump would inevitably be due to a failure somewhere in the system. Our alerting policies were structured with that in mind: a few dropped packets, resulting in a JDBC (Java Database Connectivity) connection exception, invariably meant that a VM (virtual machine) host was on the verge of failing, or that the control plane on one of our switches was on the fritz. Even before our first day in the cloud, we realized that this type of alert/response system was not tenable going forward. In a world of live migrations and network latency, we needed to take a much more holistic approach to monitoring.</p>
+
+<p>Reframing paging events in terms of first principles, and writing these principles down as our explicit SLOs (service level objectives), helped give the team clarity regarding what was important to alert on and allowed us to trim the fat from our monitoring infrastructure. Our focus on higher-level indicators such as API responsiveness, rather than lower-level infrastructure such as InnoDB row lock waits in MySQL, meant we could focus more time on the real pain our users experience during an outage. For our team, this meant less time spent chasing transient problems. This translated into more sleep, effectiveness, and ultimately, job satisfaction.</p>
+</div></section>
+
+<section data-pdf-bookmark="Restructuring our monitoring and metrics" data-type="sect3"><div class="sect3" id="restructuring_our_monitoring_and_metrics">
+<h3>Restructuring our monitoring and metrics</h3>
+
+<p>Our primary on-call rotation is staffed by a small but scrappy team of engineers who are responsible for our production<a contenteditable="false" data-primary="monitoring" data-secondary="restructuring at Evernote for cloud datacenters" data-type="indexterm" id="idm139660641618640"/> infrastructure and a handful of other business systems (for example, staging and build pipeline infrastructure). We have a weekly, 24/7 schedule with a well-oiled handoff procedure, alongside a morning review of incidents at a daily stand-up. Our small team size and comparatively large scope of responsibility necessitates that we make every effort to keep the process burden light, and focus on closing the alert/triage/remediation/analysis loop as quickly as possible. One of the ways we achieve this is to keep our signal-to-noise ratio low by maintaining simple but effective alerting SLAs (service level agreements). We classify any <a contenteditable="false" data-primary="metrics" data-secondary="restructuring at Evernote for cloud datacenters" data-type="indexterm" id="idm139660641608992"/>event generated by our metrics or monitoring infrastructure into three categories:</p>
+
+<dl>
+<dt>P1: Deal with immediately</dt>
+<dd>
+<ul>
+	<li>
+	<p>Should be immediately actionable</p>
+	</li>
+	<li>
+	<p>Pages the on-call</p>
+	</li>
+	<li>
+	<p>Leads to event triage</p>
+	</li>
+	<li>
+	<p>Is SLO-impacting</p>
+	</li>
+</ul></dd>
+
+<dt>P2: Deal with the next business day</dt>
+
+<dd>
+<ul>
+	<li>
+	<p>Generally is not customer-facing, or is very limited in scope</p>
+	</li>
+	<li>
+	<p>Sends an email to team and notifies event stream channel</p>
+	</li>
+</ul>
+</dd>
+<dt>P3: Event is informational only</dt>
+<dd>
+<ul>
+	<li>
+	<p>Information is gathered in dashboards, passive email, and the like</p>
+	</li>
+	<li>
+	<p>Includes capacity planning–related information</p>
+	</li>
+</ul></dd></dl>
+
+<p>Any P1 or P2 event has an incident ticket attached to it. The ticket is used for obvious tasks like event triage and tracking remediation actions, as well as for SLO impact, number of occurrences, and postmortem doc links, where applicable.</p>
+
+<p>When an event pages (category P1), the on-call is tasked with assessing the impact to users. Incidents are triaged into severities from 1 to 3. For severity 1 (Sev 1) incidents, we maintain a finite set of criteria to make the escalation decision as straightforward as possible for the responder. Once the event is escalated, we assemble an incident team and begin our incident management process. The incident manager is paged, a scribe and communications lead is elected, and our communication channels open. After the incident is resolved, we conduct an automatic postmortem and share the results far and wide within the company. For events rating Sev 2 or Sev 3, the on-call responder handles the incident lifecycle, including an abbreviated postmortem for incident review.</p>
+
+<p>One of the benefits of keeping our process lightweight is that we can explicitly free the on-call from any expectations of project work. This empowers and encourages the on-call to take immediate follow-up action, and also to identify any major gaps in tooling or process after completing the post-incident review. In this way, we achieve a constant cycle of improvement and flexibility during every on-call shift, keeping pace with the rapid rate of change in our environment. The goal is to make every on-call shift better than the last.</p>
+</div></section>
+
+<section data-pdf-bookmark="Tracking our performance over time" data-type="sect3"><div class="sect3" id="tracking_our_performance_over_time">
+<h3>Tracking our performance over time</h3>
+
+<p>With the introduction of SLOs, we wanted to track performance over time, and share that information with stakeholders within the company.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="tracking performance over time at Evernote" data-type="indexterm" id="idm139660641585248"/> We implemented a monthly service review meeting, open to anyone who’s interested, to review and discuss the previous month of the service. We have also used this forum to review our on-call burden as a barometer of team health, and discuss remediation actions when we exceed our pager budget. This forum has the dual purpose of spreading the importance of SLOs within the company and keeping the technical organization accountable for maintaining the health and wellness of our service and team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Engaging with CRE" data-type="sect3"><div class="sect3" id="engaging_with_cre">
+<h3>Engaging with CRE</h3>
+
+<p>Expressing our objectives in terms of SLOs provides a basis for engaging with Google’s Customer Reliability Engineering (CRE) team. <a contenteditable="false" data-primary="Google’s Customer Reliability Engineering (CRE) team" data-type="indexterm" id="idm139660641595088"/><a contenteditable="false" data-primary="CRE" data-see="Google’s Customer Reliability Engineering (CRE) team" data-type="indexterm" id="idm139660641595552"/>After we discussed our SLOs with CRE to see if they were realistic and measurable, both teams decided CRE would be paged alongside our own engineers for SLO-impacting events. It can be difficult to pinpoint root causes that are hidden behind layers of cloud abstraction, so having a Googler at our side take the guesswork out of black-box event triaging was helpful. More importantly, this exercise further reduced our MTTR, which is ultimately what our users care about.</p>
+</div></section>
+
+<section data-pdf-bookmark="Sustaining a self-perpetuating cycle" data-type="sect3"><div class="sect3" id="sustaining_a_self_perpetuating_cycle">
+<h3>Sustaining a self-perpetuating cycle</h3>
+
+<p>Rather than spending all our time in the triage/root-cause analysis/postmortem cycle, we now have more time as a team to think about how we move the business forward. Specifically, this translates into projects such as improving our microservices platform and establishing production readiness criteria for our product development teams. The latter includes many of the principles we followed in restructuring our on-call, which is particularly helpful for teams in their first “carry the pager” rodeo. Thus, we perpetuate the cycle of improving on-call for everyone.</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Practical Implementation Details" data-type="sect1"><div class="sect1" id="prac_impl_details">
+<h1>Practical Implementation Details</h1>
+
+<p>So far, we’ve discussed details about on-call setups, both within Google and outside of Google. But what about specific considerations of being on-call? The following sections discuss these implementation details in more depth:</p>
+
+<ul>
+	<li>
+	<p>Pager load—what it is, how it works, and how to manage it</p>
+	</li>
+	<li>
+	<p>How to factor flexibility into on-call scheduling to create a healthier work/life balance for SREs</p>
+	</li>
+	<li>
+	<p>Strategies for improving team dynamics, both within a given SRE team, and with partner <a contenteditable="false" data-primary="on-call" data-secondary="example setups, Evernote case study" data-startref="ix_oncexEv" data-type="indexterm" id="idm139660641590288"/>teams <a contenteditable="false" data-primary="cloud environment" data-secondary="Evernote, on-call setup for cloud datacenters" data-startref="ix_cloudEv" data-type="indexterm" id="idm139660641591184"/> </p>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Anatomy of Pager Load" data-type="sect2"><div class="sect2" id="anatomy_of_pager_load">
+<h2>Anatomy of Pager Load</h2>
+
+<p>Your pager is noisy and it’s making your team unhappy.<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-type="indexterm" id="ix_oncpager"/><a contenteditable="false" data-primary="pager load" data-type="indexterm" id="ix_pager"/> You’ve read through <a href="http://bit.ly/2sqRwad">Chapter 31</a> in <em>Site Reliability Engineering</em>, and run regular production meetings, both with your team and the developer teams you support. Now everyone <em>knows</em> that your on-call engineers are unhappy. What next?</p>
+
+<p><em>Pager load</em> is the number of paging incidents that an on-call engineer receives over a typical shift length (such as per day or per week). An incident may involve more than one page. Here, we’ll walk through the impact of various factors on pager load, and suggest techniques for minimizing future pager load.<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="appropriate response times for pages" data-type="indexterm" id="idm139660641567600"/></p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="appropriate_response_times">
+<h5>Appropriate Response Times</h5>
+
+<p>Engineers shouldn’t have to be at a computer and working on a problem within minutes of receiving a page unless there is a very good reason to do so. <a contenteditable="false" data-primary="response times to pages" data-type="indexterm" id="idm139660641561824"/><a contenteditable="false" data-primary="pager load" data-secondary="appropriate response times" data-type="indexterm" id="idm139660641563920"/>While a complete outage of a customer-facing, revenue-generating service typically requires an immediate response, you can deal with less severe issues (for example, failing backups) within a few hours.</p>
+
+<p>We recommend checking your current paging setup to see if you actually <em>should</em> be paged for everything that currently triggers a page. You may be paging for issues that would be better served by automated repair (as it’s generally better for a computer to fix a problem than requiring a human to fix it) or a ticket (if it’s not actually high priority). <a data-type="xref" href="#example_realistic_response_times">Table 8-1</a> shows some sample events and appropriate responses.</p>
+</div></aside>
+
+<table class="border" id="example_realistic_response_times">
+	<caption><span class="label">Table 8-1. </span>Examples of realistic response times</caption>
+	<thead>
+		<tr>
+			<th><strong>Incident description</strong></th>
+			<th><strong>Response time</strong></th>
+			<th><strong>SRE impact</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Revenue-impacting network outage</td>
+			<td>5 minutes</td>
+			<td>SRE needs to be within arm’s reach of a charged and authenticated laptop with network access at all times; cannot travel; must heavily coordinate with secondary at all times</td>
+		</tr>
+		<tr>
+			<td>Customer order batch processing system stuck</td>
+			<td>30 minutes</td>
+			<td>SRE can leave their home for a quick errand or short commute; secondary does not need to provide coverage during this time</td>
+		</tr>
+		<tr>
+			<td>Backups of a database for a pre-launch service are failing</td>
+			<td>Ticket (response during work hours)</td>
+			<td>None</td>
+		</tr>
+	</tbody>
+</table>
+
+<section data-pdf-bookmark="Scenario: A team in overload" data-type="sect3"><div class="sect3" id="scenario_a_team_in_overload">
+<h3>Scenario: A team in overload</h3>
+
+<p>The (hypothetical) Connection SRE Team, responsible for frontend load balancing and terminating<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="scenario, a team in overload" data-type="indexterm" id="idm139660641544576"/> end-user connections, found<a contenteditable="false" data-primary="pager load" data-secondary="scenario, a team in overload" data-type="indexterm" id="idm139660641545664"/> itself in a position of high pager load. They had an established pager budget of two paging incidents per shift, but for the past year they had regularly been receiving five paging incidents per shift. Analysis revealed that fully one-third of shifts were exceeding their pager budget. Members of the team heroically responded to the daily onslaught of pages but couldn’t keep up; there simply was not enough time in the day to find the root cause and properly fix the incoming issues. Some engineers left the team to join less operationally burdened teams. High-quality incident follow-up was rare, since on-call engineers only had time to mitigate immediate problems.</p>
+
+<p>The team’s horizon wasn’t entirely bleak: they had a mature monitoring infrastructure that followed SRE best practices. Alerting thresholds were set to align with their SLO, and paging alerts were symptom-based in nature, meaning they fired only when customers were impacted. When senior management were approached with all of this information, they agreed that the team was in operational overload and reviewed the project plan to bring the team back to a healthy state.</p>
+
+<p>In less positive news, over time the Connection team had taken ownership of software components from more than 10 developer teams and had hard dependencies on Google’s customer-facing edge and backbone networks. The large number of intergroup relationships was complex and had quietly grown difficult to manage.</p>
+
+<p>Despite the team following best practices in structuring their monitoring, many of the pages that they faced were outside their direct control. For example, a black-box probe may have failed due to congestion in the network, causing packet loss. The only action the team could take to mitigate congestion in the backbone was to escalate to the team directly responsible for that network.</p>
+
+<p>On top of their operational burden, the team needed to deliver new features to the frontend systems, which would be used by all Google services. To make matters worse, their infrastructure was being migrated from a 10-year-old legacy framework and cluster management system to a better-supported replacement. The team’s services were subject to an unprecedented rate of change, and the changes themselves caused a significant portion of the on-call load.</p>
+
+<p>The team clearly needed to combat this excessive pager load using a variety of techniques. The technical program manager and the people manager of the team approached senior management with a project proposal, which senior management reviewed and approved. The team turned their full attention to reducing their pager load, and learned some valuable lessons along the way.</p>
+</div></section>
+
+<section data-pdf-bookmark="Pager load inputs" data-type="sect3"><div class="sect3" id="pager_load_inputs">
+<h3>Pager load inputs</h3>
+
+<p>The first step in tackling high pager load is to determine what is causing it.<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="contributors to high pager load" data-type="indexterm" id="idm139660641535536"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-type="indexterm" id="idm139660641537216"/> Pager load is influenced by three main factors: bugs<sup><a data-type="noteref" href="ch08.html#ch08fn5" id="ch08fn5-marker">5</a></sup> in production, alerting, and human processes. Each of these factors has several inputs, some of which we discuss in more detail in this section.</p>
+
+<p>For production:</p>
+
+<ul>
+	<li>
+	<p>The number <a contenteditable="false" data-primary="production" data-secondary="contributors to high pager load" data-type="indexterm" id="idm139660641526816"/>of existing bugs in production</p>
+	</li>
+	<li>
+	<p>The introduction of new bugs into production</p>
+	</li>
+	<li>
+	<p>The speed with which newly introduced bugs are identified</p>
+	</li>
+	<li>
+	<p>The speed with which bugs are mitigated and removed from production</p>
+	</li>
+</ul>
+
+<p>For alerting:</p>
+
+<ul>
+	<li>
+	<p>The alerting thresholds <a contenteditable="false" data-primary="alerts" data-secondary="contributors to high pager load" data-type="indexterm" id="idm139660641523472"/>that trigger a paging alert</p>
+	</li>
+	<li>
+	<p>The introduction of new paging alerts</p>
+	</li>
+	<li>
+	<p>The alignment of a service’s SLO with the SLOs of the services upon which it depends</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">For human processes:</p>
+
+<ul>
+	<li>
+	<p>The rigor of fixes and <a contenteditable="false" data-primary="human processes in pager load" data-type="indexterm" id="idm139660641518048"/>follow-up on bugs</p>
+	</li>
+	<li>
+	<p>The quality of data collected about paging alerts</p>
+	</li>
+	<li>
+	<p>The attention paid to pager load trends</p>
+	</li>
+	<li>
+	<p>Human-actuated changes to production</p>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Preexisting bugs" data-type="sect4"><div class="sect4" id="preexisting_bugs">
+<h4>Preexisting bugs</h4>
+
+<p>No system is perfect.<a contenteditable="false" data-primary="bugs" data-secondary="preexisting bugs in production environment" data-type="indexterm" id="idm139660641512112"/> There will always<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="preexisting bugs" data-type="indexterm" id="idm139660641510544"/> be bugs <a contenteditable="false" data-primary="production" data-secondary="contributors to high pager load" data-tertiary="preexisting bugs" data-type="indexterm" id="idm139660641508864"/>in production: in your own code, the software and libraries that you build upon, or the interfaces between them. The bugs may not be causing paging alerts right now, but they are definitely present. You can use a few techniques to identify or prevent bugs that haven’t yet caused paging alerts:</p>
+
+<ul>
+	<li>
+	<p>Ensure systems are as complicated as they need to be, and no more (see <a data-type="xref" href="ch07.html#simplicity">Chapter 7</a>).</p>
+	</li>
+	<li>
+	<p>Regularly update the software or libraries that your system is built upon to take advantage of bug fixes (however, see the next section about new bugs).</p>
+	</li>
+	<li>
+	<p>Perform regular destructive <a contenteditable="false" data-primary="destructive testing or fuzzing" data-type="indexterm" id="idm139660641503168"/>testing <a contenteditable="false" data-primary="testing" data-secondary="for preexisting bugs in production environment" data-type="indexterm" id="idm139660641502032"/>or fuzzing (for example, using Netflix’s <a href="https://github.com/Netflix/chaosmonkey">Chaos Monkey</a>).</p>
+	</li>
+	<li>
+	<p>Perform regular load testing in addition <a contenteditable="false" data-primary="load" data-secondary="testing" data-type="indexterm" id="idm139660641497056"/>to integration and unit testing.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="New bugs" data-type="sect4"><div class="sect4" id="new_bugs">
+<h4>New bugs</h4>
+
+<p>Ideally, the SRE team and its partner developer teams should detect new bugs before they even make<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="new bugs in production" data-type="indexterm" id="idm139660641492256"/> it into production.<a contenteditable="false" data-primary="bugs" data-secondary="new bugs in production environment" data-type="indexterm" id="idm139660641493232"/> In reality, automated testing misses many bugs, which are then launched to production.</p>
+
+<p>Software testing is a large topic well covered elsewhere (e.g., <a href="https://martinfowler.com/tags/testing.html">Martin Fowler on Testing</a>). However, software testing techniques are particularly useful in reducing the number of bugs that reach production,<a contenteditable="false" data-primary="testing" data-secondary="software testing to reduce bugs reaching production" data-type="indexterm" id="idm139660641489488"/> and the amount of time they remain in production:</p>
+
+<ul>
+	<li>
+	<p>Improve testing over time. In particular, for each bug you discover in production, ask “How could we have detected this bug preproduction?” Make sure the necessary engineering follow-up occurs (see <a data-type="xref" href="#rigor_of_follow_up">“Rigor of follow-up”</a>).</p>
+	</li>
+	<li>
+	<p>Don’t ignore load testing, which is often treated as lower priority than functional testing. Many bugs manifest only under particular load conditions or with a particular mix of requests.</p>
+	</li>
+	<li>
+	<p>Run staging (testing with production-like but synthetic traffic) in a production-like environment.<a contenteditable="false" data-primary="staging" data-type="indexterm" id="idm139660641481360"/> We briefly discuss generating synthetic traffic in <a data-type="xref" href="ch05.html#alerting_on_slos">Chapter 5</a> of this book.</p>
+	</li>
+	<li>
+	<p>Perform canarying (<a data-type="xref" href="ch16.html#canarying_releases">Chapter 16</a>) in a production environment.</p>
+	</li>
+	<li>
+	<p>Have a low tolerance to new bugs.<a contenteditable="false" data-primary="rollback strategy for releases" data-type="indexterm" id="idm139660641477504"/> Follow a “detect, roll back, fix, and roll forward” strategy rather than a “detect, continue to roll forward despite identifying the bug, fix, and roll forward again” strategy. (See <a data-type="xref" href="#mitigation_delay">“Mitigation delay”</a> for more details.)</p>
+	</li>
+</ul>
+
+<p>This kind of rollback strategy requires predictable and frequent releases so that the cost of rolling back any one release is small. We discuss this and related topics in <em>Site Reliability Engineering</em>, in <a href="http://bit.ly/2xyT9aK">“Release Engineering”</a>.</p>
+
+<p>Some bugs may manifest only as the result of <a contenteditable="false" data-primary="client behavior changes, resulting in bugs" data-type="indexterm" id="idm139660641474864"/>changing client behavior. For example:</p>
+
+<ul>
+	<li>
+	<p>Bugs that manifest only under<a contenteditable="false" data-primary="load" data-secondary="bugs manifesting only at specific levels of load" data-type="indexterm" id="idm139660641470176"/> specific levels of load—for example, September back-to-school traffic, Black Friday, Cyber Monday, or that week of the year when Daylight Saving Time means Europe and North America are one hour closer, meaning more of your users are awake and online simultaneously.</p>
+	</li>
+	<li>
+	<p>Bugs that manifest only <a contenteditable="false" data-primary="requests" data-secondary="specific mix of, bugs manifesting with" data-type="indexterm" id="idm139660641467936"/>with a particular mix of requests—for example, servers closer to Asia experiencing a more expensive traffic mix due to language encodings for Asian character sets.</p>
+	</li>
+	<li>
+	<p>Bugs that manifest only when users <a contenteditable="false" data-primary="user behaviors causing bugs to manifest" data-type="indexterm" id="idm139660641464688"/>exercise the system in unexpected ways—for example, Calendar being used by an airline reservation system! Therefore, it is important to expand your testing regimen to test behaviors that do not occur every day.</p>
+	</li>
+</ul>
+
+<p>When a production system is plagued by several concurrent bugs, it’s much more difficult to identify if a given page is for an <em>existing</em> or <em>new</em> bug. Minimizing the number of bugs in production not only reduces pager load, it also makes identifying and classifying new bugs easier. Therefore, it is critical to remove production bugs from your systems as quickly as possible. Prioritize fixing existing bugs above delivering new features; if this requires cross-team collaboration, see <a data-type="xref" href="ch18.html#sre_engagement_model">Chapter 18</a>.</p>
+
+<p>Architectural or procedural problems, <a contenteditable="false" data-primary="automated health checking" data-type="indexterm" id="idm139660641462672"/>such as automated <a contenteditable="false" data-primary="health checking, automated, problems with" data-type="indexterm" id="idm139660641459104"/>health checking, self-healing,<a contenteditable="false" data-primary="self-healing" data-type="indexterm" id="idm139660641457856"/> and load shedding, may<a contenteditable="false" data-primary="load shedding" data-type="indexterm" id="idm139660641456576"/> need significant engineering work to resolve. Remember, for simplicity’s sake we’ll consider these problems “bugs,” even if their size, their complexity, or the effort required to resolve them is significant.</p>
+
+<p><a href="http://bit.ly/2so6uOc">Chapter 3</a> of <em>Site Reliability Engineering</em> describes how error budgets are a useful way to manage the rate at which new bugs are released to production. For example, when a service’s SLO violations exceed a certain fraction of its total quarterly error budget—typically agreed in advance between the developer and SRE teams—new feature development and feature-related rollouts can be halted temporarily to focus on stabilizing the system and reducing the frequency of pages.</p>
+
+<p>The Connection team from our example adopted a strict policy requiring every outage to have a tracking bug.<a contenteditable="false" data-primary="bugs" data-secondary="tracking new bugs in production" data-type="indexterm" id="idm139660641446640"/> This enabled the team’s technical program manager to examine the root cause of their new bugs in aggregate. <a contenteditable="false" data-primary="human error causing new bugs in production" data-type="indexterm" id="idm139660641446000"/>This data revealed that human error was the second most common cause of new bugs in production.</p>
+
+<p>Because humans are error-prone, it’s better if all changes made to production systems are made by automation informed by (human-developed) intent configuration. Before you make a change to production, automation can perform additional testing that humans cannot. The Connection team was making complex changes to production semimanually. Not surprisingly, the team’s manual changes went wrong sometimes; the team introduced new bugs, which caused pages. Automated systems making the same changes would have determined that the changes were not safe before they entered production and became paging events. The technical program manager took this data to the team and convinced them to prioritize automation projects.</p>
+</div></section>
+
+<section data-pdf-bookmark="Identification delay" data-type="sect4"><div class="sect4" id="identification_delay">
+<h4>Identification delay</h4>
+
+<p>It’s important to promptly identify the cause(s) of alerts because the longer it takes to identify the root cause of a page, the more opportunity it has to recur and page again.<a contenteditable="false" data-primary="identification delay for causes of pages" data-type="indexterm" id="idm139660641444272"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="identification delay for root cause of pages" data-type="indexterm" id="idm139660641444912"/> For example, given a page that manifests only under high load, say at daily peak, if the problematic code or configuration is not identified before the next daily peak, it is likely that the problem will happen again. There are several techniques you might use to reduce identification delays:</p>
+
+<dl>
+	<dt><dfn>Use good alerts and consoles</dfn></dt>
+	<dd><p>Ensure pages link to relevant monitoring consoles, and that consoles highlight where the system is operating out of specification.<a contenteditable="false" data-primary="alerts" data-secondary="using good alerts and consoles to identify cause of pages" data-type="indexterm" id="idm139660641435744"/> In the console, correlate black-box and white-box paging alerts together, and do the same with their associated graphs. Make sure playbooks are up to date with advice on responding to each type of alert. On-call engineers should update the playbook with fresh information when the corresponding page fires.</p></dd>
+	<dt><dfn>Practice emergency response</dfn></dt>
+	<dd><p>Run <a href="http://bit.ly/2JnX5Qp">“Wheel of Misfortune” exercises</a> (described in <em>Site Reliability Engineering</em>) to share general and service-specific debugging techniques with your colleagues.<a contenteditable="false" data-primary="emergency response, practicing" data-type="indexterm" id="idm139660641441504"/></p></dd>
+	<dt><dfn>Perform small releases</dfn></dt>
+	<dd><p>If you perform frequent, smaller releases instead of infrequent monolithic changes, correlating bugs<a contenteditable="false" data-primary="releases" data-secondary="benefits of frequent, smaller releases" data-type="indexterm" id="idm139660641432544"/> with the corresponding change that introduced them is easier.<a contenteditable="false" data-primary="canarying releases" data-type="indexterm" id="idm139660641431696"/> Canarying releases, described in <a data-type="xref" href="ch16.html#canarying_releases">Chapter 16</a> gives a strong signal about whether a new bug is due to a new release.</p></dd>
+	<dt><dfn>Log changes</dfn></dt>
+	<dd><p>Aggregating change information into a searchable timeline makes it simpler (and hopefully quicker) to correlate new bugs with the corresponding change that introduced them.<a contenteditable="false" data-primary="logs" data-secondary="logging change information" data-type="indexterm" id="idm139660641429328"/> Tools like <a href="http://bit.ly/2sAgzqJ">the Slack plug-in for Jenkins</a> can be helpful.</p></dd>
+	<dt><dfn>Ask for help</dfn></dt>
+	<dd><p>In <em>Site Reliability Engineering</em>, <a href="http://bit.ly/2J7G0qt">“Managing Incidents”</a>, we talked about working together to manage large outages.<a contenteditable="false" data-primary="help, asking for" data-type="indexterm" id="idm139660641423168"/> The on-call engineer is never alone; encourage your team to feel safe when asking for help.</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Mitigation delay" data-type="sect4"><div class="sect4" id="mitigation_delay">
+<h4>Mitigation delay</h4>
+
+<p>The longer it takes to mitigate a bug once it’s identified, the more opportunity it has to recur and page again. <a contenteditable="false" data-primary="mitigation delays, reducing" data-type="indexterm" id="idm139660641421872"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="mitigation delay" data-type="indexterm" id="idm139660641420896"/>Consider these techniques for reducing mitigation delays:</p>
+
+<dl>
+	<dt>Roll back changes</dt>
+	<dd>
+	<ul>
+		<li>
+		<p>If the bug was introduced in a recent code or configuration rollout, promptly remove the bug from production with a rollback,<a contenteditable="false" data-primary="rollback strategy for releases" data-secondary="promptly removing bugs from production" data-type="indexterm" id="idm139660641415984"/> if safe and appropriate (a rollback alone may be necessary but is not sufficient if the bug caused data corruption, for example).<a contenteditable="false" data-primary="testing" data-secondary="quick fixes for bugs" data-type="indexterm" id="idm139660641414544"/> Remember that even a “quick fix” needs time to be tested, built, and rolled out. Testing is vital to making sure the quick fix actually fixes the bug, and that it doesn’t introduce additional bugs or other unintended consequences. Generally, it is better to “roll back, fix, and roll forward” rather than “roll forward, fix, and roll forward again.”</p>
+		</li>
+		<li>
+		<p>If you aim for 99.99% availability, you have approximately 15 minutes of error budget per quarter.<a contenteditable="false" data-primary="error budgets" data-secondary="rolling back recent changes and" data-type="indexterm" id="idm139660641412096"/> The build step of rolling forward may take much longer than 15 minutes, so rolling back impacts your users much less.</p>
+
+		<p>(99.999% availability affords an error budget of 80 seconds per quarter. At this point, systems may need self-healing properties, which is out of scope for this chapter.)</p>
+		</li>
+		<li>
+		<p>If at all possible, avoid changes that can’t be rolled back, such as API-incompatible changes and lockstep releases.<a contenteditable="false" data-primary="changes" data-secondary="avoiding changes that can’t be rolled back" data-type="indexterm" id="idm139660641409040"/></p>
+		</li>
+	</ul>
+	</dd>
+	<dt>Use feature isolation</dt>
+	<dd>
+	<ul>
+		<li>
+		<p>Design your system so that if feature X goes wrong, you can disable it via, for example, a feature flag without affecting feature Y.<a contenteditable="false" data-primary="feature isolation" data-type="indexterm" id="idm139660641404272"/> This strategy also improves release velocity, and makes disabling feature X a much simpler decision—you don’t need to check that your product managers are comfortable with also disabling feature Y.</p>
+		</li>
+	</ul>
+	</dd>
+	<dt>Drain requests away</dt>
+	<dd>
+	<ul>
+		<li>
+		<p>Drain requests (i.e., redirect customer requests) away from the elements of your system that exhibit the bug.<a contenteditable="false" data-primary="draining requests away from buggy system elements" data-type="indexterm" id="idm139660641400592"/> For example, if the bug is the result of a code or config rollout, and you roll out to production gradually, you may have the opportunity to drain the elements of your infrastructure that have received the update. This allows you to mitigate the customer impact in seconds, rather than rolling back, which may take minutes or longer.</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Alerting" data-type="sect4"><div class="sect4" id="alerting">
+<h4>Alerting</h4>
+
+<p>Google SRE’s maximum of two distinct incidents per 12-hour shift encourages us to be thoughtful and cautious about how we configure paging <a contenteditable="false" data-primary="alerts" data-secondary="paging alerts, defining thresholds for" data-type="indexterm" id="idm139660641395952"/>alerts<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="alerting" data-type="indexterm" id="idm139660641394704"/> and how we introduce new ones. <em>Site Reliability Engineering</em>, <a href="http://bit.ly/2KNCD9F">“Monitoring Distributed Systems”</a>, describes Google’s approach to defining the thresholds for paging alerts. Strictly observing these guidelines is critical to maintaining a healthy on-call rotation.</p>
+
+<p>It is worth highlighting some key elements discussed in that chapter:</p>
+
+<ul>
+	<li>
+	<p>All alerts should be immediately actionable. There should be an action we expect a human to take immediately after they receive the page that the system is unable to take itself. The signal-to-noise ratio should be high to ensure few false positives; a low signal-to-noise ratio raises the risk for on-call engineers to develop alert fatigue.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="pager alerts" data-type="indexterm" id="idm139660641390272"/> </p>
+	</li>
+	<li>
+	<p>If a team fully subscribes to SLO-based alerting, or paging only when error budget is burned (see the section <a href="http://bit.ly/2J4YrjR">“Black-Box Versus White-Box”</a> in <em>Site Reliability Engineering</em>), it is critical that all teams involved in developing and maintaining the service agree about the importance of meeting the SLO and prioritize their work accordingly.</p>
+	</li>
+	<li>
+	<p>If a team fully subscribes to SLO-based and symptom-based alerting, relaxing alert thresholds is rarely an appropriate response to being paged.</p>
+	</li>
+	<li>
+	<p>Just like new code, new alerts should be thoroughly and thoughtfully reviewed. Each alert should have a corresponding playbook entry.</p>
+	</li>
+</ul>
+
+<p>Receiving a page creates a negative psychological impact. To minimize that impact, only introduce new paging alerts when you really need them. Anyone on the team can write a new alert, but the whole team reviews proposed alert additions and can suggest alternatives. Thoroughly test new alerts in production to vet false positives before they are upgraded to paging alerts. For example, you might email the alert’s author when the alert fires, rather than paging the on-call engineer.</p>
+
+<p>New alerts may find problems in production that you weren’t aware of. After you address these production bugs, alerting will only page on <em>new</em> bugs, effectively functioning like regression tests.</p>
+
+<p>Be sure to run the new alerts in test mode long enough to experience typical periodic production conditions, such as regular software rollouts, maintenance events by your Cloud provider, weekly load peaks, and so on. A week of testing is probably about right. However, this appropriate window depends on the alert and the system.</p>
+
+<p>Finally, use the alert’s trigger rate during the testing period to predict the expected consumption of your pager budget as a result of the new alert. Explicitly approve or disallow the new alert as a team. If introducing a new paging alert causes your service to exceed its paging budget, the stability of the system needs additional attention.</p>
+</div></section>
+
+<section data-pdf-bookmark="Rigor of follow-up" data-type="sect4"><div class="sect4" id="rigor_of_follow_up">
+<h4>Rigor of follow-up</h4>
+
+<p>Aim to identify the root cause of every page. “Root causes” extend out of the machine and into the team’s processes.<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="rigor of follow-up" data-type="indexterm" id="idm139660641379232"/><a contenteditable="false" data-primary="follow-up to pager alerts, rigor in" data-type="indexterm" id="idm139660641380208"/> Was an outage caused by a bug that would have been caught by a unit test? The root cause might not be a bug in the code, but rather a bug in the team’s processes around code review.</p>
+
+<p>If you know the root cause, you can fix and prevent it from ever bothering you or your colleagues again. If your team cannot figure out the root cause, add monitoring and/or logging that will help you find the root cause of the page the next time it occurs. If you don’t have enough information to identify the bug, you can always do <em>something</em> to help debug the page further next time. You should rarely conclude that a page is triggered by “cause unknown.” Remember that as an on-call engineer, you are never alone, so ask a colleague to review your findings and see if there’s anything you missed. Typically, it’s easiest to find the root cause of an alert soon after the alert has triggered and fresh evidence is available.</p>
+
+<p>Explaining away a page as “transient,” or taking no action because the system “fixed itself” or the bug inexplicably “went away,” invites the bug to happen again and cause another page, which causes trouble for the next on-call engineer.</p>
+
+<p>Simply fixing the immediate bug (or making a “point” fix) misses a golden opportunity to prevent similar alerts in the future. <a contenteditable="false" data-primary="point fixes for paging alerts" data-type="indexterm" id="idm139660641378672"/>Use the paging alert as an chance to surface engineering work that improves the system and obviates an entire class of possible future bugs. Do this by filing a project bug in your team’s production component, and advocate to prioritize its implementation by gathering data about how many individual bugs and pages this project would remove. If your proposal will take 3 working weeks or 120 working hours to implement, and a page costs on average 4 working hours to properly handle, there’s a clear break-even point after 30 pages.</p>
+
+<p>For example, imagine a situation where there are too many servers on the same failure domain, such as a switch in a datacenter, causing regular multiple simultaneous failures:</p>
+
+<dl>
+	<dt><dfn>Point fix</dfn></dt>
+	<dd><p>Rebalance your current footprint across more failure domains and stop there.</p></dd>
+	<dt><dfn>Systemic fix</dfn></dt>
+	<dd><p>Use automation to ensure that this type of server, and all other similar servers, are always spread across sufficient failure domains, and that they rebalance automatically when necessary.<a contenteditable="false" data-primary="systemic fixes for pager alerts" data-type="indexterm" id="idm139660641361264"/></p></dd>
+	<dt><dfn>Monitoring (or prevention) fix</dfn></dt>
+	<dd><p>Alert preemptively when the failure domain diversity is below the expected level, but not yet service-impacting. <a contenteditable="false" data-primary="monitoring" data-secondary="or prevention fixes for pager alerts" data-type="indexterm" id="idm139660641363936"/>Ideally, the alert would be a ticket alert, not a page, since it doesn’t require an immediate response. The system is still serving happily, albeit at a lower level of redundancy.</p></dd>
+</dl>
+
+<p>To make sure you’re thorough in your follow-up to paging alerts, consider the following questions:</p>
+
+<ul>
+	<li>
+	<p>How can I prevent this specific bug from happening again?</p>
+	</li>
+	<li>
+	<p>How can I prevent bugs like this from happening again, both for this system and other systems I’m responsible for?</p>
+	</li>
+	<li>
+	<p>What tests could have prevented this bug from being released to production?</p>
+	</li>
+	<li>
+	<p>What ticket alerts could have triggered action to prevent the bug from becoming critical before it paged?</p>
+	</li>
+	<li>
+	<p>What informational alerts could have surfaced the bug on a console before it became critical?</p>
+	</li>
+	<li>
+	<p>Have I maximized the impact of the fixes I’m making?</p>
+	</li>
+</ul>
+
+<p>Of course, it’s not enough for an on-call engineer to just file bugs related to the pages that occur on their shift. It’s incredibly important that bugs identified by the SRE team are dealt with swiftly, to reduce the possibility of them recurring. Make sure resource planning for both the SRE and developer teams consider the effort required to respond to bugs.</p>
+
+<p>We recommend reserving a fraction of SRE and developer team time for responding to production bugs as they arise. For example, a Google on-caller typically doesn’t work on projects during their on-call shift. Instead, they work on bugs that improve the health of the system. Make sure that your team routinely prioritizes production bugs above other project work. SRE managers and tech leads should make sure that production bugs are promptly dealt with, and escalate to the developer team decision makers when necessary.</p>
+
+<p>When a paging event is serious enough to warrant a postmortem, it’s even more important to follow this methodology to catalog and track follow-up action items. (See <a data-type="xref" href="ch10.html#postmortem_culture_learning_from_failure">Chapter 10</a> for more details.)</p>
+</div></section>
+
+<section data-pdf-bookmark="Data quality" data-type="sect4"><div class="sect4" id="data_quality">
+<h4>Data quality</h4>
+
+<p>Once you identify bugs in your<a contenteditable="false" data-primary="data collection to monitor causes in on-call load" data-type="indexterm" id="idm139660641343936"/> system that <a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="data quality" data-type="indexterm" id="idm139660641342496"/>caused pages,<a contenteditable="false" data-primary="monitoring" data-secondary="data collection for causes of on-call paging" data-type="indexterm" id="idm139660641352400"/> a number of questions <span class="keep-together">naturally</span> arise:</p>
+
+<ul>
+	<li>
+	<p>How do you know which bug to fix first?</p>
+	</li>
+	<li>
+	<p>How do you know which component in your system caused most of your pages?</p>
+	</li>
+	<li>
+	<p>How do you determine what repetitive, manual action on-call engineers are taking to resolve the pages?</p>
+	</li>
+	<li>
+	<p>How do you tell how many alerts with unidentified root causes remain?</p>
+	</li>
+	<li>
+	<p>How do you tell which bugs are <em>truly</em>, not just anecdotally, the worst?</p>
+	</li>
+</ul>
+
+<p>The answer is simple: collect data!</p>
+
+<p>When building up your data collection processes, you might track and monitor the patterns in on-call load, but this effort doesn’t scale.<a contenteditable="false" data-primary="bugs" data-secondary="bug tracking systems" data-type="indexterm" id="idm139660641337664"/> It’s far more sustainable to file a placeholder bug for each paging alert in your bug tracking system (e.g., Jira, <a href="http://bit.ly/2syxEBq">IssueTracker</a>), and for the on-call engineer to create a link between the paging alerts from your monitoring system and the relevant bug in the bug tracking system, as and when they realize that each alert is symptomatic of a preexisting issue. You will end up with a list of as-yet-not-understood bugs in one column, and a list of all of the pages that each bug is believed to have caused in the next.</p>
+
+<p>Once you have structured data about the causes of the pages, you can begin to analyze that data and produce reports. Those reports can answer questions such as:</p>
+
+<ul>
+	<li>
+	<p>Which bugs cause the most pages? Ideally we’d roll back and fix bugs immediately, but sometimes, finding the root cause and deploying the fix takes a long time, and sometimes silencing key alerts isn’t a reasonable option. For example, the aforementioned Connection SRE Team might experience ongoing network congestion that isn’t immediately resolvable but still needs to be tracked. Collecting data on which production issues are causing the most pages and stress to the team supports data-driven conversations about prioritizing your engineering effort systematically.</p>
+	</li>
+	<li>
+	<p>Which component of the system is the cause of most pages (payments gateway, authentication microservice, etc.)?</p>
+	</li>
+	<li>
+	<p>When correlated with your other monitoring data, do particular pages correspond to other signals (peaks in request rate, number of concurrent customer sessions, number of signups, number of withdrawals, etc.)?</p>
+	</li>
+</ul>
+
+<p>Tying structured data to bugs and the root causes of your pages has other benefits:</p>
+
+<ul>
+	<li>
+	<p>You can automatically populate a list of existing bugs (that is, known issues), which may be useful for your support team.</p>
+	</li>
+	<li>
+	<p>You can automatically prioritize fixing bugs based on the number of pages each bug causes.</p>
+	</li>
+</ul>
+
+<p>The quality of the data you collect will determine the quality of the decisions either humans or automata can make. To ensure high-quality data, consider the following techniques:</p>
+
+<ul>
+	<li>
+	<p>Define and document your team’s policy and expectations on data collection for pages.</p>
+	</li>
+	<li>
+	<p>Set up nonpaging alerts from the monitoring system to highlight where pages were not handled according to those expectations. Managers and tech leads should make sure that the expectations are met.</p>
+	</li>
+	<li>
+	<p>Teammates should follow up with each other when handoffs don’t adhere to expectations. Positive comments such as, “Maybe this could be related to bug 123,” “I’ve filed a bug with your findings so we can follow up in more detail,” or “This looks a lot like what happened on my shift last Wednesday: &lt;link to page, bug&gt;” powerfully reinforce the expected behaviors and ensure that you maximize opportunities for improvement. No one wants to be paged for the same issue that paged their teammate in the previous shift.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Vigilance" data-type="sect4"><div class="sect4" id="vigilance">
+<h4>Vigilance</h4>
+
+<p>All too often, teams fall into operational overload by a thousand cuts.<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="vigilance" data-type="indexterm" id="idm139660641320368"/> To avoid <a href="http://bit.ly/2kFMYIL">boiling the frog</a>, it is important to pay attention to the health of on-call engineers over time, and ensure that production health is consistently and continuously prioritized by both SRE and developer teams.<a contenteditable="false" data-primary="boiling the frog" data-type="indexterm" id="idm139660641316352"/></p>
+
+<p>The following techniques can help a team keep a watchful eye on pager load:</p>
+
+<ul>
+	<li>
+	<p>At production meetings (see the section <a href="http://bit.ly/2LNbtjs">“Communications: Production Meetings”</a> in <em>Site Reliability Engineering</em>, Chapter 31), regularly talk about trends in pager load based on the structured data collected. We’ve found a 21-day trailing average to be useful.</p>
+	</li>
+	<li>
+	<p>Set up ticket alerts, possibly targeted at tech leads or managers, for when pager load crosses a “warning” threshold that your team agrees on beforehand.</p>
+	</li>
+	<li>
+	<p>Hold regular meetings between the SRE team and developer team to discuss the current state of production and the outstanding production bugs that are paging SRE.<a contenteditable="false" data-primary="pager load" data-startref="ix_pager" data-type="indexterm" id="idm139660641309984"/><a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-startref="ix_oncpager" data-type="indexterm" id="idm139660641310464"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="On-Call Flexibility" data-type="sect2"><div class="sect2" id="on_call_flexibility">
+<h2>On-Call Flexibility</h2>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="shift_length">
+<h5>Shift Length</h5>
+
+<p>An on-call rotation that has to handle one or more pages per day must be structured in a <a contenteditable="false" data-primary="shift length for on-call SREs" data-type="indexterm" id="idm139660641303920"/>sustainable way: we recommend<a contenteditable="false" data-primary="scheduling on-call engineers" data-type="indexterm" id="ix_schedonc"/> limiting shift lengths to 12 hours. <a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-type="indexterm" id="ix_oncflex"/>Shorter shifts are better for the mental health of your engineers. Team members run the risk of exhaustion when shifts run long, and when people are tired, they make mistakes. Most humans simply can’t produce high-quality work if they’re on-call continuously. Many countries have laws about maximum working hours, breaks, and working conditions.</p>
+
+<p>While spreading on-call shifts across a team’s daylight hours is ideal, a 12-hour shift system doesn’t necessitate a globally distributed team. Being on-call overnight for 12 hours is preferable to being on-call for 24 hours or more. You can make 12-hour shifts work even in a single location. For example, instead of asking a single engineer to be on-call for 24 hours a day across an entire week-long shift, it would be better for two engineers to split a week of on-call, with one person on-call during the day and one on-call overnight.</p>
+
+<p>In our experience, 24 hours of on-call duty without reprieve isn’t a sustainable setup. While not ideal, occasional overnight 12-hour shifts at least ensure breaks for your engineers. Another option is to shorten shifts to last less than a week—something like 3 days on, 4 days off.</p>
+</div></aside>
+
+<section data-pdf-bookmark="Scenario: A change in personal circumstances" data-type="sect3"><div class="sect3" id="scenario_a_change_in_personal_circumstanc">
+<h3>Scenario: A change in personal circumstances</h3>
+
+<p>Imagine you are a member of an on-call team for a large service that has a 24/7 follow-the-sun model split across two sites.<a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-tertiary="scenario, a change in personal circumstances" data-type="indexterm" id="ix_oncflexscen"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-type="indexterm" id="ix_schedoncscen"/> The arrangement works well for you. While you’re not thrilled about the possibility of a 6 a.m. page, you are happy with the work you and the team are doing to keep the operational load manageable while improving the reliability of the service.</p>
+
+<p>All is well…until one day you realize that the on-call schedule and the demands of your personal life are starting to clash. There are many potential reasons why—for example, becoming a parent, needing to travel on short notice and take a leave from work, or illness.</p>
+
+<p>You need your on-call duties to coexist with your new personal schedule.</p>
+
+<p>Many teams and organizations face this challenge as they mature. People’s needs change over time, and maintaining a healthy balance of diverse teammate backgrounds leads to an on-call rotation characterized by diverse needs. The key to keeping a healthy, fair, and equitable balance of on-call work and personal life is flexibility.</p>
+
+<p>There are a number of ways that you can apply flexibility to on-call rotations to meet the needs of team members while still ensuring coverage for your services or products. It is impossible to write down a comprehensive, one-size-fits-all set of guidelines. We encourage embracing flexibility as a <em>principle</em> rather than simply adopting the examples listed here.</p>
+
+<section data-pdf-bookmark="Automate on-call scheduling" data-type="sect4"><div class="sect4" id="automate_on_call_scheduling">
+<h4>Automate on-call scheduling</h4>
+
+<p>As teams grow, accounting for scheduling constraints—vacation plans, distribution of on-call weekdays versus weekends, individual preferences, religious requirements, and so on—becomes increasingly difficult.<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="automating on-call scheduling" data-type="indexterm" id="idm139660641283952"/> You can’t manage this task manually; it’s hard to find any solution at all, much less a fair one.</p>
+
+<p>“Fairness” doesn’t mean a completely uniform distribution of each type of shift across team members. Different people have different needs and different preferences. Therefore, it’s important for the team to share those preferences and try to meet them in an intelligent way. Team composition and preferences dictate whether your team prefers a uniform distribution, or a more customized way of meeting scheduling preferences.</p>
+
+<p>Using an automated tool to schedule on-call shifts makes this task much easier. This tool should have a few basic characteristics:</p>
+
+<ul>
+	<li>
+	<p>It should rearrange on-call shifts to accommodate the changing needs of team members.</p>
+	</li>
+	<li>
+	<p>It should automatically rebalance on-call load in response to any changes.</p>
+	</li>
+	<li>
+	<p>It should do its best to ensure fairness by factoring in personal preferences such as “no primary during weekends in April,” as well as historical information such as recent on-call load per engineer.</p>
+	</li>
+	<li>
+	<p>So that on-call engineers can plan around their on-call shifts, it must never change an already generated schedule.</p>
+	</li>
+</ul>
+
+<p>Schedule generation can be either fully automated or scheduled by a human. Likewise, some teams prefer to have members explicitly sign off on the schedule, while others are comfortable with a fully automated process. You might opt to develop your own tool in-house if your needs are complex, but there are a number of <span class="keep-together">commercial</span> and open source software packages that can aid in automating on-call scheduling.</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for short-term swaps" data-type="sect4"><div class="sect4" id="plan_for_short_term_swaps">
+<h4>Plan for short-term swaps</h4>
+
+<p>Requests for short-term changes in the on-call schedule happen frequently.<a contenteditable="false" data-primary="swaps (short-term) in on-call scheduling" data-type="indexterm" id="idm139660641274848"/> No one can promise on Monday that they won’t have the flu on Thursday.<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for short-term swaps" data-type="indexterm" id="idm139660641273552"/> Or you might need to run an unforeseen urgent errand in the middle of your on-call shift.</p>
+
+<p>You may also want to facilitate on-call swaps for nonurgent reasons—for example, to allow on-callers to attend sports training sessions. In this situation, team members can swap a subset of the on-call day (for example, half of Sunday). Nonurgent swaps are typically best-effort.</p>
+
+<p>Teams with a strict pager response SLO need to take commute coverage into account. If your pager response SLO is 5 minutes, and your commute is 30 minutes, you need to make sure that someone else can respond to emergencies while you get to work.</p>
+
+<p>To achieve these goals in flexibility, we recommend giving team members the ability to update the on-call rotation. Also, have a documented policy in place describing how swaps should work. Decentralization options range from a fully centralized policy, where only the manager can change the schedule, to a fully decentralized one, where any team member can change the policy independently. In our experience, instituting peer review of changes provides a good tradeoff between safety and <span class="keep-together">flexibility</span>.</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for long-term breaks" data-type="sect4"><div class="sect4" id="plan_for_long_term_breaks">
+<h4>Plan for long-term breaks</h4>
+
+<p>Sometimes team members need to stop serving in the on-call rotation because of changes in personal circumstances or burnout.<a contenteditable="false" data-primary="breaks (long-term) in on-call scheduling" data-type="indexterm" id="idm139660641266192"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for long-term breaks" data-type="indexterm" id="idm139660641268512"/> It’s important that teams are structured to allow on-callers to temporarily leave the rotation.</p>
+
+<p>Ideally, team size should allow for a (temporary) staff reduction without causing the rest of the team to suffer too much operational load. In our experience, you need a bare minimum of five people per site to sustain on-call in a multisite, 24/7 configuration, and eight people in a single-site, 24/7 configuration. Therefore, it is safe to assume each site will need one extra engineer as protection against staff reduction, bringing the minimum staffing to six engineers per site (multisite) or nine per site (single-site).</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for part-time work schedules" data-type="sect4"><div class="sect4" id="plan_for_part_time_work_schedules">
+<h4>Plan for part-time work schedules</h4>
+
+<p>Being on-call with part-time working schedules may seem incompatible, but we’ve found that on-call and part-time work arrangements <em>are</em> compatible if you take certain precautions.<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for part-time work schedules" data-type="indexterm" id="idm139660641259600"/><a contenteditable="false" data-primary="part-time work schedules for on-call engineers" data-type="indexterm" id="idm139660641260432"/> The following discussion assumes that if a member of your on-call rotation works part-time, they’ll be unavailable for on-call shifts outside of their part-time working week.</p>
+
+<p>There are two main models of part-time working:</p>
+
+<ul>
+	<li>
+	<p>Working a reduced amount of full days per week—for example, four 8-hour days a week, instead of five</p>
+	</li>
+	<li>
+	<p>Working a reduced amount of time each day—for example, 6 hours a day, instead of 8 hours a day</p>
+	</li>
+</ul>
+
+<p>Both models are compatible with on-call work, but require different adjustments to on-call scheduling.</p>
+
+<p>The first model easily coexists with on-call work, especially if the nonworking day(s) are constant over time. In response, you can adopt an on-call shift length of fewer than seven days a week (for example, Monday through Thursday, or Friday through Sunday) and configure the automated scheduler not to schedule the part-time engineer(s) to be on-call on the days they don’t work.</p>
+
+<p>The second model is possible in a couple ways:</p>
+
+<ul>
+	<li>
+	<p>Split on-call hours with another engineer, so that no one is on-call when they are not supposed to be. For example, if an on-call engineer needs to work from 9 a.m. to 4 p.m., you can assign the first half of the shift (9 a.m. to 3 p.m.) to them. Rotate the second half (3 p.m. to 9 p.m.) within the team the same way you rotate other on-call shifts.</p>
+	</li>
+	<li>
+	<p>The part-time engineer can work full hours on their on-call days, which may be feasible if the on-call shift is not too frequent.</p>
+	</li>
+</ul>
+
+<p>As mentioned in <a href="http://bit.ly/2JgUBU7">Chapter 11</a> of <em>Site Reliability Engineering</em>, Google SRE compensates support outside of regular hours with a reduced hourly rate of pay or time off, according to local labor law and regulations. Take a part-time engineer’s reduced schedule into account when determining on-call compensation.</p>
+
+<p>In order to maintain a proper balance between project time and on-call time, engineers working reduced hours should receive a proportionately smaller amount of on-call work. Larger teams absorb this additional on-call load more easily than smaller teams.<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-startref="ix_schedoncscen" data-type="indexterm" id="idm139660641242864"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-startref="ix_schedonc" data-type="indexterm" id="idm139660641244304"/><a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-startref="ix_oncflexscen" data-tertiary="scenario, a change in personal circumstances" data-type="indexterm" id="idm139660641249760"/><a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-startref="ix_oncflex" data-type="indexterm" id="idm139660641242320"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="On-Call Team Dynamics" data-type="sect2"><div class="sect2" id="on_call_team_dynamics">
+<h2>On-Call Team Dynamics</h2>
+
+<p>Our first book touched upon how stress factors like high pager load and time pressure can force on-call engineers <a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-type="indexterm" id="ix_oncteamdyn"/>to adopt decision strategies based on intuition and heuristics rather than reason and data (see the section “Feeling Safe” in <a href="http://bit.ly/2JgUBU7">Chapter 11</a> of that book). Working from this discussion of team psychology, how do you go about building a team with positive dynamics? Consider an on-call team with the following set of hypothetical problems.</p>
+
+<section data-pdf-bookmark="Scenario: A culture of “survive the week”" data-type="sect3"><div class="sect3" id="scenario_a_culture_of_quotation_marksurvi">
+<h3>Scenario: A culture of “survive the week”</h3>
+
+<p>A company begins with a couple of founders and a handful of employees, all feature developers.<a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-tertiary="scenario, a survive the week culture" data-type="indexterm" id="ix_oncteamdynsur"/><a contenteditable="false" data-primary="survive the week culture" data-type="indexterm" id="ix_surv"/><a contenteditable="false" data-primary="SRE teams" data-secondary="on-call engineers in survive the week culture" data-type="indexterm" id="ix_SREteamonc"/> Everyone knows everyone else, and everyone takes pagers.</p>
+
+<p>The company grows bigger. On-call duty is limited to a smaller set of more experienced feature developers who know the system better.</p>
+
+<p>The company grows even bigger. They add an ops role to tackle reliability. This team is responsible for production health, and the job role is focused on operations, not coding. The on-call becomes a joint rotation between feature developers and ops. Feature developers have the final say in maintaining the service, and ops input is limited to operational tasks. By this time, there are 30 engineers in the on-call rotation: 25 feature developers and 5 ops, all located at the same site.</p>
+
+<p>The team is plagued by high pager volume. Despite following the recommendations described earlier in this chapter to minimize pager load, the team is suffering from low morale. Because the feature developers prioritize developing new features, on-call follow-up takes a long time to implement.</p>
+
+<p>To make matters worse, the feature developers are concerned about their own subsystem’s health. One feature developer insists on paging by error rate rather than error ratio for their mission-critical module, despite complaints from others on the team. These alerts are noisy, and return many false positives or unactionable pages.</p>
+
+<p>Other members of the on-call rotation aren’t especially bothered by the high pager volume. Sure, there are a lot of pages, but most of them don’t take much time to resolve. As one on-call engineer puts it: “I take a quick look at the page subject and know they are duplicates. So I just ignore them.”</p>
+
+<p>Sound familiar?</p>
+
+<p>Some Google teams experienced similar problems during their earlier days of maturity. If not handled carefully, these problems have the potential to tear the feature developer and ops teams apart and hinder on-call operation. There’s no silver bullet to solve these problems, but we found a couple of approaches particularly helpful. While your methodology may differ, your overall goal should be the same: build positive team dynamics, and carefully avoid tailspin.</p>
+
+<section data-pdf-bookmark="Proposal one: Empower your ops engineers" data-type="sect4"><div class="sect4" id="proposal_one_empower_your_ops_engineers">
+<h4>Proposal one: Empower your ops engineers</h4>
+
+<p>You can remodel the operations organization according to the guidelines outlined in this book and <em>Site Reliability Engineering</em>, perhaps even including a change of name (SRE, or similar) to indicate the change of role. <a contenteditable="false" data-primary="survive the week culture" data-secondary="empowering ops engineers in SRE" data-type="indexterm" id="idm139660641220560"/><a contenteditable="false" data-primary="operations" data-secondary="empowering ops engineers in SRE" data-type="indexterm" id="idm139660641225056"/>Simply retitling your ops organization is not a panacea, but it can be helpful in communicating an <em>actual</em> change in responsibilities away from the old ops-centric model. Make it clear to the team and the entire company that SREs own the site operation. This includes defining a shared roadmap for reliability, driving the full resolution of issues, maintaining monitoring rules, and so on. Feature developers are necessary collaborators but don’t own these endeavors.</p>
+
+<p>To return to our hypothetical team, this announcement ushered in the following operational changes:</p>
+
+<ul>
+	<li>
+	<p>Action items are assigned only to the five DevOps engineers—who are now SREs. SREs work with subject experts—many of them feature developers—to accomplish these tasks. SREs take on the previously mentioned “error rate versus error ratio” debate by negotiating a change in alerting with the feature developers.</p>
+	</li>
+	<li>
+	<p>SREs are encouraged to dive into the code to make the changes themselves, if possible. They send code reviews to the subject experts. This has the benefit of building a sense of ownership among SREs, as well as upgrading their skills and authority for future occasions.</p>
+	</li>
+</ul>
+
+<p>With this arrangement, feature developers are explicit collaborators on reliability features, and SREs are given the responsibility to own and improve the site.</p>
+</div></section>
+
+<section data-pdf-bookmark="Proposal two: Improve team relations" data-type="sect4"><div class="sect4" id="proposal_two_improve_team_relations">
+<h4>Proposal two: Improve team relations</h4>
+
+<p>Another possible solution is to build stronger team bonds between team members. Google designates a “fun budget” specifically for organizing offsite activities to strengthen team bonds.<a contenteditable="false" data-primary="survive the week culture" data-secondary="improving team relations" data-type="indexterm" id="idm139660641214688"/></p>
+
+<p>We’ve found that more robust team relationships create a spirit of increased understanding and collaboration among teammates. As a result, engineers are more likely to fix bugs, finish action items, and help out their colleagues. For example, say you turned off a nightly pipeline job, but forgot to turn off the monitoring that checked if the pipeline ran successfully. As a result, you accidentally page a colleague at 3 a.m. If you’ve spent a little time with that colleague, you’d feel much worse about what happened, and strive to be considerate by being more careful in the future. The mentality of “I protect my colleagues” translates to a more productive work atmosphere.</p>
+
+<p>We’ve also found that making all members of the on-call rotation sit together, regardless of job title and function area, helps improve team relations tremendously. Encourage teams to eat lunch with each other. Don’t underestimate the power of relatively straightforward changes like these. It plays directly into team dynamics.<a contenteditable="false" data-primary="SRE teams" data-secondary="on-call engineers in survive the week culture" data-startref="ix_SREteamonc" data-type="indexterm" id="idm139660641209088"/><a contenteditable="false" data-primary="survive the week culture" data-startref="ix_surv" data-type="indexterm" id="idm139660641203264"/><a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-startref="ix_oncteamdynsur" data-tertiary="scenario, a survive the week culture" data-type="indexterm" id="idm139660641207008"/><a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-startref="ix_oncteamdyn" data-type="indexterm" id="idm139660641205136"/></p>
+</div></section>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00038">
+<h1>Conclusion</h1>
+
+<p>SRE on-call is different than traditional ops roles. Rather than focusing solely on day-to-day operations, SRE fully owns the production environment, and seeks to better it through defining appropriate reliability thresholds, developing automation, and undertaking strategic engineering projects. On-call is critical for site operations, and handling it right is crucial to the company’s bottom line.</p>
+
+<p>On-call is a source of much tension, both individually and collectively. But if you’ve stared into the eyes of the monster long enough, there is wisdom to be found. This chapter illustrates some of the lessons about on-call that we learned the hard way; we hope that our experience can help others avoid or tackle similar issues.</p>
+
+<p>If your on-call team is drowning in endless alerts, we recommend taking a step back to observe the situation from a higher level. Compare notes with other SRE and partner teams. Once you’ve gathered the necessary information, address the problems in a systematic way. Thoughtfully structuring on-call is time well spent for on-call engineers, on-call teams, and the whole company.<a contenteditable="false" data-primary="on-call" data-startref="ix_onc" data-type="indexterm" id="idm139660641192976"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch08fn1"><sup><a href="ch08.html#ch08fn1-marker">1</a></sup> Note that this example is often a red flag situation for organizations that aren’t actually practicing DevOps, in which case, a name change won’t fix more structural problems.</p><p data-type="footnote" id="ch08fn2"><sup><a href="ch08.html#ch08fn2-marker">2</a></sup> One “incident” is defined as one “problem,” no matter how many alerts have been fired for the same “problem.” One shift is 12 hours.</p><p data-type="footnote" id="ch08fn3"><sup><a href="ch08.html#ch08fn3-marker">3</a></sup> There is more on this topic in <a href="https://oreil.ly/2kIawNe"><em>Seeking SRE</em></a> by David Blank-Edelman (O’Reilly).</p><p data-type="footnote" id="ch08fn4"><sup><a href="ch08.html#ch08fn4-marker">4</a></sup> SRE teams at Google are paired across time zones for service continuity.</p><p data-type="footnote" id="ch08fn5"><sup><a href="ch08.html#ch08fn5-marker">5</a></sup> A “bug” in this context is any undesirable system behavior resulting from software or configuration error. Logic errors in code, incorrect configuration of a binary, incorrect capacity planning, misconfigured load balancers, or newly discovered vulnerabilities are all valid examples of “production bugs” that contribute to pager load.</p></div></div></section></body></html>

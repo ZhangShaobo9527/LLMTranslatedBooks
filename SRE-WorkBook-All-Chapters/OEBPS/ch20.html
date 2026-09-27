@@ -1,0 +1,1073 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>SRE Team Lifecycles</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 20. SRE Team Lifecycles" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_team_lifecycles">
+<h1><span class="label">Chapter 20. </span>SRE Team Lifecycles</h1>
+
+<p class="byline">By David Ferguson and Prashant Labhane<br/>
+with Shylaja Nukala</p>
+
+<p>The <a data-type="xref" href="preface01.html#preface">Preface</a> to this book<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-type="indexterm" id="ix_SREteamlife"/> set a goal to “dispel the idea that SRE is implementable only at ‘Google scale’ or in ‘Google culture.’” This chapter lays out a roadmap for maturing an SRE organization from unstaffed but aspirational, through various stages of maturity, to a robust and (potentially) globally distributed set of SRE teams. Regardless of where you are in your journey as an SRE organization, this chapter will help you identify strategies for evolving your SRE organization.</p>
+
+<p>We discuss the SRE principles that need to be in place at each stage of this journey. While your own journey will vary depending on the size, nature, and geographic distribution of your organization, the path we describe to successfully apply SRE principles and implement SRE practices should be generalizable to many different types of organizations.</p>
+
+<section data-pdf-bookmark="SRE Practices Without SREs" data-type="sect1"><div class="sect1" id="sre_practices_without_sres">
+<h1>SRE Practices Without SREs</h1>
+
+<p>Even if you don’t have SREs, you can adopt SRE practices by using SLOs.<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="practices without SREs" data-type="indexterm" id="idm139660637185920"/> As discussed in <a data-type="xref" href="ch02.html#implementing_slos">Chapter 2</a>, SLO are<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="using for SRE practices without SREs" data-type="indexterm" id="idm139660637190976"/> the foundations for SRE practices. As such, they inform our first principle of SRE:</p>
+
+<div data-type="note" epub:type="note">
+  <h1>Principle #1</h1>
+  
+      <p>SRE needs SLOs with consequences.</p>
+  
+</div>
+
+<p>The performance of your service relative to SLOs should guide your business <span class="keep-together">decisions</span>.</p>
+
+<p>We believe that the following practices—which you can achieve without even having a single SRE—are the crucial steps toward implementing SRE practices:</p>
+
+<ul>
+	<li>
+	<p>Acknowledge that you don’t want 100% reliability.</p>
+	</li>
+	<li>
+	<p>Set a reasonable SLO target. This SLO should measure the reliability that is most important to your users.</p>
+	</li>
+	<li>
+	<p>Agree on an error budget policy that will help defend your user experience. Use the error budget to help guide:</p>
+
+	<ul>
+		<li>
+		<p>Tactical actions to mitigate outages or to manage changes that return your system to a reliable state</p>
+		</li>
+		<li>
+		<p>Longer-term prioritization of work to make the system more reliable and use less of the error budget</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>Measure the SLO and commit to following the error budget policy. This commitment requires agreement from company leadership.</p>
+	</li>
+</ul>
+
+<p>Even if an organization doesn’t have SRE staff, we believe that it is worthwhile to set SLOs for critical customer applications and to implement an error budget policy, if only because an implicit 100% SLO means a team can only ever be reactive. This SRE principle allows you to make data-informed decisions about how to ensure the reliability of your application.</p>
+</div></section>
+
+<section data-pdf-bookmark="Starting an SRE Role" data-type="sect1"><div class="sect1" id="starting_an_sre_role">
+<h1>Starting an SRE Role</h1>
+
+<section data-pdf-bookmark="Finding Your First SRE" data-type="sect2"><div class="sect2" id="finding_your_first_sre">
+<h2>Finding Your First SRE</h2>
+
+<p>It’s possible that your first SRE employees won’t<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-type="indexterm" id="ix_SREsstart"/> have explicit experience <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="starting an SRE role" data-type="indexterm" id="ix_SREteamlifestart"/>as an SRE. <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="finding your first SRE" data-type="indexterm" id="idm139660637165744"/>We’ve found the following areas to be relevant to the SRE role, and therefore appropriate to cover in interviews:</p>
+
+<dl>
+	<dt><dfn>Operations</dfn></dt>
+	<dd><p>Running applications in production <a contenteditable="false" data-primary="operations" data-secondary="covering in interviews with SREs" data-type="indexterm" id="idm139660637161840"/>gives invaluable insights that cannot be easily gained otherwise.</p></dd>
+	<dt><dfn>Software engineering</dfn></dt>
+	<dd><p>SREs need to understand<a contenteditable="false" data-primary="software engineering" data-type="indexterm" id="idm139660637159120"/> the software they are supporting, and be empowered to improve it.</p></dd>
+	<dt><dfn>Monitoring systems</dfn></dt>
+	<dd><p>SRE principles require SLOs that can <a contenteditable="false" data-primary="monitoring" data-secondary="covering in interviews with SREs" data-type="indexterm" id="idm139660637156608"/>be measured and accounted for.</p></dd>
+	<dt><dfn>Production automation</dfn></dt>
+	<dd><p>Scaling operations requires<a contenteditable="false" data-primary="production" data-secondary="automation, covering in interviews with SREs" data-type="indexterm" id="idm139660637153840"/> automation.</p></dd>
+	<dt><dfn>System architecture</dfn></dt>
+	<dd><p>Scaling the application<a contenteditable="false" data-primary="system architecture, covering in interviews with SREs" data-type="indexterm" id="idm139660637151152"/> requires good architecture.</p></dd>
+</dl>
+
+<p>Your first SRE will likely occupy a difficult and ambiguous position between velocity and reliability goals. They will need to be resilient and flexible in order to provide the right balance between enabling product development and defending the customer experience.</p>
+</div></section>
+
+<section data-pdf-bookmark="Placing Your First SRE" data-type="sect2"><div class="sect2" id="placing_your_first_sre">
+<h2>Placing Your First SRE</h2>
+
+<p>Once you’ve hired your first SRE, you now need to decide where to embed them in your organization.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="placing your first SRE" data-type="indexterm" id="idm139660637154240"/> You have three main choices:</p>
+
+<ul>
+	<li>
+	<p>In a product <a contenteditable="false" data-primary="development" data-secondary="placing your first SRE in development team" data-type="indexterm" id="idm139660637144416"/>development team</p>
+	</li>
+	<li>
+	<p>In an <a contenteditable="false" data-primary="operations" data-secondary="placing your first SRE in operations team" data-type="indexterm" id="idm139660637141888"/>operations team</p>
+	</li>
+	<li>
+	<p>In a horizontal role, consulting across a number of teams</p>
+	</li>
+</ul>
+
+<p>We recommend that you evaluate the pros and cons of each of these three options after reading this chapter, taking into account:</p>
+
+<dl>
+	<dt>Your own role and sphere of influence.</dt>
+	<dd>
+	<p>If you’re able to effectively influence product development team(s), then embedding an SRE in operations or horizontal work can help iron out gnarly production issues early.</p>
+	</dd>
+	<dt>The immediate challenges that you face.</dt>
+	<dd>
+	<p>If the challenges require hands-on work to mitigate a technical problem or business risk, then embedding an SRE in an operations or product team can be advantageous. Doing so removes organizational silos and facilitates easy communication between team members.</p>
+	</dd>
+	<dt>The challenges you expect to face in the next 12 months.</dt>
+	<dd>
+	<p>For example, if you’re focusing on launches, embedding the SRE within a product development team might make sense. If you’re focusing on infrastructure changes, embedding the SRE with an operations team might make more sense.</p>
+	</dd>
+	<dt>Your plan for how you want to change your organization.</dt>
+	<dd>
+	<p>If you plan to move toward a centralized SRE organization, you might not want to embed SREs in product development teams initially—it might be hard to remove them from these teams later.</p>
+	</dd>
+	<dt>The person you have identified as your first SRE.</dt>
+	<dd>
+	<p>Decide where this first SRE would be most productive based upon their background and skills.</p>
+	</dd>
+</dl>
+
+<p>It might make sense to experiment with different models as you figure out which approach works best for you. However, we strongly recommend sticking with one stable and coherent model in the long term; otherwise, the instability will undermine the effectiveness of SRE.</p>
+</div></section>
+
+<section data-pdf-bookmark="Bootstrapping Your First SRE" data-type="sect2"><div class="sect2" id="bootstrapping_your_first_sre">
+<h2>Bootstrapping Your First SRE</h2>
+
+<p>Your first SRE’s initial mission is to get up to speed on the service. <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="bootstrapping your first SRE" data-type="indexterm" id="idm139660637126320"/>In order to have a positive impact, an SRE needs to understand the service’s current problems, its required toil (see <a data-type="xref" href="ch06.html#eliminating_toil">Chapter 6</a>) and the engineering required to keep the system within SLOs. If your organization doesn’t already have SLOs and error budgets as per Principle #1, your first SRE needs to perform the engineering required to design and implement these tools. <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="design and implementation by your first SRE" data-type="indexterm" id="idm139660637126944"/>At this point, our second SRE principle comes into play:</p>
+
+<div data-type="note" epub:type="note">
+  <h1>Principle #2</h1>
+  
+      <p>SREs must have time to make tomorrow better than today.</p>
+  
+</div>
+
+<p>Without this principle, toil will only increase as service usage increases and the system becomes correspondingly larger and more complex. A healthy balance between operational responsibilities and project work is essential—if toil becomes too burdensome, talented engineers will flee the team. For more guidance on how an SRE team might obtain that balance, see <a data-type="xref" href="ch17.html#identifying_and_recovering_from_overload">Chapter 17</a>.</p>
+
+<p>Initial project work might focus on one of the following:</p>
+
+<ul>
+	<li>
+	<p>Improving monitoring so you can better understand the system when things go wrong.</p>
+	</li>
+	<li>
+	<p>Addressing any high-priority actions identified in recent postmortems (see <a data-type="xref" href="ch10.html#postmortem_culture_learning_from_failure">Chapter 10</a>).</p>
+	</li>
+	<li>
+	<p>Implementing automation to reduce a specific element of toil required to run the service.</p>
+	</li>
+</ul>
+
+<p><em>It is vital that the SRE has a distinctive role and that their projects benefit the whole team</em>. Look out for signs that the SRE work is not going well:</p>
+
+<ul>
+	<li>
+	<p>Their mix of work is indistinguishable from other engineering work.</p>
+	</li>
+	<li>
+	<p>If your first SRE is on a product development team, they are doing more than their fair share of operational work, or they are the only person working on service configuration changes.</p>
+	</li>
+	<li>
+	<p>The SLOs are not being taken seriously, and the SRE isn’t making progress in measuring and defending the customer experience.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Distributed SREs" data-type="sect2"><div class="sect2" id="distributed_sres">
+<h2>Distributed SREs</h2>
+
+<p>If your organization doesn’t have (or doesn’t plan to have) a discrete SRE team (or teams), it’s important to construct a community for distributed SREs.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="distributed SREs" data-type="indexterm" id="idm139660637105056"/><a contenteditable="false" data-primary="distributed SREs" data-type="indexterm" id="idm139660637107136"/> This community should advocate the SRE’s distinctive role and drive consistent changes in reliability-focused technology or practices across teams. Without a social grouping, individual SREs may feel very isolated.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-startref="ix_SREsstart" data-type="indexterm" id="idm139660637102352"/><a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifestart" data-tertiary="starting an SRE role" data-type="indexterm" id="idm139660637105696"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Your First SRE Team" data-type="sect1"><div class="sect1" id="your_first_sre_team">
+<h1>Your First SRE Team</h1>
+
+<p>You might start an SRE team in a number of ways.<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="your first SRE team" data-type="indexterm" id="ix_SREteamlifefirst"/> Approaches we’ve used at Google, from least to most complex, include:</p>
+
+<ul>
+	<li>
+	<p>Creating a new team as part of a major project</p>
+	</li>
+	<li>
+	<p>Establishing a horizontal SRE team</p>
+	</li>
+	<li>
+	<p>Converting an existing team (for example, an operations team)</p>
+	</li>
+</ul>
+
+<p>The approach that’s best for your organization is highly situational. A team needs enough SREs to handle the operational tasks required to run the service. Addressing that workload brings us to our <a contenteditable="false" data-primary="workloads" data-secondary="SRE teams regulating" data-type="indexterm" id="idm139660637093584"/>third principle:</p>
+
+<div data-type="note" epub:type="note">
+  <h1>Principle #3</h1>
+  
+      <p>SRE teams have the ability to regulate their workload.</p>
+  
+</div>
+
+<p>Outside of a large SRE organization, a team likely can’t embrace this concept from day one. This principle is open to interpretation and can be difficult to put into practice organizationally. It’s also the most subtle of our three principles, and bears some unpacking. The following sections walk through the stages of building a team, using Tuckman’s performance model and stages of <em>forming</em>, <em>storming</em>, <em>norming</em>, and <span class="keep-together"><em>performing</em></span>.<sup><a data-type="noteref" href="ch20.html#ch20fn1" id="ch20fn1-marker">1</a></sup></p>
+
+<section data-pdf-bookmark="Forming" data-type="sect2"><div class="sect2" id="forming">
+<h2>Forming</h2>
+
+<p>The team you assemble should have combined experience and expertise that includes the <a contenteditable="false" data-primary="forming your first SRE team" data-type="indexterm" id="idm139660637081616"/>following:</p>
+
+<ul>
+	<li>
+	<p>Making changes to application software to improve reliability and performance.</p>
+	</li>
+	<li>
+	<p>Writing software to:</p>
+
+	<ul>
+		<li>
+		<p>Expedite the detection and mitigation of problems in production.</p>
+		</li>
+		<li>
+		<p>Automate manual processes.</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>Establishing and using strong software practices and standards to facilitate long-term maintainability.</p>
+	</li>
+	<li>
+	<p>Having a methodical and careful approach to making operational changes: be able to describe why certain practices are reliable.</p>
+	</li>
+	<li>
+	<p>Understanding system architecture (distributed systems design and operation).</p>
+	</li>
+</ul>
+
+<p>Ideally, your team will be ready to adopt a new way of working, and have a balance of skills and established personal relationships with other teams. If possible, we recommend that you seed the team with internal transfers. This can reduce the time it takes your team to get up and running.</p>
+
+<section data-pdf-bookmark="Creating a new team as part of a major project" data-type="sect3"><div class="sect3" id="creating_a_new_team_as_part_of_a_major_pr">
+<h3>Creating a new team as part of a major project</h3>
+
+<p>You might create a new SRE team for a major project that is large enough to justify new headcount, and for which reliability and operational capability have been identified as project risks. Examples might include the creation of a new service or a substantial change in your technology (e.g., migration to a public cloud).</p>
+</div></section>
+
+<section data-pdf-bookmark="Assembling a horizontal SRE team" data-type="sect3"><div class="sect3" id="assembling_a_horizontal_sre_team">
+<h3>Assembling a horizontal SRE team</h3>
+
+<p>In this approach (well documented in <a href="http://bit.ly/2kGWVWf">Chapter 27</a> of our first book), a small team of SREs consults across a number of teams. <a contenteditable="false" data-primary="horizontal SRE team" data-type="indexterm" id="idm139660637067264"/>This team might also establish best practices and tools for configuration management, monitoring, and alerting.</p>
+</div></section>
+
+<section data-pdf-bookmark="Converting a team in place" data-type="sect3"><div class="sect3" id="converting_a_team_in_place">
+<h3>Converting a team in place</h3>
+
+<p>You might be able to convert an existing team into an SRE team. <a contenteditable="false" data-primary="team, existing, converting to SRE team" data-type="indexterm" id="idm139660637063824"/>The existing team likely isn’t a product development team; typical candidates include an operations team or a team responsible for managing a popular open source component that your organization uses heavily. Be careful to avoid renaming a team from “Operations” to “SRE” without first applying SRE practices and principles! If your rebranding effort fails, your organization may be poisoned against the entire concept of SRE in the future.</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Storming" data-type="sect2"><div class="sect2" id="storming">
+<h2>Storming</h2>
+
+<p>Once assembled, the team needs to start working collaboratively: the team members need to work well with each other, and also with other teams.<a contenteditable="false" data-primary="storming (first SRE team)" data-type="indexterm" id="idm139660637062000"/></p>
+
+<p>You might employ any number of tactics to promote this type of cohesion. At Google, we’ve had success providing a regular forum for learning and discussing SRE practices and reflecting on how the team is performing. For example, you might hold a regular television lunch, where you show a video from SREcon, or a book club, where you all preread some relevant content and then discuss how you can apply it.</p>
+
+<p>During this phase, encourage your new SRE team to stretch themselves. Your new SREs should be comfortable speaking out about SRE practices that don’t fit within your organization, and whether it’s worth making the change so they fit.</p>
+
+<section data-pdf-bookmark="Risks and mitigations" data-type="sect3"><div class="sect3" id="risks_and_mitigations">
+<h3>Risks and mitigations</h3>
+
+<p>During this nascent phase of the SRE journey, there are a number of ways the team might fail. <a contenteditable="false" data-primary="risks and mitigations for first SRE team" data-type="indexterm" id="idm139660637057248"/>Next we present some risks and possible mitigation strategies, broken down by how the new team formed. You might use one or more of the mitigation strategies for each risk.</p>
+
+<section data-pdf-bookmark="New team as part of a major project" data-type="sect4"><div class="sect4" id="new_team_as_part_of_a_major_project">
+<h4 class="no_period">New team as part of a major project</h4>
+
+<dl>
+	<dt><dfn>Risks</dfn></dt>
+	<dd>
+	<p>The team:</p>
+
+	<ul>
+		<li>
+		<p>Spreads itself too thin by taking responsibility for too many services at once.</p>
+
+		<ul>
+			<li>
+			<p>A team that is constantly firefighting doesn’t have time to address risk in a more permanent way.</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>Becomes too introspective trying to understand SRE principles and how to implement them. As a result, it underdelivers.</p>
+
+		<ul>
+			<li>
+			<p>For example, the team might become consumed with developing the perfect SLO definition, neglecting the needs of the service in the meantime.</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>Doesn’t examine its work thoroughly. As a result, service management reverts to previous behaviors.</p>
+
+		<ul>
+			<li>
+			<p>The team is paged 100 times a day. Since the pages don’t indicate that immediate intervention is required, they ignore the pages.</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>Abandons SRE principles and practices in order to meet product milestones.</p>
+
+		<ul>
+			<li>
+			<p>Reliability improvements to defend the SLO, such as architectural changes, may never be implemented because they set back development timelines.</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>Gets distracted by conflict with existing teams that perceive a loss of influence or power as a result of the new SRE team.</p>
+		</li>
+		<li>
+		<p>Does not have the necessary breadth of skills, so delivers only part of the necessary improvements.</p>
+
+		<ul>
+			<li>
+			<p>Without the ability to, for example, program, SREs may be unable to instrument the product to measure reliability.</p>
+			</li>
+		</ul>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>Mitigations</dfn></dt>
+	<dd>
+	<p>The team:</p>
+
+	<ul>
+		<li>
+		<p>Engages initially on a single important service.</p>
+		</li>
+		<li>
+		<p>Engages as early as possible on the project, ideally at the design stage.</p>
+		</li>
+		<li>
+		<p>Has input into the design, with a particular focus on defining SLOs and analyzing reliability risks inherent in the design.</p>
+		</li>
+		<li>
+		<p>Partners with the product development team and works on features specific to reliability and integration with existing operational platforms.</p>
+		</li>
+		<li>
+		<p>Is not expected to have operational responsibility on day one. Instead, this responsibility initially sits with the product development team or project team. This may be a significant cultural change that needs support from management.</p>
+		</li>
+		<li>
+		<p>Has clear agreement on the conditions that a service must meet to be onboarded by SRE (see <a href="http://bit.ly/2Lc14wG">Chapter 32</a> of <em>Site Reliability Engineering</em>).</p>
+		</li>
+	</ul>
+
+	<p>In addition:</p>
+
+	<ul>
+		<li>
+		<p>If the project involves a migration, the team should have a solid understanding of the current and future environments. If you need to recruit team members externally, consider candidates who have knowledge of software engineering and the future environment.</p>
+		</li>
+		<li>
+		<p>Continue to keep the number of new hires to less than a third of the team so that the training effort doesn’t overwhelm existing team members.</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Horizontal SRE team" data-type="sect4"><div class="sect4" id="horizontal_sre_team">
+<h4 class="no_period">Horizontal SRE team</h4>
+
+<dl>
+	<dt><dfn>Risks</dfn></dt>
+	<dd><p>The team is perceived <a contenteditable="false" data-primary="horizontal SRE team" data-secondary="risks and mitigations for" data-type="indexterm" id="idm139660637021968"/>as a new “gating” organization that does no real work or adds no real value.</p></dd>
+	<dt><dfn>Mitigations</dfn></dt>
+	<dd>
+	<p>The team:</p>
+
+	<ul>
+		<li>
+		<p>Is seeded with respected engineers who have relevant subject matter <span class="keep-together">expertise</span>.</p>
+		</li>
+		<li>
+		<p>Undertakes project work that focuses on delivering tools (for monitoring, alerting, rollouts, best practices, checklists). These tools should have a short-term beneficial impact on at least two other teams.</p>
+		</li>
+		<li>
+		<p>Communicates successes and benefits. An SRE team that makes an efficiency breakthrough, automates away toil, or permanently eliminates a source of system unreliability should be celebrated.</p>
+		</li>
+		<li>
+		<p>Sees themselves as enablers, not gatekeepers. Focus on solutions, not just problems.</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="A team converted in place" data-type="sect4"><div class="sect4" id="team_converted_in_place">
+<h4 class="no_period">A team converted in place</h4>
+
+<dl>
+	<dt><dfn>Risks</dfn></dt>
+	<dd>
+	<p>The team:</p>
+
+	<ul>
+		<li>
+		<p>Perceives that the conversion process <a contenteditable="false" data-primary="team, existing, converting to SRE team" data-secondary="risks and mitigations for" data-type="indexterm" id="idm139660637008960"/>is the start of a slow journey to job losses as automation replaces humans.</p>
+		</li>
+		<li>
+		<p>Doesn’t support the change to an SRE team.</p>
+		</li>
+		<li>
+		<p>Has no slack capacity they can leverage to change the team’s day-to-day activities.</p>
+		</li>
+		<li>
+		<p>Sees no benefit to their day-to-day routine after a few months.</p>
+		</li>
+		<li>
+		<p>Works with systems that do not support scripting or automation.</p>
+		</li>
+		<li>
+		<p>Doesn’t have the software engineering skills to automate their current <span class="keep-together">workload</span>.</p>
+		</li>
+		<li>
+		<p>Doesn’t consistently have the skills needed to evolve toward SRE, or an interest in acquiring the skills.</p>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>Mitigations</dfn></dt>
+	<dd>
+	<p>The team:</p>
+
+	<ul>
+		<li>
+		<p>Secures senior leadership support for the change.</p>
+		</li>
+		<li>
+		<p>Renegotiates responsibilities to create the slack needed to effect change.</p>
+		</li>
+		<li>
+		<p>Manages communication of the change very carefully.</p>
+		</li>
+		<li>
+		<p>Has access to robust personal and technical support throughout the <span class="keep-together">transition</span>.</p>
+		</li>
+		<li>
+		<p>Deals with the concern about job losses head on. In a lot of environments, automation eliminates portions of work, but not jobs as a whole; while this might be a step on the path to job losses, it does at least have the virtue of freeing up time to do something better (and more sellable to a future employer) than nonautomated toil.</p>
+		</li>
+		<li>
+		<p>Can escape operational overload and have more significant impact. If engineers reduce the volume of toil enough to necessitate a smaller team, then their experience should be highly reusable elsewhere in your organization. If their experience can’t be used internally, it should provide an advantage in seeking work elsewhere.</p>
+		</li>
+		<li>
+		<p>Receives training to acquire the skills SREs need. Your product development team can provide product training, while SRE orientation can make use of this book and other external resources.</p>
+		</li>
+		<li>
+		<p>Changes how performance is evaluated—the metrics that assess both the team and individuals. The former should be aligned with SLOs and adoption of other SRE practices; the latter should be aligned with evidence of SRE skills.</p>
+		</li>
+		<li>
+		<p>Adds an experienced SRE or developer to the team.</p>
+		</li>
+		<li>
+		<p>Has the freedom (budget or time) to identify and introduce new open source or cloud-based monitoring and alerting systems to enable automation. Determining whether the existing systems are sufficient should be an early priority.</p>
+		</li>
+		<li>
+		<p>Regularly reviews progress internally and with stakeholders.</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Norming" data-type="sect2"><div class="sect2" id="norming">
+<h2>Norming</h2>
+
+<p>Norming entails working past the issues raised in <a data-type="xref" href="#risks_and_mitigations">“Risks and mitigations”</a> and reaching broad agreement on best practices for the organization’s SRE teams. <a contenteditable="false" data-primary="norming (SRE teams)" data-type="indexterm" id="idm139660636982176"/>Teams need to agree on an acceptable level of toil, appropriate alerting thresholds, and important and relevant SRE practices. Teams also need to become self-sufficient at proactively identifying the challenges ahead of the service and setting medium- and long-term goals to improve the service.</p>
+
+<p>Teams should reach the following levels of maturity during the norming phase:</p>
+
+<ul>
+	<li>
+	<p>SLOs and error budgets are in place, and the error budget policy is exercised following significant incidents. Leadership is interested in SLO measurements.</p>
+	</li>
+	<li>
+	<p>On-call rotations are established and sustainable (see <a data-type="xref" href="ch08.html#on_call">Chapter 8</a>). On-call engineers are compensated for their on-call time. There is sufficient tooling, <a href="http://bit.ly/2LPgubz">documentation</a>,<sup><a data-type="noteref" href="ch20.html#ch20fn2" id="ch20fn2-marker">2</a></sup> and training to support any team member during a significant incident.</p>
+	</li>
+	<li>
+	<p>Toil is documented, bounded, and managed. As a result, SREs complete impactful projects that improve reliability and efficiency.</p>
+	</li>
+	<li>
+	<p>Postmortem culture is well established. (See <a data-type="xref" href="ch10.html#postmortem_culture_learning_from_failure">Chapter 10</a>.)</p>
+	</li>
+	<li>
+	<p>The team exhibits most of the tenets listed in <a data-type="xref" href="ch01.html#sre_relates_devops">Chapter 1</a>.</p>
+	</li>
+	<li>
+	<p>As the team solves initial issues listed in <a data-type="xref" href="#storming">“Storming”</a>, they capture what they learned and prevent repeating problems. The team regularly runs training exercises, such as Wheel of Misfortune or DiRT (Disaster Recovery Testing). (For more information on on-call training, see <a href="http://bit.ly/2JgUBU7">Chapter 11</a> in our first book and <a data-type="xref" href="ch18.html#sre_engagement_model">Chapter 18</a> in this book.)</p>
+	</li>
+	<li>
+	<p>The product development team benefits from remaining involved in the on-call rotation.</p>
+	</li>
+	<li>
+	<p>The team produces regular reports (e.g., quarterly) for their stakeholders that cover the highlights, lowlights, and key metrics of the reporting period.</p>
+	</li>
+</ul>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="transforming_an_existing_team_into_an_sre">
+<h5>Transforming an Existing Team into an SRE Team</h5>
+
+<p><em>by Brian Balser, New York Times</em></p>
+
+<p>When the <em>New York Times</em> formed its Delivery and Site Reliability Engineering department, we assembled SRE teams<a contenteditable="false" data-primary="team, existing, converting to SRE team" data-type="indexterm" id="idm139660636959840"/> from engineers who had SRE-type skills, such as building tooling and operating production systems. Some teams were “greenfield”: they were designed with SRE in mind with respect to talent, vision, and responsibility. Other teams had existed for several years, and had ended up running production architecture due to a combination of skill sets, interests, and chance.</p>
+
+<p><b>Challenges</b></p>
+
+<p>One of the existing teams transitioning into SRE was in a very challenging position. Over the years, the team had gained ownership and responsibility for managing configurations, change requests, and operations of a core component of our site-wide architecture. They effectively became a service team supporting all of our product development teams. Their work was driven by tickets and production issues, and they were in a continuous reactive mode. They didn’t have time to make improvements, innovate, or do other higher-value strategic work.</p>
+
+<p>While the team had many great ideas, it was overloaded with toil and a number of high-priority “blocker” service requests that were typically tied to product launches. This model was not sustainable, and the team would need to grow linearly with products to keep up with this support burden. To exacerbate this situation, the small team had a wealth of institutional knowledge that had accumulated over the years. A high volume of interrupts from teams who needed that information compounded the team’s overload, and a <a href="http://bit.ly/2LQFqiL">bus factor</a> loomed over the team.</p>
+
+<p><b>Working from First Principles</b></p>
+
+<p>One guiding principle of our SRE organization is to remove ourselves from the critical path and to empower product development teams with self-service solutions. With that in mind, our goal became clear: invert the responsibility model to enable the product development teams to push their own changes. This strategy would both:</p>
+
+<ul>
+	<li>
+	<p>Speed up delivery.</p>
+	</li>
+	<li>
+	<p>Free SREs from managing configuration churn, allowing them to make real improvements to the system as a whole.</p>
+	</li>
+</ul>
+
+<p><b>Process Improvement</b></p>
+
+<p>We improved our processes through several stages of change:</p>
+
+<ol>
+	<li>
+	<p>We embedded an SRE in the development team to help relieve pressure.</p>
+	</li>
+	<li>
+	<p>To enable product development teams to take ownership of their service configuration in isolation, we broke out each service configuration into a team-based repo.</p>
+	</li>
+	<li>
+	<p>We migrated each service from the legacy CI system to our standard Drone CI/CD pipeline. The developer-friendly workflow was completely driven by <span class="keep-together">GitHub</span> events.</p>
+	</li>
+	<li>
+	<p>We onboarded each of the product teams to the new tooling and workflow so they could submit their own change requests without being blocked by a service ticket.</p>
+	</li>
+</ol>
+
+<p>While these improvements were a big step forward, we hadn’t yet reached our ideal end state. Reviewing pull requests still often required SRE expertise. To make interrupts for time-consuming reviews more manageable, we scheduled daily office hours. This consistent practice allowed us to batch questions and discussions in a more predictive manner, and also provided a venue for sharing knowledge with teams undergoing onboarding.</p>
+
+<p><b>End Result and Next Steps</b></p>
+
+<p>The SRE team is now meeting its initial goal of &gt; 50% project work (versus support-related work). The team still has a wealth of institutional knowledge, but that knowledge is now being propagated more broadly, gradually improving the bus factor and reducing interrupts.</p>
+
+<p>Now that we have breathing room for project work, our next steps are to focus on adding more advanced capabilities such as canary deploys, better test tooling, and observability and resilience features. Doing so will give product development teams more confidence in exercising full autonomy over their service configurations without depending on SREs for change management.</p>
+</div></aside>
+
+<p>Establishing a healthy relationship with your product development team forms the basis of many of these mitigation strategies. Teams should plan work together per your organization’s planning cycle.</p>
+
+<p>Before moving on to the next step: pause, celebrate this success, and write a retrospective that covers your journey so far.</p>
+</div></section>
+
+<section data-pdf-bookmark="Performing" data-type="sect2"><div class="sect2" id="performing">
+<h2>Performing</h2>
+
+<p>The SRE team’s experience with production and work up to this point should have earned the respect and attention<a contenteditable="false" data-primary="performing (SRE team)" data-type="indexterm" id="idm139660636940400"/> of the wider organization, and laid the foundation for strategically moving forward. In the final stage of Tuckman’s performance model, performing, you should expect to:</p>
+
+<dl>
+	<dt>Partner on all architecture design and change.</dt>
+	<dd>
+	<p>From the initial design phase onward, SRE should define the patterns for how software is built and structured for reliability.</p>
+	</dd>
+	<dt>Have complete workload self-determination.</dt>
+	<dd>
+	<p>Teams should <a contenteditable="false" data-primary="workloads" data-secondary="SRE teams having complete self-determination of" data-type="indexterm" id="idm139660636942768"/>consistently apply Principle 3 with a view toward the holistic health of the system.</p>
+	</dd>
+</dl>
+
+<section data-pdf-bookmark="Partnering on architecture" data-type="sect3"><div class="sect3" id="partnering_on_architecture">
+<h3>Partnering on architecture</h3>
+
+<p>The product development team should start to reach out to its partner SRE team for advice on all significant service changes.<a contenteditable="false" data-primary="performing (SRE team)" data-secondary="partnering on architecture" data-type="indexterm" id="idm139660636932560"/> The SRE team now has the opportunity to have some of its greatest impact.<a contenteditable="false" data-primary="architecture and design, SRE team partnering on" data-type="indexterm" id="idm139660636929568"/></p>
+
+<p>For example, the SRE team might provide early input into the design of new service architecture to reduce the likelihood of high-cost reengineering at a later date. The product development and SRE teams can acknowledge their differences in perspective on architectural decisions to arrive at a good design process. A successful engagement can add value through:</p>
+
+<ul>
+	<li>
+	<p>Improved reliability, scalability, and operability</p>
+	</li>
+	<li>
+	<p>Better reuse of existing patterns</p>
+	</li>
+	<li>
+	<p>Simpler migration (if required)</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Self-regulating workload" data-type="sect3"><div class="sect3" id="self_regulating_workload">
+<h3>Self-regulating workload</h3>
+
+<p>Whereas architectural partnerships should emerge somewhat organically over time, an SRE team must clearly assert Principle #3 to its partners. <a contenteditable="false" data-primary="self-regulating workload (SRE team)" data-type="indexterm" id="idm139660636922576"/><a contenteditable="false" data-primary="performing (SRE team)" data-secondary="self-regulating workload" data-type="indexterm" id="idm139660636921440"/>Doing so requires strong team leadership and clear, upfront commitment from senior management. The ability to regulate its own workload secures the SRE team’s position as an engineering team that works on the organization’s most important services, equal to its product development team peers.</p>
+
+<p>In practice, how an SRE team goes about determining its own workload depends on the teams with which SREs interface. At Google, SRE teams most commonly interact with a distinct product development team. In this case, the relationship has the following characteristics:</p>
+
+<ul>
+	<li>
+	<p>An SRE team chooses if and when to onboard a service (see <a href="http://bit.ly/2Lc14wG">Chapter 32</a> of <em>Site Reliability Engineering</em>).</p>
+	</li>
+	<li>
+	<p>In the event of operational overload, the team can reduce toil by:</p>
+
+	<ul>
+		<li>
+		<p>Reducing the SLO</p>
+		</li>
+		<li>
+		<p>Transferring operational work to another team (e.g., a product development team)</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>If it becomes impossible to operate a service at SLO within agreed toil constraints, the SRE team can hand back the service to the product development team.</p>
+	</li>
+	<li>
+	<p>SRE engagement is not perpetual—it feeds itself by solving problems at scale and improving the reliability of services. If an SRE team has solved all such problems for a service, you need to either:</p>
+
+	<ul>
+		<li>
+		<p>Intentionally consider what other reliability challenges the SRE team needs to tackle.</p>
+		</li>
+		<li>
+		<p>Make an intentional decision to hand back the service to the product development team.</p>
+		</li>
+	</ul>
+
+	<p>Otherwise, your team risks attrition as SREs move on to more interesting opportunities. The slow bleed from attrition can put production at risk.</p>
+	</li>
+</ul>
+
+<p>Not all SRE teams have partner product development teams. <a contenteditable="false" data-primary="development" data-secondary="SRE teams having responsibility for" data-type="indexterm" id="idm139660636907280"/>Some SRE teams are also responsible for developing the systems they run. Some SRE teams package third-party software, hardware, or services (e.g., open source packages, network equipment, something-as-a-service), and turn those assets into internal services. In this case, you don’t have the option to transfer work back to another team. Instead, consider the following tactics:</p>
+
+<ul>
+	<li>
+	<p>If the service does not conform to its SLO, stop feature-related project work in favor of reliability-focused project work.</p>
+	</li>
+	<li>
+	<p>If it becomes impossible to operate a service at SLO within agreed toil constraints, reduce your SLOs—unless management provides more capacity (people or infrastructure) to deal with the situation.<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifefirst" data-tertiary="your first SRE team" data-type="indexterm" id="idm139660636901296"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Making More SRE Teams" data-type="sect1"><div class="sect1" id="making_more_sre_teams">
+<h1>Making More SRE Teams</h1>
+
+<p>Once your first SRE team is up and running, you may want to form an additional SRE team. <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="making more SRE teams" data-type="indexterm" id="ix_SREteamlifemore"/>You might do so for one of the following reasons:</p>
+
+<dl>
+	<dt><dfn>Service complexity</dfn></dt>
+	<dd><p>As a service gains users and features, it becomes more complex and harder for a single SRE team to support effectively. You might want to split the team into subteams that specialize in parts of the service.</p></dd>
+	<dt><dfn>SRE rollout</dfn></dt>
+	<dd><p>If your first SRE team has been successful and made a clear difference, there may be an organizational interest in adopting this approach across more services.</p></dd>
+	<dt><dfn>Geographically split</dfn></dt>
+	<dd><p>You want to split the team into two halves in different time zones and move to 12-hour on-call shifts.</p></dd>
+</dl>
+
+<p>When you’re creating a new SRE team, we recommend that you do the following:</p>
+
+<ul>
+	<li>
+	<p>Read any postmortems written after other teams were established. Identify and repeat what went well and fix and explore alternatives for things that didn’t go well.</p>
+	</li>
+	<li>
+	<p>Seed the new team with SREs from the existing team—some of your best SREs and highest-potential SREs who can rise to the challenge. In our experience, finding qualified SRE candidates is difficult, so growing a team quickly with new hires often isn’t realistic.</p>
+	</li>
+	<li>
+	<p>Standardize the framework for establishing teams and onboarding services (see <a data-type="xref" href="ch18.html#sre_engagement_model">Chapter 18</a>).</p>
+	</li>
+	<li>
+	<p>Make changes to the on-call responsibilities slowly. For example:</p>
+
+	<ul>
+		<li>
+		<p>To avoid a sudden loss of skilled on-call engineers, keep team members on-call for their previous team’s systems for a transitional period.</p>
+		</li>
+		<li>
+		<p>After the teams split, wait three to six months to split the on-call rotations.</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Service Complexity" data-type="sect2"><div class="sect2" id="service_complexity">
+<h2>Service Complexity</h2>
+
+<section data-pdf-bookmark="Where to split" data-type="sect3"><div class="sect3" id="where_to_split">
+<h3>Where to split</h3>
+
+<p>If a service becomes too complex for a single team to manage, there are a number of ways to split the work.<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-type="indexterm" id="idm139660636882192"/> Consider the<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-secondary="where to split the work" data-type="indexterm" id="idm139660636881328"/> following options to simplify the cognitive load on team members:</p>
+
+<dl>
+	<dt><dfn>Architectural splits</dfn></dt>
+	<dd><p>For example, compute, storage, and network; frontend and backend; frontend and database; client and server; frontend and pipelines.</p></dd>
+	<dt><dfn>Language splits</dfn></dt>
+	<dd><p>SRE principles are not dependent on programming languages. However, if your SREs are deeply involved in your source code, there may be some benefit in a split along these lines.</p></dd>
+	<dt><dfn>Location splits</dfn></dt>
+	<dd><p>If your organization’s engineering spans multiple offices, you might want to align SRE team placement with application development.</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Pitfalls" data-type="sect3"><div class="sect3" id="pitfalls">
+<h3>Pitfalls</h3>
+
+<p>When a team splits, sometimes none of the new teams pick up responsibility for a component owned by the original team.<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-secondary="pitfalls of team splits" data-type="indexterm" id="idm139660636874016"/> To mitigate this risk, you can:</p>
+
+<ul>
+	<li>
+	<p>Designate one team as responsible for everything not covered in the second team’s charter.</p>
+	</li>
+	<li>
+	<p>Appoint a senior SRE to an overarching technical lead role across both teams.</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="SRE Rollout" data-type="sect2"><div class="sect2" id="sre_rollout">
+<h2>SRE Rollout</h2>
+
+<p>If your initial SRE team(s) are successful, your organization may want more of them. We recommend <a contenteditable="false" data-primary="services" data-secondary="SRE rollout for" data-type="indexterm" id="idm139660636865040"/>carefully prioritizing <a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="rollout for services" data-type="indexterm" id="idm139660636866448"/>the services that receive SRE support. Consider the following points:</p>
+
+<ul>
+	<li>
+	<p>Prioritize services for which reliability has a high financial or reputational impact. The higher the impact, the higher the priority.</p>
+	</li>
+	<li>
+	<p>Define the minimal viable set of services that need to be up in order for the product to function. Prioritize those services and make sure that other services degrade gracefully.</p>
+	</li>
+	<li>
+	<p>A service should not be a priority for SRE simply because it’s unreliable. SRE should be applied tactically where it is most relevant for the business. You also don’t want to allow your developers to ignore reliability until after SREs are engaged.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Geographical Splits" data-type="sect2"><div class="sect2" id="geographical_splits">
+<h2>Geographical Splits</h2>
+
+<p>As described in <a href="http://bit.ly/2JgUBU7">Chapter 11</a> of our first book, Google commonly staffs sister SRE teams on different continents. <a contenteditable="false" data-primary="geographical splits (SRE teams)" data-type="indexterm" id="idm139660636856096"/>We do this for a number of reasons:</p>
+
+<dl>
+	<dt><dfn>Service reliability</dfn></dt>
+	<dd><p>If a major incident (e.g., natural disaster) prevents one team from operating, the other team can continue to support a service.</p></dd>
+	<dt><dfn>On-call stress</dfn></dt>
+	<dd><p>Splitting the pager rotation into 12-hour shifts allows proper breaks for on-call engineers.</p></dd>
+	<dt><dfn>Recruiting and retaining talent</dfn></dt>
+	<dd><p>An on-call shift that overlaps the normal working day broadens the base of engineers that we can recruit into SRE roles, and underlines the engineering part of our role.</p></dd>
+	<dt><dfn>Production maturity</dfn></dt>
+	<dd><p>Splitting service responsibility across two offices tends to lead to an improvement in maturity as the need for documentation, training, and standardization become more important.</p></dd>
+</dl>
+
+<p>If your organization is lucky enough to already have engineering teams on multiple continents, we recommend staffing multisite SRE teams. It’s possible to have an SRE team in a different office than the development team, but in our experience, colocation provides benefits in the form of a healthy and robust interteam dialog. Otherwise, it’s harder for SREs to understand how the services evolve or how the technical infrastructure is used, and it’s harder for product developers to be optimistic about infrastructure improvements.</p>
+
+<section data-pdf-bookmark="Placement: How many time zones apart should the teams be?" data-type="sect3"><div class="sect3" id="placement_how_many_time_zones_apart_shoul">
+<h3>Placement: How many time zones apart should the teams be?</h3>
+
+<p>Assuming you have some choice, time zone separation is an important consideration in deciding where to locate the two teams.<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="placement, time zones apart" data-type="indexterm" id="idm139660636845856"/> Unfortunately, the objectives are mutually exclusive:</p>
+
+<ul>
+	<li>
+	<p>Minimizing the number of hours that on-callers have to work outside of normal office hours</p>
+	</li>
+	<li>
+	<p>Maximizing the overlap time when both teams are online so that they can interact with each other regularly</p>
+	</li>
+</ul>
+
+<p>The situation is complicated by Daylight Saving Time.</p>
+
+<p>In our experience, staffing teams in time zones that are six to eight hours apart works well and avoids 12 a.m. to 6 a.m. on-call shifts. You can use online resources like <a href="https://www.timeanddate.com/worldclock/meeting.html"><em class="hyperlink">https://www.timeanddate.com/worldclock/meeting.html</em></a> to visualize time zone overlaps for various locations.</p>
+</div></section>
+
+<section data-pdf-bookmark="People and projects: Seeding the team" data-type="sect3"><div class="sect3" id="people_and_projects_seeding_the_team">
+<h3>People and projects: Seeding the team</h3>
+
+<p>When you split a team geographically, the first SRE team in a new office will set the norms for future SRE teams.<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="people and projects, seeding the team" data-type="indexterm" id="idm139660636840320"/> Your likelihood of success will be much higher if you can identify one or more SREs who are willing to relocate from the original site on a temporary or long-term basis to establish SRE practices and recruit and train the new team. The new team should also undertake a high-value project that fosters collaboration within the team and requires interaction with their sister team.</p>
+</div></section>
+
+<section data-pdf-bookmark="Parity: Distributing Work Between Offices and Avoiding a “Night Shift”" data-type="sect3"><div class="sect3" id="parity_distributing_work_between_offices">
+<h3>Parity: Distributing Work Between Offices and Avoiding a “Night Shift”</h3>
+
+<p>Often, one of two sister SRE teams is colocated (or at least in the same time zone) with the product <a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="parity, distributing work and avoiding a night shift" data-type="indexterm" id="idm139660636833232"/>development team (we’ll call this “Office 1”). If this is the case, be vigilant to ensure that the team that is not colocated (“Office 2”) doesn’t become a night shift that has little contact with the product development team, takes more than its fair share of toil, or is assigned only the less interesting or impactful projects.</p>
+
+<p>The workloads of the<a contenteditable="false" data-primary="workloads" data-secondary="distributing between geographically split SRE teams" data-type="indexterm" id="idm139660636834912"/> two offices will have some natural differences:</p>
+
+<ul>
+	<li>
+	<p>Your service likely has a daily peak, and one office will be on-call during that peak. As a result, the on-call experience of the two sites will differ.</p>
+	</li>
+	<li>
+	<p>Your development process will produce new releases with a particular cadence. One office will likely take more of the burden associated with rollouts and <span class="keep-together">rollbacks</span>.</p>
+	</li>
+	<li>
+	<p>Office 1 is more likely to be interrupted during their working day by questions from the product development team.</p>
+	</li>
+	<li>
+	<p>It’s easier for Office 1 to undertake project work associated with major releases. Conversely, it’s easier for Office 2 to undertake project work decoupled from immediate product goals.</p>
+	</li>
+</ul>
+
+<p>You can help maintain balance by using the following practices:</p>
+
+<ul>
+	<li>
+	<p>Balance the on-call load between offices. <a contenteditable="false" data-primary="on-call" data-secondary="balancing between geographically split SRE teams" data-type="indexterm" id="idm139660636822832"/>Designate a higher percentage of tickets to the office that fields the lower percentage of pages.</p>
+	</li>
+	<li>
+	<p>Associate development areas with SRE teams in a particular office. This could be short term (e.g., according to project) or longer term (e.g., according to service). Otherwise, the product development team will likely lean on Office 1, and not effectively engage with SREs in Office 2.</p>
+	</li>
+	<li>
+	<p>Assign a higher percentage of internal service improvement projects (that are likely to require less involvement with the product development team) to <span class="keep-together">Office 2</span>.</p>
+	</li>
+	<li>
+	<p>Spread the most interesting and impactful projects fairly between the two offices.</p>
+	</li>
+	<li>
+	<p>Maintain a similar team size and seniority mix between the two offices.</p>
+	</li>
+	<li>
+	<p>Split projects across the two sites to deliberately foster interoffice interactions between SREs. While running a major project from a single office might gain some efficiencies, splitting projects across the two sites both helps spread knowledge and builds trust between offices.</p>
+	</li>
+	<li>
+	<p>Allow engineers to travel to the other office regularly. This enables creating better rapport and, hence, willingness to do work for the other side.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Placement: What about having three shifts?" data-type="sect3"><div class="sect3" id="placement_what_about_having_three_shiftsq">
+<h3>Placement: What about having three shifts?</h3>
+
+<p>Our attempts at splitting SRE teams across three sites <a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="placement, and having three shifts" data-type="indexterm" id="idm139660636813808"/>resulted in various issues:</p>
+
+<ul>
+	<li>
+	<p>It is impossible to have an interoffice production meeting that all SREs can attend (see <a href="http://bit.ly/2sqRwad">Chapter 31</a> of our first book).</p>
+	</li>
+	<li>
+	<p>It is harder to ensure parity of knowledge, capability, and operational response across three offices.</p>
+	</li>
+	<li>
+	<p>If all on-call duties take place only during office hours, there’s less of an incentive to automate low-level toil and low-value pages. Being the hero that fixes easy problems is fun during office hours. But if it has some amount of personal cost, the motivation to make sure it never happens again is sharp and immediate.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Timing: Should both halves of the team start at the same time?" data-type="sect3"><div class="sect3" id="timing_should_both_halves_of_the_team_sta">
+<h3>Timing: Should both halves of the team start at the same time?</h3>
+
+<p>You might spin <a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="should both halves of the team start at the same time" data-type="indexterm" id="idm139660636805568"/>up sister teams using any of the following models:</p>
+
+<ul>
+	<li>
+	<p>Both halves start at the same time.</p>
+	</li>
+	<li>
+	<p>Set up the site that is colocated with the product development team first. This allows SREs to get involved earlier in the product lifecycle.</p>
+	</li>
+	<li>
+	<p>Set up the site that is <em>not</em> colocated with the product development team first or, if a service has been in production for some time, the SRE team and the product development team can share the pager.</p>
+	</li>
+	<li>
+	<p>Start making changes according to where the right people are at the right time.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Finance: Travel budget" data-type="sect3"><div class="sect3" id="finance_travel_budget">
+<h3>Finance: Travel budget</h3>
+
+<p>It is very important to create opportunities for high-quality interactions between the two halves of the team.<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="finance, travel budget" data-type="indexterm" id="idm139660636797968"/> Despite the effectiveness of video conferencing for day-to-day meetings, we’ve found that regular face-to-face interactions go a long way toward facilitating healthy relationships and trust. We recommend that:</p>
+
+<ul>
+	<li>
+	<p>Every SRE, product development manager, and technical lead in Site 1 visit Site 2 annually (at a minimum), and vice versa.</p>
+	</li>
+	<li>
+	<p>Every SRE in a management or technical leadership role at Site 1 visit Site 2 at least twice a year, and vice versa.</p>
+	</li>
+	<li>
+	<p>All SREs convene at least once a year.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Leadership: Joint ownership of a service" data-type="sect3"><div class="sect3" id="leadership_joint_ownership_of_a_service">
+<h3>Leadership: Joint ownership of a service</h3>
+
+<p>If you have multiple SRE sites, you likely <a contenteditable="false" data-primary="leadership in geographically split SRE teams" data-type="indexterm" id="idm139660636788576"/>have decision<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="leadership, joint ownership of a service" data-type="indexterm" id="idm139660636789776"/> makers in each office. These<a contenteditable="false" data-primary="ownership" data-secondary="of a service in geographically split SRE team" data-type="indexterm" id="idm139660636786496"/> parties should meet regularly face-to-face and by video conference. Only by establishing a strong personal relationship can they:</p>
+
+<ul>
+	<li>
+	<p>Debate solutions to challenges that the team faces.</p>
+	</li>
+	<li>
+	<p>Resolve differences of opinion and agree on a joint path forward.</p>
+	</li>
+	<li>
+	<p>Advocate on behalf of each other’s team (to prevent an “us versus them” <span class="keep-together">mentality</span>).</p>
+	</li>
+	<li>
+	<p>Support the health of each other’s team.<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifemore" data-tertiary="making more SRE teams" data-type="indexterm" id="idm139660636779312"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Suggested Practices for Running Many Teams" data-type="sect1"><div class="sect1" id="suggested_practices_for_running_many_team">
+<h1>Suggested Practices for Running Many Teams</h1>
+
+<p>New challenges arise as your organization accumulates more SREs and SRE teams. For example, <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="suggested practices for running many teams" data-type="indexterm" id="ix_SREteamlifemany"/>you’ll have to:</p>
+
+<ul>
+	<li>
+	<p>Ensure you provide SREs with the career opportunities they need.</p>
+	</li>
+	<li>
+	<p>Encourage consistency of practices and tooling.</p>
+	</li>
+	<li>
+	<p>Deal with services that don’t justify a full SRE engagement.</p>
+	</li>
+</ul>
+
+<p>This section describes a number of the practices that we have adopted at Google to deal with these concerns. Depending on the specifics of your organization, some or many may work for you too.</p>
+
+<section data-pdf-bookmark="Mission Control" data-type="sect2"><div class="sect2" id="mission_control">
+<h2>Mission Control</h2>
+
+<p>Google’s <a href="http://bit.ly/2Jn48sI">Mission Control</a> program gives engineers from product development teams the opportunity to spend six months embedded in an SRE team.<a contenteditable="false" data-primary="Mission Control program (SRE teams)" data-type="indexterm" id="idm139660636767808"/> We typically match these engineers to SRE teams working in a distinctly different area from their expertise. The software engineer is trained in production systems and practices and eventually goes on-call for that service. After six months, some engineers decide to stay in SRE; others return to their old teams with a much better appreciation for the production environment and SRE practices. SRE teams benefit from additional engineering resources and gain valuable insight into gaps and inaccuracies in training material and documentation.</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Exchange" data-type="sect2"><div class="sect2" id="sre_exchange">
+<h2>SRE Exchange</h2>
+
+<p>Google’s SRE Exchange program lets an SRE spend a week<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="exchange program at Google" data-type="indexterm" id="idm139660636763216"/> working alongside a different SRE team. The visiting SRE observes how the host team works and shares practices from their home team that might be useful to the host team. At the end of the exchange, the visiting SRE writes a trip report describing their week, their observations, and their recommendations for both teams. This program is useful at Google because our SRE teams are highly specialized.</p>
+</div></section>
+
+<section data-pdf-bookmark="Training" data-type="sect2"><div class="sect2" id="training">
+<h2>Training</h2>
+
+<p>Training is critical to SRE’s ability to operate systems.<a contenteditable="false" data-primary="training" data-secondary="for SREs" data-type="indexterm" id="idm139660636760896"/> While<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="training for" data-type="indexterm" id="idm139660636761264"/> most of this is delivered in-team (see <a data-type="xref" href="ch08.html#training_roadmap">“Training roadmap”</a> in <a data-type="xref" href="ch08.html#on_call">Chapter 8</a>), consider establishing a standard training curriculum for all SREs. At Google, all new SREs attend SRE EDU, an immersive weeklong training that introduces key concepts, tooling, and platforms that almost all SREs work with. This provides a baseline level of knowledge across all new SREs, and simplifies team-specific and service-specific training objectives. The SRE EDU team also runs a second series of classes a few months later that covers the common tools and processes that we use for managing major incidents. Our performance management process specifically recognizes SREs who facilitate this training.</p>
+</div></section>
+
+<section data-pdf-bookmark="Horizontal Projects" data-type="sect2"><div class="sect2" id="horizontal_projects">
+<h2>Horizontal Projects</h2>
+
+<p>Because SRE teams are tightly aligned with a set of services, there is a temptation for teams to build proprietary solutions to deal with the challenges they encounter—for example, monitoring, software rollout, and configuration tools. <a contenteditable="false" data-primary="horizontal projects" data-type="indexterm" id="idm139660636749488"/>This can lead to significant duplication of efforts across teams. While there is value in allowing a number of solutions to compete for “market” adoption, at some point, it makes sense to converge upon a standard solution that:</p>
+
+<ul>
+	<li>
+	<p>Meets most teams’ requirements</p>
+	</li>
+	<li>
+	<p>Provides a stable and scalable platform upon which the next layer of innovation can be built</p>
+	</li>
+</ul>
+
+<p>Google approaches these efforts by using horizontal teams, which are often staffed by experienced SREs. These horizontal teams build and run a standard solution and partner with other SRE teams to ensure smooth adoption. (For more information on horizontal software development, see <a data-type="xref" href="ch21.html#case_study_2_common_tooling_adoption_in_s">“Case Study 2: Common Tooling Adoption in SRE”</a> in <a data-type="xref" href="ch21.html#organizational_change_management_in_sre">Chapter 21</a>.)</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Mobility" data-type="sect2"><div class="sect2" id="sre_mobility">
+<h2>SRE Mobility</h2>
+
+<p>Google does its best to ensure that engineers actively want to be part of their respective teams.<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="mobility for" data-type="indexterm" id="idm139660636741200"/><a contenteditable="false" data-primary="mobility for SREs" data-type="indexterm" id="idm139660636741664"/> To this end, we make sure that SREs are able to (and aware that they’re able to) transfer between teams. Assuming there are no performance issues, SREs are free to transfer to other SRE teams with open headcount. SREs who also passed our hiring bar for software engineer roles are free to transfer to product development teams (see <a href="http://bit.ly/2xyQ4aD"><em class="hyperlink">http://bit.ly/2xyQ4aD</em></a>).</p>
+
+<p>This level of mobility is very healthy for individuals and teams for a number of <span class="keep-together">reasons</span>:</p>
+
+<ul>
+	<li>
+	<p>Engineers are able to identify and occupy roles of interest.</p>
+	</li>
+	<li>
+	<p>If personal circumstances change and on-call responsibilities become impractical, SREs can explore opportunities on teams with less demanding on-call duties. They can obtain this information by talking to other teams and reviewing team on-call stats.</p>
+	</li>
+	<li>
+	<p>SREs who move between teams broaden the experience of the teams they join.</p>
+	</li>
+	<li>
+	<p>SREs who move between offices help build or maintain cultural consistency between different offices.</p>
+	</li>
+	<li>
+	<p>SREs are not compelled to work on services that are unhealthy, or for managers who aren’t supportive of their personal development.</p>
+	</li>
+</ul>
+
+<p>This policy also has the side effect of keeping your SRE managers focused on healthy and happy services and teams.</p>
+</div></section>
+
+<section data-pdf-bookmark="Travel" data-type="sect2"><div class="sect2" id="travel">
+<h2>Travel</h2>
+
+<p>In addition to the travel required to keep geographically split teams<a contenteditable="false" data-primary="travel for SRE teams" data-type="indexterm" id="idm139660636728800"/> healthy (see the section <a data-type="xref" href="#finance_travel_budget">“Finance: Travel budget”</a>), consider funding for:</p>
+
+<ul>
+	<li>
+	<p>Building internal company communities of interest that include SREs from a number of offices. Such groups can largely collaborate via email and video conferencing, but meet face-to-face at least annually.</p>
+	</li>
+	<li>
+	<p>Attending and presenting at industry-wide SRE and SRE-related conferences to broaden knowledge, learn how other organizations tackle similar problems, and, hopefully, be inspired and energized.</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Launch Coordination Engineering Teams" data-type="sect2"><div class="sect2" id="launch_coordination_engineering_teams">
+<h2>Launch Coordination Engineering Teams</h2>
+
+<p>As described in <a href="http://bit.ly/2kGWVWf">Chapter 27</a> of our first book,<a contenteditable="false" data-primary="Launch Coordination Engineering (LCE) teams" data-type="indexterm" id="idm139660636723440"/> a Launch Coordination Engineering (LCE) team can apply SRE principles to a broader set of product development teams—teams that build services that don’t require the level of attention that merits SRE engagement. Just like any other SRE team, an LCE team should be actively engaged in automating its daily operations. For example, developing standard tooling and frameworks enable product development teams to design, build, and launch their service in a production environment.</p>
+</div></section>
+
+<section data-pdf-bookmark="Production Excellence" data-type="sect2"><div class="sect2" id="production_excellence">
+<h2>Production Excellence</h2>
+
+<p>As the number of SRE teams at your organization grows, a number of best practices will emerge.<a contenteditable="false" data-primary="production" data-secondary="production excellence reviews" data-type="indexterm" id="idm139660636718512"/> Every SRE team evolves differently, so evaluating them requires senior SREs with insight into multiple teams.</p>
+
+<p>At Google, we run a regular service review called Production Excellence. On a regular basis, senior SRE leaders review every SRE team, assessing them on a number of standard measures (e.g., pager load, error budget usage, project completion, bug closure rates). The review both applauds outstanding performance and provides suggestions for underperforming teams.</p>
+
+<p>Experienced SREs are equipped to evaluate nuanced scenarios. For example, it can be challenging to tease out a drop in project completion rate caused by a team merger or split versus genuine team performance issues. If a team is at risk of becoming overwhelmed, the reviewers can and should to use their organizational position to support the team’s leadership in rectifying the situation.</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Funding and Hiring" data-type="sect2"><div class="sect2" id="sre_funding_and_hiring">
+<h2>SRE Funding and Hiring</h2>
+
+<p>At Google, we use two practices to make<a contenteditable="false" data-primary="funding and hiring (SREs)" data-type="indexterm" id="idm139660636708960"/> sure that <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="funding and hiring" data-type="indexterm" id="idm139660636711200"/>every SRE contributes significant value:</p>
+
+<ul>
+	<li>
+	<p>Much of SRE funding comes from the same source as product development team funding. Similar to testing or security, reliability is a core pillar of product development, and is funded as such.</p>
+	</li>
+	<li>
+	<p>In our experience, the supply of SREs is always smaller than the demand for them. This dynamic ensures that we regularly review and prioritize the services that receive SRE support.</p>
+	</li>
+</ul>
+
+<p>In short, you should have fewer SREs than the organization would like, and only enough SREs to accomplish their specialized work.</p>
+
+<p>At Google, the ratio of SREs to engineers on product development teams ranges from around 1:5 (e.g., low-level infrastructure services) to around 1:50 (e.g., consumer-facing applications with a large number of microservices built using standard frameworks). Many services fall in the middle of this range, at a ratio of around 1:10.<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifemany" data-tertiary="suggested practices for running many teams" data-type="indexterm" id="idm139660636705296"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00094">
+<h1>Conclusion</h1>
+
+<p>We believe an organization of any size can implement SRE practices by applying the following three principles:</p>
+
+<ul>
+	<li>
+	<p>SRE needs SLOs with consequences.</p>
+	</li>
+	<li>
+	<p>SREs must have time to make tomorrow better than today.</p>
+	</li>
+	<li>
+	<p>SRE teams have the ability to regulate their workload.</p>
+	</li>
+</ul>
+
+<p>Since Google started talking publicly about SRE, it has grown from Google-specific production practices into a profession practiced in many companies. These principles have often proven true—both over our years of direct experience at scale, and during our more recent experience of working with our customers to adopt SRE practices. Because we’ve seen these practices work both within and outside of Google, we feel these recommendations should prove useful across a range of organizations of different types and sizes.<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlife" data-type="indexterm" id="idm139660636699072"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch20fn1"><sup><a href="ch20.html#ch20fn1-marker">1</a></sup> Bruce W. Tuckman, “Developmental Sequence in Small Groups,” <em>Psychological Bulletin</em> 63, no. 6 (1965): <span class="keep-together">384–99</span>.</p><p data-type="footnote" id="ch20fn2"><sup><a href="ch20.html#ch20fn2-marker">2</a></sup> Shylaja Nukala and Vivek Rau, “Why SRE Documents Matter,” <em>ACM Queue</em> (May–June 2018): forthcoming.</p></div></div></section></body></html>

@@ -1,0 +1,690 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>Alerting on SLOs</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 5. Alerting on SLOs" data-type="chapter" epub:type="chapter"><div class="chapter" id="alerting_on_slos">
+<h1><span class="label">Chapter 5. </span>Alerting on SLOs</h1>
+
+<p class="byline">By Steven Thurgood<br/>
+with Jess Frame, Anthony Lenton,<br/>
+Carmela Quinito, Anton Tolchanov, and Nejc Trdin</p>
+
+<p>This chapter explains how to turn your SLOs into actionable alerts on significant events.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-type="indexterm" id="ix_alrtSLO"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-type="indexterm" id="ix_SLOalrt"/> Both our <a href="http://bit.ly/2kIcNYM">first SRE book</a> and this book talk about implementing SLOs. We believe that having good SLOs that measure the reliability of your platform, as experienced by your customers, provides the highest-quality indication for when an on-call engineer should respond. Here we give specific guidance on how to turn those SLOs into alerting rules so that you can respond to problems before you consume too much of your error budget.</p>
+
+<p>Our examples present a series of increasingly complex implementations for alerting metrics and logic; we discuss the utility and shortcomings of each. While our examples use a simple request-driven service and <a href="https://prometheus.io">Prometheus syntax</a>, you can apply this approach in any alerting framework.</p>
+
+<section data-pdf-bookmark="Alerting Considerations" data-type="sect1"><div class="sect1" id="alerting_considerations">
+<h1>Alerting Considerations</h1>
+
+<p>In order to generate alerts from service level indicators (SLIs) and an error budget, you need<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="considerations in" data-type="indexterm" id="idm139660642866528"/> a way <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="considerations in" data-type="indexterm" id="idm139660642879808"/>to combine these two elements into a specific rule. Your goal is to be notified for a <em>significant event</em>: an event that consumes a large fraction of the error budget.</p>
+
+<p>Consider the following attributes when evaluating an alerting strategy:</p>
+
+<dl class="pagebreak-before">
+	<dt><dfn>Precision</dfn></dt>
+	<dd><p>The proportion of events detected that were significant. <a contenteditable="false" data-primary="precision in SLO alerts" data-type="indexterm" id="idm139660642860160"/>Precision is 100% if every alert corresponds to a significant event. Note that alerting can become particularly sensitive to nonsignificant events during low-traffic periods (discussed in <a data-type="xref" href="#low_traffic_services_and_error_budget_ale">“Low-Traffic Services and Error Budget Alerting”</a>).</p></dd>
+	<dt><dfn>Recall</dfn></dt>
+	<dd><p>The proportion of significant events detected. <a contenteditable="false" data-primary="recall (SLO alerts)" data-type="indexterm" id="idm139660642856816"/>Recall is 100% if every significant event results in an alert.</p></dd>
+	<dt><dfn>Detection time</dfn></dt>
+	<dd><p>How long it takes to send notifications in various conditions. <a contenteditable="false" data-primary="detection time (SLO alerts)" data-type="indexterm" id="idm139660642853824"/>Long detection times can negatively impact the error budget.</p></dd>
+	<dt><dfn>Reset time</dfn></dt>
+	<dd><p>How long alerts fire after an issue is resolved.<a contenteditable="false" data-primary="reset time (SLO alerts)" data-type="indexterm" id="idm139660642851568"/> Long reset times can lead to confusion or to issues being ignored.</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Ways to Alert on Significant Events" data-type="sect1"><div class="sect1" id="ways_to_alert_on_significant_events">
+<h1>Ways to Alert on Significant Events</h1>
+
+<p>Constructing alert rules for your SLOs can become quite complex.<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="significant events" data-type="indexterm" id="ix_SLOalrtsig"/> Here we present six ways to configure alerting on significant events, in order of increasing fidelity, to arrive at an option that offers good control over the four parameters of precision, recall, detection time, and reset time simultaneously. Each of the following approaches addresses a different problem, and some eventually solve multiple problems at the same time. The first three nonviable attempts work toward the latter three viable alerting strategies, with approach 6 being the most viable and most highly recommended option. The first method is simple to implement but inadequate, while the optimal method provides a complete solution to defend an SLO over both the long and the short term.</p>
+
+<p>For the purposes of this discussion, “error budgets” and “error rates” apply to all SLIs, not just those with “error” in their name. In the section <a data-type="xref" href="ch02.html#what_to_measure_using_slis">“What to Measure: Using SLIs”</a>, we recommend using SLIs that capture the ratio of good events to total events. The error budget gives the number of allowed bad events, and the error rate is the ratio of bad events to total events.</p>
+
+<section data-pdf-bookmark="1: Target Error Rate ≥ SLO Threshold" data-type="sect2"><div class="sect2" id="one_target_error_rate_ge_slo_threshold">
+<h2>1: Target Error Rate ≥ SLO Threshold</h2>
+
+<p>For the most trivial solution, you can choose a small time window (for example, 10 minutes) and alert if the<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="target error rate ࣙ SLO threshold" data-type="indexterm" id="idm139660642843696"/> error rate over that window <a contenteditable="false" data-primary="errors" data-secondary="alerting for target error rate over SLO threshold" data-type="indexterm" id="idm139660642841952"/>exceeds the SLO.</p>
+
+<p>For example, if the SLO is 99.9% over 30 days, alert if the error rate over the previous 10 minutes is ≥ 0.1%:</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+  expr: job:slo_errors_per_request:ratio_rate10m{job="myjob"} &gt;= 0.001
+</pre>
+
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>This 10-minute average is calculated in Prometheus with a Recording rule:</p>
+
+<pre data-type="programlisting">
+record: job:slo_errors_per_request:ratio_rate10m
+expr:
+  sum(rate(slo_errors[10m])) by (job)
+    /
+  sum(rate(slo_requests[10m])) by (job)
+</pre>
+
+<p>If you don’t export <code>slo_errors</code> and <code>slo_requests</code> from your job, you can create the time series by renaming a metric:</p>
+
+<pre data-type="programlisting">
+record: slo_errors
+expr: http_errors
+</pre>
+</div>
+
+<p>Alerting when the recent error rate is equal to the SLO means that the system detects a budget spend of:</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML" class="bump150"><mfrac><mi>alerting window size</mi><mi>reporting period</mi></mfrac></math></div>
+
+<p><a data-type="xref" href="#detection_time_for_an_example_service_wit">Figure 5-1</a> shows the relationship between detection time and error rate for an example service with an alert window of 10 minutes and a 99.9% SLO.</p>
+
+<figure><div class="figure" id="detection_time_for_an_example_service_wit"><img alt="Detection time for an example service with an alert window of 10 minutes and a 99.9% SLO" src="assets/tsrw_0501.png"/>
+<h6><span class="label">Figure 5-1. </span>Detection time for an example service with an alert window of 10 minutes and a 99.9% SLO</h6>
+</div></figure>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_when_the_immedi">Table 5-1</a> shows the benefits and disadvantages of alerting when the immediate error rate is too high.</p>
+
+<table class="border" id="pros_and_cons_of_alerting_when_the_immedi">
+	<caption><span class="label">Table 5-1. </span>Pros and cons of alerting when the immediate error rate is too high</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>Detection time is good: 0.6 seconds for a total outage.</p>
+
+			<p>This alert fires on any event that threatens the SLO, exhibiting good recall.</p>
+			</td>
+			<td>
+			<p>Precision is low: The alert fires on many events that do not threaten the SLO. A 0.1% error rate for 10 minutes would alert, while consuming <em>only 0.02% of the monthly error budget.</em></p>
+
+			<p>Taking this example to an extreme, you could receive up to 144 alerts per day every day, not act upon any alerts, and still meet the SLO.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="2: Increased Alert Window" data-type="sect2"><div class="sect2" id="two_increased_alert_window">
+<h2>2: Increased Alert Window</h2>
+
+<p>We can build upon the preceding example by changing the size of the alert window to improve precision. <a contenteditable="false" data-primary="errors" data-secondary="increased alert window for SLO errors" data-type="indexterm" id="idm139660642813488"/><a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="increased alert window" data-type="indexterm" id="idm139660642814912"/>By increasing the window size, you spend a higher budget amount before triggering an alert.</p>
+
+<p>To keep the <a href="http://bit.ly/2LQYspl">rate of alerts manageable</a>, you decide to be notified only if an event consumes 5% of the 30-day error budget—a 36-hour window:</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+   expr: job:slo_errors_per_request:ratio_rate36h{job="myjob"} &gt; 0.001
+</pre>
+
+<p>Now, the detection time is:</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow> <mfrac> <mrow><mn>1</mn><mo>−</mo><mi>SLO</mi></mrow> <mi>error ratio</mi></mfrac> <mo>×</mo> <mi>alerting window size</mi></mrow> </math></div>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_when_the_error">Table 5-2</a> shows the benefits and disadvantages of alerting when the error rate is too high over a larger window of time.</p>
+
+<table class="border" id="pros_and_cons_of_alerting_when_the_error">
+	<caption><span class="label">Table 5-2. </span>Pros and cons of alerting when the error rate is too high over a larger window of time</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>Detection time is still good: 2 minutes and 10 seconds for a complete outage.</p>
+
+			<p>Better precision than the previous example: by ensuring that the error rate is sustained for longer, an alert will likely represent a significant threat to the error budget.</p>
+			</td>
+			<td>
+			<p>Very poor reset time: In the case of 100% outage, an alert will fire shortly after 2 minutes, and continue to fire for the next 36 hours.</p>
+
+			<p>Calculating rates over longer windows can be expensive in terms of memory or I/O operations, due to the large number of data points.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><a data-type="xref" href="#error_rate_over_a_36_hour_period">Figure 5-2</a> shows that while the error rate over a 36-hour period has fallen to a negligible level, the 36-hour average error rate remains above the threshold.</p>
+
+<figure><div class="figure" id="error_rate_over_a_36_hour_period"><img alt="Error rate over a 36-hour period" src="assets/tsrw_0502.png"/>
+<h6><span class="label">Figure 5-2. </span>Error rate over a 36-hour period</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="3: Incrementing Alert Duration" data-type="sect2"><div class="sect2" id="three_incrementing_alert_duration">
+<h2>3: Incrementing Alert Duration</h2>
+
+<p>Most monitoring systems allow you to add a duration parameter<a contenteditable="false" data-primary="duration parameter (alerts), incrementing" data-type="indexterm" id="idm139660642790400"/> to the alert criteria so the alert won’t fire unless the <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="incrementing alert duration" data-type="indexterm" id="idm139660642789104"/>value remains above the threshold for some time. You may be tempted to use this parameter as a relatively inexpensive way to add longer windows:</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+    expr: job:slo_errors_per_request:ratio_rate1m{job="myjob"} &gt; 0.001
+    for: 1h
+</pre>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_a_duration_paramet">Table 5-3</a> shows the benefits and disadvantages of using a duration parameter for alerts.</p>
+
+<table class="border" id="pros_and_cons_of_using_a_duration_paramet">
+	<caption><span class="label">Table 5-3. </span>Pros and cons of using a duration parameter for alerts</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Alerts can be higher precision. Requiring a sustained error rate before firing means that alerts are more likely to correspond to a significant event.</td>
+			<td>
+			<p>Poor recall and poor detection time: Because the duration does not scale with the severity of the incident, a 100% outage alerts after one hour, the same detection time as a 0.2% outage. The 100% outage would consume 140% of the 30-day budget in that hour.</p>
+
+			<p>If the metric even momentarily returns to a level within SLO, the duration timer resets. An SLI that fluctuates between missing SLO and passing SLO may never alert.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>For the reasons listed in <a data-type="xref" href="#pros_and_cons_of_using_a_duration_paramet">Table 5-3</a>, we do not recommend using durations as part of your SLO-based alerting criteria.<sup><a data-type="noteref" href="ch05.html#ch05fn1" id="ch05fn1-marker">1</a></sup></p>
+
+<p><a data-type="xref" href="#service_with_100percent_error_spikes_ever">Figure 5-3</a> shows the average error rate over a 5-minute window of a service with a 10-minute duration before the alert fires. A series of 100% error spikes lasting 5 minutes every 10 minutes never triggers an alert, despite consuming 35% of the error budget.</p>
+
+<figure><div class="figure" id="service_with_100percent_error_spikes_ever"><img alt="A service with 100% error spikes every 10 minutes" src="assets/tsrw_0503.png"/>
+<h6><span class="label">Figure 5-3. </span>A service with 100% error spikes every 10 minutes</h6>
+</div></figure>
+
+<p>Each spike consumed almost 12% of the 30-day budget, yet the alert never triggered.</p>
+</div></section>
+
+<section data-pdf-bookmark="4: Alert on Burn Rate" data-type="sect2"><div class="sect2" id="four_alert_on_burn_rate">
+<h2>4: Alert on Burn Rate</h2>
+
+<p>To improve upon the previous solution, you want to create an alert with good detection time and high precision.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="burn rate for error budgets" data-type="indexterm" id="idm139660642771088"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-type="indexterm" id="idm139660642769712"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="alerting on" data-type="indexterm" id="idm139660642767632"/> To this end, you can introduce a burn rate to reduce the size of the window while keeping the alert budget spend constant.</p>
+
+<p><em>Burn rate</em> is how fast, relative to the SLO, the service consumes the error budget. <a data-type="xref" href="#error_budgets_relative_to_burn_rates">Figure 5-4</a> shows the relationship between burn rates and error budgets.</p>
+
+<p>The example service uses a burn rate of 1, which means that it’s consuming error budget at a rate that leaves you with exactly 0 budget at the end of the SLO’s time window (see <a href="http://bit.ly/2szBKsK">Chapter 4</a> in our first book). With an SLO of 99.9% over a time window of 30 days, a constant 0.1% error rate uses exactly all of the error budget: a burn rate of 1.</p>
+
+<figure><div class="figure" id="error_budgets_relative_to_burn_rates"><img alt="Error budgets relative to burn rates" src="assets/tsrw_0504.png"/>
+<h6><span class="label">Figure 5-4. </span>Error budgets relative to burn rates</h6>
+</div></figure>
+
+<p><a data-type="xref" href="#burn_rates_and_time_to_complete_budget_ex">Table 5-4</a> shows burn rates, their corresponding error rates, and the time it takes to exhaust the SLO budget.</p>
+
+<table class="border" id="burn_rates_and_time_to_complete_budget_ex">
+	<caption><span class="label">Table 5-4. </span>Burn rates and time to complete budget exhaustion</caption>
+	<thead>
+		<tr>
+			<th><strong>Burn rate</strong></th>
+			<th><strong>Error rate for a 99.9% SLO</strong></th>
+			<th><strong>Time to exhaustion</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>1</td>
+			<td>0.1%</td>
+			<td>30 days</td>
+		</tr>
+		<tr>
+			<td>2</td>
+			<td>0.2%</td>
+			<td>15 days</td>
+		</tr>
+		<tr>
+			<td>10</td>
+			<td>1%</td>
+			<td>3 days</td>
+		</tr>
+		<tr>
+			<td>1,000</td>
+			<td>100%</td>
+			<td>43 minutes</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>By keeping the alert window fixed at one hour and deciding that a 5% error budget spend is significant enough to notify someone, you can derive the burn rate to use for the alert.</p>
+
+<p>For burn rate–based alerts, the time taken for an alert to fire is:</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML"> <mrow> <mfrac> <mrow><mn>1</mn><mo>−</mo><mi>SLO</mi></mrow> <mi>error ratio</mi></mfrac> <mo>×</mo> <mi>alerting window size</mi> <mo>×</mo> <mi>burn rate</mi></mrow> </math></div>
+
+<p>The error budget consumed by the time the alert fires is:</p>
+
+<div data-type="equation"><math xmlns="http://www.w3.org/1998/Math/MathML" class="bump150"> <mfrac> <mrow><mi>burn rate</mi><mo>×</mo><mi>alerting window size</mi></mrow> <mi>period</mi> </mfrac> </math></div>
+
+<p class="pagebreak-before">Five percent of a 30-day error budget spend over one hour requires a burn rate of 36. The alerting rule now becomes:</p>
+
+<pre data-type="programlisting">
+- alert: HighErrorRate
+  expr: job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; 36 * 0.001
+</pre>
+
+<p><a data-type="xref" href="#pros_and_cons_of_alerting_based_on_burn_r">Table 5-5</a> shows the benefits and limitations of alerting based on burn rate.</p>
+
+<table class="border" id="pros_and_cons_of_alerting_based_on_burn_r">
+	<caption><span class="label">Table 5-5. </span>Pros and cons of alerting based on burn rate</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>Good precision: This strategy chooses a significant portion of error budget spend upon which to alert.</p>
+
+			<p>Shorter time window, which is cheaper to calculate.</p>
+
+			<p>Good detection time.</p>
+
+			<p>Better reset time: 58 minutes.</p>
+			</td>
+			<td>
+			<p>Low recall: A 35x burn rate never alerts, but consumes all of the 30-day error budget in 20.5 hours.</p>
+
+			<p>Reset time: 58 minutes is still too long.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="5: Multiple Burn Rate Alerts" data-type="sect2"><div class="sect2" id="five_multiple_burn_rate_alerts">
+<h2>5: Multiple Burn Rate Alerts</h2>
+
+<p>Your alerting logic can use multiple burn rates and time windows, and fire alerts when burn rates surpass a specified threshold.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="multiple burn rate alarms" data-type="indexterm" id="idm139660642724464"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-tertiary="multiple alarms" data-type="indexterm" id="idm139660642722704"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="multiple alerts on" data-type="indexterm" id="idm139660642720672"/> This option retains the benefits of alerting on burn rates and ensures that you don’t overlook lower (but still significant) error rates.</p>
+
+<p>It’s also a good idea to set up ticket notifications for incidents that typically go unnoticed but can exhaust your error budget if left unchecked—for example, a 10% budget consumption in three days. This rate of errors catches significant events, but since the rate of budget consumption provides adequate time to address the event, you don’t need to page someone.</p>
+
+<p>We recommend 2% budget consumption in one hour and 5% budget consumption in six hours as reasonable starting numbers for paging, and 10% budget consumption in three days as a good baseline for ticket alerts. The appropriate numbers depend on the service and the baseline page load. For busier services, and depending on on-call responsibilities over weekends and holidays, you may want ticket alerts for the six-hour window.</p>
+
+<p><a data-type="xref" href="#recommended_time_windows_and_burn_rates_f">Table 5-6</a> shows the corresponding burn rates and time windows for percentages of SLO budget consumed.</p>
+
+<table class="border" id="recommended_time_windows_and_burn_rates_f">
+	<caption><span class="label">Table 5-6. </span>Recommended time windows and burn rates for percentages of SLO budget consumed</caption>
+	<thead>
+		<tr>
+			<th><strong>SLO budget consumption</strong></th>
+			<th><strong>Time window</strong></th>
+			<th><strong>Burn rate</strong></th>
+			<th><strong>Notification</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>2%</td>
+			<td>1 hour</td>
+			<td>14.4</td>
+			<td>Page</td>
+		</tr>
+		<tr>
+			<td>5%</td>
+			<td>6 hours</td>
+			<td>6</td>
+			<td>Page</td>
+		</tr>
+		<tr>
+			<td>10%</td>
+			<td>3 days</td>
+			<td>1</td>
+			<td>Ticket</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>The alerting configuration may look like something like:</p>
+
+<pre data-type="programlisting">
+expr: (
+        job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; (14.4*0.001)
+      or
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; (6*0.001)
+      )
+severity: page
+
+expr: job:slo_errors_per_request:ratio_rate3d{job="myjob"} &gt; 0.001
+severity: ticket
+</pre>
+
+<p><a data-type="xref" href="#error_ratecomma_detection_timecomma_and_a">Figure 5-5</a> shows the detection time and alert type according to the error rate.</p>
+
+<figure><div class="figure" id="error_ratecomma_detection_timecomma_and_a"><img alt="Error rate, detection time, and alert notification" src="assets/tsrw_0505.png"/>
+<h6><span class="label">Figure 5-5. </span>Error rate, detection time, and alert notification</h6>
+</div></figure>
+
+<p>Multiple burn rates allow you to adjust the alert to give appropriate priority based on how quickly you have to respond. If an issue will exhaust the error budget within hours or a few days, sending an active notification is appropriate. Otherwise, a ticket-based notification to address the alert the next working day is more appropriate.<sup><a data-type="noteref" href="ch05.html#ch05fn2" id="ch05fn2-marker">2</a></sup></p>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_multiple_burn_rate">Table 5-7</a> lists the benefits and disadvantages of using multiple burn rates.</p>
+
+<table class="border" id="pros_and_cons_of_using_multiple_burn_rate">
+	<caption><span class="label">Table 5-7. </span>Pros and cons of using multiple burn rates</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>Ability to adapt the monitoring configuration to many situations according to criticality: alert quickly if the error rate is high; alert eventually if the error rate is low but sustained.</p>
+
+			<p>Good precision, as with all fixed-budget portion alert approaches.</p>
+
+			<p>Good recall, because of the three-day window.</p>
+
+			<p>Ability to choose the most appropriate alert type based upon how quickly someone has to react to defend the SLO.</p>
+			</td>
+			<td>
+			<p>More numbers, window sizes, and thresholds to manage and reason about.</p>
+
+			<p>An even longer reset time, as a result of the three-day window.</p>
+
+			<p>To avoid multiple alerts from firing if all conditions are true, you need to implement alert suppression. For example: 10% budget spend in five minutes also means that 5% of the budget was spent in six hours, and 2% of the budget was spent in one hour. This scenario will trigger three notifications unless the monitoring system is smart enough to prevent it from doing so.</p>
+			</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+
+<section data-pdf-bookmark="6: Multiwindow, Multi-Burn-Rate Alerts" data-type="sect2"><div class="sect2" id="six_multiwindowcomma_multi_burn_rate_aler">
+<h2>6: Multiwindow, Multi-Burn-Rate Alerts</h2>
+
+<p>We can enhance the multi-burn-rate alerts in iteration 5 to notify us only when we’re <em>still</em> actively burning through the budget—thereby reducing the number of false positives.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="multiwindow, multi-burn-rate alerts" data-type="indexterm" id="idm139660642680288"/><a contenteditable="false" data-primary="error budgets" data-secondary="alerting on burn rate" data-tertiary="multiwindow, multi-burn-rate alerts" data-type="indexterm" id="idm139660642682656"/><a contenteditable="false" data-primary="burn rate (error budgets)" data-secondary="multiwindow multi-burn-rate alerts" data-type="indexterm" id="idm139660642680560"/> To do this, we need to add another parameter: a shorter window to check if the error budget is still being consumed as we trigger the alert.</p>
+
+<p>A good guideline is to make the short window 1/12 the duration of the long window, as shown in <a data-type="xref" href="#short_and_long_windows_for_alerting">Figure 5-6</a>. The graph shows both alerting threshold. After experiencing 15% errors for 10 minutes, the short window average goes over the alerting threshold immediately, and the long window average goes over the threshold after 5 minutes, at which point the alert starts firing. The short window average drops below the threshold 5 minutes after the errors stop, at which point the alert stops firing. The long window average drops below the threshold 60 minutes after the errors stop.</p>
+
+<figure><div class="figure" id="short_and_long_windows_for_alerting"><img alt="Short and long windows for alerting" src="assets/tsrw_0506.png"/>
+<h6><span class="label">Figure 5-6. </span>Short and long windows for alerting</h6>
+</div></figure>
+
+<p>For example, you can send a page-level alert when you exceed the 14.4x burn rate over both the previous one hour and the previous five minutes. This alert fires only once you’ve consumed 2% of the budget, but exhibits a better reset time by ceasing to fire five minutes later, rather than one hour later:</p>
+
+<pre data-type="programlisting">
+expr: (
+        job:slo_errors_per_request:ratio_rate1h{job="myjob"} &gt; (14.4*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate5m{job="myjob"} &gt; (14.4*0.001)
+      )
+    or
+      (
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; (6*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate30m{job="myjob"} &gt; (6*0.001)
+      )
+severity: page
+
+expr: (
+        job:slo_errors_per_request:ratio_rate24h{job="myjob"} &gt; (3*0.001)
+      and
+        job:slo_errors_per_request:ratio_rate2h{job="myjob"} &gt; (3*0.001)
+      )
+    or
+      (
+        job:slo_errors_per_request:ratio_rate3d{job="myjob"} &gt; 0.001
+      and
+        job:slo_errors_per_request:ratio_rate6h{job="myjob"} &gt; 0.001
+      )
+severity: ticket
+</pre>
+
+<p>We recommend the parameters listed in <a data-type="xref" href="#recommended_parameters_for_an_slo_based_a">Table 5-8</a> as the starting point for your SLO-based alerting configuration.</p>
+
+<table class="border" id="recommended_parameters_for_an_slo_based_a">
+	<caption><span class="label">Table 5-8. </span>Recommended parameters for a 99.9% SLO alerting configuration</caption>
+	<thead>
+		<tr>
+			<th><strong>Severity</strong></th>
+			<th><strong>Long window</strong></th>
+			<th><strong>Short window</strong></th>
+			<th><strong>Burn rate</strong></th>
+			<th><strong>Error budget consumed</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Page</td>
+			<td>1 hour</td>
+			<td>5 minutes</td>
+			<td>14.4</td>
+			<td>2%</td>
+		</tr>
+		<tr>
+			<td>Page</td>
+			<td>6 hours</td>
+			<td>30 minutes</td>
+			<td>6</td>
+			<td>5%</td>
+		</tr>
+		<tr>
+			<td>Ticket</td>
+			<td>3 days</td>
+			<td>6 hours</td>
+			<td>1</td>
+			<td>10%</td>
+		</tr>
+	</tbody>
+</table>
+
+<p>We have found that alerting based on multiple burn rates is a powerful way to implement SLO-based alerting.</p>
+
+<p><a data-type="xref" href="#pros_and_cons_of_using_multiple_b-id00013">Table 5-9</a> shows the benefits and limitations of using multiple burn rates and window sizes.</p>
+
+<table class="border" id="pros_and_cons_of_using_multiple_b-id00013">
+	<caption><span class="label">Table 5-9. </span>Pros and cons of using multiple burn rates and window sizes</caption>
+	<thead>
+		<tr>
+			<th><strong>Pros</strong></th>
+			<th><strong>Cons</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>
+			<p>A flexible alerting framework that allows you to control the type of alert according to the severity of the incident and the requirements of the organization.</p>
+
+			<p>Good precision, as with all fixed-budget portion alert approaches.</p>
+
+			<p>Good recall, because of the three-day window.</p>
+			</td>
+			<td>Lots of parameters to specify, which can make alerting rules hard to manage. For more on managing alerting rules, see <a data-type="xref" href="#alerting_at_scale">“Alerting at Scale”</a>.</td>
+		</tr>
+	</tbody>
+</table>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Low-Traffic Services and Error Budget Alerting" data-type="sect1"><div class="sect1" id="low_traffic_services_and_error_budget_ale">
+<h1>Low-Traffic Services and Error Budget Alerting</h1>
+
+<p>The multiwindow, multi-burn-rate approach just<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrtsig" data-tertiary="significant events" data-type="indexterm" id="idm139660642643584"/> detailed works <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_SLOalrtlow"/>well when a sufficiently high rate of incoming requests provides a meaningful signal when an issue arises.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_alrtSLOlow"/><a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-type="indexterm" id="ix_errbudalrt"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-type="indexterm" id="ix_lowtr"/> However, these approaches can cause problems for systems that receive a low rate of requests. If a system has either a low number of users or natural low-traffic periods (such as nights and weekends), you may need to alter your approach.</p>
+
+<p>It’s harder to automatically distinguish unimportant events in low-traffic services. For example, if a system receives 10 requests per hour, then a single failed request results in an hourly error rate of 10%. For a 99.9% SLO, this request constitutes a 1,000x burn rate and would page immediately, as it consumed 13.9% of the 30-day error budget. This scenario allows for only seven failed requests in 30 days. Single requests can fail for a large number of ephemeral and uninteresting reasons that aren’t necessarily cost-effective to solve in the same way as large systematic outages.</p>
+
+<p>The best solution depends on the nature of the service: what is the impact<sup><a data-type="noteref" href="ch05.html#ch05fn3" id="ch05fn3-marker">3</a></sup> of a single failed request? A high-availability target may be appropriate if failed requests are one-off, high-value requests that aren’t retried. It may make sense from a business perspective to investigate every single failed request. However, in this case, the alerting system notifies you of an error too late.</p>
+
+<p>We recommend a few key options to handle a low-traffic service:</p>
+
+<ul>
+	<li>
+	<p>Generate artificial traffic to compensate for the lack of signal from real users.</p>
+	</li>
+	<li>
+	<p>Combine smaller services into a larger service for monitoring purposes.</p>
+	</li>
+	<li>
+	<p>Modify the product so that either:</p>
+
+	<ul>
+		<li>
+		<p>It takes more requests to qualify a single incident as a failure.</p>
+		</li>
+		<li>
+		<p>The impact of a single failure is lower.</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Generating Artificial Traffic" data-type="sect2"><div class="sect2" id="generating_artificial_traffic">
+<h2>Generating Artificial Traffic</h2>
+
+<p>A system can synthesize user activity to check for potential errors and high-latency requests.<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="generating artificial traffic" data-type="indexterm" id="idm139660642620688"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="generating artificial traffic" data-type="indexterm" id="idm139660642621920"/> In the absence of real users, your monitoring system can detect synthetic errors and requests, so your on-call engineers can respond to issues before they impact too many actual users.</p>
+
+<p>Artificial traffic provides more signals to work with, and allows you to reuse your existing monitoring logic and SLO values. You may even already have most of the necessary traffic-generating components, such as black-box probers and integration tests.<a contenteditable="false" data-primary="probers" data-type="indexterm" id="idm139660642615808"/></p>
+
+<p>Generating artificial load does have some downsides. Most services that warrant SRE support are complex, and have a large system control surface. Ideally, the system should be designed and built for monitoring using artificial traffic. Even for a nontrivial service, you can synthesize only a small portion of the total number of user request types. For a stateful service, the greater number of states exacerbates this problem.</p>
+
+<p>Additionally, if an issue affects real users but doesn’t affect artificial traffic, the successful artificial requests hide the real user signal, so you aren’t notified that users see errors.</p>
+</div></section>
+
+<section data-pdf-bookmark="Combining Services" data-type="sect2"><div class="sect2" id="combining_services">
+<h2>Combining Services</h2>
+
+<p>If multiple low-traffic services contribute to one overall function, combining their requests into a single higher-level group can detect significant events more precisely and with fewer false positives.<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="combining services" data-type="indexterm" id="idm139660642610384"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="combining services" data-type="indexterm" id="idm139660642612848"/> For this approach to work, the services must be related in some way—you can combine microservices that form part of the same product, or multiple request types handled by the same binary.<a contenteditable="false" data-primary="microservices" data-secondary="combining for low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642617936"/></p>
+
+<p>A downside to combining services is that a complete failure of an individual service may not count as a significant event. You can increase the likelihood that a failure will affect the group as a whole by choosing services with a shared failure domain, such as a common backend database. You can still use longer-period alerts that eventually catch these 100% failures for individual services.</p>
+</div></section>
+
+<section data-pdf-bookmark="Making Service and Infrastructure Changes" data-type="sect2"><div class="sect2" id="making_service_and_infrastructure_changes">
+<h2>Making Service and Infrastructure Changes</h2>
+
+<p>Alerting on significant events aims to provide sufficient notice to mitigate problems before they exhaust the entire error budget.<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="making service and infrastructure changes" data-type="indexterm" id="idm139660642607584"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="making service and infrastructure changes" data-type="indexterm" id="idm139660642605312"/> If you can’t adjust the monitoring to be less sensitive to ephemeral events, and generating synthetic traffic is impractical, you might instead consider changing the service to reduce the user impact of a single failed request. For example, you might:</p>
+
+<ul>
+	<li>
+	<p>Modify the client to retry, with exponential backoff and jitter.<sup><a data-type="noteref" href="ch05.html#ch05fn4" id="ch05fn4-marker">4</a></sup></p>
+	</li>
+	<li>
+	<p>Set up fallback paths that capture the request for eventual execution, which can take place on the server or on the client.</p>
+	</li>
+</ul>
+
+<p>These changes are useful for high-traffic systems, but even more so for low-traffic systems: they allow for more failed events in the error budget, more signal from monitoring, and more time to respond to an incident before it becomes significant.</p>
+</div></section>
+
+<section data-pdf-bookmark="Lowering the SLO or Increasing the Window" data-type="sect2"><div class="sect2" id="lowering_the_slo_or_increasing_the_window">
+<h2>Lowering the SLO or Increasing the Window</h2>
+
+<p>You might also want to reconsider if the impact of a single failure on the error budget accurately reflects its impact on users.<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-tertiary="lowering the SLO or increasing the window" data-type="indexterm" id="idm139660642592528"/><a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-secondary="lowering the SLO or increasing the window" data-type="indexterm" id="idm139660642593552"/> If a small number of errors causes you to lose error budget, do you really need to page an engineer to fix the issue immediately? If not, users would be equally happy with a lower SLO. With a lower SLO, an engineer is notified only of a larger sustained outage.</p>
+
+<p>Once you have negotiated lowering the SLO with the service’s stakeholders (for example, lowering the SLO from 99.9% to 99%), implementing the change is very simple: if you already have systems in place for reporting, monitoring, and alerting based upon an SLO threshold, simply add the new SLO value to the relevant systems.</p>
+
+<p>Lowering the SLO does have a downside: it involves a product decision. Changing the SLO affects other aspects of the system, such as expectations around system behavior and when to enact the error budget policy. These other requirements may be more important to the product than avoiding some number of low-signal alerts.</p>
+
+<p>In a similar manner, increasing the time window used for the alerting logic ensures alerts that trigger pages are more significant and worthy of attention.</p>
+
+<p>In practice, we use some combination of the following methods to alert for low-traffic services:</p>
+
+<ul>
+	<li>
+	<p>Generating fake traffic, when doing so is possible and can achieve good coverage</p>
+	</li>
+	<li>
+	<p>Modifying clients so that ephemeral failures are less likely to cause user harm</p>
+	</li>
+	<li>
+	<p>Aggregating smaller services that share some failure mode</p>
+	</li>
+	<li>
+	<p>Setting SLO thresholds commensurate with the actual impact of a failed request</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Extreme Availability Goals" data-type="sect1"><div class="sect1" id="extreme_availability_goals">
+<h1>Extreme Availability Goals</h1>
+
+<p>Services with an extremely low or an extremely <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-startref="ix_alrtSLOlow" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642582560"/>high<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrtlow" data-tertiary="low-traffic services and error budget alerting" data-type="indexterm" id="idm139660642581920"/> availability<a contenteditable="false" data-primary="error budgets" data-secondary="low-traffic services and error budget alerting" data-startref="ix_errbudalrt" data-type="indexterm" id="idm139660642578368"/> goal may require special<a contenteditable="false" data-primary="low-traffic services, error budget alerting on" data-startref="ix_lowtr" data-type="indexterm" id="idm139660642576512"/> consideration. For example, consider a service that has a 90% availability<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="services with extreme availability goals" data-type="indexterm" id="idm139660642573632"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="services with extreme availability goals" data-type="indexterm" id="idm139660642574688"/><a contenteditable="false" data-primary="availability" data-secondary="alerting on services with extreme availability goals" data-type="indexterm" id="idm139660642571536"/> target. <a data-type="xref" href="#recommended_parameters_for_an_slo_based_a">Table 5-8</a> says to page when 2% of the error budget in a single hour is consumed. Because a 100% outage consumes only 1.4% of the budget in that hour, this alert could never fire. If your error budgets are set over long time periods, you may need to tune your alerting parameters.</p>
+
+<p>For services with an extremely high availability goal, the time to exhaustion for a 100% outage is extremely small. A 100% outage for a service with a target monthly availability of 99.999% would exhaust its budget in 26 seconds—which is smaller than the metric collection interval of many monitoring services, let alone the end-to-end time to generate an alert and pass it through notification systems like email and SMS. Even if the alert goes straight to an automated resolution system, the issue may entirely consume the error budget before you can mitigate it.</p>
+
+<p>Receiving notifications that you have only 26 seconds of budget left isn’t necessarily a bad strategy; it’s just not useful for defending the SLO. The only way to defend this level of reliability is to design the system so that the chance of a 100% outage is extremely low. That way, you can fix issues before consuming the budget. For example, if you initially roll out that change to only 1% of your users, and burn your error budget at the same rate of 1%, you now have 43 minutes before you exhaust your error budget. See <a data-type="xref" href="ch16.html#canarying_releases">Chapter 16</a> for tactics on designing such a system.</p>
+</div></section>
+
+<section data-pdf-bookmark="Alerting at Scale" data-type="sect1"><div class="sect1" id="alerting_at_scale">
+<h1>Alerting at Scale</h1>
+
+<p>When you scale your service, make sure that your alerting strategy is likewise scalable.<a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-tertiary="making sure alerting is scalable" data-type="indexterm" id="idm139660642563952"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="making sure alerting is scalable" data-type="indexterm" id="idm139660642557376"/> You might be tempted to specify custom alerting parameters for individual services. If your service comprises 100 microservices (or equivalently, a single service with 100 different request types), this scenario very quickly accumulates toil and cognitive load that does not scale.</p>
+
+<p>In this case, we strongly advise against specifying the alert window and burn rate parameters independently for each service, because doing so quickly becomes overwhelming.<sup><a data-type="noteref" href="ch05.html#ch05fn5" id="ch05fn5-marker">5</a></sup> Once you decide on your alerting parameters, apply them to all your services.</p>
+
+<p>One technique for managing a large number of SLOs is to group request types into buckets of approximately similar availability requirements.<a contenteditable="false" data-primary="requests" data-secondary="grouping request types into buckets of similar availability requirements" data-type="indexterm" id="idm139660642568112"/><a contenteditable="false" data-primary="availability" data-secondary="grouping request types into buckets of similar availability requirements" data-type="indexterm" id="idm139660642567888"/> For example, for a service with availability and latency SLOs, you can group its request types into the following buckets:</p>
+
+<dl>
+	<dt><dfn><code>CRITICAL</code></dfn></dt>
+	<dd><p>For request types that are the most important, such as a request when a user logs in to the service.<a contenteditable="false" data-primary="CRITICAL requests" data-type="indexterm" id="idm139660642552464"/></p></dd>
+	<dt><dfn><code>HIGH_FAST</code></dfn></dt>
+	<dd><p>For requests with high availability and low latency requirements. <a contenteditable="false" data-primary="HIGH_FAST requests" data-type="indexterm" id="idm139660642548944"/>These requests involve core interactive functionality, such as when a user clicks a button to see how much money their advertising inventory has made this month.</p></dd>
+	<dt><dfn><code>HIGH_SLOW</code></dfn></dt>
+	<dd><p>For important but less latency-sensitive functionality, such as when a user clicks a button to generate a report of all advertising campaigns over the past few years, and does not expect the data to return instantly.<a contenteditable="false" data-primary="HIGH_SLOW requests" data-type="indexterm" id="idm139660642547456"/></p></dd>
+	<dt><dfn><code>LOW</code></dfn></dt>
+	<dd><p>For requests that must have some availability, but for which outages are mostly invisible to users—for example, polling handlers for account notifications that can fail for long periods of time with no user impact.<a contenteditable="false" data-primary="LOW (availability) requests" data-type="indexterm" id="idm139660642543024"/></p></dd>
+	<dt><dfn><code>NO_SLO</code></dfn></dt>
+	<dd><p>For functionality that is completely invisible to the user—for example, dark launches or alpha functionality that is explicitly outside of any SLO.<a contenteditable="false" data-primary="NO_SLO requests" data-type="indexterm" id="idm139660642540224"/></p></dd>
+</dl>
+
+<p>By grouping requests rather than placing unique availability and latency objectives on all request types, you can group requests into five buckets, like the example in <a data-type="xref" href="#request_class_buckets_according_to_simila">Table 5-10</a>.</p>
+
+<table class="border" id="request_class_buckets_according_to_simila">
+	<caption><span class="label">Table 5-10. </span>Request class buckets according to similar availability requirements and thresholds</caption>
+	<thead>
+		<tr>
+			<th><strong>Request class</strong></th>
+			<th><strong>Availability</strong></th>
+			<th><strong>Latency @ 90%<sup><a data-type="noteref" href="ch05.html#ch05fn6" id="ch05fn6-marker">a</a></sup></strong></th>
+			<th><strong>Latency @ 99%</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><code>CRITICAL</code></td>
+			<td>99.99%</td>
+			<td>100 ms</td>
+			<td>200 ms</td>
+		</tr>
+		<tr>
+			<td><code>HIGH_FAST</code></td>
+			<td>99.9%</td>
+			<td>100 ms</td>
+			<td>200 ms</td>
+		</tr>
+		<tr>
+			<td><code>HIGH_SLOW</code></td>
+			<td>99.9%</td>
+			<td>1,000 ms</td>
+			<td>5,000 ms</td>
+		</tr>
+		<tr>
+			<td><code>LOW</code></td>
+			<td>99%</td>
+			<td>None</td>
+			<td>None</td>
+		</tr>
+		<tr>
+			<td><code>NO_SLO</code></td>
+			<td>None</td>
+			<td>None</td>
+			<td>None</td>
+		</tr>
+	</tbody>
+<tbody><tr class="footnotes"><td colspan="4"><p data-type="footnote" id="ch05fn6"><sup><a href="ch05.html#ch05fn6-marker">a</a></sup> Ninety percent of requests are <a href="http://bit.ly/2LgeYy1">faster than this threshold</a>.</p></td></tr></tbody></table>
+
+<p>These buckets provide sufficient fidelity for protecting user happiness, but entail less toil than a system that is more complicated and expensive to manage that <em>probably</em> maps more precisely to the user experience.</p>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00014">
+<h1>Conclusion</h1>
+
+<p>If you set SLOs that are meaningful, understood, and represented in metrics, you can configure alerting to notify an on-caller only when there are actionable, specific threats to the error budget.</p>
+
+<p>The techniques for alerting on significant events range from alerting when your error rate goes above your SLO threshold to using multiple levels of burn rate and window sizes. In most cases, we believe that the multiwindow, multi-burn-rate alerting technique is the most appropriate approach to defending your application’s SLOs.</p>
+
+<p>We hope we have given you the context and tools required to make the right configuration decisions<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-startref="ix_SLOalrt" data-type="indexterm" id="idm139660642515152"/> for your own <a contenteditable="false" data-primary="alerts" data-secondary="alerting on SLOs" data-startref="ix_alrtSLO" data-type="indexterm" id="idm139660642516160"/>application and organization.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch05fn1"><sup><a href="ch05.html#ch05fn1-marker">1</a></sup> Duration clauses can occasionally be useful when you are filtering out ephemeral noise over very short durations. However, you still need to be aware of the cons listed in this section.</p><p data-type="footnote" id="ch05fn2"><sup><a href="ch05.html#ch05fn2-marker">2</a></sup> As described in the <a href="http://bit.ly/2xCtP3S">introduction</a> to <em>Site Reliability Engineering</em>, pages and tickets are the only valid ways to get a human to take action.</p><p data-type="footnote" id="ch05fn3"><sup><a href="ch05.html#ch05fn3-marker">3</a></sup> The section <a data-type="xref" href="ch02.html#what_to_measure_using_slis">“What to Measure: Using SLIs”</a> recommends a style of SLI that scales according to the impact on the user.</p><p data-type="footnote" id="ch05fn4"><sup><a href="ch05.html#ch05fn4-marker">4</a></sup> See <a href="http://bit.ly/2J2gqr0">“Overloads and Failure”</a> in <em>Site Reliability Engineering</em>.</p><p data-type="footnote" id="ch05fn5"><sup><a href="ch05.html#ch05fn5-marker">5</a></sup> With the exception of temporary changes to alerting parameters, which are necessary when you’re fixing an ongoing outage and you don’t need to receive notifications during that period.</p></div></div></section></body></html>
