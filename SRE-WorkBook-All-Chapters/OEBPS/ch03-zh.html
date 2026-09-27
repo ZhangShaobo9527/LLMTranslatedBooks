@@ -1,0 +1,467 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SLO 工程案例研究</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 3. SLO Engineering Case Studies" data-type="chapter" epub:type="chapter"><div class="chapter" id="slo_engineering_case_studies">
+<h1><span class="label">第 3 章　</span>SLO 工程案例研究</h1>
+
+<p class="byline">作者：Ben McCormack（Evernote）和<br/>
+William Bonnell（The Home Depot）<br/>
+Garrett Plasky（Evernote）、Alex Hidalgo、<br/>
+Betsy Beyer 和 Dave Rensin 参与撰写</p>
+
+<p>SRE 的许多准则虽然形成于 Google 内部，但其理念早已在 Google 之外得到实践。<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="development by Google and others" data-type="indexterm" id="idm139660643482304"/> 许多 Google SRE 的标准做法，也被业内其他组织各自独立探索出来或陆续采用。</p>
+
+<p>SLO 是 SRE 模型的根基。 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="fundamental importance in SRE" data-type="indexterm" id="idm139660643480592"/>自从我们 <a contenteditable="false" data-primary="Google’s Customer Reliability Engineering (CRE) team" data-type="indexterm" id="idm139660643478544"/>成立客户可靠性工程（CRE）团队以来，这支由资深 SRE 组成的团队帮助 Google Cloud Platform（GCP）客户<a contenteditable="false" data-primary="cloud environment" data-secondary="Google Cloud Platform (GCP)" data-type="indexterm" id="idm139660643475040"/> 构建更可靠的服务；我们与客户的几乎每一次合作，都从 SLO 开始，也以 SLO 收尾。<a contenteditable="false" data-primary="Google Cloud Platform (GCP)" data-type="indexterm" id="idm139660643473472"/></p>
+
+<p>本章讲述两家截然不同的公司在与 Google CRE 团队合作期间，如何逐步采用以 SLO 和错误预算为基础的方法。关于 SLO 和错误预算的通用讨论，请参阅本书 <a data-type="xref" href="ch02-zh.html#implementing_slos">第 2 章</a> ，以及我们第一本书的 <a href="http://bit.ly/2so6uOc">第 3 章</a> 。</p>
+
+<section data-pdf-bookmark="Evernote’s SLO Story" data-type="sect1"><div class="sect1" id="evernoteapostrophes_slo_story">
+<h1>Evernote 的 SLO 实践</h1>
+
+<p><em>作者：Ben McCormack，Evernote</em></p>
+
+<p>Evernote 是一款跨平台应用，帮助个人和团队创建、汇集与共享信息。 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-type="indexterm" id="ix_SLOEv"/><a contenteditable="false" data-primary="Evernote, SLO case study" data-type="indexterm" id="ix_Evcase"/>我们在平台上为全球 2.2 亿多用户存储了超过 120 亿条信息，包括文本笔记、文件以及附件和图片。Evernote 服务背后由 750 多个 MySQL 实例提供支撑。</p>
+
+<p>我们把 SLO 概念引入 Evernote，是一场范围更广的技术改造的一部分；这场改造旨在提高工程交付速度，同时保持服务质量。 <a contenteditable="false" data-primary="quality of service (QoS)" data-secondary="maintaining while increasing feature velocity" data-type="indexterm" id="idm139660643468320"/>我们的目标包括：</p>
+
+<ul>
+	<li>
+	<p>把工程工作的重心从数据中心里缺乏差异化的繁重事务，转向客户真正关心的产品工程。为此，我们停止运营自有物理数据中心，迁移到了公有云。</p>
+	</li>
+	<li>
+	<p>调整运维工程师与软件工程师的协作模式，在加快功能交付的同时保持整体服务质量。</p>
+	</li>
+	<li>
+	<p>重新审视 SLA，确保我们更加关注故障会怎样影响庞大的全球用户群。</p>
+	</li>
+</ul>
+
+<p>这些目标对许多行业的组织来说可能都很熟悉。此类变革不存在放之四海而皆准的单一方法，但我们希望，分享自身经历能为面临类似挑战的组织提供有价值的启示。</p>
+
+<section data-pdf-bookmark="Why Did Evernote Adopt the SRE Model?" data-type="sect2"><div class="sect2" id="why_did_evernote_adopt_the_sre_modelquest">
+<h2>Evernote 为什么采用 SRE 模型？</h2>
+
+<p>转型之初，Evernote 仍是传统的运维与开发分工：运维团队负责守护 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-tertiary="why Evernote adopted SRE model" data-type="indexterm" id="idm139660643455488"/><a contenteditable="false" data-primary="Evernote, SLO case study" data-secondary="why Evernote adopted SRE model" data-type="indexterm" id="idm139660643456208"/><a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="reasons for adoption by Evernote" data-type="indexterm" id="idm139660643453680"/>生产环境的稳定与秩序，开发团队则负责为客户开发新的产品功能。这两类目标常常相互冲突：开发团队觉得冗长的运维要求束缚了手脚；新代码在生产环境引发问题时，运维团队又倍感挫败。我们在这两个目标之间来回摇摆，运维与开发团队的关系也变得紧张而疲惫。我们希望找到更理想的平衡点，更好地兼顾各团队的不同需求。</p>
+
+<p>五年多来，我们尝试过多种方式弥合这种传统二分模式的裂缝。在先后实践“谁开发，谁运行”的开发主导模式和“你开发，我们替你运行”的运维主导模式后，我们最终转向了以 SLO 为中心的 SRE 方法。</p>
+
+<p>那么，究竟是什么推动 Evernote 选择这条路？</p>
+
+<p>在 Evernote，我们把运维和开发视为两个独立的专业方向，工程师可以各自专精。一个方向关注近乎 24×7 地持续向客户交付服务；另一个方向关注扩展和演进服务，以满足客户未来的需求。近些年，SRE 和 DevOps 等理念强调把软件开发方法用于运维，使这两个专业方向逐渐靠拢。（数据中心自动化的进步和公有云的兴起进一步推动了这种融合，因为二者让我们能够完全通过软件控制数据中心。）与此同时，软件开发也越来越多地采用全栈负责制和持续部署。</p>
+
+<p>SRE 模型吸引我们，是因为它充分承认并接纳运维与开发之间的差异，同时鼓励团队朝共同目标努力。它并不试图把运维工程师变成应用开发者，或反过来改造开发者，而是为双方提供共同的参照框架。根据我们的经验，错误预算/SLO 方法减少了讨论中的大量主观判断，因此两个团队面对同样的事实时，往往会做出相近的决定。</p>
+</div></section>
+
+<section data-pdf-bookmark="Introduction of SLOs: A Journey in Progress" data-type="sect2"><div class="sect2" id="introduction_of_slos_a_journey_in_progres">
+<h2>引入 SLO：仍在继续的旅程</h2>
+
+<p>这段旅程的第一步，是从 <a contenteditable="false" data-primary="Evernote, SLO case study" data-secondary="introduction of SLOs, journey in progress" data-type="indexterm" id="ix_Evcaseintr"/>物理<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-tertiary="introduction of SLOs" data-type="indexterm" id="ix_SLOEvintr"/> 数据中心迁移到 Google Cloud Platform。<sup><a data-type="noteref" href="ch03-zh.html#ch03fn1" id="ch03fn1-marker">1</a></sup> Evernote 服务在 GCP 上投入运行并稳定下来后，我们引入了 SLO。这里有两个目标：</p>
+
+<ul>
+	<li>
+	<p>围绕 Evernote 的 SLO 在内部统一各团队，确保所有团队都在新框架下工作。</p>
+	</li>
+	<li>
+	<p>把 Evernote 的 SLO 纳入我们与 Google Cloud 团队的协作方式；该团队此时已经负责我们的底层基础设施。整体模式中多了一位新伙伴，我们必须确保迁移到 GCP 不会削弱或掩盖我们对用户的承诺。</p>
+	</li>
+</ul>
+
+<p>积极使用 SLO 大约九个月后，Evernote 的 SLO 实践已经迭代到第 3 版！</p>
+
+<p>在讨论 SLO 的技术细节之前，首先要站在客户视角提出问题：你究竟想兑现什么承诺？和大多数服务一样，Evernote 提供众多功能和选项，用户会以各种富有创意的方式使用它们。 <a contenteditable="false" data-primary="availability" data-secondary="Evernote’s goal for" data-type="indexterm" id="idm139660643450624"/>我们希望起步时聚焦最重要、也最普遍的客户需求： <em>用户能够使用 Evernote 服务访问自己的内容，并在多个客户端之间同步这些内容。</em> 我们的 SLO 之旅由此开始。第一版刻意保持简单，只关注正常运行时间。借助这种简单的初始方案，我们可以清楚说明测量什么，以及如何测量。</p>
+
+<p class="pagebreak-before">我们的第一份 SLO 文档包含以下内容：</p>
+
+<dl>
+	<dt><dfn>SLO 的定义</dfn></dt>
+	<dd><p>这是一项正常运行时间指标：针对特定服务和方法，按自然月窗口测量，目标为 99.95%。<a contenteditable="false" data-primary="time windows for SLOs" data-secondary="at Evernote" data-type="indexterm" id="idm139660643434000"/> 这个数字来自我们与内部客户支持团队和产品团队的讨论，更重要的是，它也依据了用户反馈。我们有意让 SLO 按自然月而非滚动周期计算，以便开展服务评审时能够保持聚焦、组织有序。</p></dd>
+	<dt><dfn>测量什么，以及如何测量</dfn></dt>
+	<dd>
+	<dl>
+		<dt><dfn>测量什么</dfn></dt>
+		<dd><p>我们指定了一个可调用的服务端点， <a contenteditable="false" data-primary="measurements" data-secondary="decision on what/how to measure for SLOs at Evernote" data-type="indexterm" id="idm139660643427888"/>用它测试服务是否按预期运行。Evernote 服务内置了一个状态页面，它会实际检查技术栈的大部分环节；一切正常时，页面返回 200 状态码。</p></dd>
+		<dt><dfn>如何测量</dfn></dt>
+		<dd>
+		<p>我们需要一个定期调用状态页面的探测器。<a contenteditable="false" data-primary="probers" data-secondary="use at Evernote in monitoring" data-type="indexterm" id="idm139660643422512"/> 这个探测器必须完全部署在我们的环境之外，并与之相互独立，以便测试 <em>所有</em>组件，包括负载均衡栈。我们的目标是确保 GCP 服务和 Evernote 应用的任何故障都会被计入测量。不过，我们不希望随机出现的互联网问题触发误报。 <a contenteditable="false" data-primary="probers" data-type="indexterm" id="idm139660643423408"/>因此，我们选择了一家专门构建和运行此类探测器的第三方公司。我们采用的是 <a href="http://www.pingdom.com/">Pingdom</a>，市场上也有许多其他选择。我们的测量方式如下：</p>
+
+		<ul>
+			<li>
+			<p><strong>探测频率：</strong> 每分钟轮询一次前端节点。</p>
+			</li>
+			<li>
+			<p><strong>探测器位置：</strong> 此项可以配置；目前我们在北美和欧洲使用多个探测器。</p>
+			</li>
+			<li>
+			<p><strong>“宕机”的定义：</strong> 如果一次探测检查失败，就把该节点标记为“尚未确认宕机”（Unconfirmed Down），然后由地理位置不同的第二个探测器再次检查。若第二次检查也失败，就在计算 SLO 时把该节点视为宕机。只要连续的探测请求仍返回错误，该节点就会一直被标记为宕机。</p>
+			</li>
+		</ul>
+		</dd>
+	</dl>
+	</dd>
+	<dt><dfn>如何根据监控数据计算 SLO</dfn></dt>
+	<dd><p>最后，我们详细记录了如何根据 Pingdom 提供的原始数据计算 SLO。<a contenteditable="false" data-primary="monitoring" data-secondary="calculating SLOs from data" data-type="indexterm" id="idm139660643413056"/> 例如，我们明确了维护窗口的处理方式：不能假定数以亿计的用户全都知道我们公布的维护窗口。不知情的用户只会把这段时间体验为普通且原因不明的停机，因此在计算 SLO 时，我们把维护期也计作停机时间。</p></dd>
+</dl>
+
+<p>SLO 定义好以后，还必须真正用起来。我们希望 SLO 能推动软件和运维方面的改变，让客户更满意，并持续保持满意。怎样做最合适？</p>
+
+<p>我们把 SLO/错误预算概念作为今后分配资源的方法。<a contenteditable="false" data-primary="error budgets" data-seealso="service level objectives" data-type="indexterm" id="idm139660643408112"/> 例如，如果上个月没有达到 SLO，这一结果就会帮助我们优先安排相关修复、改进和缺陷处理。我们的做法很简单：Evernote 与 Google 的团队每月共同评审 SLO 表现。会上，我们回顾上个月的 SLO 达成情况，并深入分析每一次中断。根据对上月情况的分析，我们制定改进行动项，其中可能包括常规根因分析流程未能捕捉到的问题。</p>
+
+<p>在整个过程中，我们始终奉行“不要让完美成为优秀的敌人”。SLO 即使并不完美，也足以持续指引改进。所谓“完美”的 SLO，要能测量用户与服务之间每一种可能的交互，并覆盖所有边界情形。这个设想在纸面上很美好，但即使真能做到完美，也要花费数月时间——而这些时间本可用于改进服务。因此，我们选择的初始 SLO 覆盖了大多数而非全部用户交互，足以作为服务质量的良好代理指标。</p>
+
+<p>从开始实践至今，我们根据内部服务评审传递的信号以及影响客户的中断，两次修订了 SLO。由于最初并未追求完美，我们很自然地愿意调整 SLO，使之与业务更加一致。除了 Evernote 与 Google 每月共同评审 SLO 表现外，我们还确定了每六个月一次的 SLO 复审周期，在改得过于频繁与长期不更新之间取得平衡。修订过程中我们也认识到，必须在 <em>想要</em> 测量的内容与 <em>实际能够</em> 测量的内容之间取得平衡。</p>
+
+<p>引入 SLO 后，运维与开发团队的关系发生了细微却显著的改善。<a contenteditable="false" data-primary="quality of service (QoS)" data-secondary="agreement on definition at Evernote" data-type="indexterm" id="idm139660643404800"/> 如今，两个团队有了共同的成功尺度：不再依靠个人主观解释服务质量（QoS），双方因而能够采用一致的视角和标准。举一个例子：2017 年，我们必须在很短时间内安排多次发布，SLO 为此提供了共同的判断基础。当时我们正在追查一个复杂缺陷，产品开发团队要求把通常每周一次的发布拆成多个独立窗口，而每个窗口都可能影响客户。我们把 SLO 计算用于这一问题，排除了人为主观判断，从而更准确地量化客户影响，并把发布窗口<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-startref="ix_SLOEvintr" data-tertiary="introduction of SLOs" data-type="indexterm" id="idm139660643395216"/> 从五个减少到两个，尽量减轻客户受到的影响。 <a contenteditable="false" data-primary="Evernote, SLO case study" data-secondary="introduction of SLOs, journey in progress" data-startref="ix_Evcaseintr" data-type="indexterm" id="idm139660643402896"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Breaking Down the SLO Wall Between Customer and Cloud Provider" data-type="sect2"><div class="sect2" id="breaking_down_the_slo_wall_between_custom">
+<h2>拆除客户与云服务商之间的 SLO 隔墙</h2>
+
+<p>客户关心的事项与云服务商关心的事项之间似乎天然会有一道无形的墙，甚至让人觉得无法避免。<a contenteditable="false" data-primary="cloud environment" data-secondary="breaking down SLO wall between GCP and Evernote" data-type="indexterm" id="idm139660643391472"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-tertiary="breaking down SLO wall between customer and cloud provider" data-type="indexterm" id="idm139660643390832"/>  Google 针对承载 Evernote 的 GCP 平台制定了 SLO 和 SLA（服务等级协议），<a contenteditable="false" data-primary="Google Cloud Platform (GCP)" data-secondary="breaking down SLO wall between GCP and Evernote" data-type="indexterm" id="idm139660643398272"/> Evernote 自己也有 SLO 和 SLA。<a contenteditable="false" data-primary="service level agreements (SLAs)" data-secondary="Google and Evernote" data-type="indexterm" id="idm139660643396912"/> 人们通常不会期待这样的两支工程团队彼此了解对方的 SLA。<a contenteditable="false" data-primary="SLAs" data-see="service level agreements" data-type="indexterm" id="idm139660643392544"/></p>
+
+<p>Evernote 从不希望存在这样一道墙。当然，我们本可以围绕这道分界线来设计系统，依据底层 GCP 指标制定自己的 SLO 和 SLA。但从一开始，我们就希望 Google 理解哪些性能特征对我们最重要，以及原因何在。我们希望 Google 的目标与我们的目标一致，也希望两家公司把 Evernote 在可靠性上的成功和失败都视为共同责任。为此，我们需要做到：</p>
+
+<ul>
+	<li>
+	<p>统一目标</p>
+	</li>
+	<li>
+	<p>确保合作伙伴（这里是 Google）真正理解 <span class="keep-together">什么对我们最重要</span></p>
+	</li>
+	<li>
+	<p>共同分享成功，也共同承担失败</p>
+	</li>
+</ul>
+
+<p>大多数服务商会依据公开发布的云服务 SLO/SLA 进行管理。在这个框架内工作固然重要，却不能完整反映我们的服务在云服务商环境中的实际运行质量。</p>
+
+<p>例如，一家云服务商很可能在全球运行数十万台虚拟机，并以正常运行时间和可用性为目标进行管理。GCP 对 Compute Engine（即其虚拟机）承诺 99.95% 的可用性。<a contenteditable="false" data-primary="virtual machines run by cloud provider, availability of" data-type="indexterm" id="idm139660643380736"/><a contenteditable="false" data-primary="Compute Engine" data-type="indexterm" id="idm139660643383888"/> 即使 GCP 的 SLO 图表显示为绿色（即高于 99.95%），Evernote 对同一个 SLO 的感受也可能截然不同：我们的虚拟机规模只占 GCP 全球总量的一小部分，因此，仅影响我们所在区域的中断（或因其他原因只影响我们的一类中断），可能会在全球汇总数据中被“淹没”。</p>
+
+<p>为弥补这种全局汇总带来的偏差，我们会与 Google 共享自己的 SLO 及其实时达成情况。因此，Google CRE 团队和 Evernote 使用同一套性能仪表板。这一点看似简单，却被证明是推动真正以客户为中心的行为的有力手段。于是，我们收到的不再只是“服务 X 运行缓慢”之类的笼统通知，Google 还会提供针对我们环境的具体信息。例如，除了“今天 GCP 负载均衡环境运行缓慢”这一通用通知，我们还会得知这个问题使 Evernote 的 SLO 受到 5% 的影响。这种协作也帮助 Google 内部团队看清自己的行动和决策如何影响客户。</p>
+
+<p>这种双向关系还为处理重大事件提供了非常有效的协作框架。<a contenteditable="false" data-primary="tickets" data-secondary="P1-P5 tickets in Evernote/Google relationship" data-type="indexterm" id="idm139660643378208"/> 大多数时候，常规的 P1–P5 工单模式和普通支持渠道运作良好，让我们既能维持优质服务，也能与 Google 保持良好关系。但我们都知道，有些时刻仅开一张 P1 工单（“对业务造成重大影响”）仍然不够——整个服务岌岌可危，业务可能长期受损。</p>
+
+<p>在这种时刻，共享 SLO 以及我们与 CRE 团队的协作关系就真正发挥作用。双方已经形成共识：如果对 SLO 的影响足够严重，就会共同把问题作为需要特殊处理的 P1 事件。很多时候，这意味着 Evernote 和 Google CRE 团队会迅速加入同一个电话会议。Google CRE 团队监控双方共同定义并认可的 SLO，使我们在优先级判断和响应措施上始终保持同步。</p>
+</div></section>
+
+<section data-pdf-bookmark="Current State" data-type="sect2"><div class="sect2" id="current_state">
+<h2>当前状态</h2>
+
+<p>积极使用 SLO 大约九个月后，Evernote 的 SLO 实践已经迭代到第 3 版。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-tertiary="current state of SLOs" data-type="indexterm" id="idm139660643376336"/> <a contenteditable="false" data-primary="Evernote, SLO case study" data-secondary="current state of SLO use and practice" data-type="indexterm" id="idm139660643377536"/>下一版将不再局限于简单的正常运行时间 SLO。我们计划开始探测单个 API 调用，并把客户端视角下的指标和性能纳入计算，从而更准确地反映用户体验到的 QoS。</p>
+
+<p>SLO 提供了一套标准且定义明确的 QoS 测量方式，使 Evernote 能更好地关注服务实际运行状况。现在，无论内部讨论还是与 Google 沟通，我们都能依据数据讨论中断的影响，进而推动服务改进，最终让支持团队更有效率、客户更加满意。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Evernote case study" data-startref="ix_SLOEv" data-type="indexterm" id="idm139660643368144"/><a contenteditable="false" data-primary="Evernote, SLO case study" data-startref="ix_Evcase" data-type="indexterm" id="idm139660643363808"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="The Home Depot’s SLO Story" data-type="sect1"><div class="sect1" id="home_depotapostrophes_slo_story">
+<h1>The Home Depot 的 SLO 实践</h1>
+
+<p><em>作者：William Bonnell，The Home Depot</em></p>
+
+<p>The Home Depot（THD）是全球最大的家居建材零售商：我们在 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-type="indexterm" id="ix_SLOHD"/>北美拥有 2,200 多家门店，<a contenteditable="false" data-primary="Home Depot, SLO case study" data-type="indexterm" id="ix_HDcase"/> 每家门店陈列 35,000 多种不同商品，线上还另有超过 150 万种商品。我们的基础设施承载多种软件应用，为近 40 万名员工提供支持，每年处理超过 15 亿笔客户交易。门店与全球供应链以及每年访问量超过 20 亿次的电子商务网站深度集成。<a contenteditable="false" data-primary="The Home Depot (THD)" data-see="Home Depot, SLO case study" data-type="indexterm" id="idm139660643360048"/></p>
+
+<p>为了提高软件开发的速度和质量，THD 最近全面调整了运维方式：既转向敏捷软件开发，也改变了软件的设计和管理方式。过去，集中式支持团队负责大型单体软件包；现在，我们采用微服务架构，由小型、独立运作的软件开发团队负责。于是，系统由粒度更小、持续变化的软件单元组成，而这些单元仍须贯穿整个技术栈相互集成。</p>
+
+<p>在转向微服务的同时，我们也开始推行全栈负责的“自由与责任文化”。开发者可以自行决定何时推送代码，但也要共同承担服务的运维责任。要让这种共同负责模式奏效，运维和开发团队必须使用一种既能明确责任、又能跨越复杂边界的共同语言：服务等级目标。相互依赖的服务需要了解如下信息：</p>
+
+<ul>
+	<li>
+	<p>你的服务有多可靠？它按三个 9、三个半 9，还是四个 9（或更高）的标准构建？是否有计划停机？</p>
+	</li>
+	<li>
+	<p>延迟上界大致是多少？</p>
+	</li>
+	<li>
+	<p>服务能否承受我将发送的请求量？如何处理过载？长期来看，服务是否达到了 SLO？</p>
+	</li>
+</ul>
+
+<p>如果每项服务都能透明且一致地回答这些问题，各团队就能清楚了解自身依赖，从而改善沟通，并增强团队之间的信任与责任意识。</p>
+
+<section data-pdf-bookmark="The SLO Culture Project" data-type="sect2"><div class="sect2" id="slo_culture_project">
+<h2>SLO 文化项目</h2>
+
+<p>开始转变服务模式之前，The Home Depot 并没有 SLO 文化。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="SLO culture project" data-type="indexterm" id="idm139660643353808"/><a contenteditable="false" data-primary="culture" data-secondary="SLO culture project at Home Depot" data-type="indexterm" id="idm139660643350496"/> 监控工具和仪表板虽然很多，却散落各处，也没有积累可供趋势分析的历史数据。发生中断时，我们并不总能定位到根源服务。我们常常从面向用户的服务开始排查，再沿依赖链向后追溯，直到找到问题，白白耗费无数小时。如果某项服务需要计划停机，依赖它的服务往往事先毫不知情。如果某团队要构建达到三个半 9 的服务，也不知道其强依赖服务能否以更高的正常运行时间（四个 9）支撑这一目标。这些脱节让软件开发团队和运维团队彼此困惑，也彼此失望。</p>
+
+<p>我们需要建立共同的 SLO 文化来消除这些脱节。为此，必须制定一项能够同时影响人员、流程和技术的总体策略。我们的工作覆盖四个方面：</p>
+
+<dl>
+	<dt><dfn>统一术语</dfn></dt>
+	<dd><p>结合 THD 的环境定义 SLO，并规定一致的测量方式。</p></dd>
+	<dt class="pagebreak-before"><dfn>宣导</dfn></dt>
+	<dd>
+	<p>在全公司推广这一理念。</p>
+
+	<ul>
+		<li>
+		<p>制作培训材料来说明 SLO 为何重要；在公司各处举办巡回宣讲；撰写内部博客；制作 T 恤和贴纸等宣传品。<a contenteditable="false" data-primary="evangelism, SLOs at Home Depot" data-type="indexterm" id="idm139660643339664"/></p>
+		</li>
+		<li>
+		<p>招募少数早期采用者实施 SLO，并向其他人展示其价值。</p>
+		</li>
+		<li>
+		<p>设计一个醒目的缩写（VALET，后文详述），帮助理念传播。</p>
+		</li>
+		<li>
+		<p>建立培训项目 FiRE Academy（可靠性工程基础），向开发者讲授 SLO 和其他可靠性概念。<sup><a data-type="noteref" href="ch03-zh.html#ch03fn2" id="ch03fn2-marker">2</a></sup></p>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>自动化</dfn></dt>
+	<dd><p>为降低采用门槛，建设指标收集平台，自动 <a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="automation of collection of data at Home Depot" data-type="indexterm" id="idm139660643331824"/>收集所有已部署到生产环境的服务等级指标（SLI）。之后可以更方便地把这些 SLI 转化为 SLO。</p></dd>
+	<dt><dfn>激励</dfn></dt>
+	<dd><p>为所有开发经理设定年度目标，要求他们为自己的 <a contenteditable="false" data-primary="incentives" data-secondary="for SLO setting and measuring at Home Depot" data-type="indexterm" id="idm139660643329760"/>服务制定并测量 SLO。</p></dd>
+</dl>
+
+<p>统一术语对促成所有人达成共识至关重要。我们也希望框架尽量简单，让理念传播得更快。<a contenteditable="false" data-primary="measurements" data-secondary="metrics for Home Depot services" data-type="indexterm" id="idm139660643336032"/> 作为起点，我们仔细审视了各项服务正在监控的指标，并发现了一些规律。<a contenteditable="false" data-primary="utilization" data-secondary="measurement in Home Depot case study" data-type="indexterm" id="idm139660643325056"/><a contenteditable="false" data-primary="errors" data-secondary="measurement in Home Depot case study" data-type="indexterm" id="idm139660643326480"/><a contenteditable="false" data-primary="Four Golden Signals" data-type="indexterm" id="idm139660643324288"/> 每项服务都会以某种形式监控自身的 <em>流量</em>、 <em>延迟</em>、 <em>错误</em>和 <em>利用率</em>——这些指标 <a contenteditable="false" data-primary="latency" data-secondary="measurement in Home Depot case study" data-type="indexterm" id="idm139660643321328"/><a contenteditable="false" data-primary="traffic volume metrics" data-type="indexterm" id="idm139660643319968"/>与 Google SRE 的 <a href="http://bit.ly/2LSLpDQ">四大黄金信号</a>高度对应。此外，许多服务还会把 <em>正常运行时间或可用性</em> 与错误分开监控。遗憾的是，各类指标普遍存在监控方式不一致、名称不同或数据不足的问题。<a contenteditable="false" data-primary="volume (traffic)" data-seealso="traffic volume metrics" data-type="indexterm" id="idm139660643319120"/></p>
+
+<p>当时没有任何一项服务设有 SLO。我们的生产系统中，最接近面向客户 SLO 的指标是支持工单。 <a contenteditable="false" data-primary="tickets" data-secondary="support tickets for Home Depot services" data-type="indexterm" id="idm139660643315888"/>对于部署到门店的应用，我们衡量其可靠性的主要方式——往往也是唯一方式——就是统计内部服务台收到的支持来电数量。</p>
+</div></section>
+
+<section data-pdf-bookmark="Our First Set of SLOs" data-type="sect2"><div class="sect2" id="our_first_set_of_slos">
+<h2>第一套 SLO</h2>
+
+<p>我们无法为系统中每个可测量的方面都制定 SLO，因此必须决定哪些指标（即 SLI）还应配套设置 SLO。<a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="first set of SLOs" data-type="indexterm" id="ix_HDcase1st"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="first set of SLOs" data-type="indexterm" id="ix_SLOHD1st"/></p>
+
+<section data-pdf-bookmark="Availability and latency for API calls" data-type="sect3"><div class="sect3" id="availability_and_latency_for_api_calls">
+<h3>API 调用的可用性和延迟</h3>
+
+<p>我们决定，每项微服务都必须为被 <em>其他</em> 微服务调用的 API 制定可用性和延迟 SLO。 <a contenteditable="false" data-primary="latency" data-secondary="for API calls in Home Depot case study" data-type="indexterm" id="idm139660643305680"/><a contenteditable="false" data-primary="APIs" data-secondary="availability and latency for API calls, Home Depot case study" data-type="indexterm" id="idm139660643304000"/><a contenteditable="false" data-primary="availability" data-secondary="for API calls, SLOs in Home Depot case study" data-type="indexterm" id="idm139660643302624"/>例如，Cart 微服务会调用 Inventory 微服务。对于这些 API 调用，Inventory 微服务会发布 SLO，Cart 微服务以及其他需要 Inventory 的微服务可以据此判断 Inventory 能否满足自己的可靠性要求。</p>
+</div></section>
+
+<section data-pdf-bookmark="Infrastructure utilization" data-type="sect3"><div class="sect3" id="infrastructure_utilization">
+<h3>基础设施利用率</h3>
+
+<p>THD 的各团队采用不同方式测量基础设施利用率，最常见的是以一分钟为粒度测量实时利用率。<a contenteditable="false" data-primary="utilization" data-secondary="infrastructure utilization in Home Depot case study" data-type="indexterm" id="idm139660643297200"/> 我们出于几个原因决定不为利用率设定 SLO。首先，微服务并不特别关心这个指标：只要服务能承受流量、保持可用、快速响应、不返回错误，也没有即将耗尽容量的风险，用户其实不在乎利用率。其次，我们即将迁移到云端，利用率的重要性会下降，成本规划将比容量规划更受关注。（我们仍需监控利用率并进行容量规划，只是不必把它纳入 SLO 框架。）</p>
+</div></section>
+
+<section data-pdf-bookmark="Traffic volume" data-type="sect3"><div class="sect3" id="traffic_volume">
+<h3>流量</h3>
+
+<p>由于 THD 尚未形成容量规划文化，我们需要一种机制，让软件<a contenteditable="false" data-primary="traffic volume metrics" data-secondary="SLOs in Home Depot case study" data-type="indexterm" id="idm139660643295488"/> 与运维团队能够沟通各自服务可承受的流量。<a contenteditable="false" data-primary="capacity planning" data-secondary="setting traffic volume SLOs in Home Depot case study" data-type="indexterm" id="idm139660643292464"/> 把流量定义为服务收到的请求并不难，但我们需要决定，是跟踪平均每秒请求数、峰值每秒请求数，还是报告周期内的请求总量。最终我们决定三者都跟踪，由各项服务选择最合适的指标。我们也讨论过是否应为流量设定 SLO，因为它取决于用户行为，而非我们可以控制的内部因素。最终，我们认为零售商必须按“黑色星期五”之类的峰值确定服务规模，因此根据预期峰值容量制定了 SLO。</p>
+</div></section>
+
+<section data-pdf-bookmark="Latency" data-type="sect3"><div class="sect3" id="latency">
+<h3>延迟</h3>
+
+<p>我们允许每项服务自行定义延迟 SLO，并决定最合适的测量位置。<a contenteditable="false" data-primary="latency" data-secondary="SLOs in Home Depot case study" data-type="indexterm" id="idm139660643282800"/> 唯一的要求是，除了通用的白盒性能监控，还必须补充黑盒监控，以捕捉微服务之外的 <span class="keep-together">网络</span>、缓存、代理等层出现的问题。我们还认为，百分位数比算术平均值更合适。服务至少要达到第 90 百分位目标；面向用户的服务最好达到第 95 和/或第 99 百分位目标。</p>
+</div></section>
+
+<section data-pdf-bookmark="Errors" data-type="sect3"><div class="sect3" id="errors">
+<h3>错误</h3>
+
+<p>错误的统计方式稍显复杂。<a contenteditable="false" data-primary="errors" data-secondary="defining SLOs for in Home Depot case study" data-type="indexterm" id="idm139660643285600"/> 由于主要处理 Web 服务，我们必须统一规定什么情况算错误，以及如何返回错误。 <a contenteditable="false" data-primary="HTTP status codes" data-type="indexterm" id="idm139660643288080"/>Web 服务遇到错误时，我们很自然地统一采用 HTTP 响应状态码：</p>
+
+<ul>
+	<li>
+	<p>服务不应在 2xx 响应正文中表示错误，而应返回 4xx 或 5xx。</p>
+	</li>
+	<li>
+	<p>由服务自身问题（例如内存耗尽）引起的错误，应返回 5xx。</p>
+	</li>
+	<li>
+	<p>由客户端引起的错误（例如发送格式错误的请求），应返回 4xx。</p>
+	</li>
+</ul>
+
+<p>经过充分讨论，我们决定同时跟踪 4xx 和 5xx 错误，但只用 5xx 错误制定 SLO。与其他 SLO 要素一样，我们有意让这个维度保持通用，以便不同应用在各自场景中使用。例如，除 HTTP 错误外，批处理服务还可以把处理失败的记录数视为错误。</p>
+</div></section>
+
+<section data-pdf-bookmark="Tickets" data-type="sect3"><div class="sect3" id="tickets">
+<h3>工单</h3>
+
+<p>如前所述，工单原本是我们评估大多数生产软件的主要方式。<a contenteditable="false" data-primary="tickets" data-secondary="SLOs in Home Depot case study" data-type="indexterm" id="idm139660643275600"/> 出于历史原因，我们决定在其他 SLO 之外继续跟踪工单。可以把这个指标理解为类似“软件运维等级”的概念。</p>
+</div></section>
+
+<section data-pdf-bookmark="VALET" data-type="sect3"><div class="sect3" id="valet">
+<h3>VALET</h3>
+
+<p>我们把新的一组 SLO 概括成一个 <a contenteditable="false" data-primary="VALET (SLOs at Home Depot)" data-type="indexterm" id="idm139660643271504"/>便于记忆的缩写：VALET。</p>
+
+<dl>
+	<dt><dfn>业务量（流量）</dfn></dt>
+	<dd><p>我的服务能够承受多大的 <a contenteditable="false" data-primary="volume (traffic)" data-secondary="in Home Depot VALET SLOs" data-type="indexterm" id="idm139660643267824"/>业务量？</p></dd>
+	<dt><dfn>可用性</dfn></dt>
+	<dd><p>我需要服务时，它是否可用？</p></dd>
+	<dt><dfn>延迟</dfn></dt>
+	<dd><p>我使用服务时，它能否快速响应？</p></dd>
+	<dt><dfn>错误</dfn></dt>
+	<dd><p>我使用服务时，它是否会返回错误？</p></dd>
+	<dt><dfn>工单</dfn></dt>
+	<dd><p>服务是否需要人工<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-startref="ix_SLOHD1st" data-tertiary="first set of SLOs" data-type="indexterm" id="idm139660643261392"/> 干预才能 <a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="first set of SLOs" data-startref="ix_HDcase1st" data-type="indexterm" id="idm139660643259600"/>完成我的请求？</p></dd>
+</dl>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Evangelizing SLOs" data-type="sect2"><div class="sect2" id="evangelizing_slos">
+<h2>宣导 SLO</h2>
+
+<p>有了这个容易记忆的缩写，我们便着手<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="evangelizing SLOs" data-type="indexterm" id="idm139660643255344"/> 在整个企业中 <a contenteditable="false" data-primary="evangelism, SLOs at Home Depot" data-type="indexterm" id="idm139660643256272"/>推广 <a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="evangelizing SLOs" data-type="indexterm" id="idm139660643253232"/>SLO：</p>
+
+<ul>
+	<li>
+	<p>SLO 为什么重要</p>
+	</li>
+	<li>
+	<p>SLO 如何支撑我们的“自由与责任文化”</p>
+	</li>
+	<li>
+	<p>应该测量什么</p>
+	</li>
+	<li>
+	<p>如何使用测量结果</p>
+	</li>
+</ul>
+
+<p>既然开发者现在要为自己软件的运行负责，就必须制定 SLO，以证明自己有能力构建和支持可靠的软件；同时，他们也需要借此与服务使用方沟通，而面向客户的服务还要与产品经理沟通。然而，大多数受众并不熟悉 SLA、SLO 等概念，因此需要学习新的 VALET 框架。</p>
+
+<p>为了让 SLO 转型获得高管支持，我们从高层领导开始开展教育活动。随后，我们逐一与开发团队会面，宣讲 SLO 的价值，并鼓励团队从各自定制、通常依赖人工的指标跟踪方式迁移到 VALET 框架。为保持势头，我们每周向高层领导发送一份 VALET 格式的 SLO 报告，同时附上对通用可靠性概念的说明，以及从内部事件中吸取的经验。这也帮助大家用 VALET 来理解“已创建采购订单数”（流量）或“处理失败的采购订单数”（错误）等业务指标。</p>
+
+<p>我们还通过多种方式扩大宣导规模：</p>
+
+<ul>
+	<li>
+	<p>我们搭建了一个内部 WordPress 站点，用于发布有关 VALET 和可靠性的博客，并链接到有用资源。</p>
+	</li>
+	<li>
+	<p>我们举办内部技术讲座，包括邀请一位 Google SRE 嘉宾，讨论通用可靠性概念以及如何使用 VALET 进行测量。</p>
+	</li>
+	<li>
+	<p>我们举办了一系列 VALET 培训工作坊，后来演变为 FiRE Academy，并向所有愿意参加的人开放。几个月里，这些工作坊的出席人数一直很多。</p>
+	</li>
+	<li>
+	<p>我们甚至制作了 VALET 笔记本贴纸和 T 恤，为完整的内部营销活动助阵。</p>
+	</li>
+</ul>
+
+<p>很快，公司里人人都知道 VALET，新的 SLO 文化也开始扎根。SLO 的实施甚至正式成为 THD 开发经理年度绩效评审的一项内容。当时约有 50 项服务每周定期采集和报告 SLO，但指标仍被零散地保存在电子表格中。VALET 理念虽已迅速普及，我们还需要自动化数据收集，才能推动大规模采用。 </p>
+</div></section>
+
+<section data-pdf-bookmark="Automating VALET Data Collection" data-type="sect2"><div class="sect2" id="automating_valet_data_collection">
+<h2>自动收集 VALET 数据</h2>
+
+<p>此时，我们的<a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="automating VALET data collection" data-type="indexterm" id="idm139660643236944"/> SLO 文化已经牢牢扎根； <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="automating VALET data collection" data-type="indexterm" id="idm139660643244528"/>如果把 VALET 数据收集自动化，就能进一步加快 SLO 的采用。</p>
+
+<section data-pdf-bookmark="TPS Reports" data-type="sect3"><div class="sect3" id="tps_reports">
+<h3>TPS Reports</h3>
+
+<p>我们构建了一个框架，自动采集部署到新 GCP 环境中的所有服务的 VALET 数据，并把它称为 <em>TPS Reports</em>。这个名称既借用了我们在流量与性能测试中使用的术语“每秒事务数”（TPS），当然也借机 <a href="http://bit.ly/2J4bGkL">开个玩笑</a><sup><a data-type="noteref" href="ch03-zh.html#ch03fn3" id="ch03fn3-marker">3</a></sup>，调侃可能会有多位经理想审阅这些数据。TPS Reports 框架构建在 GCP 的 BigQuery 数据库平台之上。Web 前端生成的所有日志都会送入 BigQuery，由 TPS Reports 处理。后来，我们还纳入了其他多种监控系统的指标，例如 Stackdriver 探测器提供的可用性数据。</p>
+
+<p>TPS Reports 把这些数据转换为任何人都能查询的逐小时 VALET 指标。新建服务会自动注册到 TPS Reports，因而可以立即查询。所有数据都存储在 BigQuery 中，因此我们能够高效报告不同时间范围内的 VALET 指标。我们用这些数据构建了多种自动报告和告警。最有意思的集成是一款聊天机器人，可以直接在商业聊天平台中报告服务的 VALET 状况。例如，任何服务都能在聊天频道里显示过去一小时的 VALET、与上周相比的 VALET、未达到 SLO 的服务，以及其他各种数据。</p>
+</div></section>
+
+<section data-pdf-bookmark="VALET service" data-type="sect3"><div class="sect3" id="valet_service">
+<h3>VALET 服务</h3>
+
+<p>下一步，我们创建了一个 VALET 应用，用于存储和报告 SLO 数据。SLO 最适合作为趋势分析工具，因此该服务按日、周、月三个粒度跟踪 SLO。需要注意，我们的 SLO 是可用于错误预算的趋势工具，却不直接连接监控系统。我们使用多种彼此独立的监控平台，每个平台都有自己的告警机制。这些监控系统每天汇总各自的 SLO，并发布到 VALET 服务以供趋势分析。这种架构的缺点是，监控系统中设置的告警阈值没有与 SLO 集成；优点则是我们可以按需更换监控系统。</p>
+
+<p>考虑到将来需要把 VALET 与不在 GCP 上运行的其他应用集成，我们创建了 VALET 集成层，提供一个 API，每天收集某项服务汇总后的 VALET 数据。TPS Reports 是第一个接入 VALET 服务的系统；后来，我们还接入了多种本地部署的应用平台，它们占 VALET 已注册服务的一半以上。</p>
+</div></section>
+
+<section data-pdf-bookmark="VALET Dashboard" data-type="sect3"><div class="sect3" id="valet_dashboard">
+<h3>VALET 仪表板</h3>
+
+<p>VALET 仪表板（见 <a data-type="xref" href="#valet_dashboard-id00004">图 3-1</a>）是我们用来可视化和报告<a contenteditable="false" data-primary="dashboards" data-secondary="VALET dashboard, Home Depot case study" data-type="indexterm" id="idm139660643225168"/> 这些数据的用户界面，结构比较直观。用户可以：</p>
+
+<ul>
+	<li>
+	<p>注册新服务。通常需要把服务关联到一个或多个 URL；这些 URL 可能已经采集了 VALET 数据。</p>
+	</li>
+	<li>
+	<p>为 VALET 的五个类别分别设定 SLO 目标。</p>
+	</li>
+	<li>
+	<p>在每个 VALET 类别下添加新的指标类型。例如，一项服务可能跟踪第 99 百分位延迟，另一项跟踪第 90 百分位延迟，也可以两者都跟踪。后端处理系统可能按天统计流量（一天内创建的采购订单数），面向客户的前端则可能跟踪峰值每秒事务数。</p>
+	</li>
+</ul>
+
+<p>VALET 仪表板可以同时报告多项服务的 SLO，并从多种角度筛选、细分数据。例如，团队可以查看过去一周内所有未达到 SLO 的服务统计。评审服务性能时，团队可以查看自身全部服务以及所依赖服务的延迟。VALET 仪表板把数据存储在一个简单的 Cloud SQL 数据库中，开发者则使用一款流行的商业报表工具制作报告。</p>
+
+<p>这些报告成为开发团队一项新最佳实践的基础：定期评审服务 SLO，通常每周或每月一次。根据评审结果，开发者可以制定行动项，使服务重新达到 SLO；也可能认定某个 SLO 不切实际，需要调整。</p>
+
+<figure><div class="figure" id="valet_dashboard-id00004"><img alt="VALET 仪表板" src="assets/tsrw_0301.png"/>
+<h6><span class="label">图 3-1　</span>VALET 仪表板</h6>
+</div></figure>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="The Proliferation of SLOs" data-type="sect2"><div class="sect2" id="proliferation_of_slos">
+<h2>SLO 的快速普及</h2>
+
+<p>当 SLO 牢牢进入组织的共同认知，自动化与报告机制也有效运转后，新的 SLO 很快大量涌现。<a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="proliferation of SLOs" data-type="indexterm" id="idm139660643208336"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="proliferation of SLOs" data-type="indexterm" id="idm139660643207120"/> 年初我们只跟踪约 50 项服务的 SLO；到年底，跟踪范围已增至 800 项服务，而且每月约有 50 项新服务注册到 VALET。</p>
+
+<p>VALET 让我们得以在整个 THD 大规模推广 SLO，因此开发自动化所投入的时间完全值得。不过，其他公司即使无法开发同样复杂的自动化，也不应因此放弃采用 SLO 方法。自动化确实为 THD 带来了额外收益，但仅仅把 SLO 明确写下来，本身就很有价值。</p>
+</div></section>
+
+<section data-pdf-bookmark="Applying VALET to Batch Applications" data-type="sect2"><div class="sect2" id="applying_valet_to_batch_applications">
+<h2>把 VALET 应用于批处理应用</h2>
+
+<p>随着围绕 SLO 建立起完善的报告能力，我们又发现了 VALET 的一些其他用途。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="applying VALET to batch applications" data-type="indexterm" id="idm139660643204288"/><a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="applying VALET to batch applications" data-type="indexterm" id="idm139660643204816"/> 稍作调整，批处理应用就能按如下方式纳入该框架：</p>
+
+<dl>
+	<dt><dfn>流量</dfn></dt>
+	<dd><p>处理的记录数量</p></dd>
+	<dt><dfn>可用性</dfn></dt>
+	<dd><p>作业在指定时间前完成的比例</p></dd>
+	<dt><dfn>延迟</dfn></dt>
+	<dd><p>作业运行所需的时间</p></dd>
+	<dt><dfn>错误</dfn></dt>
+	<dd><p>处理失败的记录</p></dd>
+	<dt><dfn>工单</dfn></dt>
+	<dd><p>操作员必须手动修复数据并重新处理作业的次数</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Using VALET in Testing" data-type="sect2"><div class="sect2" id="using_valet_in_testing">
+<h2>在测试中使用 VALET</h2>
+
+<p>由于我们同时也在建设 SRE 文化，因此发现 VALET 能够支持预发布环境中的破坏性测试（混沌工程）自动化。<a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="using VALET in testing" data-type="indexterm" id="idm139660643192864"/><a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="using VALET in testing" data-type="indexterm" id="idm139660643191424"/> 有了 TPS Reports 框架，我们可以自动运行破坏性测试，并记录测试对服务 VALET 数据的影响——理想情况下应当没有影响。</p>
+</div></section>
+
+<section data-pdf-bookmark="Future Aspirations" data-type="sect2"><div class="sect2" id="future_aspirations">
+<h2>未来规划</h2>
+
+<p>目前已有 800 项且仍在增加的服务采集 VALET 数据，我们掌握了大量有用的运维数据。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-tertiary="future aspirations" data-type="indexterm" id="idm139660643187552"/><a contenteditable="false" data-primary="Home Depot, SLO case study" data-secondary="future aspirations" data-type="indexterm" id="idm139660643185744"/> 未来我们希望在几个方向继续推进。</p>
+
+<p>既然已经能够有效采集 SLO，接下来就要用这些数据推动行动。下一步，我们希望建立类似 Google 的错误预算文化：服务未达到 SLO 时，团队停止推送新功能，只允许发布可靠性改进。为了兼顾业务对交付速度的要求，我们必须在 SLO 统计周期（按周或按月）与 SLO 违规触发停更的频率之间找到恰当平衡。与许多采用错误预算的公司一样，我们也在权衡滚动窗口和固定窗口各自的利弊。</p>
+
+<p>我们希望进一步细化 VALET，跟踪具体端点和服务调用方。目前，即使一项服务有多个端点，我们也只在整项服务层面跟踪 VALET。因此，很难区分不同操作，例如向商品目录写入与从商品目录读取；虽然我们会分别监控并告警，却不分别跟踪 SLO。同样，我们还希望针对不同的服务调用方分别统计 VALET 结果。</p>
+
+<p>目前我们在 Web 服务层跟踪延迟 SLO，但还希望为最终用户建立延迟 SLO。该指标要反映第三方标签、互联网延迟和 CDN 缓存等因素，会怎样影响页面开始渲染和完成渲染所需的时间。</p>
+
+<p>我们还希望把 VALET 数据用于应用部署。具体来说，在把变更继续发布到下一台服务器、下一个可用区或下一个区域前，通过自动化验证各项 VALET 指标是否仍在容许范围内。</p>
+
+<p>我们已经开始收集服务依赖信息，并制作了一个可视化关系图原型，用于显示调用树中哪些位置没有达到 VALET 指标。随着服务网格平台不断成熟，这类分析会变得更加容易。</p>
+
+<p>最后，我们坚信，服务的 SLO 应由其业务负责人（通常称为产品经理）根据该服务对业务的重要程度来制定。至少，业务负责人应设定服务正常运行时间的要求，并把该 SLO 作为产品管理与开发团队的共同目标。技术人员觉得 VALET 很直观，但产品经理未必如此。我们正用更贴近其工作的话语简化 VALET 概念：一方面减少正常运行时间的可选档位，另一方面提供示例指标。我们还会强调，从一个等级提升到另一个等级需要大量投入。下面是可能提供的一组简化 VALET 指标：</p>
+
+<ul>
+	<li>
+	<p>99.5%：门店员工不使用的应用，或一项新 <span class="keep-together">服务的最小可行产品（MVP）</span></p>
+	</li>
+	<li>
+	<p>99.9%：适用于 THD 大多数不直接参与销售的系统</p>
+	</li>
+	<li>
+	<p>99.95%：销售系统，或为销售系统提供支持的服务</p>
+	</li>
+	<li>
+	<p>99.99%：共享基础设施服务</p>
+	</li>
+</ul>
+
+<p>用业务语言表述指标，并让产品与开发团队共享一个清晰可见的目标（也就是 SLO！），可以显著减少大型公司中常见的可靠性预期错位。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="Home Depot case study" data-startref="ix_SLOHD" data-type="indexterm" id="idm139660643170720"/><a contenteditable="false" data-primary="Home Depot, SLO case study" data-startref="ix_HDcase" data-type="indexterm" id="idm139660643175888"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Summary" data-type="sect2"><div class="sect2" id="summary">
+<h2>总结</h2>
+
+<p>在大型公司引入一套新流程尚且不易，更不用说塑造一种新文化；这需要良好的策略、高管支持、有力的宣导、易于采用的模式，最重要的是耐心。像 SLO 这样意义重大的变革，可能需要数年才能在公司中牢固扎根。我们想强调，The Home Depot 是一家传统企业；既然我们能成功引入如此大规模的变化，你也可以。你也不必一次完成所有工作。我们虽然逐步实施 SLO，但全面的宣导策略和清晰的激励机制加速了转型：不到一年，采用 SLO 的服务就从 0 项增长到 800 项。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00005">
+<h1>结语</h1>
+
+<p>SLO 和错误预算是强有力的概念，可以帮助解决许多不同类型的问题。Evernote 与 The Home Depot 的案例真实展示了：建立 SLO 文化能够拉近产品开发与运维之间的距离，促进沟通，并为开发决策提供更充分的依据。最终，无论客户是内部还是外部、是人还是其他服务，都能获得更好的体验。</p>
+
+<p>这两个案例说明，SLO 文化是一项持续演进的实践，而不是一次性的修补或解决方案。虽然理念基础相同，THD 与 Evernote 的测量方式、SLI、SLO 和实施细节却明显不同。两个案例补充了 Google 自身对 SLO 的阐释，也证明实施 SLO 不必照搬 Google。正如这两家公司根据自身独特环境定制 SLO，其他公司和 <span class="keep-together">组织</span>也完全可以这样做。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch03fn1"><sup><a href="ch03-zh.html#ch03fn1-marker">1</a></sup> 不过，那是另一本书要讲的故事；详情参见 <a href="http://bit.ly/2spqgcl"><em class="hyperlink">http://bit.ly/2spqgcl</em></a>。</p><p data-type="footnote" id="ch03fn2"><sup><a href="ch03-zh.html#ch03fn2-marker">2</a></sup> 培训形式从一小时的入门介绍、半天的工作坊，到在成熟 SRE 团队中进行为期四周的高强度沉浸式学习不等；最后还有结业仪式，并会授予 FiRE 徽章。</p><p data-type="footnote" id="ch03fn3"><sup><a href="ch03-zh.html#ch03fn3-marker">3</a></sup> 这个说法因 1999 年的电影 <a href="http://www.imdb.com/title/tt0151804/"><em>《上班一条虫》（Office Space）</em></a>而广为人知。</p></div></div></section></body></html>
