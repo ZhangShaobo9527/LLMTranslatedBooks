@@ -1,0 +1,858 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>值班</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 8. On-Call" data-type="chapter" epub:type="chapter"><div class="chapter" id="on_call">
+<h1><span class="label">第 8 章：</span>值班</h1>
+
+<p class="byline">Ollie Cook、Sara Smollett、Andrea Spadaccini、<br/>Cara Donnelly、Jian Ma、Garrett Plasky（Evernote）<br/>，Stephen Thorne、Jessie Yang 参与撰写</p>
+
+<p>值班，是指在一段规定时间内保持可联系状态，并随时准备以适当的紧迫程度响应生产事件。<em>站点可靠性工程师</em>（SRE）通常需要参加值班轮换。值班期间，<a contenteditable="false" data-primary="on-call" data-type="indexterm" id="ix_onc"/>SRE 会根据需要诊断、缓解、修复事件或将其升级处理。此外，SRE 还经常负责不紧急的生产事务。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="being on-call" data-see="on-call" data-type="indexterm" id="idm139660641737664"/></p>
+
+<p>在 Google，值班是 SRE 工作的一项标志性特征。SRE 团队负责缓解事件、修复生产问题，并将运维任务自动化。由于多数团队尚未完全自动化所有运维任务，升级处理仍需要人工联系人，也就是值班工程师。并非每个 SRE 团队都必须值班，这取决于所支持系统的重要程度及其开发阶段；但根据我们的经验，多数 SRE 团队都会安排值班。</p>
+
+<p>值班是一个庞大而复杂的主题，限制条件很多，试错空间却很小。<a href="http://bit.ly/2JgUBU7">第 11 章</a>，我们的第一本书（<em>Site Reliability Engineering</em>）中的“值班”已经讨论过这一主题。本章将回应我们收到的、针对该章的一些具体反馈和问题，包括：</p>
+
+<ul>
+	<li>
+	<p>“我们不是 Google，规模要小得多。轮值人数没有那么多，也没有分布在不同时区的站点。第一本书中的做法对我们并不适用。”</p>
+	</li>
+	<li>
+	<p>“我们的值班轮换既有开发人员，也有 DevOps 工程师。怎样组织最合适？是否应当拆分职责？”</p>
+	</li>
+	<li>
+	<p>“一次典型的 24 小时班次中，我们的值班工程师会收到大约一百次寻呼。很多告警被忽略，真正的问题反而淹没其中。我们应该从哪里着手？”</p>
+	</li>
+	<li>
+	<p>“值班轮换的人员流动率很高。怎样弥补团队内部的知识缺口？”</p>
+	</li>
+	<li>
+	<p>“我们希望把 DevOps 团队重组为 SRE<sup><a data-type="noteref" href="ch08-zh.html#ch08fn1" id="ch08fn1-marker">1</a></sup>。SRE 值班、DevOps 值班和开发人员值班有什么区别？请具体说明，因为 DevOps 团队对此非常担忧。”</p>
+	</li>
+</ul>
+
+<p>本章将针对这些情形给出实用建议。Google 是一家拥有成熟 SRE 组织的大公司，但我们多年积累的许多经验适用于任何规模、任何成熟度的公司或组织。Google 为各种规模的服务设置了数百个值班轮换，安排有简有繁。值班也并非 SRE 独有的职责：许多开发团队会直接为自己的服务值班。每种值班安排都服务于特定系统的实际需要。</p>
+
+<p>本章介绍 Google 内外的值班安排。你的具体环境和情况很可能与示例不同，但其中的核心概念具有广泛适用性。</p>
+
+<p>接下来，我们将剖析告警负载及其成因，并提出优化值班安排、降低负载的策略。</p>
+
+<p>最后，我们分享 Google 内部的两类实践：值班灵活性和值班团队协作。这些实践表明，无论值班安排在数学上多么合理，都不能只依赖排班机制本身；激励因素和人的行为同样重要，也必须纳入考虑。</p>
+
+<section data-pdf-bookmark="Recap of “Being On-Call” Chapter of First SRE Book" data-type="sect1"><div class="sect1" id="recap_of_quotation_markbeing_on_callquota">
+<h1>回顾第一本 SRE 图书中的“值班”一章</h1>
+
+<p><em>Site Reliability Engineering</em> 的<a href="http://bit.ly/2JgUBU7">“值班”</a>一章解释了 Google 值班轮换背后的原则。本节回顾其中的要点。</p>
+
+<p>在 Google，值班的总体目标是在覆盖关键服务的同时，绝不以损害值班工程师的健康为代价来换取可靠性。<a contenteditable="false" data-primary="on-call" data-secondary="recap from first SRE book" data-type="indexterm" id="idm139660641705840"/>因此，SRE 团队追求<em>平衡</em>。SRE 的职责应当由值班工作和项目工作健康地组合而成。<a contenteditable="false" data-primary="balance between on-call and project work for SREs" data-type="indexterm" id="idm139660641707856"/>规定 SRE 至少用 50% 的时间开展项目工作，能让团队有余力通过项目从战略上解决生产环境中发现的问题。团队人员配置必须充足，才能保证项目工作的时间。</p>
+
+<p>我们的目标是每个值班班次最多处理两个不同事件，<sup><a data-type="noteref" href="ch08-zh.html#ch08fn2" id="ch08fn2-marker">2</a></sup>以留出充足的后续跟进时间。如果告警负载过高，就必须采取纠正措施。本章稍后会进一步讨论告警负载。</p>
+
+<p><em>心理安全</em><sup><a data-type="noteref" href="ch08-zh.html#ch08fn3" id="ch08fn3-marker">3</a></sup>对于有效的值班轮换至关重要。值班可能令人畏惧、压力很大，因此应通过明确的流程和升级路径充分支持值班工程师，减轻其负担。<a contenteditable="false" data-primary="psychological safety" data-secondary="in on-call rotations" data-type="indexterm" id="idm139660641698448"/></p>
+
+<p>值班通常意味着要在正常工作时间之外提供支持。我们认为这项工作应得到补偿。不同公司可以采用不同方式；Google 会提供调休或现金补偿，并将补偿限制在总薪酬的一定比例内。这样的机制既能鼓励工程师参与值班，也能防止他们因经济因素承担过多班次。</p>
+</div></section>
+
+<section data-pdf-bookmark="Example On-Call Setups Within Google and Outside Google" data-type="sect1"><div class="sect1" id="example_on_call_setups_within_google_and">
+<h1>Google 内外的值班安排示例</h1>
+
+<p>本节介绍 Google 和 Evernote 的实际值班安排。Evernote 是一家位于加利福尼亚州的公司，其跨平台应用帮助个人和团队创建、整理和共享<a contenteditable="false" data-primary="on-call" data-secondary="example setup within Google" data-type="indexterm" id="ix_oncexG"/>信息。我们将分别说明两家公司为何采用相应安排，以及各自的值班理念与实践。</p>
+
+<section data-pdf-bookmark="Google: Forming a New Team" data-type="sect2"><div class="sect2" id="google_forming_a_new_team">
+<h2>Google：组建新团队</h2>
+
+<section data-pdf-bookmark="Initial scenario" data-type="sect3"><div class="sect3" id="initial_scenario">
+<h3>初始情境</h3>
+
+<p>几年前，Google 山景城的一名 SRE Sara 组建了一支新 SRE 团队，该团队必须在三个月<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-type="indexterm" id="ix_SREteam"/><a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="initial scenario" data-type="indexterm" id="idm139660641686112"/>内开始值班。作为参照，Google 多数 SRE 团队通常不会要求新员工在入职三到九个月内具备独立值班能力。山景城新团队将接手三项 Google Apps 服务；此前，这些服务由华盛顿州柯克兰的一支 SRE 团队负责，两地航程约两小时。柯克兰团队在伦敦还有一支姐妹 SRE 团队；伦敦团队将继续与山景城新团队以及分布各地的产品开发团队共同支持这些服务。<sup><a data-type="noteref" href="ch08-zh.html#ch08fn4" id="ch08fn4-marker">4</a></sup></p>
+
+<p>山景城的新 SRE 团队很快组建完成，共有七人：</p>
+
+<ul>
+	<li>
+	<p>Sara，SRE 技术负责人</p>
+	</li>
+	<li>
+	<p>Mike，来自另一支 SRE 团队的资深 SRE</p>
+	</li>
+	<li>
+	<p>一名从产品开发团队转入、刚开始从事 SRE 工作的工程师</p>
+	</li>
+	<li>
+	<p>四名新员工（“Noogler”）</p>
+	</li>
+</ul>
+
+<p>即使对成熟团队而言，为新服务开始值班也总是充满挑战，而山景城的新团队整体资历尚浅。尽管如此，他们仍在不牺牲服务质量和项目推进速度的前提下顺利接管了服务，并立即做出改进：机器成本降低 40%，发布流程也通过金丝雀发布和其他安全检查实现了完全自动化。团队继续稳定交付服务，目标可用性为 99.98%，即每季度停机时间约 26 分钟。</p>
+
+<p>这支新团队怎样迅速具备了完成如此多工作的能力？靠的是入门项目、导师指导和培训。</p>
+</div></section>
+
+<section data-pdf-bookmark="Training roadmap" data-type="sect3"><div class="sect3" id="training_roadmap">
+<h3>培训路线图</h3>
+
+<p>新团队起初对所接手的服务了解不多，但 Sara 和 Mike 熟悉 Google 的生产环境和 SRE 工<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="training" data-type="indexterm" id="idm139660641674144"/><a contenteditable="false" data-primary="training" data-secondary="new SRE team at Google" data-type="indexterm" id="idm139660641673472"/>作。四名 Noogler 完成公司入职培训后，Sara 和 Mike 整理了<a contenteditable="false" data-primary="checklist for new SRE team training" data-type="indexterm" id="idm139660641671152"/>一份清单，列出二十多个值班前需要练习的重点领域，例如：</p>
+
+<ul>
+	<li>
+	<p>管理生产作业</p>
+	</li>
+	<li>
+	<p>理解调试信息</p>
+	</li>
+	<li>
+	<p>将流量从集群中“排空”</p>
+	</li>
+	<li>
+	<p>回滚有问题的软件发布</p>
+	</li>
+	<li>
+	<p>阻断不需要的流量或对其限速</p>
+	</li>
+	<li>
+	<p>增加服务容量</p>
+	</li>
+	<li>
+	<p>使用监控系统，包括告警和信息面板</p>
+	</li>
+	<li>
+	<p>说明服务的架构、各个组件及其依赖关系<span class="keep-together"/></p>
+	</li>
+</ul>
+
+<p>Noogler 通过查阅现有文档和 <em>codelab</em>（有指导的动手编程教程），自行找到了一部分信息；他们也在完成入门项目的过程中理解相关主题。<a contenteditable="false" data-primary="codelabs" data-type="indexterm" id="idm139660641661264"/>每当某位成员学到与这些项目有关的知识，就会主持一次简短的即席分享。其余主题由 Sara 和 Mike 讲解。团队还安排实验课，<span class="keep-together">练习</span>常见的调试和故障缓解操作，帮助所有人形成操作记忆并建立信心。</p>
+
+<p>除清单外，新团队还开展了一系列“深度探究”，系统了解所负责的服务。他们查看监控面板、识别正在运行的作业，并尝试诊断近期告警。Sara 和 Mike 强调，工程师<em>不必</em>对每项服务都有多年经验，也能达到胜任工作的程度。他们指导团队从基本原理出发探索服务，鼓励 Noogler 主动熟悉系统；同时坦诚说明自身知识的边界，并教大家何时应当求助。</p>
+
+<p>在能力提升期间，新团队并非孤军奋战。Sara 和 Mike 前往其他 SRE 团队和产品开发团队交流学习；新团队也通过视频会议、电子邮件和 IRC 与柯克兰及伦敦团队沟通。此外，他们参加每周生产会议，阅读每日值班交接记录和事后复盘，并查阅现有服务文档。一名柯克兰 SRE 到访讲解并答疑；一名伦敦 SRE 则设计了一套完整的灾难场景，在 Google 灾难恢复培训周中组织演练（参见<a href="http://bit.ly/2JiPfaV">“Preparedness and Disaster Testing”</a>一节，载于<em>Site Reliability Engineering</em>第 33 章）。</p>
+
+<p>团队还通过“厄运之轮”训练演练值班（参见<a href="http://bit.ly/2Hb8ONg">“Disaster Role Playing”</a>一节，载于<em>Site Reliability Engineering</em>第 28 章）：成员重演近期事件，练习诊断生产问题。演练中鼓励所有 SRE 提出解决模拟生产故障的建议。即使全员都完成能力提升后，团队仍继续开展这类训练，并轮流由每位成员主持；演练过程也会记录下来供日后参考。</p>
+
+<p>正式参加值班前，团队仔细学习了值班工程师的职责准则。例如：</p>
+
+<ul>
+	<li>
+	<p>每个班次开始时，值班工程师阅读上一班次的交接记录。</p>
+	</li>
+	<li>
+	<p>值班工程师首先将对用户的影响降到最低，然后确保问题得到完全解决。</p>
+	</li>
+	<li>
+	<p>班次结束时，值班工程师向下一位值班工程师发送交接邮件。</p>
+	</li>
+</ul>
+
+<p>准则还规定了何时应向他人升级，以及如何为重大事件撰写事后复盘。</p>
+
+<p>最后，团队阅读并更新值班<em>操作手册</em>。操作手册给出响应自动告警的高层指引，说明告警的严重程度和影响，并提供调试建议以及缓解影响、彻底解决问题的可选措施。在 SRE 实践中，创建告警时通常也会创建相应的操作手册条目。<a contenteditable="false" data-primary="playbooks, maintaining" data-type="indexterm" id="idm139660641652752"/>这些指南能够减轻压力、缩短平均修复时间（MTTR），并降低人为错误风险。</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="maintaining_playbooks">
+<h5>维护操作手册</h5>
+
+<p>操作手册中的细节会随着生产环境变化而过时。若每天发布，<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="maintaining playbooks" data-type="indexterm" id="idm139660641641744"/>手册几乎随时都可能需要更新。和其他沟通形式一样，写好文档并不容易。那么，怎样维护操作手册？</p>
+
+<p>Google 有些 SRE 主张让操作手册保持概括性，以降低变更频率。例如，可以为所有“RPC Errors High”告警只保留一个条目，让受过培训的值班工程师结合当前告警服务的架构图阅读。另一些 SRE 则主张提供逐步操作说明，以减少人为差异并缩短 MTTR。若团队对内容取舍意见不一，操作手册很容易被拉向不同方向。</p>
+
+<p>这是一个有争议的话题。即使其他方面无法达成一致，团队至少应确定操作手册必须包含哪些最基本的结构化信息，并留意手册何时积累了大量超出这些信息的内容。应安排项目，把来之不易的生产知识转化为自动化或监控面板。如果操作手册只是值班工程师在某类告警每次触发时都照着执行的一组确定命令，我们建议直接实现自动化。</p>
+</div></aside>
+
+<p>两个月后，Sara、Mike 和那名转岗 SRE 跟班观察即将退出支持工作的柯克兰团队如何值班。到第三个月，他们开始担任主值班，柯克兰 SRE 作为后备；这样有需要时便可轻松向柯克兰团队升级。随后，Noogler 也跟随更有经验的本地 SRE 学习，并加入轮换。</p>
+
+<p>完善的文档和前述各种策略帮助团队打下坚实基础并迅速成长。值班虽然可能带来压力，但团队逐渐有足够信心果断行动，不再反复怀疑自己。他们知道自己的响应建立在团队集体知识之上，也知道即使请求升级支持，仍会被视为称职的工程师；这种认识带来了心理安全感。</p>
+</div></section>
+
+<section data-pdf-bookmark="Afterword" data-type="sect3"><div class="sect3" id="afterword">
+<h3>后记</h3>
+
+<p>山景城 SRE 提升能力期间得知，伦敦那支经验丰富的姐<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-tertiary="afterword" data-type="indexterm" id="idm139660641631648"/>妹团队将转向新项目，苏黎世将组建新团队，接手原由伦敦团队支持的服务。第二次交接采用了山景城团队的同一套基本方法，同样取得成功。山景城 SRE 此前投入精力制作的入职与培训材料，也帮助苏黎世新团队迅速进入状态。</p>
+
+<p>山景城的方法适合一批 SRE 同时组建团队；但每次只有一人加入时，就需要更轻量的做法。为应对未来人员流动，团队绘制了服务架构图，并把基础培训清单正式整理为一系列练习；这些练习只需导师少量参与，即可半独立完成，包括描述存储层、执行容量扩展，以及检查 HTTP 请求的路由方式。<a contenteditable="false" data-primary="SRE teams" data-secondary="forming new team at Google" data-startref="ix_SREteam" data-type="indexterm" id="idm139660641640400"/><a contenteditable="false" data-primary="on-call" data-secondary="example setup within Google" data-startref="ix_oncexG" data-type="indexterm" id="idm139660641639616"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Evernote: Finding Our Feet in the Cloud" data-type="sect2"><div class="sect2" id="evernote_finding_our_feet_in_the_cloud">
+<h2>Evernote：在云端站稳脚跟</h2>
+
+<section data-pdf-bookmark="Moving our on-prem infrastructure to the cloud" data-type="sect3"><div class="sect3" id="moving_our_on_prem_infrastructure_to_the">
+<h3>将本地基础设施迁移到云端</h3>
+
+<p>我们原本无意重新设计值班流程，但许多事情都是需求催生发明。<a contenteditable="false" data-primary="on-call" data-secondary="example setups, Evernote case study" data-type="indexterm" id="ix_oncexEv"/><a contenteditable="false" data-primary="cloud environment" data-secondary="Evernote, on-call setup for cloud datacenters" data-type="indexterm" id="ix_cloudEv"/>2016 年 12 月以前，Evernote 只运行在自建数据中心中，基础设施围绕单体应用构建，网络和服务器也针对特定架构及数据流设计。再加上其他诸多限制，我们缺少支撑横向扩展架构所需的灵活性。<a contenteditable="false" data-primary="Google Cloud Platform (GCP)" data-type="indexterm" id="idm139660641623232"/>Google Cloud Platform（GCP）为此提供了切实方案，但仍有一道主要障碍：把所有生产及配套基础设施迁移到 GCP。70 天后，经过艰苦努力和许多非凡行动——例如迁移数千台服务器和 3.5 PB 数据——我们顺利在新环境中安顿下来。然而工作尚未结束：在新环境中，我们要怎样监控和告警，又该怎样响应问题？最后一点尤其重要。</p>
+</div></section>
+
+<section data-pdf-bookmark="Adjusting our on-call policies and processes" data-type="sect3"><div class="sect3" id="adjusting_our_on_call_policies_and_proces">
+<h3>调整值班政策和流程</h3>
+
+<p>迁移上云释放了基础设施快速增长的潜力，但当时的值班政策和流程尚不足以应对这种增长。迁移完成后，我们立即着手补救。原来的物理数据中心几乎在每个组件中都内置了冗余。因此，以我们的规模而言组件故障虽很常见，单个组件通常不会对用户造成负面影响。由于基础设施完全由我们控制，环境非常稳定，任何小波动通常都意味着系统某处发生了故障。告警策略也据此设计：少量丢包引发 JDBC（Java 数据库连接）异常，往往意味着某台 VM（虚拟机）宿主机即将故障，或某台交换机的控制平面出了问题。还没正式进入云环境，我们就已经意识到这种告警与响应模式无法长期维持。在实时迁移和网络时延成为常态的环境中，监控必须采用更全面的视角。</p>
+
+<p>我们从基本原则重新界定哪些事件应当寻呼，并把这些原则明确写成 SLO（服务级别目标），从而让团队清楚哪些情况值得告警，也得以清理监控基础设施中的冗余。我们关注 API 响应能力等较高层指标，而不是 MySQL 的 InnoDB 行锁等待等底层基础设施指标，因此能把更多时间用于处理停机期间用户真正感受到的影响，而不是追逐转瞬即逝的问题。对团队而言，这意味着更多睡眠、更高工作效率，以及最终更高的工作满意度。</p>
+</div></section>
+
+<section data-pdf-bookmark="Restructuring our monitoring and metrics" data-type="sect3"><div class="sect3" id="restructuring_our_monitoring_and_metrics">
+<h3>重构监控与指标体系</h3>
+
+<p>我们的主值班轮换由一支人数不多但执行力很强的工程师团队承担。他们负责生产基础设施以及少数其他业务系统，例如预发布环境和构建流水线基础设施。我们按周安排全天候值班，交接流程运转成<a contenteditable="false" data-primary="monitoring" data-secondary="restructuring at Evernote for cloud datacenters" data-type="indexterm" id="idm139660641618640"/>熟，并在每日站会上回顾前一天的事件。团队规模小而职责范围大，因此必须尽量减轻流程负担，并尽快闭合“告警—分诊—修复—分析”循环。为此，我们采用简单而有效的告警 SLA（服务水平协议），把噪声控制在较低水平。指标或监控基础设施产生的事件分为三类：<a contenteditable="false" data-primary="metrics" data-secondary="restructuring at Evernote for cloud datacenters" data-type="indexterm" id="idm139660641608992"/></p>
+
+<dl>
+<dt>P1：立即处理</dt>
+<dd>
+<ul>
+	<li>
+	<p>应当能够立即采取行动</p>
+	</li>
+	<li>
+	<p>寻呼值班人员</p>
+	</li>
+	<li>
+	<p>进入事件分诊流程</p>
+	</li>
+	<li>
+	<p>会影响 SLO</p>
+	</li>
+</ul></dd>
+
+<dt>P2：下一个工作日处理</dt>
+
+<dd>
+<ul>
+	<li>
+	<p>通常不直接影响客户，或影响范围非常有限</p>
+	</li>
+	<li>
+	<p>向团队发送邮件，并通知事件流频道</p>
+	</li>
+</ul>
+</dd>
+<dt>P3：仅供参考的信息事件</dt>
+<dd>
+<ul>
+	<li>
+	<p>信息汇总到信息面板、非紧急邮件等渠道</p>
+	</li>
+	<li>
+	<p>包括与容量规划有关的信息</p>
+	</li>
+</ul></dd></dl>
+
+<p>每个 P1 或 P2 事件都会关联一张事件工单。工单不仅用于事件分诊和跟踪修复措施，也会记录 SLO 影响、发生次数，以及适用时的事后复盘文档链接。</p>
+
+<p>P1 事件触发寻呼后，值班人员首先评估用户影响，并将事件划分为 1 至 3 级。对于严重级别 1（Sev 1）事件，我们设定了一组有限而明确的标准，让响应人员能够尽可能直接地决定是否升级。事件升级后，我们组建事件处置团队并启动事件管理流程：寻呼事件经理，选出记录员和沟通负责人，并启用沟通渠道。事件解决后，我们自动生成事后复盘，并在公司内广泛分享结果。对于 Sev 2 或 Sev 3 事件，值班响应人员负责完整事件生命周期，包括用于事件评审的简短复盘。</p>
+
+<p>保持流程轻量化的一项好处，是可以明确免除值班人员承担项目工作的要求。这样既授权并鼓励其立即采取后续行动，也使其能在完成事件复盘后找出工具或流程中的主要缺口。于是，每个班次都形成持续改进与灵活调整的循环，跟上环境的快速变化。目标是让每次值班都比上一次更好。</p>
+</div></section>
+
+<section data-pdf-bookmark="Tracking our performance over time" data-type="sect3"><div class="sect3" id="tracking_our_performance_over_time">
+<h3>持续跟踪绩效</h3>
+
+<p>引入 SLO 后，我们希望持续跟踪服务表现，并与公司内的利益相关方分享相关信息。为此，我<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="tracking performance over time at Evernote" data-type="indexterm" id="idm139660641585248"/>们每月召开一次向所有感兴趣者开放的服务评审会，回顾并讨论上个月的服务情况。我们也在会上审视值班负担，把它作为团队健康状况的晴雨表；当告警预算超支时，则讨论补救措施。这个论坛既在公司内传播 SLO 的重要性，也督促技术组织对服务和团队的健康负责。</p>
+</div></section>
+
+<section data-pdf-bookmark="Engaging with CRE" data-type="sect3"><div class="sect3" id="engaging_with_cre">
+<h3>与 CRE 合作</h3>
+
+<p>用 SLO 表述目标，为我们与 Google 客户可靠性工程（CRE）团队合作奠定了基<a contenteditable="false" data-primary="Google’s Customer Reliability Engineering (CRE) team" data-type="indexterm" id="idm139660641595088"/><a contenteditable="false" data-primary="CRE" data-see="Google’s Customer Reliability Engineering (CRE) team" data-type="indexterm" id="idm139660641595552"/>础。双方讨论并确认这些 SLO 是否现实、可衡量后，决定凡是影响 SLO 的事件，在寻呼我们工程师的同时也寻呼 CRE。云抽象层层叠加后，根因往往难以定位；有 Google 工程师并肩协助，可以减少对黑盒事件分诊的猜测。更重要的是，这项合作进一步缩短了 MTTR，而这最终才是用户关心的。</p>
+</div></section>
+
+<section data-pdf-bookmark="Sustaining a self-perpetuating cycle" data-type="sect3"><div class="sect3" id="sustaining_a_self_perpetuating_cycle">
+<h3>维持自我强化的循环</h3>
+
+<p>如今，我们不必把所有时间都耗在“分诊—根因分析—事后复盘”的循环里，团队有更多余力思考怎样推动业务发展。具体项目包括改进微服务平台，以及为产品开发团队制定生产就绪标准。后者吸收了我们重构值班体系时遵循的许多原则，对第一次真正承担寻呼职责的团队尤其有帮助。由此，我们让改善值班的循环持续运转，并惠及所有团队。</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Practical Implementation Details" data-type="sect1"><div class="sect1" id="prac_impl_details">
+<h1>实施细节</h1>
+
+<p>到目前为止，我们介绍了 Google 内外的值班安排。值班本身还有哪些具体注意事项？以下各节将深入讨论这些实施细节：</p>
+
+<ul>
+	<li>
+	<p>告警负载：它是什么、如何形成，以及怎样管理</p>
+	</li>
+	<li>
+	<p>怎样在值班排班中引入灵活性，为 SRE 创造更健康的工作与生活平衡</p>
+	</li>
+	<li>
+	<p>改善团队协作的策略，既包括 SRE 团队内部，也包括与合作团队之间<a contenteditable="false" data-primary="on-call" data-secondary="example setups, Evernote case study" data-startref="ix_oncexEv" data-type="indexterm" id="idm139660641590288"/><a contenteditable="false" data-primary="cloud environment" data-secondary="Evernote, on-call setup for cloud datacenters" data-startref="ix_cloudEv" data-type="indexterm" id="idm139660641591184"/></p>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Anatomy of Pager Load" data-type="sect2"><div class="sect2" id="anatomy_of_pager_load">
+<h2>告警负载剖析</h2>
+
+<p>寻呼器响个不停，团队也因此苦不堪言。<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-type="indexterm" id="ix_oncpager"/><a contenteditable="false" data-primary="pager load" data-type="indexterm" id="ix_pager"/>你已经读过<a href="http://bit.ly/2sqRwad">第 31 章</a>，载于<em>Site Reliability Engineering</em>，并定期与本团队及所支持的开发团队召开生产会议。现在所有人都<em>知道</em>值班工程师很不满。下一步该怎么办？</p>
+
+<p><em>告警负载</em>是值班工程师在一个典型班次内（例如一天或一周）收到的寻呼事件数量；一次事件可能触发多次寻呼。下面将分析各种因素如何影响告警负载，并介绍降低未来负载的方法。<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="appropriate response times for pages" data-type="indexterm" id="idm139660641567600"/></p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="appropriate_response_times">
+<h5>合理的响应时间</h5>
+
+<p>除非确有充分理由，否则不应要求工程师在收到寻呼后的几分钟内就坐到电脑前处理问题。<a contenteditable="false" data-primary="response times to pages" data-type="indexterm" id="idm139660641561824"/><a contenteditable="false" data-primary="pager load" data-secondary="appropriate response times" data-type="indexterm" id="idm139660641563920"/>面向客户且直接产生收入的服务若完全中断，通常必须立即响应；但严重程度较低的问题，例如备份失败，可以在几小时内处理。</p>
+
+<p>建议检查当前的寻呼设置，确认每种会触发寻呼的情况是否<em>真的应该</em>寻呼。有些问题更适合自动修复——通常让计算机修复比要求人工介入更好；若优先级并不高，则更适合创建工单。<a data-type="xref" href="#example_realistic_response_times">表 8-1</a>给出了一些事件及其合理响应方式。</p>
+</div></aside>
+
+<table class="border" id="example_realistic_response_times">
+	<caption><span class="label">表 </span>8-1. 合理响应时间示例</caption>
+	<thead>
+		<tr>
+			<th><strong>事件描述</strong></th>
+			<th><strong>响应时间</strong></th>
+			<th><strong>对 SRE 的影响</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>影响收入的网络中断</td>
+			<td>5 分钟</td>
+			<td>SRE 必须始终能立即拿到一台电量充足、已完成身份验证且可联网的笔记本电脑；不能出行；必须持续与副值班人员密切协调</td>
+		</tr>
+		<tr>
+			<td>客户订单批处理系统卡住</td>
+			<td>30 分钟</td>
+			<td>SRE 可以短暂离家办事或进行短途通勤；这段时间无需副值班人员代为覆盖</td>
+		</tr>
+		<tr>
+			<td>尚未上线的服务发生数据库备份失败</td>
+			<td>工单（工作时间内响应）</td>
+			<td>无</td>
+		</tr>
+	</tbody>
+</table>
+
+<section data-pdf-bookmark="Scenario: A team in overload" data-type="sect3"><div class="sect3" id="scenario_a_team_in_overload">
+<h3>情境：超负荷团队</h3>
+
+<p>假设有一支 Connection SRE 团队，负<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="scenario, a team in overload" data-type="indexterm" id="idm139660641544576"/>责前端负载均衡和<a contenteditable="false" data-primary="pager load" data-secondary="scenario, a team in overload" data-type="indexterm" id="idm139660641545664"/>终止最终用户连接。该团队陷入了告警负载过高的困境：预算是每班最多两个寻呼事件，但过去一年里经常达到每班五个，分析显示足足三分之一的班次超过预算。成员竭力应付每天扑面而来的寻呼，却仍无力跟上；一天的时间根本不足以查明根因并妥善修复不断出现的问题。一些工程师因此转到运维负担较轻的团队。高质量的事件后续工作十分少见，因为值班人员只能来得及缓解眼前问题。</p>
+
+<p>情况并非毫无希望：团队拥有遵循 SRE 最佳实践的成熟监控基础设施，告警阈值与 SLO 对齐，寻呼告警也以症状为依据，只在客户受到影响时触发。团队把这些信息提交给高级管理层后，管理层认定其确实处于运维超负荷状态，并审查了帮助团队恢复健康的项目计划。</p>
+
+<p>不利的一面是，Connection 团队逐渐接管了十多个开发团队的软件组件，并且强依赖 Google 面向客户的边缘网络和骨干网络。大量跨团队关系十分复杂，并在不知不觉间变得难以管理。</p>
+
+<p>尽管监控体系遵循了最佳实践，团队面对的许多寻呼仍超出其直接控制范围。例如，黑盒探针可能因网络拥塞和丢包而失败；团队为缓解骨干网拥塞所能采取的唯一措施，就是把问题升级给直接负责该网络的团队。</p>
+
+<p>除沉重的运维负担外，团队还必须向所有 Google 服务都会使用的前端系统交付新功能。更糟的是，他们正在把基础设施从已有十年历史的旧框架和集群管理系统迁移到支持更完善的替代方案。服务变化速度前所未有，而这些变更本身又造成了相当一部分值班负载。</p>
+
+<p>团队显然需要综合运用多种方法来降低过高的告警负载。技术项目经理和人员经理向高级管理层提交项目方案并获批准。团队随后把全部注意力转向降低告警负载，也在过程中总结出一些宝贵经验。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pager load inputs" data-type="sect3"><div class="sect3" id="pager_load_inputs">
+<h3>告警负载的来源</h3>
+
+<p>处理高告警负载的第一步，是找出其成因。<a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-tertiary="contributors to high pager load" data-type="indexterm" id="idm139660641535536"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-type="indexterm" id="idm139660641537216"/>告警负载主要受三类因素影响：生产环境中的缺陷<sup><a data-type="noteref" href="ch08-zh.html#ch08fn5" id="ch08fn5-marker">5</a></sup>、告警机制和人工流程。每类因素又有若干具体输入，本节将详细讨论其中一部分。</p>
+
+<p>生产环境方面：</p>
+
+<ul>
+	<li>
+	<p>生产环境中既有缺陷的数量<a contenteditable="false" data-primary="production" data-secondary="contributors to high pager load" data-type="indexterm" id="idm139660641526816"/></p>
+	</li>
+	<li>
+	<p>新缺陷进入生产环境的速度</p>
+	</li>
+	<li>
+	<p>识别新引入缺陷的速度</p>
+	</li>
+	<li>
+	<p>缓解缺陷并将其移出生产环境的速度</p>
+	</li>
+</ul>
+
+<p>告警机制方面：</p>
+
+<ul>
+	<li>
+	<p>触发寻呼的告警阈值<a contenteditable="false" data-primary="alerts" data-secondary="contributors to high pager load" data-type="indexterm" id="idm139660641523472"/></p>
+	</li>
+	<li>
+	<p>新增寻呼告警的速度</p>
+	</li>
+	<li>
+	<p>本服务的 SLO 与其依赖服务的 SLO 是否一致</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">人工流程方面：</p>
+
+<ul>
+	<li>
+	<p>缺陷修复及后续工作的严谨程度<a contenteditable="false" data-primary="human processes in pager load" data-type="indexterm" id="idm139660641518048"/></p>
+	</li>
+	<li>
+	<p>收集的寻呼告警数据质量</p>
+	</li>
+	<li>
+	<p>对告警负载趋势的关注程度</p>
+	</li>
+	<li>
+	<p>由人工执行的生产变更</p>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Preexisting bugs" data-type="sect4"><div class="sect4" id="preexisting_bugs">
+<h4>既有缺陷</h4>
+
+<p>任何系统都不可能完<a contenteditable="false" data-primary="bugs" data-secondary="preexisting bugs in production environment" data-type="indexterm" id="idm139660641512112"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="preexisting bugs" data-type="indexterm" id="idm139660641510544"/><a contenteditable="false" data-primary="production" data-secondary="contributors to high pager load" data-tertiary="preexisting bugs" data-type="indexterm" id="idm139660641508864"/>美。生产环境中总会存在缺陷，可能位于自己的代码、依赖的软件和库，也可能位于它们之间的接口。这些缺陷目前也许尚未触发寻呼，但确实存在。可以采用以下方法识别或预防尚未触发寻呼的缺陷：</p>
+
+<ul>
+	<li>
+	<p>系统只应达到必要的复杂度，不要更复杂（参见第 7 章）。<a data-type="xref" href="ch07-zh.html#simplicity"/></p>
+	</li>
+	<li>
+	<p>定期更新系统依赖的软件或库，以获得缺陷修复；但也要留意下一节所说的新缺陷。</p>
+	</li>
+	<li>
+	<p>定期进行破坏性测试或模糊测试，例如使用<a contenteditable="false" data-primary="destructive testing or fuzzing" data-type="indexterm" id="idm139660641503168"/><a contenteditable="false" data-primary="testing" data-secondary="for preexisting bugs in production environment" data-type="indexterm" id="idm139660641502032"/> Netflix 的 Chaos<a href="https://github.com/Netflix/chaosmonkey"> Monke</a>y。</p>
+	</li>
+	<li>
+	<p>除集成测试和单元测试外，<a contenteditable="false" data-primary="load" data-secondary="testing" data-type="indexterm" id="idm139660641497056"/>还要定期进行负载测试。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="New bugs" data-type="sect4"><div class="sect4" id="new_bugs">
+<h4>新缺陷</h4>
+
+<p>理想情况下，SRE 团队及其合作开发团队应在新缺陷进入生产环境前将其发现。现实中，<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="new bugs in production" data-type="indexterm" id="idm139660641492256"/>自动化<a contenteditable="false" data-primary="bugs" data-secondary="new bugs in production environment" data-type="indexterm" id="idm139660641493232"/>测试会漏掉许多缺陷，它们随后便随发布进入生产环境。</p>
+
+<p>软件测试是一个庞大主题，其他资料已有充分论述，例如 <a href="https://martinfowler.com/tags/testing.html">Martin Fowler 的 Testing 专题</a>。不过，软件测试技术尤其有助于减少进入生产环境的缺陷数量，<a contenteditable="false" data-primary="testing" data-secondary="software testing to reduce bugs reaching production" data-type="indexterm" id="idm139660641489488"/>并缩短缺陷在生产环境中的存留时间：</p>
+
+<ul>
+	<li>
+	<p>持续改进测试。尤其是每当在生产环境发现缺陷，都要问：“怎样才能在上线前发现它？”并确保完成必要的工程后续工作（参见“严谨跟进”）。<a data-type="xref" href="#rigor_of_follow_up"/></p>
+	</li>
+	<li>
+	<p>不要忽略负载测试；它的优先级常被置于功能测试之后。许多缺陷只会在特定负载条件或特定请求组合下暴露。</p>
+	</li>
+	<li>
+	<p>在类似生产的环境中运行预发布测试，使用类似生产但由人工合成的流量。<a contenteditable="false" data-primary="staging" data-type="indexterm" id="idm139660641481360"/>本书<a data-type="xref" href="ch05-zh.html#alerting_on_slos">第 5 章</a>简要讨论了如何生成合成流量。</p>
+	</li>
+	<li>
+	<p>在生产环境中执行金丝雀发布（<a data-type="xref" href="ch16-zh.html#canarying_releases">第 16 章</a>）。</p>
+	</li>
+	<li>
+	<p>对新缺陷保持低容<a contenteditable="false" data-primary="rollback strategy for releases" data-type="indexterm" id="idm139660641477504"/>忍度。应采用“发现、回滚、修复、再前滚”的策略，而不是“发现缺陷后仍继续前滚、修复、再次<a data-type="xref" href="#mitigation_delay"/>前滚”。详见“缓解延迟”。</p>
+	</li>
+</ul>
+
+<p>这种回滚策略要求发布可预测且足够频繁，使回滚任何单次发布的成本都很低。《Site Reliability Engineering》的“R<em>elease Engineering”</em><a href="http://bit.ly/2xyT9aK">一节讨论了这一点及相关主题。</a></p>
+
+<p>有些缺陷只会因客户端行为变化而显现。<a contenteditable="false" data-primary="client behavior changes, resulting in bugs" data-type="indexterm" id="idm139660641474864"/>例如：</p>
+
+<ul>
+	<li>
+	<p>只在特定负载水平<a contenteditable="false" data-primary="load" data-secondary="bugs manifesting only at specific levels of load" data-type="indexterm" id="idm139660641470176"/>下暴露的缺陷，例如九月开学季流量、黑色星期五、网络星期一，或每年因夏令时使欧洲与北美时差缩短一小时的那一周；后一种情况下，会有更多用户同时处于清醒和在线状态。</p>
+	</li>
+	<li>
+	<p>只在特定请求组<a contenteditable="false" data-primary="requests" data-secondary="specific mix of, bugs manifesting with" data-type="indexterm" id="idm139660641467936"/>合下暴露的缺陷，例如靠近亚洲的服务器可能因亚洲字符集的语言编码而承受处理成本更高的流量组合。</p>
+	</li>
+	<li>
+	<p>只在用户以意外方式使<a contenteditable="false" data-primary="user behaviors causing bugs to manifest" data-type="indexterm" id="idm139660641464688"/>用系统时暴露的缺陷，例如航空公司订票系统使用 Calendar。为此，测试体系必须覆盖并非每天都会出现的使用方式。</p>
+	</li>
+</ul>
+
+<p>当生产系统同时受多个缺陷困扰时，很难判断一次寻呼源于既有缺陷还是新缺<em/><em/>陷。减少生产缺陷不仅能降低告警负载，也使新缺陷更容易识别和分类。因此，必须尽快从系统中清除生产缺陷；修复既有缺陷应优先于交付新功能。若需要跨团队合作，参见第 18 章。<a data-type="xref" href="ch18-zh.html#sre_engagement_model"/></p>
+
+<p>自动健康检查、自愈和<a contenteditable="false" data-primary="automated health checking" data-type="indexterm" id="idm139660641462672"/><a contenteditable="false" data-primary="health checking, automated, problems with" data-type="indexterm" id="idm139660641459104"/>过载保护等架构或<a contenteditable="false" data-primary="self-healing" data-type="indexterm" id="idm139660641457856"/>流程问题，可能<a contenteditable="false" data-primary="load shedding" data-type="indexterm" id="idm139660641456576"/>需要大量工程投入才能解决。为简便起见，本章仍把这些问题统称为“缺陷”，即使它们规模很大、非常复杂，或解决成本很高。</p>
+
+<p>《<a href="http://bit.ly/2so6uOc">Site Reliability Engineering</a>》<em/>第 3 章介绍了如何利用错误预算管理新缺陷进入生产环境的速率。例如，当服务违反 SLO 所消耗的额度超过季度错误预算的某个比例时——该比例通常由开发团队与 SRE 团队预先商定——可以暂时停止新功能开发和相关发布，集中精力稳定系统并降低告警频率。</p>
+
+<p>示例中的 Connection 团队制定了严格政策<a contenteditable="false" data-primary="bugs" data-secondary="tracking new bugs in production" data-type="indexterm" id="idm139660641446640"/>：每次中断都必须关联一个缺陷记录。这样，技术项目经理就能汇总分析新缺陷的根因。<a contenteditable="false" data-primary="human error causing new bugs in production" data-type="indexterm" id="idm139660641446000"/>数据显示，人为错误是生产环境中新缺陷的第二常见原因。</p>
+
+<p>人难免犯错，因此生产系统的所有变更最好都由自动化执行，并由人编写的意图配置驱动。变更进入生产前，自动化还能执行人工无法完成的额外测试。Connection 团队原先以半手工方式执行复杂的生产变更，人工操作偶尔出错并引入新缺陷，继而触发寻呼，这并不意外。若由自动化系统执行相同变更，就能在其进入生产并成为寻呼事件前判断是否安全。技术项目经理向团队展示这些数据，说服大家优先实施自动化项目。</p>
+</div></section>
+
+<section data-pdf-bookmark="Identification delay" data-type="sect4"><div class="sect4" id="identification_delay">
+<h4>识别延迟</h4>
+
+<p>及时查明告警原因十分重要：定位一次寻呼根因所需的时间越长，问题再次发生并再次寻呼的机会<a contenteditable="false" data-primary="identification delay for causes of pages" data-type="indexterm" id="idm139660641444272"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="identification delay for root cause of pages" data-type="indexterm" id="idm139660641444912"/>就越多。例如，某问题只在每日流量峰值时出现；若下一个峰值到来前仍未找出有问题的代码或配置，它很可能再次发生。可采用以下方法缩短识别延迟：</p>
+
+<dl>
+	<dt><dfn>使用高质量的告警和监控面板</dfn></dt>
+	<dd><p>确保寻呼包含相关监控面板的链接，且面板能突出显示系统偏离正常指标的<a contenteditable="false" data-primary="alerts" data-secondary="using good alerts and consoles to identify cause of pages" data-type="indexterm" id="idm139660641435744"/>位置。在面板上把黑盒与白盒寻呼告警及其图表关联起来。操作手册应保持最新，并说明每类告警的建议响应方式；相应寻呼触发时，值班工程师应把新信息补充到手册中。</p></dd>
+	<dt><dfn>演练应急响应</dfn></dt>
+	<dd><p>开展<a href="http://bit.ly/2JnX5Qp">“厄运之轮”演练（见《Si</a><em>te Reliabi</em>lity Engineering》），与同事分享通用及服务特有的调试技术。<a contenteditable="false" data-primary="emergency response, practicing" data-type="indexterm" id="idm139660641441504"/></p></dd>
+	<dt><dfn>采用小批量发布</dfn></dt>
+	<dd><p>与偶尔进行一次整体变更相比，频繁进行小规模发布更容<a contenteditable="false" data-primary="releases" data-secondary="benefits of frequent, smaller releases" data-type="indexterm" id="idm139660641432544"/>易把缺陷与引入它的变更对应起来。第 16 <a contenteditable="false" data-primary="canarying releases" data-type="indexterm" id="idm139660641431696"/>章介绍的金丝雀发布能<a data-type="xref" href="ch16-zh.html#canarying_releases">够提</a>供强烈信号，判断新缺陷是否由新版本引起。</p></dd>
+	<dt><dfn>记录变更</dfn></dt>
+	<dd><p>把变更信息汇总到可搜索的时间线上，可以更简单也更快地把新缺陷与引入它的变更关联起来。Jenkins 的 Slack <a contenteditable="false" data-primary="logs" data-secondary="logging change information" data-type="indexterm" id="idm139660641429328"/><a href="http://bit.ly/2sAgzqJ">插件等工具可能有所帮助。</a></p></dd>
+	<dt><dfn>寻求帮助</dfn></dt>
+	<dd><p>《<em>Site Reliabilit</em><a href="http://bit.ly/2J7G0qt">y Engineer</a>ing》的“Managing Incidents”一节<a contenteditable="false" data-primary="help, asking for" data-type="indexterm" id="idm139660641423168"/>讨论了如何协作处置大规模中断。值班工程师从来不是孤身一人；应让团队成员在求助时感到安全。</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Mitigation delay" data-type="sect4"><div class="sect4" id="mitigation_delay">
+<h4>缓解延迟</h4>
+
+<p>缺陷一经识别，缓解所需时间越长，它再次发生并再次寻呼的机会就越多。可<a contenteditable="false" data-primary="mitigation delays, reducing" data-type="indexterm" id="idm139660641421872"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="mitigation delay" data-type="indexterm" id="idm139660641420896"/>考虑以下方法缩短缓解延迟：</p>
+
+<dl>
+	<dt>回滚变更</dt>
+	<dd>
+	<ul>
+		<li>
+		<p>如果缺陷由近期代码或配置发布引入，并且回滚安全、适当，就应立即通过<a contenteditable="false" data-primary="rollback strategy for releases" data-secondary="promptly removing bugs from production" data-type="indexterm" id="idm139660641415984"/>回滚将其移出生产环境。比如，若缺陷导致数据损坏，回滚可能是必要措施，<a contenteditable="false" data-primary="testing" data-secondary="quick fixes for bugs" data-type="indexterm" id="idm139660641414544"/>却并不足够。即使是“快速修复”，也需要测试、构建和发布时间；测试对于确认修复确实有效且不会引入其他缺陷或意外后果至关重要。一般而言，“回滚、修复、再前滚”优于“继续前滚、修复、再次前滚”。</p>
+		</li>
+		<li>
+		<p>如果目标可用性为 99.99%，每季度错误预算约为 15 分钟。前<a contenteditable="false" data-primary="error budgets" data-secondary="rolling back recent changes and" data-type="indexterm" id="idm139660641412096"/>滚所需的构建步骤可能就超过 15 分钟，因此回滚对用户的影响小得多。</p>
+
+		<p>（99.999% 的可用性每季度只有 80 秒错误预算。此时系统可能必须具备自愈能力，这超出了本章范围。）</p>
+		</li>
+		<li>
+		<p>应尽量避免无法回滚的变更，例如 API 不兼容变更和锁步发布。<a contenteditable="false" data-primary="changes" data-secondary="avoiding changes that can’t be rolled back" data-type="indexterm" id="idm139660641409040"/></p>
+		</li>
+	</ul>
+	</dd>
+	<dt>隔离功能</dt>
+	<dd><ul><li><p>设计系统时应做到：若功能 X 出错，可以通过功能开关等机制停用 X，而不影响功能 Y<a contenteditable="false" data-primary="feature isolation" data-type="indexterm" id="idm139660641404272"/>。这种策略也能提高发布速度，并让停用 X 成为更简单的决策，因为无需再确认产品经理是否也能接受停用 Y。</p></li></ul></dd>
+	<dt>转移请求流量</dt>
+	<dd><ul><li><p>把请求从出现缺陷的系统组件上排空，也就是将客户请求重<a contenteditable="false" data-primary="draining requests away from buggy system elements" data-type="indexterm" id="idm139660641400592"/>定向到别处。例如，若缺陷源自代码或配置发布，且采用渐进式发布，就可能把流量从已接收更新的基础设施组件上移走。这样可在几秒内缓解客户影响，而回滚可能需要数分钟甚至更久。</p></li></ul></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Alerting" data-type="sect4"><div class="sect4" id="alerting">
+<h4>告警</h4>
+
+<p>Google SRE 把每个 12 小时班次的不同事件数量上限设为两个，这促使我们审慎配置寻呼<a contenteditable="false" data-primary="alerts" data-secondary="paging alerts, defining thresholds for" data-type="indexterm" id="idm139660641395952"/>告警<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="alerting" data-type="indexterm" id="idm139660641394704"/>，也谨慎引入新告警。<em>Site Reliability Engineering</em>的<a href="http://bit.ly/2KNCD9F">“Monitoring Distributed Systems”</a>一节介绍了 Google 如何确定寻呼告警阈值。严格遵循这些准则，是维持健康值班轮换的关键。</p>
+
+<p>其中有几个关键要点值得再次强调：</p>
+
+<ul>
+	<li>
+	<p>所有告警都应能立即采取行动。收到系统自身无法处理的寻呼后，应当有一项明确的人工操作需要立刻执行。信噪比必须足够高，以尽量减少误报；信噪比过低会增加值班工程师产生告警疲劳的风险。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="alerting on" data-tertiary="pager alerts" data-type="indexterm" id="idm139660641390272"/></p>
+	</li>
+	<li>
+	<p>如果团队完全采用基于 SLO 的告警，或只在错误预算被消耗时寻呼（参见《Site Reliabi<a href="http://bit.ly/2J4YrjR">lity Enginee</a><em>ring》的“Black</em>-Box Versus White-Box”一节），所有参与服务开发和维护的团队都必须认同达成 SLO 的重要性，并据此安排工作优先级。</p>
+	</li>
+	<li>
+	<p>如果团队完全采用基于 SLO 且基于症状的告警，那么在收到寻呼后放宽告警阈值几乎从来不是恰当的应对方式。</p>
+	</li>
+	<li>
+	<p>新告警和新代码一样，都应经过全面、审慎的评审；每条告警都应有对应的操作手册条目。</p>
+	</li>
+</ul>
+
+<p>收到寻呼会造成负面的心理影响。为了尽量减轻这种影响，只有确有必要时才新增寻呼告警。团队任何成员都可以编写新告警，但应由全体评审拟议的新增项并提出替代方案。新告警升级为寻呼告警前，应在生产环境中充分测试并排查误报。例如，触发时可以先给告警作者发送邮件，而不是寻呼值班工程师。</p>
+
+<p>新告警可能发现此前未知的生产问题。解决这些生产缺陷后，该告警只会针对新的缺陷触发<em/>寻呼，实际上起到类似回归测试的作用。</p>
+
+<p>新告警应在测试模式下运行足够长时间，以覆盖典型的周期性生产条件，例如常规软件发布、云服务商维护事件和每周负载峰值等。一周通常比较合适，但具体时长仍取决于告警和系统。</p>
+
+<p>最后，根据测试期内的触发率，预测新告警预计会消耗多少告警预算。团队应明确批准或拒绝该告警。如果引入新寻呼告警会使服务超出告警预算，就需要进一步改善系统稳定性。</p>
+</div></section>
+
+<section data-pdf-bookmark="Rigor of follow-up" data-type="sect4"><div class="sect4" id="rigor_of_follow_up">
+<h4>严谨跟进</h4>
+
+<p>应力求查明每次寻呼的根因。“根因”不仅存在于机器中，也可能位于团队<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="rigor of follow-up" data-type="indexterm" id="idm139660641379232"/><a contenteditable="false" data-primary="follow-up to pager alerts, rigor in" data-type="indexterm" id="idm139660641380208"/>流程里。一次中断是否由本可被单元测试发现的缺陷造成？真正的根因也许不是代码缺陷，而是团队代码评审流程中的缺陷。</p>
+
+<p>知道根因后，就可以修复它，并防止它再次困扰自己或同事。若团队无法确定根因，应增加监控或日志，以便下次寻呼出现时定位。即使当前信息不足以识别缺陷，<em/>也总能做些工作，让下次调试更深入。只有极少数情况下才应以“原因未知”结案。值班工程师并非孤军奋战，应请同事复核结论，看看是否有遗漏。通常，告警刚触发、证据尚新时最容易找到根因。</p>
+
+<p>把一次寻呼解释成“瞬时问题”，或因为系统“自行恢复”、缺陷莫名“消失”就不采取行动，只会放任问题再次发生并触发新的寻呼，把麻烦留给下一位值班工程师。</p>
+
+<p>只修复眼前缺陷，也就是做一次“点状修复”，会错过预防同类告警的宝贵机会。应把寻呼<a contenteditable="false" data-primary="point fixes for paging alerts" data-type="indexterm" id="idm139660641378672"/>告警视为发现工程改进工作的契机，通过改善系统消除整类潜在缺陷。可以在团队负责的生产组件中创建项目级缺陷，并收集该项目能消除多少具体缺陷和寻呼的数据，以争取提高其优先级。若方案需要 3 个工作周、即 120 个工时，而每次寻呼平均需要 4 个工时妥善处理，那么累计 30 次寻呼时就达到明确的盈亏平衡点。</p>
+
+<p>例如，设想同一故障域中部署了过多服务器——故障域可能是数据中心里的一台交换机——因而经常同时发生多起故障：</p>
+
+<dl>
+	<dt><dfn>点状修复</dfn></dt>
+	<dd><p>把当前部署重新均衡到更多故障域，然后到此为止。</p></dd>
+	<dt><dfn>系统性修复</dfn></dt>
+	<dd><p>使用自动化，确保这类服务器及所有类似服务器始终分布在足够多的故障域中，并在必要时自动重新均衡。<a contenteditable="false" data-primary="systemic fixes for pager alerts" data-type="indexterm" id="idm139660641361264"/></p></dd>
+	<dt><dfn>监控（或预防性）修复</dfn></dt>
+	<dd><p>当故障域多样性低于预期、但尚未影响服务时，提前发出告警。理想<a contenteditable="false" data-primary="monitoring" data-secondary="or prevention fixes for pager alerts" data-type="indexterm" id="idm139660641363936"/>情况下应创建工单告警而非寻呼，因为无需立即响应。此时系统虽然冗余度降低，仍能正常提供服务。</p></dd>
+</dl>
+
+<p>为了确保您对寻呼告警的后续工作彻底，请考虑以下问题:</p>
+
+<ul>
+	<li>
+	<p>如何防止再次发生此特定错误？</p>
+	</li>
+	<li>
+	<p>如何防止此错误再次在此系统和我负责的其他系统中再次发生？</p>
+	</li>
+	<li>
+	<p>哪些测试可以阻止此错误发布到生产环境？</p>
+	</li>
+	<li>
+	<p>哪些工单警报可能已触发操作，以防止错误在告警之前变得很严重？</p>
+	</li>
+	<li>
+	<p>在控制台上的bug变得严重之前，哪些信息警报可能已经在控制台上暴露了该bug？</p>
+	</li>
+	<li>
+	<p>我是否已最大限度地发挥修复作用？</p>
+	</li>
+</ul>
+
+<p>当然，值班工程师仅为本班次发生的寻呼登记缺陷还不够。SRE 团队识别出的缺陷必须迅速处理，以降低再次发生的可能性。SRE 和开发团队进行资源规划时，都要考虑响应缺陷所需的工作量。</p>
+
+<p>建议为 SRE 和开发团队预留一部分时间，用于随时处理生产缺陷。例如，Google 的值班工程师通常不在班次中开展项目工作，而是处理能够改善系统健康状况的缺陷。团队应持续把生产缺陷置于其他项目工作之前。SRE 经理和技术负责人必须确保生产缺陷得到及时处理，并在必要时升级给开发团队的决策者。</p>
+
+<p>若寻呼事件严重到需要事后复盘，就更应采用这套方法登记并跟踪后续行动项（详见第 <a data-type="xref" href="ch10-zh.html#postmortem_culture_learning_from_failure"/>10 章）。</p>
+</div></section>
+
+<section data-pdf-bookmark="Data quality" data-type="sect4"><div class="sect4" id="data_quality">
+<h4>数据质量</h4>
+
+<p>确定系统中哪些缺陷触发了寻呼后，<a contenteditable="false" data-primary="data collection to monitor causes in on-call load" data-type="indexterm" id="idm139660641343936"/><a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="data quality" data-type="indexterm" id="idm139660641342496"/><a contenteditable="false" data-primary="monitoring" data-secondary="data collection for causes of on-call paging" data-type="indexterm" id="idm139660641352400"/>自然会产生一系列问题：<span class="keep-together"/></p>
+
+<ul>
+	<li>
+	<p>怎样判断应先修复哪个缺陷？</p>
+	</li>
+	<li>
+	<p>怎样判断系统中的哪个组件引发了最多寻呼？</p>
+	</li>
+	<li>
+	<p>怎样确定值班工程师为解决寻呼正在重复执行哪些手工操作？</p>
+	</li>
+	<li>
+	<p>怎样知道还有多少告警的根因尚未查明？</p>
+	</li>
+	<li>
+	<p>怎样根据事实而不是印象<em/>，判断哪些缺陷最严重？</p>
+	</li>
+</ul>
+
+<p>答案很简单：收集数据。</p>
+
+<p>建立数据收集流程时，可以人工跟踪和观察值班负载模式，但这种做法无法扩<a contenteditable="false" data-primary="bugs" data-secondary="bug tracking systems" data-type="indexterm" id="idm139660641337664"/>展。更可持续的方式是：在缺陷跟踪系统（如 Jira、<a href="http://bit.ly/2syxEBq"/>IssueTracker）中为每次寻呼告警创建一个占位缺陷；当值班工程师意识到某条告警只是既有问题的症状时，再把监控系统中的寻呼告警链接到缺陷跟踪系统中的相应记录。最终，一列是尚未查明的问题，另一列则列出据信由每个问题引发的全部寻呼。</p>
+
+<p>一旦构造了有关告警原因的数据，就可以开始分析该数据并生成报告。这些报告可以回答以下问题:</p>
+
+<ul>
+	<li>
+	<p>哪些缺陷造成的寻呼最多？理想情况下应立即回滚并修复，但定位根因和部署修复有时需要很久，静默关键告警有时也并不合理。例如，前述 Connection SRE 团队可能遭遇无法立即解决、但仍须跟踪的持续网络拥塞。收集哪些生产问题给团队造成最多寻呼和压力的数据，有助于以数据为依据，系统讨论工程工作的优先级。</p>
+	</li>
+	<li>
+	<p>系统中的哪个组件造成了最多寻呼，例如支付网关、身份验证微服务等？</p>
+	</li>
+	<li>
+	<p>与其他监控数据关联后，特定寻呼是否对应其他信号，例如请求率峰值、并发客户会话数、注册数或提款数？</p>
+	</li>
+</ul>
+
+<p>把结构化数据与缺陷及寻呼根因关联起来，还有其他好处：</p>
+
+<ul>
+	<li>
+	<p>可以自动生成既有缺陷，也就是已知问题的列表，供支持团队使用。</p>
+	</li>
+	<li>
+	<p>可以根据每个缺陷触发的寻呼数量，自动确定修复优先级。</p>
+	</li>
+</ul>
+
+<p>数据质量决定了人或自动化系统所能作出的决策质量。为保证高质量数据，可采用以下方法：</p>
+
+<ul>
+	<li>
+	<p>定义并记录团队对寻呼数据收集的政策和预期。</p>
+	</li>
+	<li>
+	<p>从监控系统发出非寻呼告警，标出未按团队预期处理寻呼的情况。经理和技术负责人应确保这些预期得到落实。</p>
+	</li>
+	<li>
+	<p>交接不符合预期时，队友应主动跟进。诸如“这可能与缺陷 123 有关”“我已根据你的发现登记缺陷，以便进一步跟进”或“这很像我上周三值班时发生的情况：&lt;link to page, bug&gt;”等积极反馈，能有力强化预期行为，最大限度增加改进机会。没有人愿意因为上一班次已经寻呼过队友的同一问题再次被寻呼。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Vigilance" data-type="sect4"><div class="sect4" id="vigilance">
+<h4>保持警觉</h4>
+
+<p>团队往往在无数小问题的累积下不知不觉陷入运维超负荷。<a contenteditable="false" data-primary="pager load" data-secondary="determining causes of high load" data-tertiary="vigilance" data-type="indexterm" id="idm139660641320368"/><a href="http://bit.ly/2kFMYIL">为避免“温</a>水煮青蛙”，必须持续关注值班工程师的健康，并确保 SRE 与开发团队始终把生产健康放在优先位置。<a contenteditable="false" data-primary="boiling the frog" data-type="indexterm" id="idm139660641316352"/></p>
+
+<p>以下方法有助于团队持续关注告警负载：</p>
+
+<ul>
+	<li>
+	<p>在生产会议上（参见<a href="http://bit.ly/2LNbtjs">“Communications: Production Meetings”</a>一节，载于<em>Site Reliability Engineering</em>第 31 章），根据收集到的结构化数据定期讨论告警负载趋势。我们的经验表明，21 天移动平均值很有参考意义。</p>
+	</li>
+	<li>
+	<p>当告警负载越过团队预先商定的“警戒”阈值时，发出工单告警；接收者可以是技术负责人或经理。</p>
+	</li>
+	<li>
+	<p>SRE 团队与开发团队应定期开会，讨论生产环境现状，以及仍在触发 SRE 寻呼的未解决生产缺陷。<a contenteditable="false" data-primary="pager load" data-startref="ix_pager" data-type="indexterm" id="idm139660641309984"/><a contenteditable="false" data-primary="on-call" data-secondary="pager load" data-startref="ix_oncpager" data-type="indexterm" id="idm139660641310464"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="On-Call Flexibility" data-type="sect2"><div class="sect2" id="on_call_flexibility">
+<h2>值班灵活性</h2>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="shift_length">
+<h5>班次长度</h5>
+
+<p>每天需要处理一次或多次寻呼的值班轮换，必须以可持续<a contenteditable="false" data-primary="shift length for on-call SREs" data-type="indexterm" id="idm139660641303920"/>方式组织。我们建<a contenteditable="false" data-primary="scheduling on-call engineers" data-type="indexterm" id="ix_schedonc"/>议把班次限制在 12<a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-type="indexterm" id="ix_oncflex"/> 小时以内；班次越短，越有利于工程师的心理健康。班次过长会使人精疲力竭，而疲劳会导致错误。持续值班时，大多数人根本无法产出高质量工作。许多国家和地区也对最长工作时间、休息时间和工作条件有法律规定。</p>
+
+<p>把班次分散在各站点的白天时段最为理想，但实行 12 小时班次并不要求团队必须全球分布。夜间值班 12 小时仍优于连续值班 24 小时或更久；即使只有一个地点，也可以实行 12 小时班次。例如，与其让一名工程师整整一周每天 24 小时连续值班，不如由两人分担这一周，一人负责白天，一人负责夜间。</p>
+
+<p>根据我们的经验，连续 24 小时值班且无人接替并不可持续。偶尔安排 12 小时夜班虽不理想，至少能保证工程师有休息时间。另一种选择是把班次缩短到不足一周，例如值班 3 天、休息 4 天。</p>
+</div></aside>
+
+<section data-pdf-bookmark="Scenario: A change in personal circumstances" data-type="sect3"><div class="sect3" id="scenario_a_change_in_personal_circumstanc">
+<h3>情境：个人情况发生变化</h3>
+
+<p>设想你是一项大型服务值班团队的成员。团队分布在两个站点，采用全天候的“<a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-tertiary="scenario, a change in personal circumstances" data-type="indexterm" id="ix_oncflexscen"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-type="indexterm" id="ix_schedoncscen"/>追随太阳”模式。这个安排对你很合适：虽然想到清晨 6 点可能被寻呼并不愉快，但你仍认可自己和团队为控制运维负担、提高服务可靠性所做的工作。</p>
+
+<p>一切都很顺利……直到有一天，你发现值班安排开始与个人生活需求冲突。原因可能很多，例如成为父母、临时需要出差并请假，或生病。</p>
+
+<p>你需要让值班职责与新的个人安排相互兼容。</p>
+
+<p>随着团队和组织走向成熟，很多都会遇到这一挑战。人的需求会随时间变化；团队成员背景多样，值班轮换自然也要面对不同需求。要在值班工作与个人生活之间保持健康、公平且公正的平衡，关键在于灵活性。</p>
+
+<p>可以通过多种方式让值班轮换更灵活，在满足成员需求的同时继续覆盖服务或产品。不可能写出一套全面且适合所有人的准则。我们鼓励把灵活性作为<em>原则</em>，而不是机械照搬这里的示例。</p>
+
+<section data-pdf-bookmark="Automate on-call scheduling" data-type="sect4"><div class="sect4" id="automate_on_call_scheduling">
+<h4>自动安排值班</h4>
+
+<p>团队扩大后，需要同时考虑休假计划、工作日与周末班次的分配、个人偏好、宗教要求等约束，排班会越来越困难。靠人工很难管理这项任务<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="automating on-call scheduling" data-type="indexterm" id="idm139660641283952"/>：找到任何可行方案都不容易，更不用说公平方案。</p>
+
+<p>“公平”并不意味着把每类班次在所有成员之间完全平均分配。每个人的需求和偏好不同，因此团队应公开这些偏好，并以合理方式尽量满足。究竟采用平均分配，还是更个性化地满足排班偏好，取决于团队构成及成员偏好。</p>
+
+<p>使用自动化工具安排值班班次会容易得多。工具应具备以下基本能力：</p>
+
+<ul>
+	<li>
+	<p>能够根据团队成员不断变化的需求重新安排班次。</p>
+	</li>
+	<li>
+	<p>发生任何调整后，自动重新平衡值班负载。</p>
+	</li>
+	<li>
+	<p>综合个人偏好（例如“4 月的周末不担任主值班”）和历史信息（例如每位工程师近期的值班负载），尽最大努力保证公平。</p>
+	</li>
+	<li>
+	<p>为便于工程师围绕值班安排个人计划，已经生成的排班表不得擅自变更。</p>
+	</li>
+</ul>
+
+<p>排班表可以完全自动生成，也可以由人工安排。有些团队希望成员明确确认排班，另一些则接受全自动流程。需求复杂时可以自行开发工具，但也有许<span class="keep-together"/>多商业或开源软件可帮助实现自动排班。</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for short-term swaps" data-type="sect4"><div class="sect4" id="plan_for_short_term_swaps">
+<h4>为短期换班做好安排</h4>
+
+<p>短期调整值班表的请求很常见。没有人<a contenteditable="false" data-primary="swaps (short-term) in on-call scheduling" data-type="indexterm" id="idm139660641274848"/>能在星期一保证自己星期四不会患流感<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for short-term swaps" data-type="indexterm" id="idm139660641273552"/>；值班期间也可能突然有紧急事务必须处理。</p>
+
+<p>也可以为非紧急原因提供换班便利，例如让值班人员参加体育训练。成员可以只交换某个班次的一部分，如星期日的半天。非紧急换班通常只能尽力协调。</p>
+
+<p>对寻呼响应 SLO 要求严格的团队，还必须考虑通勤期间的覆盖。如果响应 SLO 为 5 分钟、通勤需要 30 分钟，就必须确保你在途中由其他人响应紧急情况。</p>
+
+<p>为灵活实现这些目标，建议允许团队成员更新值班轮换，同时用书面政策说明换班规则。权限可以从完全集中——只有经理能改排班——到完全分散——任何成员都能自行修改。根据我们的经验，对变更进行同伴评审，可以在安全性与灵活性之间取得良好平衡。<span class="keep-together"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for long-term breaks" data-type="sect4"><div class="sect4" id="plan_for_long_term_breaks">
+<h4>为长期退出轮值做好安排</h4>
+
+<p>有时，团队成员会因个人情况变化或职业倦怠而需要暂停参加值班<a contenteditable="false" data-primary="breaks (long-term) in on-call scheduling" data-type="indexterm" id="idm139660641266192"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for long-term breaks" data-type="indexterm" id="idm139660641268512"/>轮换。团队结构必须允许值班人员暂时退出轮换。</p>
+
+<p>理想情况下，即使人员暂时减少，团队规模也应足以避免其余成员承受过重的运维负担。根据我们的经验，多站点全天候安排中，每个站点至少需要 5 人才能维持值班；单站点全天候安排则至少需要 8 人。为抵御减员风险，可以认为每个站点还需要额外一名工程师，因此最低配置应为：多站点模式每站点 6 人，单站点模式共 9 人。</p>
+</div></section>
+
+<section data-pdf-bookmark="Plan for part-time work schedules" data-type="sect4"><div class="sect4" id="plan_for_part_time_work_schedules">
+<h4>为兼职工作安排做好规划</h4>
+
+<p>兼职工作与值班看似不相容，但我们发现，只要采取适当预防措施，两者<em>完全</em>可以兼容。<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-tertiary="planning for part-time work schedules" data-type="indexterm" id="idm139660641259600"/><a contenteditable="false" data-primary="part-time work schedules for on-call engineers" data-type="indexterm" id="idm139660641260432"/>以下讨论假定：轮换成员若为兼职，则在其兼职工作时间范围之外不能参加值班。</p>
+
+<p>兼职主要有两种模式：</p>
+
+<ul>
+	<li>
+	<p>每周少工作若干个完整工作日，例如每周工作 4 个 8 小时工作日，而不是 5 天</p>
+	</li>
+	<li>
+	<p>每天缩短工作时间，例如每天工作 6 小时，而不是 8 小时</p>
+	</li>
+</ul>
+
+<p>两种模式都可以与值班兼容，但需要对排班作出不同调整。</p>
+
+<p>第一种模式很容易与值班并存，尤其是非工作日长期固定时。可以把单个值班周期缩短到不足七天，例如周一至周四或周五至周日，并配置自动排班工具，不在兼职工程师的休息日安排其值班。</p>
+
+<p>第二种模式有两种可行做法：</p>
+
+<ul>
+	<li>
+	<p>与另一名工程师拆分值班时段，确保任何人都不会在非工作时间值班。例如，某工程师的工作时间为上午 9 点至下午 4 点，可以把班次前半段（上午 9 点至下午 3 点）分给此人；后半段（下午 3 点至晚上 9 点）则像其他班次一样在团队内轮换。</p>
+	</li>
+	<li>
+	<p>兼职工程师可以在值班日按全时工作；如果值班并不频繁，这种方式可能可行。</p>
+	</li>
+</ul>
+
+<p>如<a href="http://bit.ly/2JgUBU7">第 11 章</a>所述，该章载于<em>Site Reliability Engineering</em>；Google SRE 会依据当地劳动法律法规，对正常工作时间以外的支持按折算后的小时费率支付报酬，或提供调休。确定值班补偿时，应把兼职工程师缩短后的工作安排考虑在内。</p>
+
+<p>为在项目时间和值班时间之间保持适当平衡，减少工时的工程师也应按比例承担更少的值班工作。大团队比小团队更容易吸收由此增加的值班负载。<a contenteditable="false" data-primary="scheduling on-call engineers" data-secondary="scenario, a change in personal circumstances" data-startref="ix_schedoncscen" data-type="indexterm" id="idm139660641242864"/><a contenteditable="false" data-primary="scheduling on-call engineers" data-startref="ix_schedonc" data-type="indexterm" id="idm139660641244304"/><a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-startref="ix_oncflexscen" data-tertiary="scenario, a change in personal circumstances" data-type="indexterm" id="idm139660641249760"/><a contenteditable="false" data-primary="on-call" data-secondary="flexibility in" data-startref="ix_oncflex" data-type="indexterm" id="idm139660641242320"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="On-Call Team Dynamics" data-type="sect2"><div class="sect2" id="on_call_team_dynamics">
+<h2>值班团队协作</h2>
+
+<p>我们的第一本书曾讨论：告警负载过高、时间压力过大等因素，会迫使值班工程师<a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-type="indexterm" id="ix_oncteamdyn"/>依赖直觉和启发式方法，而不是依据推理和数据来决策（参见该书<a href="http://bit.ly/2JgUBU7">第 11 章</a>的“Feeling Safe”一节）。在此基础上，怎样才能建设一个协作关系积极的团队？下面来看一个存在若干假设性问题的值班团队。</p>
+
+<section data-pdf-bookmark="Scenario: A culture of “survive the week”" data-type="sect3"><div class="sect3" id="scenario_a_culture_of_quotation_marksurvi">
+<h3>情境：“熬过这一周”的文化</h3>
+
+<p>公司最初只有几位创始人和少数员工，所有人都是功能开发人员。大家彼此熟悉，也都参加值班。<a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-tertiary="scenario, a survive the week culture" data-type="indexterm" id="ix_oncteamdynsur"/><a contenteditable="false" data-primary="survive the week culture" data-type="indexterm" id="ix_surv"/><a contenteditable="false" data-primary="SRE teams" data-secondary="on-call engineers in survive the week culture" data-type="indexterm" id="ix_SREteamonc"/></p>
+
+<p>公司逐渐壮大后，值班职责集中到一小批更有经验、也更熟悉系统的功能开发人员身上。</p>
+
+<p>公司进一步壮大后，增设了专门处理可靠性问题的运维岗位。该团队负责生产环境健康，工作重心是运维而非编码；值班改由功能开发人员与运维人员共同轮换。服务维护仍由功能开发人员最终决策，运维团队只能对操作性任务提出意见。此时轮换共有 30 名工程师：25 名功能开发人员和 5 名运维人员，全部位于同一地点。</p>
+
+<p>团队长期受到大量告警的困扰。尽管已经采用本章前述建议来降低告警负载，士气依然低落。功能开发人员优先交付新功能，因此值班事件的后续改进往往迟迟得不到实施。</p>
+
+<p>更糟的是，功能开发人员只关注自己子系统的健康状况。尽管其他轮值人员反对，一位开发人员仍坚持对关键模块按错误数量而不是错误比例触发告警。这些告警噪声很大，经常产生误报或无法采取行动的寻呼。</p>
+
+<p>值班轮换中的其他成员并不特别介意告警量过高。告警确实很多，但大多不需要花很长时间处理。一位值班工程师说：“我扫一眼告警标题，就知道它们是重复的，所以直接忽略。”</p>
+
+<p>听起来很熟悉吗？</p>
+
+<p>一些 Google 团队在成熟度较低的早期阶段也遇到过类似问题。如果处理不慎，这些问题可能撕裂功能开发团队与运维团队，并妨碍值班工作。解决它们没有银弹，但我们发现有几种方法尤其有效。具体做法可以不同，但总体目标应当一致：建立积极的团队协作关系，并谨慎避免陷入恶性循环。</p>
+
+<section data-pdf-bookmark="Proposal one: Empower your ops engineers" data-type="sect4"><div class="sect4" id="proposal_one_empower_your_ops_engineers">
+<h4>方案一：赋能运维工程师</h4>
+
+<p>可以按照本书和<em>Site Reliability Engineering</em>中的原则重塑运维组织，甚至更名为 SRE 或类似名称，以体现职责变化。<a contenteditable="false" data-primary="survive the week culture" data-secondary="empowering ops engineers in SRE" data-type="indexterm" id="idm139660641220560"/><a contenteditable="false" data-primary="operations" data-secondary="empowering ops engineers in SRE" data-type="indexterm" id="idm139660641225056"/>只改名称并非灵丹妙药，但若职责确实从旧式、以运维任务为中心的模式转变，更名有助于传达这种<em>实际</em>变化。应向团队和全公司明确：SRE 对站点运维负有主体责任，包括共同制定可靠性路线图、推动问题彻底解决、维护监控规则等。功能开发人员是不可或缺的协作者，但并不主导这些工作。</p>
+
+<p>对我们假设的团队来说，此公告带来了以下运维变化:</p>
+
+<ul>
+	<li>
+	<p>行动项只分配给五位 DevOps 工程师——他们现在转为 SRE。SRE 与领域专家合作完成这些工作，其中许多专家是开发人员。对于前述“错误数量还是错误比例”的争议，SRE 负责与功能开发人员协商并决定告警规则的变更。</p>
+	</li>
+	<li>
+	<p>在可行时，应鼓励 SRE 深入代码并亲自完成修改，再把代码评审请求发给领域专家。这样既能培养 SRE 的主人翁意识，也能提升其技能和权威，为今后的工作做好准备。</p>
+	</li>
+</ul>
+
+<p>这样一来，功能开发人员成为可靠性工作的明确协作者，而 SRE 则负责维护并改善站点可靠性。</p>
+</div></section>
+
+<section data-pdf-bookmark="Proposal two: Improve team relations" data-type="sect4"><div class="sect4" id="proposal_two_improve_team_relations">
+<h4>方案二：改善团队关系</h4>
+
+<p>另一种办法是加强团队成员之间的联系。Google 设有专门的“团队活动预算”，用于组织团队外出活动、增进成员关系。<a contenteditable="false" data-primary="survive the week culture" data-secondary="improving team relations" data-type="indexterm" id="idm139660641214688"/></p>
+
+<p>我们发现，更牢固的团队关系会促进成员之间的理解与协作，使工程师更愿意修复缺陷、完成行动项并帮助同事。例如，你关闭了夜间流水线作业，却忘记关闭用于检查作业是否成功运行的监控，结果在凌晨 3 点误寻呼了一位同事。如果平时与这位同事建立了真实联系，你会更在意这次失误，也会在今后更加谨慎体贴。“我要保护同事”的心态能够营造更高效的工作氛围。</p>
+
+<p>我们还发现，无论职位名称和职责领域如何，让所有值班轮换成员坐在一起办公，都能显著改善团队关系。也应鼓励大家一起吃午饭。不要低估这些看似简单的改变，它们会直接影响团队协作。<a contenteditable="false" data-primary="SRE teams" data-secondary="on-call engineers in survive the week culture" data-startref="ix_SREteamonc" data-type="indexterm" id="idm139660641209088"/><a contenteditable="false" data-primary="survive the week culture" data-startref="ix_surv" data-type="indexterm" id="idm139660641203264"/><a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-startref="ix_oncteamdynsur" data-tertiary="scenario, a survive the week culture" data-type="indexterm" id="idm139660641207008"/><a contenteditable="false" data-primary="on-call" data-secondary="team dynamics" data-startref="ix_oncteamdyn" data-type="indexterm" id="idm139660641205136"/></p>
+</div></section>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00038">
+<h1>结论</h1>
+
+<p>SRE 值班不同于传统运维岗位。SRE 不只是处理日常运维，还拥有生产环境的充分控制权，并通过确定适当的可靠性阈值、开发自动化和实施战略性工程项目来持续改进系统。值班对站点运维不可或缺；妥善安排值班也直接关系到公司的经营成果。</p>
+
+<p>值班会给个人和团队带来许多压力。但只要正视这些难题，就能从中获得经验。本章总结了我们在实践中艰难学到的一些值班教训，希望这些经验能帮助其他团队避免或解决类似问题。</p>
+
+<p>如果值班团队正被无休止的告警淹没，建议先退一步，从更高层次审视整个系统，并与其他 SRE 团队及合作团队交流经验。收集到必要信息后，再系统地解决问题。为值班工程师、值班团队乃至整个公司设计周全的制度，值得投入时间。<a contenteditable="false" data-primary="on-call" data-startref="ix_onc" data-type="indexterm" id="idm139660641192976"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch08fn1"><sup><a href="ch08-zh.html#ch08fn1-marker">1</a></sup>请注意：对于并未真正践行 DevOps 的组织，这种情形往往是一个危险信号；此时仅仅改名无法解决更深层的结构性问题。</p><p data-type="footnote" id="ch08fn2"><sup><a href="ch08-zh.html#ch08fn2-marker">2</a></sup>这里的一个“事件”是指一个“问题”，无论同一问题触发了多少条告警。每个班次为 12 小时。</p><p data-type="footnote" id="ch08fn3"><sup><a href="ch08-zh.html#ch08fn3-marker">3</a></sup>关于这个主题，可参阅 David Blank-Edelman 所著的<a href="https://oreil.ly/2kIawNe"><em>《Seeking SRE》</em></a>（O’Reilly）。</p><p data-type="footnote" id="ch08fn4"><sup><a href="ch08-zh.html#ch08fn4-marker">4</a></sup>Google 的 SRE 团队会跨时区配对，以保证服务连续性。</p><p data-type="footnote" id="ch08fn5"><sup><a href="ch08-zh.html#ch08fn5-marker">5</a></sup>这里的“缺陷”是指由软件或配置错误导致的任何不良系统行为。代码逻辑错误、二进制程序配置错误、容量规划不当、负载均衡器配置错误或新发现的漏洞，都是会增加告警负载的“生产缺陷”。</p></div></div></section></body></html>
