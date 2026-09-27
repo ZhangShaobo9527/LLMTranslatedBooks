@@ -1,0 +1,1411 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN">
+  <head><title>事后复盘文化：从失败中学习</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head>
+  <body data-type="book">
+    <section data-pdf-bookmark="Chapter 10. Postmortem Culture: Learning from Failure" data-type="chapter" epub:type="chapter">
+      <div class="chapter" id="postmortem_culture_learning_from_failure">
+<h1><span class="label">第 10 章　</span>事后复盘文化：从失败中学习</h1>
+
+<p class="byline">作者：Daniel Rogers、Murali Suriar、Sue Lueder、<br/>
+Pranjal Deo 和 Divya Sudhakar，<br/>
+Gary O’Connor 和 Dave Rensin 参与撰写</p>
+
+<p>我们的经验表明，真正的无责事后复盘文化能够造就更可靠的系统。因此，我们认为，这项实践对于建立并维持一个成功的 SRE 组织至关重要。<a contenteditable="false" data-primary="blameless postmortems" data-seealso="postmortems" data-type="indexterm" id="idm139660640850544"/><a contenteditable="false" data-primary="postmortems" data-type="indexterm" id="ix_pmrt"/></p>
+
+<p>在组织中引入事后复盘，既是文化变革，也是技术变革。这样的转变看似艰巨。本章最重要的信息是：这种改变完全可以实现，不必把它视为无法逾越的挑战。不要在事件结束后只是期待系统最终自行解决问题。可以先引入最基本的事后复盘流程，再不断反思和调整，使之最适合自己的组织；和许多事情一样，这里没有放之四海而皆准的方案。<a contenteditable="false" data-primary="culture" data-secondary="learning from failure in postmortems" data-see="postmortems" data-type="indexterm" id="idm139660640846224"/></p>
+
+<p>如果事后复盘写得好、后续行动得到落实，并且成果得到广泛分享，它就能成为推动组织积极变革、避免故障重演的有力工具。为说明优秀事后复盘的写作原则，本章以 Google 的一次真实故障为案例。我们先用一份写得较差的复盘说明不良做法为何会损害健康的复盘文化，再将其与事件后的真实复盘对照，提炼高质量复盘的原则与最佳实践。</p>
+
+<p>本章后半部分将分享我们在建立激励机制、培育稳健复盘文化方面的经验，并说明如何识别和纠正这种文化开始失效的早期迹象。</p>
+
+<p>最后，我们提供一些工具和模板，帮助你从零开始建立事后复盘文化。</p>
+
+<p>有关无责事后复盘理念的全面讨论，请参阅<a href="http://bit.ly/2J2Po2W">第 15 章</a>，见我们的第一本书《<em>Site Reliability Engineering</em>》。</p>
+
+<section data-pdf-bookmark="Case Study" data-type="sect1"><div class="sect1" id="case_study">
+<h1>案例研究</h1>
+
+<p>本案例始于一次例行机架退役，却导致用户所感受到的服务延迟上升。维护自动化中的一个缺陷，加上速率限制不足，使数千台承载生产流量的服务器同时下线。<a contenteditable="false" data-primary="postmortems" data-secondary="case study, rack decommission leading to service latency" data-type="indexterm" id="ix_pmrtcs"/></p>
+
+<p>Google 的大多数服务器位于自有数据中心，但我们也在主机托管设施（colo）中部署代理／缓存服务器机架。<a contenteditable="false" data-primary="colocation facilities (colos), racks of proxy/cache machines in" data-type="indexterm" id="idm139660640844976"/>包含这些代理服务器的 colo 机架称为<a contenteditable="false" data-primary="satellites" data-type="indexterm" id="idm139660640840688"/><em>卫星节点</em>。卫星节点需要定期维护和升级，因此任何时刻都有一些卫星机架正在安装或退役。在 Google，这些维护流程大多已经自动化。</p>
+
+<p>退役流程会通过一种称为 <em>diskerase</em> 的机制覆写机架内所有磁盘的全部内容。机器一旦被送入 diskerase，原先存储的数据便无法恢复。典型的机架退役步骤如下：<a contenteditable="false" data-primary="diskerase" data-type="indexterm" id="idm139660640843264"/></p>
+
+<pre data-type="programlisting">
+# Get all active machines in "satellite"
+machines = GetMachines(satellite)
+
+# Send all candidate machines matching "filter" to decom
+SendToDecom(candidates=GetAllSatelliteMachines(),
+            filter=machines)
+</pre>
+
+<p>案例中的卫星机架已被标记为退役。退役流程的 diskerase 步骤成功完成，但负责其余机器退役工作的自动化流程失败了。为调试该故障，我们重新执行了退役流程。第二次执行过程如下：</p>
+
+<pre data-type="programlisting">
+# Get all active machines in "satellite"
+machines = GetMachines(satellite)
+
+<strong># "machines" is an empty list, because the decom flow has already run.</strong>
+<strong># API bug: an empty list is treated as "no filter", rather than "act on no</strong>
+<strong># machines"</strong>
+
+# Send all candidate machines matching "filter" to decom
+SendToDecom(candidates=GetAllSatelliteMachines(),
+            filter=machines)
+
+# Send all machines in "candidates" to diskerase.
+</pre>
+
+<p>几分钟内，全球所有卫星节点机器的磁盘都被擦除。这些机器随即失效，无法再接受用户连接，后续连接因此被直接路由到数据中心。结果是用户延迟略有上升。得益于良好的容量规划，在受影响的 colo 机架重新安装机器所需的两天里，只有极少数用户注意到问题。事件发生后，我们用了数周审计自动化流程并增加更多合理性检查，使退役工作流具备幂等性。</p>
+
+<p>这次故障三年后，我们又遇到了一起类似事件：一些卫星节点被排空流量，导致用户延迟上升。原始事后复盘中行动项的落实，显著缩小了第二次事件的影响范围，并减缓了其发展速度。</p>
+
+<p>假设由你负责为这个案例撰写事后复盘。你希望了解哪些信息？又会提出哪些行动，以防止这类故障再次发生？<a contenteditable="false" data-primary="postmortems" data-secondary="case study, rack decommission leading to service latency" data-startref="ix_pmrtcs" data-type="indexterm" id="idm139660640821088"/></p>
+
+<p>先来看一份写得不太好的事件事后复盘。<a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-type="indexterm" id="ix_pmrtbad"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Bad Postmortem" data-type="sect1"><div class="sect1" id="bad_postmortem">
+<h1>糟糕的事后复盘</h1>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="postmortem_all_satellite_machines_sent_to">
+<h5>事后复盘：所有卫星节点均被送去擦除磁盘</h5>
+
+<p><strong>2014-August-11</strong></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>负责人：</strong></td>
+			<td>maxone@，logantwo@，sydneythree@，dylanfour@</td>
+		</tr>
+		<tr>
+			<td><strong>分享给：</strong></td>
+			<td>satellite-infra-team@</td>
+		</tr>
+		<tr>
+			<td><strong>状态：</strong></td>
+			<td>最终版</td>
+		</tr>
+		<tr>
+			<td><strong>事件日期：</strong></td>
+			<td>2014-August-11</td>
+		</tr>
+		<tr>
+			<td><strong>发布日期：</strong></td>
+			<td>2014-December-30</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>执行摘要</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>影响：</strong></td>
+			<td>所有卫星节点都被送入 diskerase，实际上使 Google 的整个边缘服务瘫痪。</td>
+		</tr>
+		<tr>
+			<td><strong>根因：</strong></td>
+			<td>dylanfour@ 绕过自动化流程，手动运行集群启用逻辑，从而触发了一个既有缺陷。</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>问题摘要</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>问题持续时间：</strong></td>
+			<td>40min</td>
+		</tr>
+		<tr>
+			<td><strong>受影响的产品：</strong></td>
+			<td>satellite-infra-team</td>
+		</tr>
+		<tr>
+			<td><strong>受影响产品比例：</strong></td>
+			<td>所有卫星集群。</td>
+		</tr>
+		<tr>
+			<td><strong>用户影响：</strong></td>
+			<td>通常由卫星节点处理的所有查询都改由核心集群处理，导致延迟升高。</td>
+		</tr>
+		<tr>
+			<td><strong>收入影响：</strong></td>
+			<td>部分查询丢失，导致一些广告未能投放。目前尚不清楚确切的收入影响。</td>
+		</tr>
+		<tr>
+			<td><strong>检测：</strong></td>
+			<td>监控告警。</td>
+		</tr>
+		<tr>
+			<td><strong>解决：</strong></td>
+			<td>先将流量转移到核心集群，再手动修复边缘集群。</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>背景（可选）</b></p>
+
+<p> </p>
+
+<p><b>影响</b></p>
+
+<dl>
+	<dt><dfn>用户影响</dfn></dt>
+	<dd><p>通常由卫星节点处理的所有查询都改由核心集群处理，导致用户流量延迟上升。</p></dd>
+	<dt><dfn>收入影响</dfn></dt>
+	<dd><p>部分查询丢失，导致一些广告未能投放。</p></dd>
+</dl>
+
+<p><b>根因与触发因素</b></p>
+
+<p>集群启用／停用自动化本来就不是幂等的。该工具设有保护措施，确保某些步骤不能执行多次。遗憾的是，没有任何机制阻止人员随意多次手动运行代码，文档也完全没有提到这一陷阱。因此，大多数团队成员都认为，流程失败后多运行几次没有问题。</p>
+
+<p>这正是一次例行机架退役期间发生的情况。该机架当时正被新的 Iota 卫星节点替换。dylanfour@ 完全忽视启用流程已经执行过一次、且第一次尝试卡住这一事实。由于疏忽，他们触发了一个不良交互，把所有卫星节点机器都分配给了 diskerase 团队。</p>
+
+<p><b>恢复工作</b></p>
+
+<p> </p>
+
+<p><b>经验教训</b></p>
+
+<p>做得好的方面</p>
+
+<ul>
+	<li>
+	<p>警报立即发现了问题。</p>
+	</li>
+	<li>
+	<p>事件管理进展顺利。</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">做得不好的方面</p>
+
+<ul>
+	<li>
+	<p>团队（尤其是 maxone@ 和 logantwo@）从未编写文档提醒 SRE 不要多次运行自动化流程，这太荒谬了。</p>
+	</li>
+	<li>
+	<p>值班人员未能足够迅速地采取行动，因而没能阻止大多数卫星节点机器被擦除。这已经不是值班人员第一次未能及时响应。</p>
+	</li>
+</ul>
+
+<p>侥幸之处</p>
+
+<ul>
+	<li>
+	<p>核心集群能够承接原本由边缘节点处理的全部流量。真不敢相信我们竟挺过了这次事故！！！</p>
+	</li>
+</ul>
+
+<p><b>行动项</b></p>
+
+<table class="border">
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>改进自动化。</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td>logantwo@</td>
+			<td> </td>
+		</tr>
+		<tr>
+			<td>改进寻呼与告警。</td>
+			<td>检测</td>
+			<td>P2</td>
+			<td> </td>
+			<td> </td>
+		</tr>
+		<tr>
+			<td>sydneythree@ 需要学习正确的跨站点交接流程，以免不同人员重复处理同一问题。</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td> </td>
+			<td>BUG6789</td>
+		</tr>
+		<tr>
+			<td>培训人员不要运行不安全的命令。</td>
+			<td>预防</td>
+			<td>P2</td>
+			<td> </td>
+			<td> </td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>术语表</b></p>
+</div></aside>
+
+<section data-pdf-bookmark="Why Is This Postmortem Bad?" data-type="sect2"><div class="sect2" id="why_is_this_postmortem_badquestion_mark">
+<h2>为什么这份事后复盘很糟糕？</h2>
+
+<p>这份“糟糕的”事后复盘包含了许多我们努力避免的常见问题。以下各节说明如何改进。<a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-startref="ix_pmrtbad" data-type="indexterm" id="idm139660640756688"/><a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-tertiary="flaws in" data-type="indexterm" id="ix_pmrtbadwhy"/><span class="keep-together"/></p>
+
+<section data-pdf-bookmark="Missing context" data-type="sect3"><div class="sect3" id="missing_context">
+<h3>缺少上下文</h3>
+
+<p>这份示例复盘一开始就引入了 Google 流量服务领域（如“卫星节点”）和机器管理自动化底层（如“diskerase”）的专用术语。若复盘需要补充背景，应使用“背景”和／或“术语表”部分，也可以在其中链接更长的文档。本例中，这两部分都是空白的。<a contenteditable="false" data-primary="context, missing, in bad postmortem" data-type="indexterm" id="idm139660640753376"/></p>
+
+<p>撰写事后复盘时，如果没有为内容提供恰当的上下文，文档就可能被误解，甚至被忽略。务必记住，读者并不只限于直接参与事件的团队。</p>
+</div></section>
+
+<section data-pdf-bookmark="Key details omitted" data-type="sect3"><div class="sect3" id="key_details_omitted">
+<h3>省略关键细节</h3>
+
+<p>多个部分只有概要，却缺少重要细节。例如：<a contenteditable="false" data-primary="key details omitted in bad postmortem" data-type="indexterm" id="idm139660640746224"/></p>
+
+<dl>
+	<dt>问题摘要</dt>
+	<dd>
+	<p>对于影响多项服务的故障，应提供数字，以一致的方式呈现影响。示例中唯一的数值数据只有问题持续时间，信息不足以估算故障规模或影响。即使没有确切数据，有依据的估算也胜过完全没有数据。毕竟，如果不知道如何衡量，就无法判断问题是否真的已经解决。<a contenteditable="false" data-primary="problem summary (postmortems)" data-type="indexterm" id="idm139660640741808"/><a contenteditable="false" data-primary="outages" data-secondary="problem summary in postmortems" data-type="indexterm" id="idm139660640739680"/></p>
+	</dd>
+	<dt>根因和触发因素</dt>
+	<dd>
+	<p>确定根因和触发因素，是撰写事后复盘最重要的目的之一。示例虽然用一个短段落描述了根因和触发因素，却没有深入探究问题的底层细节。<a contenteditable="false" data-primary="root causes and trigger (in postmortems)" data-type="indexterm" id="idm139660640736336"/></p>
+	</dd>
+	<dt>恢复工作</dt>
+	<dd>
+	<p>事后复盘是留给读者的事件记录。好的复盘会让读者了解发生了什么、问题如何得到缓解，以及用户受到怎样的影响。这些问题的答案通常位于“恢复工作”部分，而本例中的该部分却是空白的。<a contenteditable="false" data-primary="recovery efforts (in postmortems)" data-type="indexterm" id="idm139660640733536"/></p>
+	</dd>
+</dl>
+
+<p>如果一次故障值得开展事后复盘，就也应投入时间，准确记录必要的细节。读者应当获得故障的完整图景，更重要的是，能从中学到新知识。</p>
+</div></section>
+
+<section data-pdf-bookmark="Key action item characteristics missing" data-type="sect3"><div class="sect3" id="key_action_item_characteristics_missing">
+<h3>行动项缺少关键要素</h3>
+
+<p>示例中的“行动项”部分缺少防止事件重演所需的可执行计划的核心要素。例如：<a contenteditable="false" data-primary="action items in postmortems" data-type="indexterm" id="idm139660640729360"/></p>
+
+<ul>
+	<li>
+	<p>这些行动项大多只是缓解措施。为尽量降低故障重演的概率，还应加入一些<a contenteditable="false" data-primary="preventative actions in postmortems" data-type="indexterm" id="idm139660640730672"/>预防性行动项和修复措施。唯一一项所谓的“预防”措施，是让“人更不容易犯错”。一般而言，改变人的行为不如改变自动化系统和流程可靠。（正如 Dan Milstein <a href="http://bit.ly/2syrmBF">曾打趣道</a>：“规划未来时，就假定那时的我们和今天一样愚蠢。”）</p>
+	</li>
+	<li>
+	<p>所有行动项都标成了相同优先级，无法判断应先处理哪一项。</p>
+	</li>
+	<li>
+	<p>列表前两项使用了“改进”“做得更好”之类含糊措辞。这些词语意义不明确，解释空间很大；措辞不清会使成功标准难以理解和衡量。</p>
+	</li>
+	<li>
+	<p>只有一项行动项关联了跟踪缺陷。没有正式跟踪流程时，事后复盘中的行动项往往会被遗忘，进而导致故障再次发生。</p>
+	</li>
+</ul>
+
+<div class="note1" data-type="note" epub:type="note"><h6>说明</h6>
+<p>Google 负责全天候运维的副总裁 Ben Treynor Sloss 曾说：“对用户而言，没有后续行动的事后复盘，和根本没有复盘没有区别。因此，凡是影响用户的故障，其事后复盘都必须至少关联一个 P[01] 缺陷。例外情况由我亲自审核，而例外极少。”</p>
+</div>
+</div></section>
+
+<section data-pdf-bookmark="Counterproductive finger pointing" data-type="sect3"><div class="sect3" id="counterproductive_finger_pointing">
+<h3>适得其反的指责</h3>
+
+<p>任何事后复盘都有可能滑向指责式叙事。来看几个例子：<a contenteditable="false" data-primary="finger pointing in postmortems" data-type="indexterm" id="idm139660640717040"/></p>
+
+<dl>
+	<dt>做得不好的方面</dt>
+	<dd>
+	<p>复盘把故障归咎于整个团队，同时还特别点名了两名成员（maxone@ 和 logantwo@）。</p>
+	</dd>
+	<dt>行动项</dt>
+	<dd>
+	<p>列表最后一项把矛头指向 sydneythree@，指责其屈从于压力并错误处理跨站点交接。</p>
+	</dd>
+	<dt>根因和触发因素</dt>
+	<dd>
+	<p>dylanfour@ 被认定为该故障的唯一责任人。</p>
+	</dd>
+</dl>
+
+<p>在事后复盘中点名个人看似合理，实际却会让团队成员因害怕公开受辱而趋于规避风险，甚至可能促使他们隐瞒理解事件、防止重演所必需的关键事实。</p>
+</div></section>
+
+<section data-pdf-bookmark="Animated language" data-type="sect3"><div class="sect3" id="animated_language">
+<h3>情绪化语言</h3>
+
+<p>事后复盘是一份事实性记录，不应包含个人评判和主观措辞。它应兼顾多方视角，并尊重他人。示例复盘中有多处不当表述：<a contenteditable="false" data-primary="animated (undesirable) language in postmortems" data-type="indexterm" id="idm139660640709568"/><a contenteditable="false" data-primary="superfluous (undesirable) language in postmortems" data-type="indexterm" id="idm139660640708816"/></p>
+
+<dl>
+	<dt>根因和触发因素</dt>
+	<dd>
+	<p>画蛇添足的措辞（如“疏忽无知”）</p>
+	</dd>
+	<dt>做得不好的方面</dt>
+	<dd>
+	<p>情绪化措辞（如“这太荒谬了”）</p>
+	</dd>
+	<dt>侥幸之处</dt>
+	<dd>
+	<p>难以置信式的感叹（如“真不敢相信我们竟挺过了这次事故！！！”）</p>
+	</dd>
+</dl>
+
+<p>情绪化语言和戏剧化的事件描述会分散读者对关键信息的注意力，并削弱心理安全感。应改用可验证的数据来说明陈述的严重程度。</p>
+</div></section>
+
+<section data-pdf-bookmark="Missing ownership" data-type="sect3"><div class="sect3" id="missing_ownership">
+<h3>责任归属不清</h3>
+
+<p>明确正式负责人会形成问责，进而推动行动。示例复盘中有多处责任归属不清：<a contenteditable="false" data-primary="ownership" data-secondary="missing, in bad postmortem example" data-type="indexterm" id="idm139660640699280"/></p>
+
+<ul>
+	<li>
+	<p>该复盘列出了四名负责人。理想情况下，应指定一名单一联系人，对复盘本身、后续跟进和最终完成负责。</p>
+	</li>
+	<li>
+	<p>“行动项”部分的条目很少指定负责人，甚至完全没有。没有明确负责人的行动项更难得到落实。</p>
+	</li>
+</ul>
+
+<p>最好有一个负责人和多个合作者。</p>
+</div></section>
+
+<section data-pdf-bookmark="Limited audience" data-type="sect3"><div class="sect3" id="limited_audience">
+<h3>受众有限</h3>
+
+<p>示例复盘只在团队成员之间共享。默认情况下，公司所有人都应能访问该文档。我们建议主动尽可能广泛地分享复盘，甚至可以与客户分享。复盘的价值与其带来的学习成正比：能从既往事件中学习的人越多，事件重演的可能性就越低。经过深思熟虑且坦诚的复盘，也是修复受损信任的重要工具。<a contenteditable="false" data-primary="limited audience in bad postmortem example" data-type="indexterm" id="idm139660640692608"/></p>
+
+<p>随着经验积累、团队更加从容，复盘的“受众”很可能还会扩展到非人类系统。成熟的复盘文化通常会加入机器可读的标签和其他元数据，以支持下游分析。</p>
+</div></section>
+
+<section data-pdf-bookmark="Delayed publication" data-type="sect3"><div class="sect3" id="delayed_publication">
+<h3>发布延迟</h3>
+
+<p>示例复盘在事件发生四个月后才发布。在这期间，若事件再次发生（现实中确实发生了），团队成员很可能已经忘记本可由及时复盘记录下来的关键细节。<a contenteditable="false" data-primary="publication of postmortems" data-type="indexterm" id="idm139660640690384"/><a contenteditable="false" data-primary="postmortems" data-secondary="bad postmortem example" data-startref="ix_pmrtbadwhy" data-tertiary="flaw in" data-type="indexterm" id="idm139660640689536"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Good Postmortem" data-type="sect1"><div class="sect1" id="good_postmortem">
+<h1>优秀的事后复盘</h1>
+
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>这是一份真实的事后复盘。为保护敏感的容量信息，我们对部分个人和团队名称作了虚构处理，并用占位符替换了实际数值。你为组织内部撰写复盘时，务必填写具体数字！<a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-type="indexterm" id="ix_pmrtgood"/></p>
+</div>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="postmortem_all_satellite_machines-id00048">
+<h5>事后复盘：所有卫星节点均被送去擦除磁盘</h5>
+
+<p><strong>2014-August-11</strong></p>
+
+<table>
+	<tbody>
+		<tr>
+			<td><strong>负责人：</strong></td>
+			<td>
+			<p>事后复盘：maxone@、logantwo@</p>
+
+			<p>数据中心自动化：sydneythree@</p>
+
+			<p>网络：dylanfour@</p>
+
+			<p>服务器管理：finfive@</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>分享给：</strong></td>
+			<td><a href="mailto:all_engineering_employees@google.com">all_engineering_employees@google.com</a></td>
+		</tr>
+		<tr>
+			<td><strong>状态：</strong></td>
+			<td>最终版</td>
+		</tr>
+		<tr>
+			<td><strong>事件日期：</strong></td>
+			<td>2014 年 8 月 11 日（星期一）17:10 至 17:50（PST8PDT）</td>
+		</tr>
+		<tr>
+			<td><strong>发布日期：</strong></td>
+			<td>2014 年 8 月 15 日，星期五</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>执行摘要</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>影响：</strong></td>
+			<td>
+			<p>前端查询丢失</p>
+
+			<p>部分广告未能投放</p>
+
+			<p>通常由卫星节点处理的所有服务延迟升高，持续近两天</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>根因：</strong></td>
+			<td>退役自动化中的一个缺陷把所有卫星节点而非仅一个机架的节点送入了 diskerase。于是，所有卫星节点都进入退役工作流，磁盘被擦除，最终造成全球卫星前端中断。</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>问题摘要</b></p>
+
+<table class="border">
+	<tbody>
+		<tr>
+			<td><strong>问题持续时间：</strong></td>
+			<td>
+			<p>主要中断：8 月 11 日星期一 17:10 至 17:50（PST8PDT）</p>
+
+			<p>重建工作及后续遗留问题持续到 8 月 13 日星期三 07:46（PST8PDT），随后事件关闭。</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>受影响的产品：</strong></td>
+			<td>前端基础设施，具体包括所有卫星节点位置。</td>
+		</tr>
+		<tr>
+			<td><strong>受影响产品比例：</strong></td>
+			<td>全球范围——通常由卫星节点处理的全部流量（一般约占全球查询的 60%）。</td>
+		</tr>
+		<tr>
+			<td><strong>用户影响：</strong></td>
+			<td>
+			<p>在 40 分钟内，有[值已隐去]次前端查询丢失（期间平均为[值已隐去] QPS，占全球流量的[值已隐去]%）。</p>
+
+			<p>通常由卫星节点处理的所有服务延迟升高，持续近两天。</p>
+			</td>
+		</tr>
+		<tr>
+			<td><strong>收入影响：</strong></td>
+			<td>目前尚不清楚确切的收入影响。</td>
+		</tr>
+		<tr>
+			<td><strong>检测：</strong></td>
+			<td>黑盒告警：全球几乎每个卫星节点都触发了“satellite <code>a12bcd34</code> failing too many HTTP requests”告警，流量团队因此收到寻呼。</td>
+		</tr>
+		<tr>
+			<td><strong>解决：</strong></td>
+			<td>将 Google 的全部前端流量转移到核心集群后，中断很快得到缓解，代价是用户流量的延迟有所增加。</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>背景（可选）</b></p>
+
+<p>如果你不熟悉 Google 的前端流量服务和服务自动化底层，请先阅读术语表，再继续阅读。</p>
+
+<p><b>影响</b></p>
+
+<p>用户影响</p>
+
+<ul>
+	<li>
+	<p>在[值已隐去]分钟内，有[值已隐去]次前端查询丢失；期间平均为[值已隐去] QPS，占全球流量的[值已隐去]%。监控数据看起来显示了大得多的流量骤降，但这些数据并不可靠：监控系统误以为仍在服务的卫星节点已经停用，因而停止监控它们。附录说明了上述数字的估算方法。</p>
+	</li>
+	<li>
+	<p>通常由卫星节点处理的所有服务，其延迟升高持续了近两天：</p>
+
+	<ul>
+		<li>
+		<p>核心集群附近各国家和地区的 RTT 峰值增加了[值已隐去]毫秒</p>
+		</li>
+		<li>
+		<p>更依赖卫星节点的位置（如澳大利亚、新西兰和印度）最多增加了[值已隐去]毫秒</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>收入影响</p>
+
+<p>由于查询丢失，部分广告未能投放。目前尚不清楚确切的收入影响：</p>
+
+<ul>
+	<li>
+	<p>展示广告和视频广告：由于每日波动，数据的误差范围很大；我们估计故障当天的收入损失在[值已隐去]%到[值已隐去]%之间。</p>
+	</li>
+	<li>
+	<p>搜索：17:00 至 18:00 期间损失[值已隐去]%到[值已隐去]%，误差范围同样很大。</p>
+	</li>
+</ul>
+
+<p class="pagebreak-before">团队影响</p>
+
+<ul>
+	<li>
+	<p>流量团队全员投入，花费约 48 小时重建卫星节点。</p>
+	</li>
+	<li>
+	<p>NST 的中断处理／寻呼负载高于正常水平，因为他们需要对过载的对等互联链路进行流量工程调整。</p>
+	</li>
+	<li>
+	<p>由于 GFE 缓存命中率下降，某些服务的前端可能需要直接处理更多响应。</p>
+
+	<ul>
+		<li>
+		<p>例如，可参阅这个有关[依赖缓存的服务]的讨论串：[链接]。</p>
+		</li>
+		<li>
+		<p>[依赖缓存的服务]在 GFE 上的缓存命中率从[值已隐去]%降至[值已隐去]%，之后才缓慢恢复。</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>事件文档</p>
+
+<p>[事件跟踪文档的链接已隐去。]</p>
+
+<p><b>根因与触发因素</b></p>
+
+<p>手动重新执行 <code>a12bcd34</code> 卫星节点的退役工作流，触发了流量管理服务器中一个长期存在的输入验证缺陷。该缺陷移除了退役操作中的机器范围约束，导致所有卫星节点机器都被送去退役。</p>
+
+<p>随后，数据中心自动化系统执行退役工作流；在操作被制止前，大多数卫星节点机器的硬盘已经被擦除。</p>
+
+<p>流量管理服务器提供 <code>ReleaseSatelliteMachines</code> RPC。该处理程序通过三次 MDB API 调用发起卫星节点退役：</p>
+
+<ul>
+	<li>
+	<p>查找与边缘节点关联的机架名称（例如 <code>a12bcd34</code> → &lt;机架名称&gt;）。</p>
+	</li>
+	<li>
+	<p>查找与该机架关联的机器名称（&lt;机架&gt; → &lt;机器 1&gt;、&lt;机器 2&gt;，依此类推）。</p>
+	</li>
+	<li>
+	<p>将这些机器重新分配给 diskerase，从而间接触发退役工作流。</p>
+	</li>
+</ul>
+
+<p>由于 MDB API 的一种已知行为，再加上缺少安全检查，该流程并不幂等。如果某个卫星节点此前已成功进入退役流程，上述第 2 步就会返回空列表；第 3 步则会把空列表解释为“不对机器主机名施加任何约束”。</p>
+
+<p>这种危险行为存在已久，却被调用不安全操作的工作流掩盖了：调用该 RPC 的工作流步骤被标记为“仅运行一次”，即 RPC 一旦成功，工作流引擎便不会再次执行它。</p>
+
+<p>然而，“仅运行一次”的语义不跨工作流实例生效。集群启用团队为 <code>a12bcd34</code> 手动启动另一个工作流实例时，便触发了 <code>admin_server</code> 缺陷。</p>
+
+<p><b>时间线／恢复工作</b></p>
+
+<p>[为出版需要，本书省略了时间线日志链接。在真实的事后复盘中，始终应包含这些信息。]</p>
+
+<p><b>经验教训</b></p>
+
+<p>做得好的方面</p>
+
+<ul>
+	<li>
+	<p>撤空边缘节点。核心集群中的 GFE 和生产骨干网都明确按可承接这类流量进行容量规划（对等链路除外，参见下一节的“故障”列表）。因此，流量团队可以放心地迅速缓解影响。</p>
+	</li>
+	<li>
+	<p>自动缓解灾难性的卫星节点故障。覆盖路由会自动把流量从故障卫星节点拉回核心集群；检测到异常波动时，卫星节点也会自行排空流量。</p>
+	</li>
+	<li>
+	<p>卫星节点的退役／diskerase 流程运行得非常高效迅速，尽管此时它充当了“<a href="http://bit.ly/2syHumz">糊涂代理人</a>”。</p>
+	</li>
+	<li>
+	<p>该故障通过 OMG 迅速触发了 IMAG 响应，事实证明，这个工具很适合持续跟踪事件。跨团队响应非常出色，OMG 还进一步帮助所有人保持沟通。</p>
+	</li>
+</ul>
+
+<p>做得不好的方面</p>
+
+<p>故障</p>
+
+<ul>
+	<li>
+	<p>流量管理服务器未对发送给 MDB 的命令执行适当的合理性检查。所有命令都应当幂等，或至少在重复调用时以安全方式失败。</p>
+	</li>
+	<li>
+	<p>MDB 没有拒绝所有权变更请求中缺少主机名约束的情况。</p>
+	</li>
+	<li>
+	<p>退役工作流不会使用其他数据源（如计划中的机架退役）交叉核验退役请求。因此，请求销毁大量分布在不同地理位置的机器时，没有任何机制提出异议。</p>
+	</li>
+	<li>
+	<p>退役工作流没有速率限制。机器一旦进入退役流程，磁盘擦除和其他退役步骤就会以最高速度执行。</p>
+	</li>
+	<li>
+	<p>卫星节点停止服务、查询改由核心集群处理后，出口流量转移到不同位置，导致 Google 与外部网络之间的一些对等互联链路过载。在卫星节点恢复前，少数对等网络出现了短时拥塞，NST 也不得不开展相应的缓解工作。</p>
+	</li>
+</ul>
+
+<p>恢复</p>
+
+<ul>
+	<li>
+	<p>卫星节点机器的重装既缓慢又不可靠。重装使用 TFTP 传输数据，而对位于高延迟链路远端的卫星节点进行传输时，TFTP 表现很差。</p>
+	</li>
+	<li>
+	<p>故障发生时，Autoreplacer 基础设施无法同时部署[值已隐去]台 GFE。为赶上自动部署速度，许多 SRE 必须并行进行手动部署。以下因素造成了自动化在初期速度缓慢：</p>
+
+	<ul>
+		<li>
+		<p>过于严格的 SSH 超时设置，使 Autoreplacer 无法在距离很远的卫星节点上可靠运行。</p>
+		</li>
+		<li>
+		<p>无论机器是否已安装正确版本，都会执行缓慢的内核升级流程。</p>
+		</li>
+		<li>
+		<p>Autoreplacer 的并发回归缺陷导致每台工作机器最多只能运行两个机器部署任务。</p>
+		</li>
+		<li>
+		<p>对 Autoreplacer 行为的理解混乱浪费了时间和精力。</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>移除 23% 的目标时，监控配置增量安全检查（阈值为 25% 的变更）没有触发；重新添加相同内容时，由于这些内容占剩余目标的 29%，检查反而触发了。这使卫星节点监控的重新启用延迟了 30 分钟。</p>
+	</li>
+	<li>
+	<p>“安装程序”团队人手有限，因此变更既困难又缓慢。</p>
+	</li>
+	<li>
+	<p>使用超级用户权限把机器从 diskerase 中强行夺回，留下了大量僵尸状态，造成持续的清理负担。</p>
+	</li>
+</ul>
+
+<p>侥幸之处</p>
+
+<ul>
+	<li>
+	<p>核心集群 GFE 与卫星节点 GFE 的管理方式截然不同，因此没有受到这场失控退役操作的影响。</p>
+	</li>
+	<li>
+	<p>同样，YouTube CDN 作为独立基础设施运行，因此 YouTube 视频服务未受影响。若它也失效，故障会严重得多，持续时间也会更长。</p>
+	</li>
+</ul>
+
+<p><b>行动项</b></p>
+
+<p>由于该事件影响范围广泛，我们把行动项分为五类：</p>
+
+<ol class="pagebreak-before">
+	<li>
+	<p>预防／风险教育</p>
+	</li>
+	<li>
+	<p>应急响应</p>
+	</li>
+	<li>
+	<p>监控／告警</p>
+	</li>
+	<li>
+	<p>卫星／边缘节点部署</p>
+	</li>
+	<li>
+	<p>清理／其他</p>
+	</li>
+</ol>
+
+<table class="border" id="preventionsolidusrisk_education">
+	<caption><span class="label">表 10-1. </span>预防／风险教育</caption>
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>审计所有可能把在线服务器变成“废铁”的系统，而不只限于维修和 diskerase 工作流。</td>
+			<td>调查</td>
+			<td>P1</td>
+			<td>sydneythree@</td>
+			<td>BUG1234</td>
+		</tr>
+		<tr>
+			<td>为 BUG1234 识别出的所有系统创建缺陷，跟踪拒绝无效输入功能的实现。</td>
+			<td>预防</td>
+			<td>P1</td>
+			<td>sydneythree@</td>
+			<td>BUG1235</td>
+		</tr>
+		<tr>
+			<td>禁止任何单次操作影响跨越命名空间或类别边界的服务器。</td>
+			<td>缓解</td>
+			<td>P1</td>
+			<td>maxone@</td>
+			<td>BUG1236</td>
+		</tr>
+		<tr>
+			<td>流量管理服务器需要增加安全检查，禁止一次操作超过[值已隐去]个节点。</td>
+			<td>缓解</td>
+			<td>P1</td>
+			<td>dylanfour@</td>
+			<td>BUG1237</td>
+		</tr>
+		<tr>
+			<td>流量管理服务器应请求&lt;安全检查服务&gt;批准破坏性操作。</td>
+			<td>预防</td>
+			<td>P0</td>
+			<td>logantwo@</td>
+			<td>BUG1238</td>
+		</tr>
+		<tr>
+			<td>如果本应存在的约束没有提供值，MDB 应拒绝该操作。</td>
+			<td>预防</td>
+			<td>P0</td>
+			<td>louseven@</td>
+			<td>BUG1239</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="emergency_response">
+	<caption><span class="label">表 10-2. </span>应急响应</caption>
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>确保由核心集群提供服务时不会使出口网络链路过载。</td>
+			<td>修复</td>
+			<td>P2</td>
+			<td>rileysix@</td>
+			<td>BUG1240</td>
+		</tr>
+		<tr>
+			<td>确保在[紧急停止文档链接已隐去]和[升级联系人页面链接已隐去]中注明退役工作流问题。</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td>logantwo@</td>
+			<td>BUG1241</td>
+		</tr>
+		<tr>
+			<td>为退役工作流增加<sup><a data-type="noteref" href="ch10-zh.html#ch10fn1" id="ch10fn1-marker">a</a></sup> “大红按钮”式的紧急停用机制。</td>
+			<td>缓解</td>
+			<td>P0</td>
+			<td>maxone@</td>
+			<td>BUG1242</td>
+		</tr>
+	</tbody>
+<tbody><tr class="footnotes"><td colspan="5"><p data-type="footnote" id="ch10fn1"><sup><a href="ch10-zh.html#ch10fn1-marker">a</a></sup>　“大红按钮”泛指灾难情况下用于避免进一步损害的关闭开关（例如紧急断电按钮）。</p></td></tr></tbody></table>
+
+<table class="border" id="monitoringsolidusalerting">
+	<caption><span class="label">表 10-3. </span>监控／告警</caption>
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>监控目标的安全检查不应允许发布无法回滚的变更。</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td>dylanfour@</td>
+			<td>BUG1243</td>
+		</tr>
+		<tr>
+			<td>当超过[值已隐去]%的机器被移走时发出告警。卫星节点上的机器在 16:38 就被移走，而全球范围的寻呼直到约 17:10 才开始。</td>
+			<td>检测</td>
+			<td>P1</td>
+			<td>rileysix@</td>
+			<td>BUG1244</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="satellitesolidusedge_provisioning">
+	<caption><span class="label">表 10-4. </span>卫星节点／边缘节点部署</caption>
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>使用 iPXE 和 HTTPS，使重新安装更可靠、更快速。</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td>dylanfour@</td>
+			<td>BUG1245</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="border" id="cleanupsolidusmiscellaneous">
+	<caption><span class="label">表 10-5. </span>清理／其他</caption>
+	<thead>
+		<tr>
+			<th><strong>行动项</strong></th>
+			<th><strong>类型</strong></th>
+			<th><strong>优先级</strong></th>
+			<th><strong>负责人</strong></th>
+			<th><strong>跟踪缺陷</strong></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>审查工具中与 MDB 相关的代码，并恢复管理服务器备份，以解除集群启用／停用流程的阻塞。</td>
+			<td>修复</td>
+			<td>P2</td>
+			<td>rileysix@</td>
+			<td>BUG1246</td>
+		</tr>
+		<tr>
+			<td>
+			<p>安排 DiRT 测试：</p>
+
+			<ul>
+				<li>
+				<p>在 diskerase 后恢复卫星节点。</p>
+				</li>
+				<li>
+				<p>对 YouTube CDN 进行同样的测试。</p>
+				</li>
+			</ul>
+			</td>
+			<td>缓解</td>
+			<td>P2</td>
+			<td>louseven@</td>
+			<td>BUG1247</td>
+		</tr>
+	</tbody>
+</table>
+
+<p><b>术语表</b></p>
+
+<dl>
+	<dt><dfn>管理服务器</dfn></dt>
+	<dd><p>一种 RPC 服务器，使自动化系统能够对前端服务基础设施执行特权操作。管理服务器最主要用于实现 PCR 以及集群启用／停用流程。<a contenteditable="false" data-primary="glossary in good postmortem example" data-type="indexterm" id="idm139660640509296"/></p></dd>
+	<dt><dfn>Autoreplacer</dfn></dt>
+	<dd><p>一种在机器之间迁移未纳入 Borg 管理的服务器的系统。它用于在机器故障时保持服务运行，也支持整体迁移和 colo 重新配置。</p></dd>
+	<dt><dfn>Borg</dfn></dt>
+	<dd><p>一种用于大规模管理任务和机器资源的集群管理系统。Borg 管理一个 Borg 单元中的全部机器，并把任务分配给尚有可用资源的机器。</p></dd>
+	<dt><dfn>退役（Decom）</dfn></dt>
+	<dd><p><em>decommissioning</em>（退役）的缩写。设备退役是许多运维团队都会涉及的流程。</p></dd>
+	<dt><dfn>diskerase</dfn></dt>
+	<dd><p>生产硬盘离开 Google 数据中心之前，用于安全擦除硬盘的流程及相关软硬件系统。Diskerase 是退役工作流中的一个步骤。</p></dd>
+	<dt><dfn>GFE(Google前端)</dfn></dt>
+	<dd><p>外部世界访问几乎所有 Google 服务时所连接的服务器。</p></dd>
+	<dt><dfn>IMAG(Google事件管理)</dfn></dt>
+	<dd><p>一种为处理各类事件（从系统故障到自然灾害）建立标准一致方法，并组织有效响应的机制。</p></dd>
+	<dt><dfn>MDB(机器数据库)</dfn></dt>
+	<dd><p>一种存储 Google 机器资产状态等各类信息的系统。</p></dd>
+	<dt><dfn>OMG(Google的停机管理)</dfn></dt>
+	<dd><p>一个事件管理信息面板／工具，是跟踪和管理 Google 所有进行中事件的中心位置。</p></dd>
+	<dt><dfn>卫星</dfn></dt>
+	<dd><p>卫星节点是小型、廉价的机器机架，仅从 Google 网络边缘处理非视频前端流量。传统生产集群基础设施几乎都不适用于卫星节点。卫星节点不同于从 Google 网络边缘及互联网其他位置提供 YouTube 视频内容的 CDN；YouTube CDN 未受本次事件影响。</p></dd>
+</dl>
+
+<p><b>附录</b></p>
+
+<dl>
+	<dt><dfn>为什么  <code>ReleaseSatelliteMachines</code>  不是幂等的？ </dfn></dt>
+	<dd><p>[这个问题的回答已省略。]</p></dd>
+	<dt><dfn>管理服务器把所有卫星节点分配给 diskerase 团队后，发生了什么？</dfn></dt>
+	<dd><p>[这个问题的回答已省略。]</p></dd>
+	<dt><dfn>故障期间实际损失了多少 <a href="http://bit.ly/2JksYtc">QPS</a>？</dfn>？</dt>
+	<dd><p>[这个问题的回答已省略。]</p></dd>
+	<dt><dfn>IRC日志</dfn></dt>
+	<dd><p>[IRC 日志已省略。]</p></dd>
+</dl>
+
+<p class="pagebreak-before"><b>图表</b></p>
+
+<dl>
+	<dt><dfn>更快的延迟指标——卫星节点究竟为我们做了什么？</dfn></dt>
+	<dd>
+	<p>根据本次故障的实测数据，卫星节点可使核心集群附近许多位置的延迟降低[值已隐去]毫秒，并使离骨干网更远的位置最多降低[值已隐去]毫秒：</p>
+
+	<p>[图表说明已省略。]</p>
+	</dd>
+	<dt><dfn>核心与边缘服务负载</dfn></dt>
+	<dd><p>这组图很好地展示了重建工作：再次由边缘节点承载 50% 的流量约花了 36 小时，恢复正常流量分配又花了 12 小时（见<a data-type="xref" href="#core_vsdot_edge_qpsbreakdown">图 10-1</a>和<a data-type="xref" href="#core_vsdot_edge_qpsbreakdown_left_parenth">图 10-2</a>）。</p></dd>
+</dl>
+
+<dl>
+	<dt><dfn>流量变化带来的压力</dfn></dt>
+	<dd>
+	<p>[图表已省略。]</p>
+
+	<p>该图按网络区域汇总数据包丢失。事件发生期间本身只有少数短暂峰值；大部分丢包发生在各地区进入流量高峰、而卫星节点覆盖很少或完全缺失时。</p>
+	</dd>
+	<dt><dfn>《人与机器》，GFE版</dfn></dt>
+	<dd><p>[人工作业与自动化机器部署速率的图表说明已省略。]</p></dd>
+</dl>
+
+<figure><div class="figure" id="core_vsdot_edge_qpsbreakdown"><img alt="核心与边缘 QPS 分布" src="assets/tsrw_1001.png"/>
+<h6><span class="label">图 10-1. </span>核心与边缘 QPS 分布</h6>
+</div></figure>
+
+<figure><div class="figure" id="core_vsdot_edge_qpsbreakdown_left_parenth"><img alt="核心与边缘 QPS 分布（另一种呈现方式）" src="assets/tsrw_1002.png"/>
+<h6><span class="label">图 10-2. </span>核心与边缘 QPS 分布（另一种呈现方式）</h6>
+</div></figure>
+</div></aside>
+
+<section data-pdf-bookmark="Why Is This Postmortem Better?" data-type="sect2"><div class="sect2" id="why_is_this_postmortem_betterquestion_mar">
+<h2>为什么这份事后复盘更好？</h2>
+
+<p>这份事后复盘体现了多项优秀写作实践。<a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-startref="ix_pmrtgood" data-type="indexterm" id="idm139660640679088"/><a contenteditable="false" data-primary="postmortems" data-secondary="good postmortem example" data-tertiary="good writing practices used" data-type="indexterm" id="idm139660640470880"/></p>
+
+<section data-pdf-bookmark="Clarity" data-type="sect3"><div class="sect3" id="clarity">
+<h3>清晰</h3>
+
+<p>该复盘组织清晰，并对关键术语作了充分说明。例如：<a contenteditable="false" data-primary="clarity in good postmortem example" data-type="indexterm" id="idm139660640467408"/></p>
+
+<dl>
+	<dt>术语表</dt>
+	<dd>
+	<p>精心编写的术语表能让广泛的读者都读得懂、用得上这份事后复盘。<a contenteditable="false" data-primary="glossary in good postmortem example" data-type="indexterm" id="idm139660640462864"/></p>
+	</dd>
+	<dt>行动项</dt>
+	<dd>
+	<p>这是一次重大事件，包含许多行动项。按主题对行动项分组，更便于分配负责人和优先级。<a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-type="indexterm" id="idm139660640460784"/></p>
+	</dd>
+	<dt class="pagebreak-before">量化指标</dt>
+	<dd>
+	<p>复盘提供了有关事件的实用数据，例如缓存命中率、流量水平和影响持续时间。正文摘录相关数据，并链接回原始来源。数据透明消除了歧义，也为读者提供了上下文。<a contenteditable="false" data-primary="metrics" data-secondary="quantifiable, in good postmortem example" data-type="indexterm" id="idm139660640459088"/></p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Concrete action items" data-type="sect3"><div class="sect3" id="concrete_action_items">
+<h3>具体的行动项</h3>
+
+<p>没有行动项的事后复盘无法发挥作用。这些行动项具有几个显著特征：<a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-tertiary="concrete action items" data-type="indexterm" id="idm139660640454160"/></p>
+
+<dl>
+	<dt>责任归属</dt>
+	<dd>
+	<p>所有行动项都有负责人和跟踪编号。<a contenteditable="false" data-primary="ownership" data-secondary="action items in good postmortem example" data-type="indexterm" id="idm139660640451008"/></p>
+	</dd>
+	<dt>优先级排序</dt>
+	<dd>
+	<p>为所有行动项分配了优先级。</p>
+	</dd>
+	<dt>可衡量性</dt>
+	<dd>
+	<p>行动项具有可验证的结束状态（例如“当超过 X% 的机器被移走时发出告警”）。<a contenteditable="false" data-primary="measurements" data-secondary="measurability in action items in postmortems" data-type="indexterm" id="idm139660640446784"/></p>
+	</dd>
+	<dt>预防性行动</dt>
+	<dd>
+	<p>每一类行动项都包含“预防”／“缓解”措施，以帮助避免故障重演（例如“禁止任何单次操作影响跨越命名空间／类别边界的服务器”）。<a contenteditable="false" data-primary="preventative actions in postmortems" data-type="indexterm" id="idm139660640442656"/></p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Blamelessness" data-type="sect3"><div class="sect3" id="blamelessness">
+<h3>无责</h3>
+
+<p>作者关注的是系统设计中允许不良故障模式出现的缺口。例如：<a contenteditable="false" data-primary="blameless postmortems" data-secondary="blamelessness in good postmortem example" data-type="indexterm" id="idm139660640438736"/></p>
+
+<dl>
+	<dt>做得不好的方面</dt>
+	<dd>
+	<p>复盘没有把事件归咎于任何个人或团队。</p>
+	</dd>
+	<dt>根因和触发</dt>
+	<dd>
+	<p>重点是“哪里”出了问题，而不是“谁”引发了事件。<a contenteditable="false" data-primary="root causes and trigger (in postmortems)" data-type="indexterm" id="idm139660640434576"/></p>
+	</dd>
+	<dt>行动项</dt>
+	<dd>
+	<p>旨在改进系统，而不是改造人。<a contenteditable="false" data-primary="action items in postmortems" data-secondary="in good postmortem example" data-tertiary="blamelessness of" data-type="indexterm" id="idm139660640433216"/></p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Depth" data-type="sect3"><div class="sect3" id="depth">
+<h3>深度</h3>
+
+<p>复盘没有只调查系统故障的直接发生区域，而是跨多个团队考察影响和系统缺陷。具体包括：<a contenteditable="false" data-primary="depth in postmortems" data-type="indexterm" id="idm139660640428640"/></p>
+
+<dl>
+	<dt>影响</dt>
+	<dd>
+	<p>本节包含来自多种视角的大量细节，因此内容均衡而客观。</p>
+	</dd>
+	<dt>根因和触发</dt>
+	<dd>
+	<p>本节深入分析该事件，并找出根因和触发因素。</p>
+	</dd>
+	<dt>数据驱动的结论</dt>
+	<dd>
+	<p>所有结论都以事实和数据为依据；文档还链接了得出结论时使用的所有数据。</p>
+	</dd>
+	<dt>其他资源</dt>
+	<dd>
+	<p>这些附加资源以图表形式提供更多有用信息，并解释图表，为不熟悉该系统的读者补充上下文。</p>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Promptness" data-type="sect3"><div class="sect3" id="promptness">
+<h3>及时</h3>
+
+<p>该复盘在事件关闭后不到一周便完成并传阅。及时的复盘往往更准确，因为参与者对信息仍记忆犹新。受故障影响的人正等待解释，也希望看到你已掌控局面的证据。等待越久，他们越会用想象填补空白，而这几乎从不会对你有利！<a contenteditable="false" data-primary="publication of postmortems" data-type="indexterm" id="idm139660640417968"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Conciseness" data-type="sect3"><div class="sect3" id="conciseness">
+<h3>简洁</h3>
+
+<p>该事件影响全球多个系统，因此复盘记录并分析了大量数据。聊天记录和系统日志等冗长数据源被提炼为摘要，未经编辑的版本则由正文链接。总体而言，这份复盘在详尽程度和可读性之间取得了平衡。<a contenteditable="false" data-primary="conciseness in postmortems" data-type="indexterm" id="idm139660640415536"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Organizational Incentives" data-type="sect1"><div class="sect1" id="organizational_incentives">
+<h1>组织激励</h1>
+
+<p>理想情况下，高层领导应支持并鼓励有效的事后复盘。本节说明组织如何激励健康的复盘文化，指出文化失效的警示信号并提供解决办法，还会介绍用于简化和自动化复盘流程的工具与模板。<a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-type="indexterm" id="ix_pmrtorg"/></p>
+
+<section data-pdf-bookmark="Model and Enforce Blameless Behavior" data-type="sect2"><div class="sect2" id="model_and_enforce_blameless_behavior">
+<h2>示范并贯彻无责行为</h2>
+
+<p>为正确支持事后复盘文化，工程领导者应始终示范无责行为，并在复盘讨论的每个环节鼓励无责原则。组织可以采用几项具体策略来贯彻这种行为。<a contenteditable="false" data-primary="blameless postmortems" data-secondary="modeling and enforcing blameless behavior" data-type="indexterm" id="idm139660640406736"/><a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="modeling and enforcing blameless behavior" data-type="indexterm" id="idm139660640407104"/></p>
+
+<section data-pdf-bookmark="Use blameless language" data-type="sect3"><div class="sect3" id="use_blameless_language">
+<h3>使用无责语言</h3>
+
+<p>指责性语言会扼杀团队间的协作。请看以下情形：<a contenteditable="false" data-primary="blameless language" data-type="indexterm" id="idm139660640402736"/></p>
+
+<blockquote>
+<p>Sandy 错过了 Foo 服务的一次培训，不确定如何运行某条更新命令。由此造成的延误最终延长了故障时间。</p>
+
+<p>SRE Jesse［对 Sandy 的经理说］：“你是经理，为什么没有确保每个人都完成培训？”</p>
+</blockquote>
+
+<p>这段话用了诱导式质问，会立刻让对方产生防御心理。更平衡的说法是：</p>
+
+<blockquote>
+<p>SRE Jesse［对 Sandy 的经理说］：“读完复盘后，我发现值班人员错过了一项重要培训；参加过培训，本可以更快解决故障。或许应该要求团队成员完成这项培训后才能加入值班轮换？也可以提醒他们，一旦受阻就尽快升级。毕竟，升级并不是错，尤其是在它能减轻客户痛苦时！从长远看，我们其实不应过度依赖培训，因为人在紧张时刻很容易忘记所学内容。”</p>
+</blockquote>
+</div></section>
+
+<section data-pdf-bookmark="Include all incident participants in postmortem authoring" data-type="sect3"><div class="sect3" id="include_all_incident_participants_in_post">
+<h3>让所有事件参与者共同撰写事后复盘</h3>
+
+<p>如果事后复盘由某个人或某个团队闭门完成，就很容易漏掉导致故障的关键促成因素。<a contenteditable="false" data-primary="authoring of postmortems, including all participants in" data-type="indexterm" id="idm139660640396576"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Gather feedback" data-type="sect3"><div class="sect3" id="gather_feedback">
+<h3>收集反馈</h3>
+
+<p>清晰的复盘评审流程和沟通计划，有助于防止指责性语言与观点在组织内扩散。建议的结构化评审流程见<a data-type="xref" href="#postmortem_checklist">“事后复盘检查清单”</a>一节。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Reward Postmortem Outcomes" data-type="sect2"><div class="sect2" id="reward_postmortem_outcomes">
+<h2>奖励事后复盘成果</h2>
+
+<p>事后复盘若<a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="rewarding postmortem outcomes" data-type="indexterm" id="idm139660640392000"/> 写得好、后续行动得到落实并广泛分享，就能有效推动组织积极变革并防止故障重演。可以采用以下策略来激励事后复盘文化。</p>
+
+<section data-pdf-bookmark="Reward action item closeout" data-type="sect3"><div class="sect3" id="reward_action_item_closeout">
+<h3>奖励行动项的完成</h3>
+
+<p>如果只奖励工程师撰写复盘，却不奖励完成相关行动项，就可能形成复盘和行动项迟迟无法收尾的恶性循环。应在撰写复盘与成功落实行动计划之间平衡激励。<a contenteditable="false" data-primary="action items in postmortems" data-secondary="rewarding closeout of" data-type="indexterm" id="idm139660640385024"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Reward positive organizational change" data-type="sect3"><div class="sect3" id="reward_positive_organizational_change">
+<h3>奖励积极的组织变革</h3>
+
+<p>把事后复盘定位为扩大个人在组织内影响力的机会，可以激励各方广泛落实复盘所得的经验。可通过同事奖金、积极的绩效评价、晋升等方式奖励这种影响。<a contenteditable="false" data-primary="organizational change (positive), rewarding" data-type="indexterm" id="idm139660640382816"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Highlight improved reliability" data-type="sect3"><div class="sect3" id="highlight_improved_reliability">
+<h3>突出可靠性提升</h3>
+
+<p>长期来看，有效的复盘文化会减少故障并提高系统可靠性，团队因而可以专注于功能交付速度，而不是不断修补基础设施。在报告、演示和绩效评审中强调这些进步，本身就能激发动力。<a contenteditable="false" data-primary="reliability" data-secondary="improvements in, resulting from postmortems" data-type="indexterm" id="idm139660640376928"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Hold up postmortem owners as leaders" data-type="sect3"><div class="sect3" id="hold_up_postmortem_owners_as_leaders">
+<h3>将事后复盘负责人树立为领导者</h3>
+
+<p>通过邮件或会议庆祝复盘成果，或让作者向听众介绍经验教训，能够激励重视公开认可的人。把负责人树立为某类故障及其预防方面的“专家”，也能奖励许多寻求同事认可的工程师。例如，你可能听到有人说：“去找 Sara，她现在可是专家了。她刚合写了一份复盘，找出了如何补上那个缺口！”<a contenteditable="false" data-primary="ownership" data-secondary="viewing postmortem owners as leaders" data-type="indexterm" id="idm139660640373952"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Gamification" data-type="sect3"><div class="sect3" id="gamification">
+<h3>游戏化</h3>
+
+<p>有些人会受到成就感和向更大目标推进的激励，例如修复系统弱点、提高可靠性。对他们而言，行动项计分板或燃尽图可以成为激励。<a contenteditable="false" data-primary="action items in postmortems" data-secondary="gamification of postmortem action items" data-type="indexterm" id="idm139660640368368"/>Google 每年举行两次“FixIt”周，完成复盘行动项最多的 SRE 会获得小小的感谢礼物，当然也赢得夸耀的资本。<a data-type="xref" href="#postmortem_leaderboard">图 10-3</a>展示了一个复盘排行榜示例。</p>
+
+<figure><div class="figure" id="postmortem_leaderboard"><img alt="事后复盘排行榜" src="assets/tsrw_1003.png"/>
+<h6><span class="label">图 10-3. </span>事后复盘排行榜</h6>
+</div></figure>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Share Postmortems Openly" data-type="sect2"><div class="sect2" id="share_postmortems_openly">
+<h2>公开分享事后复盘</h2>
+
+<p>要在组织内维持健康的复盘文化，必须尽可能广泛地分享事后复盘。哪怕只采用以下一种做法，也会有所帮助。<a contenteditable="false" data-primary="sharing postmortems openly" data-type="indexterm" id="idm139660640364176"/><a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="sharing postmortems openly" data-type="indexterm" id="idm139660640362880"/></p>
+
+<section data-pdf-bookmark="Share announcements across the organization" data-type="sect3"><div class="sect3" id="share_announcements_across_the_organizati">
+<h3>在整个组织内发布通知</h3>
+
+<p>通过内部沟通渠道、电子邮件、Slack 等发布复盘草稿已可查看的通知。如果公司定期召开全员会议，可以形成惯例，每次分享一份近期值得关注的复盘。</p>
+</div></section>
+
+<section data-pdf-bookmark="Conduct cross-team reviews" data-type="sect3"><div class="sect3" id="conduct_cross_team_reviews">
+<h3>开展跨团队评审</h3>
+
+<p>开展事后复盘跨团队评审。在评审中，一个团队回顾其事件经过，其他团队提出问题并从中间接学习。Google 的多个办公室设有向全体员工开放的非正式“事后复盘读书会”。<a contenteditable="false" data-primary="cross-team reviews of postmortems" data-type="indexterm" id="idm139660640356800"/></p>
+
+<p>此外，由开发人员、SRE 和组织领导者组成的跨职能小组会评审整个复盘流程，并每月开会检查复盘流程和模板的有效性。</p>
+</div></section>
+
+<section data-pdf-bookmark="Hold training exercises" data-type="sect3"><div class="sect3" id="hold_training_exercises">
+<h3>开展培训演练</h3>
+
+<p>培训新工程师时，可以使用<a href="http://bit.ly/2JiOazR">“不幸之轮”</a>：由一组工程师按照既往复盘中的角色重演事件，<a contenteditable="false" data-primary="training" data-secondary="using postmortems to train new engineers" data-type="indexterm" id="idm139660640350544"/>原事件指挥官也会参加，使演练体验尽可能接近“真实”。</p>
+</div></section>
+
+<section data-pdf-bookmark="Report incidents and outages weekly" data-type="sect3"><div class="sect3" id="report_incidents_and_outages_weekly">
+<h3>每周报告事件与故障</h3>
+
+<p>编写每周故障报告，收录过去七天的事件与故障，并尽可能广泛地分享；再从每周故障中定期汇编并分享“精选事件”报告。<a contenteditable="false" data-primary="outages" data-secondary="reporting weekly" data-type="indexterm" id="idm139660640346720"/><a contenteditable="false" data-primary="incidents" data-secondary="weekly reporting of" data-type="indexterm" id="idm139660640347936"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Respond to Postmortem Culture Failures" data-type="sect2"><div class="sect2" id="respond_to_postmortem_culture_failures">
+<h2>应对事后复盘文化失效</h2>
+
+<p>复盘文化的失效未必总是显而易见。以下是一些常见失效模式及建议的解决办法。<a contenteditable="false" data-primary="culture" data-secondary="responding to postmortem culture failures" data-type="indexterm" id="idm139660640342976"/><a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-tertiary="responding to postmortem culture failures" data-type="indexterm" id="idm139660640341488"/><a contenteditable="false" data-primary="blameless postmortems" data-secondary="responding to culture failures in" data-type="indexterm" id="idm139660640339168"/></p>
+
+<section data-pdf-bookmark="Avoiding association" data-type="sect3"><div class="sect3" id="avoiding_association">
+<h3>逃避关联</h3>
+
+<p>不再参与复盘流程，是组织复盘文化正在失效的信号。例如，假设 SRE 总监 Parker 无意间听到以下对话：</p>
+
+<blockquote>
+<p>软件工程师 Sam：哇，你听说那次大故障了吗？</p>
+
+<p>软件工程师 Riley：听说了，太糟了。他们现在肯定得写事后复盘。</p>
+
+<p>软件工程师 Sam：天哪！幸好我没牵涉进去。</p>
+
+<p>软件工程师 Riley：是啊，我可真不想参加讨论那次事故的<span class="keep-together">会议。</span></p>
+</blockquote>
+
+<p>确保对高关注度复盘中的指责性表述<a href="#postmortem_checklist">进行</a>评审，有助于防止这种回避。分享高质量示例，并说明参与者如何得到奖励，也有助于让人们重新投入复盘流程。</p>
+</div></section>
+
+<section data-pdf-bookmark="Failing to reinforce the culture" data-type="sect3"><div class="sect3" id="failing_to_reinforce_the_culture">
+<h3>未能巩固这种文化</h3>
+
+<p>高级管理人员使用指责性语言时，要作出回应并不容易。请看高层领导在一次故障会议上的这段话：<a contenteditable="false" data-primary="blameful language, mitigating damage of" data-type="indexterm" id="idm139660640329424"/><span class="keep-together"></span></p>
+
+<blockquote>
+<p>副总裁 Ash：我知道我们应该坚持无责原则，但这里是安全空间。肯定有人事先知道这是个坏主意，为什么你们没有听那个人的？<span class="keep-together"></span></p>
+</blockquote>
+
+<p>可以把叙事引向更具建设性的方向，以减轻这番话造成的伤害。例如：</p>
+
+<blockquote>
+<p>SRE Dana：嗯，我相信每个人的出发点都是好的。为坚持无责原则，或许可以笼统地问：当时是否存在我们本可注意到的警示信号？我们又为什么可能忽略了它们？</p>
+</blockquote>
+
+<p>人们会本着善意，根据当时可获得的最佳信息作出决定。调查误导性信息的来源，比追究责任对组织更有益。（<a href="http://bit.ly/2sthid8">如果你接触过敏捷原则，应该对此并不陌生。</a>）</p>
+</div></section>
+
+<section data-pdf-bookmark="Lacking time to write postmortems" data-type="sect3"><div class="sect3" id="lacking_time_to_write_postmortems">
+<h3>没有时间撰写事后复盘</h3>
+
+<p>高质量的事后复盘需要时间撰写。团队若被其他任务压得喘不过气，复盘质量就会下降。行动项不完整的低质量复盘会大幅提高事件重演的可能性。事后复盘是写给未来团队成员的信：必须始终坚持统一的质量标准，以免无意间给未来同事留下错误经验。应优先安排复盘工作，跟踪复盘的完成与评审，并给团队留出足够时间落实相关行动计划。<a contenteditable="false" data-primary="time for postmortems, lacking" data-type="indexterm" id="idm139660640322512"/><a data-type="xref" href="#tools_and_templates">“工具与模板”一节介绍的工具</a>可以为这些活动提供帮助。</p>
+</div></section>
+
+<section data-pdf-bookmark="Repeating incidents" data-type="sect3"><div class="sect3" id="repeating_incidents">
+<h3>重复事件</h3>
+
+<p>如果团队经历了与以往事件相似的故障，就该深入挖掘原因。可以提出以下问题：<a contenteditable="false" data-primary="repeating incidents, finding causes of" data-type="indexterm" id="idm139660640316320"/><a contenteditable="false" data-primary="incidents" data-secondary="finding causes of repeating incidents" data-type="indexterm" id="idm139660640317648"/></p>
+
+<ul>
+	<li>
+	<p>行动项是否耗时过久、迟迟不能关闭？</p>
+	</li>
+	<li>
+	<p>功能交付速度是否压过了可靠性修复？</p>
+	</li>
+	<li>
+	<p>一开始记录的行动项是否正确？</p>
+	</li>
+	<li>
+	<p>发生故障的服务是否早就应该重构？</p>
+	</li>
+	<li>
+	<p>人们是否只是在用“创可贴”掩盖更严重的问题？</p>
+	</li>
+</ul>
+
+<p>如果发现了系统性的流程或技术问题，就应退一步审视服务的整体健康状况。让每起相似事件的复盘协作者共同讨论防止再次发生的最佳行动方案。<a contenteditable="false" data-primary="postmortems" data-secondary="organizational incentives for" data-startref="ix_pmrtorg" data-type="indexterm" id="idm139660640315088"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Tools and Templates" data-type="sect1"><div class="sect1" id="tools_and_templates">
+<h1>工具与模板</h1>
+
+<p>一套工具和模板可以让复盘撰写及相关数据管理变得更容易，从而帮助组织启动复盘文化建设。Google 和其他公司提供了许多可用于此目的的资源。<a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-type="indexterm" id="idm139660640302448"/></p>
+
+<section data-pdf-bookmark="Postmortem Templates" data-type="sect2"><div class="sect2" id="postmortem_templates">
+<h2>事后复盘模板</h2>
+
+<p>模板让完整撰写并在组织内分享事后复盘变得更容易。标准格式也使领域外读者更容易理解复盘。你可以按需定制模板，例如记录团队特有的元数据：数据中心团队可能需要硬件品牌／型号，移动团队可能需要受影响的 Android 版本。随着团队成熟并能开展更复杂的复盘，还可以继续增加定制内容。<a contenteditable="false" data-primary="templates" data-secondary="for postmortems" data-type="indexterm" id="idm139660640298512"/></p>
+
+<section data-pdf-bookmark="Google’s template" data-type="sect3"><div class="sect3" id="googleapostrophes_template">
+<h3>Google 的模板</h3>
+
+<p>Google 提供了 Google Docs 格式的事后复盘模板，地址为 <a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-tertiary="Google template" data-type="indexterm" id="idm139660640296992"/><a contenteditable="false" data-primary="Google’s template for postmortems" data-type="indexterm" id="idm139660640294976"/><a href="http://g.co/SiteReliabilityWorkbookMaterials"><em>http://g.co/SiteReliabilityWorkbookMaterials</em></a>。我们内部主要使用 Docs 撰写复盘，因为共享编辑权限和评论便于协作。一些内部工具会预先填充元数据，降低撰写难度。我们还使用 <a contenteditable="false" data-primary="Google Apps Script" data-type="indexterm" id="idm139660640293712"/><a href="https://developers.google.com/apps-script/">Google Apps Script</a> 自动完成部分编写工作，并把大量数据放入特定章节和表格，便于事后复盘库解析和分析。</p>
+</div></section>
+
+<section data-pdf-bookmark="Other industry templates" data-type="sect3"><div class="sect3" id="other_industry_templates">
+<h3>其他行业模板</h3>
+
+<p>其他一些公司和个人也分享了事后复盘模板：<a contenteditable="false" data-primary="postmortems" data-secondary="templates for" data-tertiary="other industry templates" data-type="indexterm" id="idm139660640288304"/></p>
+
+<ul>
+	<li>
+	<p><a href="http://bit.ly/2J6FaP7">PagerDuty</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2kIhFNC">对 Google 原版《Site Reliability Engineering》模板的改编</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2svJA7R">GitHub 上托管的四种模板列表</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2LcOzRy">GitHub 用户 Julian Dunn</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2spHl5P">Server Fault</a></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem Tooling" data-type="sect2"><div class="sect2" id="postmortem_tooling">
+<h2>事后复盘工具</h2>
+
+<p>截至本书写作时，Google 的复盘<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-type="indexterm" id="idm139660640275952"/>管理<a contenteditable="false" data-primary="tools" data-secondary="for postmortems" data-type="indexterm" id="idm139660640276784"/>工具尚不对外提供（最新情况请查看我们的<a href="https://cloudplatform.googleblog.com/">博客</a>）。不过，我们可以说明这些工具如何促进复盘文化。</p>
+
+<section data-pdf-bookmark="Postmortem creation" data-type="sect3"><div class="sect3" id="postmortem_creation">
+<h3>创建事后复盘</h3>
+
+<p>我们的事件管理工具会收集并存储大量有用的事件数据，并自动把数据写入事后复盘。例如：<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="postmortem creation" data-type="indexterm" id="idm139660640271696"/></p>
+
+<ul>
+	<li>
+	<p>事件指挥官和其他角色</p>
+	</li>
+	<li>
+	<p>详细的事件时间线和 IRC 日志</p>
+	</li>
+	<li>
+	<p>受影响的服务和作为根因的服务</p>
+	</li>
+	<li>
+	<p>事件严重性</p>
+	</li>
+	<li>
+	<p>事件检测机制</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem checklist" data-type="sect3"><div class="sect3" id="postmortem_checklist">
+<h3>事后复盘检查清单</h3>
+
+<p>为了帮助作者确保复盘得到妥善完成，我们提供了一份事后复盘检查清单，引导负责人完成关键步骤。下面只是清单中的几个检查示例：<a contenteditable="false" data-primary="checklist for postmortems" data-type="indexterm" id="idm139660640260784"/><a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="checklist" data-type="indexterm" id="idm139660640261744"/></p>
+
+<ul>
+	<li>
+	<p>对事件影响进行全面评估。</p>
+	</li>
+	<li>
+	<p>开展足够详细的根因分析，以指导行动项规划。</p>
+	</li>
+	<li>
+	<p>确保行动项由服务的技术负责人审核和批准。</p>
+	</li>
+	<li>
+	<p>与更广泛的组织共享事后复盘。</p>
+	</li>
+</ul>
+
+<p>完整检查清单见 <a href="http://g.co/SiteReliabilityWorkbookMaterials"><em>http://g.co/SiteReliabilityWorkbookMaterials</em></a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem storage" data-type="sect3"><div class="sect3" id="postmortem_storage">
+<h3>存储事后复盘</h3>
+
+<p>我们把事后复盘存储在名为 Requiem 的工具中，方便任何 Google 员工查找。事件管理工具会自动把所有复盘推送到 Requiem，组织中的任何人也都能发布复盘供所有人查看。我们存储了数千份可追溯至 2009 年的复盘。Requiem 会从各份复盘中解析元数据，供搜索、分析和报告使用。<a contenteditable="false" data-primary="Requiem (postmortem storage tool)" data-type="indexterm" id="idm139660640250192"/><a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="storage" data-type="indexterm" id="idm139660640251024"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem follow-up" data-type="sect3"><div class="sect3" id="postmortem_follow_up">
+<h3>跟进事后复盘</h3>
+
+<p>事后复盘存储在 Requiem 数据库中，<a contenteditable="false" data-primary="follow-up to postmortems" data-type="indexterm" id="idm139660640245792"/><a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="follow-up on postmortems" data-type="indexterm" id="idm139660640246496"/>由此产生的行动项则作为缺陷录入集中式缺陷跟踪系统。因此，我们可以监控每份复盘行动项的关闭情况。借助这种跟踪能力，可以确保行动项不会被遗漏，以免服务变得越来越<a contenteditable="false" data-primary="action items in postmortems" data-secondary="monitoring tool for" data-type="indexterm" id="idm139660640243824"/>不稳定。<a data-type="xref" href="#postmortem_action_itemmonitoring">图 10-4</a>展示了工具所支持的复盘行动项监控模型。</p>
+
+<figure><div class="figure" id="postmortem_action_itemmonitoring"><img alt="事后复盘行动项监控" src="assets/tsrw_1004.png"/>
+<h6><span class="label">图 10-4. </span>事后复盘行动项监控</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Postmortem analysis" data-type="sect3"><div class="sect3" id="postmortem_analysis">
+<h3>事后复盘分析</h3>
+
+<p>复盘管理工具把<a contenteditable="false" data-primary="analysis of postmortems" data-type="indexterm" id="idm139660640236208"/>信息<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="postmortem analysis" data-type="indexterm" id="idm139660640235264"/>存入数据库供分析。团队可以用这些数据编写复盘趋势报告，识别最脆弱的系统。这有助于发现原本可能被忽视的不稳定性根源或事件管理失灵。例如，<a data-type="xref" href="#postmortem_analysis-id00057">图 10-5</a>展示了分析工具生成的图表，其中包括各组织每月复盘数量、事件平均持续时间、检测用时、解决用时和影响范围等趋势。</p>
+
+<figure><div class="figure" id="postmortem_analysis-id00057"><img alt="事后复盘分析" src="assets/tsrw_1005.png"/>
+<h6><span class="label">图 10-5. </span>事后复盘分析</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Other industry tools" data-type="sect3"><div class="sect3" id="other_industry_tools">
+<h3>其他行业工具</h3>
+
+<p>以下第三方工具可帮助创建、组织和分析事后复盘：<a contenteditable="false" data-primary="postmortems" data-secondary="tools for" data-tertiary="other industry tools" data-type="indexterm" id="idm139660640227200"/><span class="keep-together"/></p>
+
+<ul>
+	<li>
+	<p><a href="http://bit.ly/2xvrCqK">PagerDuty Postmortems</a></p>
+	</li>
+	<li>
+	<p><a href="https://github.com/etsy/morgue">Morgue by Etsy</a></p>
+	</li>
+	<li>
+	<p><a href="http://bit.ly/2J87dcR">VictorOps</a></p>
+	</li>
+</ul>
+
+<p>虽然不可能把事后复盘写作的每一步都完全自动化，但我们发现模板和工具能让流程运行得更顺畅。这些工具释放了时间，使作者可以专注于复盘的关键环节，例如根因分析和行动项规划。</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00058">
+<h1>结语</h1>
+
+<p>持续投入复盘文化建设，回报是更少的故障、更好的整体用户体验，以及依赖你的人的更多信任。始终如一地践行这些做法，会带来更好的系统设计、更短的停机时间，以及效率更高、更快乐的工程师。即使最坏的情况发生、事件再次出现，损害也会更小、恢复也会更快，并且还能获得更多数据，继续增强生产系统的韧性。<a contenteditable="false" data-primary="postmortems" data-startref="ix_pmrt" data-type="indexterm" id="idm139660640215584"/></p>
+</div></section>
+</div>
+    </section>
+  </body>
+</html>
