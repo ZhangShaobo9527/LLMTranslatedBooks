@@ -1,0 +1,227 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE：走出组织边界</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 19. SRE: Reaching Beyond Your Walls" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_reaching_beyond_your_walls">
+<h1><span class="label">第 19 章　 </span>SRE：走出组织边界</h1>
+
+<p class="byline">作者：Dave Rensin<br/>
+Betsy Beyer、Niall Richard Murphy 和 Liz Fong-Jones 参与撰写</p>
+
+<p>我们在 Google 开展 SRE 实践，至今已有 14 年。<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="reaching beyond your walls" data-type="indexterm" id="ix_SREreach"/>回头看，这段时间里发生的一些事情似乎顺理成章，另一些发展却出人意料。自<a href="http://bit.ly/2kIcNYM">第一本 SRE 图书</a>出版以来的两年尤其令人振奋。如今，实践 SRE 的公司数量，以及我们在会议上和客户交流中探讨 SRE 所投入的时间，都增长到了远超我们以往<span class="keep-together">想象</span>的程度。</p>
+
+<p>其中最令人兴奋的变化，是 Google 之外的 SRE 生态系统迅速壮大；但这也让 SRE 专业领域的未来更难预测。不过，在 Google 自身的 SRE 工作中，我们已经开始看到一些趋势，或许可以借此勾勒这一领域未来的大致轮廓。本章汇集了我们以及世界各地 SRE 同事的观察，并分享我们迄今得出的结论。</p>
+
+<section data-pdf-bookmark="Truths We Hold to Be Self-Evident" data-type="sect1"><div class="sect1" id="truths_we_hold_to_be_self_evident">
+<h1>我们认为不证自明的事实</h1>
+
+<p>要对未来形成任何有用的认识，唯一的办法是先确立一组原则，再据此向前推演。下面有些观点应该不会引发争议，另一些则未必如此。但无论如何，这些原则都源于<a href="http://bit.ly/2JcAIKg">我们在现实世界中看到的情况</a>。</p>
+
+<section data-pdf-bookmark="Reliability Is the Most Important Feature" data-type="sect2"><div class="sect2" id="reliability_is_the_most_important_feature">
+<h2>可靠性是最重要的特性</h2>
+
+<p>当我们断言“可靠性是<a contenteditable="false" data-primary="reliability" data-secondary="as most important feature" data-type="indexterm" id="idm139660637337488"/>任何系统最重要的特性”时，人们通常不会有太大异议——前提是我们注意说明，“可靠性”往往涵盖十分广泛的范畴。</p>
+
+<p>其中的道理很简单：</p>
+
+<ul>
+	<li>
+	<p>如果系统不可靠，用户就不会信任它。</p>
+	</li>
+	<li>
+	<p>如果用户不信任一个系统，只要有其他选择，就不会使用它。</p>
+	</li>
+	<li>
+	<p>所有软件系统都受网络效应支配，因此没有用户的系统就毫无价值。</p>
+	</li>
+	<li>
+	<p>你度量什么，就会成为什么，所以要慎重选择指标。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Your Users, Not Your Monitoring, Decide Your Reliability" data-type="sect2"><div class="sect2" id="your_userscomma_not_your_monitoringcomma">
+<h2>决定可靠性的是用户，而不是监控</h2>
+
+<p>系统的价值与用户息息相关，因此真正重要的可靠性<a contenteditable="false" data-primary="reliability" data-secondary="decided by users, not monitoring" data-type="indexterm" id="idm139660637326992"/><a contenteditable="false" data-primary="users" data-secondary="deciding reliability" data-type="indexterm" id="idm139660637325504"/>衡量标准，自然只能是用户对可靠性的实际体验。<a contenteditable="false" data-primary="monitoring" data-secondary="decisions on reliability and" data-type="indexterm" id="idm139660637322800"/>如果用户怀疑自己遇到的不稳定是由你的平台造成的，告诉他们“我们的监控一切正常，问题肯定出在你们那边”，并不会让他们少一点恼火。<a contenteditable="false" data-primary="peak-end rule" data-type="indexterm" id="idm139660637323648"/>在他们的体验中，你的系统就是不稳定；到了在你和竞争对手之间做选择时，他们记住的也正是这种体验。（这种现象称为<a href="http://bit.ly/2sy1jul">峰终定律</a>。）</p>
+
+<p>监控、日志和告警的价值，只在于它们能帮助你抢在客户之前发现问题。</p>
+</div></section>
+
+<section data-pdf-bookmark="If You Run a Platform, Then Reliability Is a Partnership" data-type="sect2"><div class="sect2" id="if_you_run_a_platformcomma_then_reliabili">
+<h2>如果运营平台，可靠性就是一种合作关系</h2>
+
+<p><em>如果</em>人们只能通过可视化用户界面（例如网页）使用你的系统，<em>而且</em>系统只供真正的人类使用<a contenteditable="false" data-primary="reliability" data-secondary="as a partnership if you run a platform" data-type="indexterm" id="idm139660637316592"/>（而不是由机器调用），<em>那么</em>用户所体验到的可靠性，几乎完全取决于 SRE 维持系统健康的工作成效。</p>
+
+<p>然而，一旦加入 API，让一部分“用户”变成其他机器，你运营的就是一个平台，规则也随之改变。<a contenteditable="false" data-primary="platforms" data-secondary="running, reliability and" data-type="indexterm" id="idm139660637314480"/></p>
+
+<p>当产品充当平台时，用户体验到的可靠性不再只取决于你的选择，而是由双方共同造就。如果用户在你的平台上构建或运营的系统，最高只能达到 99% 的可用性，那么即便平台本身的可用性达到 99.999%，他们在<a href="http://bit.ly/2HbIiDl"><em>最佳情况下</em>体验到的可用性</a>也只有 98.99901%。</p>
+
+<p>这些用户做出的选择会直接影响他们的体验，而他们又会把这种体验归因于你的服务。无论你是否乐意，他们都会要求你为自己的全部体验负责——即使问题并不是“你的错”。</p>
+</div></section>
+
+<section data-pdf-bookmark="Everything Important Eventually Becomes a Platform" data-type="sect2"><div class="sect2" id="everything_important_eventually_becomes_a">
+<h2>一切重要的系统最终都会成为平台</h2>
+
+<p>系统的价值会随用户数量增加而提升，因此你自然会设法触达其他已经形成规模的用户群体。<a contenteditable="false" data-primary="platforms" data-secondary="everything important becomes a platform" data-type="indexterm" id="idm139660637310288"/>当你吸引到更多用户时，其他软件系统也会希望触达你的受众。</p>
+
+<p>这时，其他公司会开始通过 API，让它们的机器与你的机器通信。<a contenteditable="false" data-primary="APIs" data-secondary="machine consumable" data-type="indexterm" id="idm139660637303328"/>只要你的系统稍有知名度，集成就是演进过程中不可避免的一步。</p>
+
+<p>即使你决定不在乎其他用户社区，并且永远不提供可供机器使用的 API，也无法避开这样的未来。其他人只会把你的 UI <a href="http://bit.ly/2JoZwlR">封装</a>成机器 API 再加以调用。唯一的区别是，你将无法控制结果。</p>
+
+<p>一旦系统成为通往庞大用户群体的入口，它就有了价值。无论官方还是非官方，API 都会成为其未来的一部分。</p>
+</div></section>
+
+<section data-pdf-bookmark="When Your Customers Have a Hard Time, You Have to Slow Down" data-type="sect2"><div class="sect2" id="when_your_customers_have_a_hard_timecomma">
+<h2>客户遇到困难时，你就不得不放慢脚步</h2>
+
+<p>客户遇到困难时，他们的<a contenteditable="false" data-primary="customers" data-secondary="having a hard time" data-type="indexterm" id="idm139660637298752"/>挫败感就会转化为阻碍你前进的摩擦力。<a contenteditable="false" data-primary="users" data-secondary="helping past difficulties" data-type="indexterm" id="idm139660637297344"/>即使没有工单、电子邮件、电话等传统支持渠道，你仍然要花时间梳理并回答 StackOverflow 上的问题，甚至要回应 Twitter、Facebook 和其他社交平台上的抱怨。</p>
+
+<p>帮助用户渡过难关所投入的每一分精力，都无法再用于推动系统发展。我们见过许多团队乃至公司，任由客户的故障修复问题逐渐吞噬时间，使可用于创新的精力不断萎缩。这些团队最终被运维琐事拖垮。</p>
+
+<p>一旦陷入这种状态，就很难摆脱（参见<a data-type="xref" href="ch06-zh.html#eliminating_toil">第 6 章</a>）。更好的办法是未雨绸缪，避免即将出现的运维琐事。<a contenteditable="false" data-primary="toil" data-secondary="getting ahead of by helping customers" data-type="indexterm" id="idm139660637295872"/>读到这里，你也许会想：<em>嘿，我属于内部平台团队，这跟我没关系！</em></p>
+
+<p>很遗憾，我们必须告诉你：这对你<em>尤其</em>适用！对你而言，客户就是公司内部使用你系统的人。</p>
+
+<p>由此可以得出下一个结论。</p>
+</div></section>
+
+<section data-pdf-bookmark="You Will Need to Practice SRE with Your Customers" data-type="sect2"><div class="sect2" id="you_will_need_to_practice_sre_with_your_c">
+<h2>你需要与客户共同实践 SRE</h2>
+
+<p>如果希望客户利用你的平台设计和运营可靠的系统，就必须教会他们如何做到这一点。<a contenteditable="false" data-primary="customers" data-secondary="practicing SRE with" data-type="indexterm" id="idm139660637288912"/><a contenteditable="false" data-primary="training" data-secondary="teaching customers" data-type="indexterm" id="idm139660637287472"/>没错，这也包括<em>内部</em>客户。在内部平台团队工作，并不能让你避开这种局面——事实上，你反而最有可能首先遇到它。</p>
+
+<p>即使能把这些信息完美提炼为可大规模一对多传播的形式（图书、博客文章、架构图、视频等），你仍然需要找到办法，确定其中应包含哪些内容和培训。随着平台不断发展和改进，需要传授的经验也会变化。你始终需要一种机制，防止这些资源过时。</p>
+
+<p>获得这些经验的最佳方式，是与客户共同“实践 SRE”。</p>
+
+<p>这并不一定意味着你要接管客户系统的值班工作，但至少要选取一批具有代表性的用户，与他们共同完成通常在移交值班职责之前要做的大部分工作（即确保系统满足最低可行的可靠性要求）。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="How to: SRE with Your Customers" data-type="sect1"><div class="sect1" id="how_to_sre_with_your_customers">
+<h1>如何与客户共同实践 SRE</h1>
+
+<p>与客户携手踏上 SRE 之旅，听起来可能有些令人畏惧。<a contenteditable="false" data-primary="customers" data-secondary="SRE with, how to" data-type="indexterm" id="ix_cusSRE"/>你阅读本书，很可能正是因为自己还不完全清楚该如何走完这段旅程！不必担心，两件事可以同时进行。事实上，与客户同行还能帮助你加快自身的 SRE 进程。</p>
+
+<p>下面是我们常用的步骤。它们对我们相当有效，相信对你也会有所帮助。</p>
+
+<section data-pdf-bookmark="Step 1: SLOs and SLIs Are How You Speak" data-type="sect2"><div class="sect2" id="step_1_slos_and_slis_are_how_you_speak">
+<h2>第 1 步：用 SLO 和 SLI 沟通</h2>
+
+<p>你希望客户认为自己的系统可靠。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-type="indexterm" id="idm139660637275792"/>否则，就有失去客户的风险。因此，你理应高度重视客户是<em>如何</em>形成这种判断的。他们度量什么？如何度量？最重要的是，他们做出了哪些<a href="https://oreil.ly/2snieke">承诺</a>，要向<em>自己的</em>客户兑现？</p>
+
+<p>如果客户度量 SLI、<a href="http://bit.ly/2KNCD9F">根据 SLO 发出告警</a>，并与你共享这些度量结果，你的日子会好过得多。否则，你会耗费大量精力进行下面这样的对话：</p>
+
+<blockquote>
+<p><strong>客户：</strong>API 调用 X 通常耗时 T，现在却要耗时 U。我觉得你们出了问题。请调查并立即答复。</p>
+
+<p><strong>你：</strong>这个性能似乎符合我们的预期，我们这边看起来也一切正常。API 调用 X 耗时这么久，会造成什么问题吗？</p>
+
+<p><strong>客户：</strong>我不知道。它通常不会花这么长时间，所以显然有什么变了，我们很担心。</p>
+</blockquote>
+
+<p>这场对话会一直兜圈子，永远得不出令人满意的答案。你要么花大量时间说服客户不必在意，要么花大量时间查明变化的根本原因，再说服<span class="keep-together">客户</span>不必在意。无论哪种情况，你都在消耗本可投入其他工作的精力。</p>
+
+<p>问题的根源在于，客户没有使用 SLO 来判断是否应该在意当前看到的性能。他们只是注意到意外变化，便决定为此担忧。请记住，如果没有明确说明的 SLO，客户必然会自己设想一个；而且直到你未能达到这个目标时，他们才会告诉你！你肯定更愿意进行下面这样的对话：</p>
+
+<blockquote>
+<p><strong>客户：</strong>应用 FOO 正在过快消耗 SLO 额度，应用已经面临风险。SLI X 和 Y 似乎断崖式下降，而二者都依赖你们的 API X。</p>
+
+<p><strong>你：</strong>好的。我来检查 API X 在我们系统中的整体表现，以及它针对你们请求的具体表现。</p>
+</blockquote>
+
+<p>这场对话的效率要<em>高得多</em>，因为：（a）只有 SLO 受到威胁时才会发生；（b）它以双方共同理解的指标（SLI）和目标（SLO）为基础。</p>
+
+<p>如果你使用 SRE 实践来运营系统，内部交流使用的语言就是 SLO。如果客户也用 SLO 沟通，你会轻松得多，客户也会更加满意，因为双方更容易相互交流。</p>
+
+<p>我们建议做一个简单的练习，可以大幅改善你与客户的工作关系：和客户坐下来谈谈。<a contenteditable="false" data-primary="service level indicators (SLIs)" data-secondary="explaining to customers" data-type="indexterm" id="idm139660637261360"/>向他们解释 SLO、SLI 和错误预算，尤其要说明你的团队如何实践这些概念。然后帮助客户用这些术语描述他们在你的平台上构建的关键应用。</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 2: Audit the Monitoring and Build Shared Dashboards" data-type="sect2"><div class="sect2" id="step_2_audit_the_monitoring_and_build_sha">
+<h2>第 2 步：审核监控并构建共享信息中心</h2>
+
+<p>客户为应用选定一些基本 SLO 后，接下来要确认他们是否在<a href="http://bit.ly/2LgroWF">度量正确的对象</a>，从而判断自己是否达成这些目标。<a contenteditable="false" data-primary="monitoring" data-secondary="auditing and building shared dashboards in SRE with customers" data-type="indexterm" id="idm139660637257440"/>你应该帮助他们判断所采用的度量是否合适。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-tertiary="auditing monitoring and building shared dashboards" data-type="indexterm" id="idm139660637254416"/></p>
+
+<p>根据我们的经验，客户度量并设置告警的对象中，多达一半对 SLO 毫无影响。指出这一点并让他们关闭这些无效告警，你的日子会好过得多。这意味着他们和你收到的值班呼叫都会减少！</p>
+
+<p>其余度量则可以作为有价值的候选 SLI。帮助客户组合这些度量，以计算其 SLO。</p>
+
+<p>一旦开始这项工作，你很快会发现 SLO 的某些方面<em>尚未覆盖</em>——当前没有相关度量，无法对这些维度做出有意义的判断。你也应该帮助客户补齐 SLO 的这些方面。</p>
+
+<p>这样，客户就能开始评估其应用在你的平台上的 SLO 表现。</p>
+
+<p>最后，与客户共同构建一组共享的 SLO 信息中心。<a contenteditable="false" data-primary="dashboards" data-secondary="building shared SLO dashboards with customers" data-type="indexterm" id="idm139660637250736"/>你应该能够查看他们的应用 SLO，也应该共享自己掌握的、与他们如何体验系统性能有关的一切信息。目标是：每当客户因为 SLO 似乎受到威胁而联系你时，双方几乎不必再额外交换信息。所需信息都应该已经呈现在共享监控中。</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 3: Measure and Renegotiate" data-type="sect2"><div class="sect2" id="step_3_measure_and_renegotiate">
+<h2>第 3 步：度量并重新协商</h2>
+
+<p>理清度量后，<a contenteditable="false" data-primary="measurements" data-secondary="in SRE with customers" data-type="indexterm" id="idm139660637242608"/>应该收集一两个月的数据。要做好心理准备：客户很可能会猛然面对现实。他们原以为应用达到了“五个九”（99.999%；<em>每个人</em>都以为自己获得了五个九），但按照新制定的 SLO 度量后，实际很可能只有 99.5%～99.9%。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="in SRE with customers" data-tertiary="measuring and renegotiating" data-type="indexterm" id="idm139660637247248"/> </p>
+
+<p>最初的震惊平复后，正好可以指出：他们的用户并没有一直抱怨，因此，他们可能从来就不需要那个实际上并未得到的“五个九”。</p>
+
+<p>关键问题是，他们的用户对应用性能有多满意？如果用户感到满意，也没有证据表明提高性能或可用性会增加用户采用率、留存率或使用量，那么工作就完成了。你应该定期重新审视这个问题，确保预算和优先级仍然正确。（有关这个主题的深入讨论，参见<a data-type="xref" href="ch02-zh.html#implementing_slos">第 2 章</a>。）</p>
+
+<p>如果客户认为仍需进一步改善，就进入下一步。</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 4: Design Reviews and Risk Analysis" data-type="sect2"><div class="sect2" id="step_4_design_reviews_and_risk_analysis">
+<h2>第 4 步：设计评审与风险分析</h2>
+
+<p>与客户坐下来，真正弄清其应用的设计和运营方式。<a contenteditable="false" data-primary="reviews, designing in SRE with customers" data-type="indexterm" id="idm139660637236320"/><a contenteditable="false" data-primary="risk analysis in SRE with customers" data-type="indexterm" id="idm139660637235648"/>其中是否隐藏着单点故障（single point of failure，SPOF）？发布和回滚是否由人工完成？基本上，要像对待自己的内部应用一样开展评审。</p>
+
+<p>接下来，根据发现的每个问题会消耗多少错误预算，对它们进行排序。（具体方法可参阅 <a href="http://bit.ly/2LOwWZo">Google Cloud Platform 博客</a>。）留意客户为了“赢回想要的那些‘九’”（例如从 99.5% 提升到 99.9%）而选择修复哪些问题。</p>
+
+<p>这些评审会帮助你了解：</p>
+
+<ul>
+	<li>
+	<p>客户如何使用你的平台</p>
+	</li>
+	<li>
+	<p>客户在使用平台时会犯下哪些可靠性错误</p>
+	</li>
+	<li>
+	<p>客户尝试改进时会选择怎样的权衡</p>
+	</li>
+</ul>
+
+<p>这项工作也会帮助客户合理设定对当前应用可靠性的预期。预期会影响感受，因此恰当地设定预期，有助于赢得并维持客户的信任。</p>
+</div></section>
+
+<section data-pdf-bookmark="Step 5: Practice, Practice, Practice" data-type="sect2"><div class="sect2" id="step_5_practicecomma_practicecomma_practi">
+<h2>第 5 步：反复演练</h2>
+
+<p>最后一步，是与客户共同建立严谨的运维机制。<a contenteditable="false" data-primary="operations" data-secondary="creating operational rigor with customers" data-type="indexterm" id="idm139660637226432"/>演练模拟<a contenteditable="false" data-primary="disaster and recovery testing, practicing with customers" data-type="indexterm" id="idm139660637227232"/>故障，例如“厄运之轮”练习、<a href="http://bit.ly/2sAoKTX">灾难与恢复测试</a>、纸面演练日等。<a contenteditable="false" data-primary="incident response" data-secondary="practicing in SRE with customers" data-type="indexterm" id="idm139660637223904"/><a contenteditable="false" data-primary="problems (simulated), practicing with customers" data-type="indexterm" id="idm139660637222208"/></p>
+
+<p>让两个团队形成良好的协作习惯，熟练掌握危机期间有效沟通的方法。这是建立信任、缩短平均修复时间（MTTR）的绝佳途径，还能发现不同寻常的运维边缘情况，进而把相应改进融入平台功能。</p>
+
+<p>故障真正发生时，不要只是与客户分享事故复盘报告。<a contenteditable="false" data-primary="postmortems" data-secondary="conducting joint postmortems with customers" data-type="indexterm" id="idm139660637219088"/>还要实际开展一些<a href="http://bit.ly/2LhcdfY"><em>联合事故复盘</em></a>。这样做同样能够建立信任，并让你获得一些极其宝贵的经验。<a contenteditable="false" data-primary="customers" data-secondary="SRE with, how to" data-startref="ix_cusSRE" data-type="indexterm" id="idm139660637216672"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Be Thoughtful and Disciplined" data-type="sect2"><div class="sect2" id="be_thoughtful_and_disciplined">
+<h2>审慎而有章法地行动</h2>
+
+<p>很快，你就会发现，不可能对超过一小部分客户执行这些步骤。请不要试图把这种模式推广到所有客户。相反，应该依据明确原则决定如何选择客户。常见方法包括：</p>
+
+<dl>
+	<dt><dfn>收入覆盖率</dfn></dt>
+	<dd><p>选择数量最少的一组客户，使其贡献的收入达到总收入的 XX%。如果收入高度集中在少数大客户身上，这种方法可能适合你。<a contenteditable="false" data-primary="revenue coverage" data-type="indexterm" id="idm139660637208976"/></p></dd>
+	<dt><dfn>功能覆盖率</dfn></dt>
+	<dd><p>选择数量最少的一组客户，使其使用的功能覆盖平台功能的 XX% 以上。<a contenteditable="false" data-primary="features" data-secondary="feature coverage in SRE with customers" data-type="indexterm" id="idm139660637207328"/>如果你运营的是一个高度多样化的平台，大量长尾客户在平台上开展着各种不同的活动，这种方法可以帮助你避免意外。</p></dd>
+	<dt><dfn>工作负载覆盖率</dfn></dt>
+	<dd><p>平台的使用量可能主要来自几种不同的用例或客户类型。<a contenteditable="false" data-primary="workloads" data-secondary="workload coverage" data-type="indexterm" id="idm139660637204384"/>这些类型中也许没有任何单一客户占据主导地位，但你可以轻松地把它们划分成不同群组。在这种情况下，从每个群组抽取一两个客户，是覆盖平台用法并发现不同用例之间运维差异的好办法。</p></dd>
+</dl>
+
+<p>无论选择哪种方法，都要坚持到底。混用不同方法会让利益相关方困惑，并迅速压垮你的团队。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00093">
+<h1>结语</h1>
+
+<p>过去几年里，SRE 这一专业领域及其岗位已经广泛走出 Google 的组织边界。尽管我们从未预料到这种发展，仍然对此感到无比兴奋。对于 SRE 在 Google 内部将如何演进，我们或许还能提出一些可信的看法；但在外部世界——嗯，那可是一个<a href="http://bit.ly/2LfhBQq">“令人忐忑又兴奋”的命题</a>。</p>
+
+<p>有一点我们相当确信：当你在组织中采用 SRE 原则时，会经历许多与我们相同的转折点（也会遇到一些我们尚未经历的！），其中之一，就是需要进一步模糊客户责任的终点与你方责任的起点之间的界线。</p>
+
+<p>以如此深入的运维方式与单个客户协作，对我们而言是一片值得探索且回报丰厚的新领域，而我们仍在这条路上前行。（你可以在 <a href="http://bit.ly/2xwZ2oQ">Google Cloud Platform 博客</a>上关注相关进展。）不过，我们走得越远，就越确信你也需要踏上这段旅程。<a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="reaching beyond your walls" data-startref="ix_SREreach" data-type="indexterm" id="idm139660637196352"/></p>
+</div></section>
+</div></section></body></html>
