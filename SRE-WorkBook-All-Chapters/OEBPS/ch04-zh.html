@@ -1,0 +1,412 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>监控</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 4. Monitoring" data-type="chapter" epub:type="chapter"><div class="chapter" id="monitoring">
+<h1><span class="label">第 4 章　</span>监控</h1>
+
+<p class="byline">作者：Jess Frame、Anthony Lenton、Steven Thurgood、<br/>
+Anton Tolchanov 和 Nejc Trdin<br/>
+Carmela Quinito 参与撰写</p>
+
+<p>监控可以涵盖多种数据，包括指标、文本日志、结构化事件日志、分布式追踪、<a contenteditable="false" data-primary="monitoring" data-type="indexterm" id="ix_mon"/>事件内省等。每种方法都有各自的价值，但本章主要讨论指标和结构化日志。根据我们的经验，这两类数据源最适合满足 SRE 的基本监控需求。</p>
+
+<p>从最基本的层面看，监控让你能够了解系统内部的状况；这是判断服务健康状态以及在故障发生时诊断服务的核心前提。第一本 SRE 图书的 <a href="ch06-zh.html">第 6 章</a> 给出了一些基本的监控定义，并说明 SRE 监控系统是为了：</p>
+
+<ul>
+	<li>
+	<p>对需要关注的状况发出告警。</p>
+	</li>
+	<li>
+	<p>调查并诊断这些问题。</p>
+	</li>
+	<li>
+	<p>以可视化方式展示系统信息。</p>
+	</li>
+	<li>
+	<p>洞察资源使用量或服务健康状况的趋势，为长期<span class="keep-together">规划</span>提供依据。</p>
+	</li>
+	<li>
+	<p>比较变更前后的系统行为，或比较实验中两个组的系统行为。</p>
+	</li>
+</ul>
+
+<p>这些使用场景的相对重要程度，可能会使你在选择或构建监控系统时有所取舍。</p>
+
+<p>本章将介绍 Google 如何管理监控系统，并针对选择和运行监控系统时可能遇到的问题给出一些指导原则。</p>
+
+<section data-pdf-bookmark="Desirable Features of a Monitoring Strategy" data-type="sect1"><div class="sect1" id="desirable_features_of_a_monitoring_strate">
+<h1>监控策略应具备的特性</h1>
+
+<p>选择监控系统时，必须理解哪些特性对你最为重要，并确定其优先级。<a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-type="indexterm" id="ix_monfeat"/> 如果你正在评估不同的监控系统，本节介绍的属性可以帮助你判断哪一种或哪几种方案最符合需求。如果已经制定了监控策略，也可以考虑进一步利用现有方案的其他能力。根据实际需要，一个监控系统可能足以覆盖所有使用场景，也可能需要组合使用多个系统。</p>
+
+<section data-pdf-bookmark="Speed" data-type="sect2"><div class="sect2" id="speed">
+<h2>速度</h2>
+
+<p>不同组织对<em>数据新鲜度</em>和<a contenteditable="false" data-primary="speed of data retrieval (monitoring system)" data-type="indexterm" id="idm139660643138704"/><em>数据检索速度</em>的要求各不相同。<a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-tertiary="speed of data retrieval" data-type="indexterm" id="idm139660643143104"/></p>
+
+<p>数据应当在你需要时可用：新鲜度会影响<a contenteditable="false" data-primary="freshness" data-secondary="of data in monitoring system" data-type="indexterm" id="idm139660643140080"/>故障发生后监控系统需要多久才能向你发出寻呼通知。此外，数据更新缓慢还可能让你误以为自己依据的是正确信息，并采取错误行动。例如在事件响应期间，如果原因（执行某项操作）和结果（在监控中看到该操作的影响）之间相隔太久，你可能会认定变更没有效果，或者错误推断出某种因果关系。数据若滞后四到五分钟以上，就可能严重影响你响应<span class="keep-together">事件</span>的速度。</p>
+
+<p>如果要根据这一标准选择监控系统，就需要事先明确速度要求。数据检索速度主要在查询海量数据时成为问题。如果图表必须汇总众多受监控系统的大量数据，加载就可能需要一段时间。为了加快较慢的图表，监控系统最好能根据传入数据创建并存储新的时间序列，从而预先计算常见查询的答案。</p>
+</div></section>
+
+<section data-pdf-bookmark="Calculations" data-type="sect2"><div class="sect2" id="calculations">
+<h2>计算能力</h2>
+
+<p>计算支持可以覆盖复杂程度各不相同的多种使用场景。<a contenteditable="false" data-primary="calculations support (monitoring systems)" data-type="indexterm" id="idm139660643134864"/><a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-tertiary="calculations support" data-type="indexterm" id="idm139660643126752"/> 监控系统至少应当能够<em>保留数月的数据</em>。如果无法长期观察数据，就不能分析系统增长之类的长期趋势。就粒度而言，<em>汇总数据</em>（即无法进一步下钻的聚合数据）足以支持增长规划。<em>保留每一项详细指标</em>有助于回答“这种异常行为以前是否发生过”之类的问题，但存储这些数据可能成本高昂，检索起来也可能并不现实。</p>
+
+<p>对于事件或资源消耗，理想情况下应保留单调递增的计数器指标。<a contenteditable="false" data-primary="resources" data-secondary="metrics about resource consumption" data-type="indexterm" id="idm139660643130560"/>监控系统可以根据计数器计算随时间变化的窗口函数，例如由计数器得出每秒请求率。用较长的时间窗口（最长可达一个月）计算这些速率，可以为基于 SLO 消耗速度的告警奠定基础（参见<a data-type="xref" href="ch05-zh.html#alerting_on_slos">第 5 章</a>）。</p>
+
+<p>最后，支持更完备的统计函数也很有用，因为简单的运算可能掩盖不良行为。如果监控系统在记录延迟时能够计算百分位数（即第 50、95、99 百分位数），你就能看出是否有 50%、5% 或 1% 的请求过慢；算术平均值则只能笼统地告诉你请求耗时变长了。如果系统不能直接计算百分位数，也可以通过以下方式得到：</p>
+
+<ul>
+	<li>
+	<p>将所有请求耗费的秒数相加，再除以请求数，得到平均值</p>
+	</li>
+	<li>
+	<p>记录每个请求，然后通过扫描日志条目或对其采样来计算百分位数</p>
+	</li>
+</ul>
+
+<p>你可能还需要把原始指标数据记录到另一个系统中以供离线分析，例如生成周报或月报，或者执行监控系统难以完成的更复杂计算。</p>
+</div></section>
+
+<section data-pdf-bookmark="Interfaces" data-type="sect2"><div class="sect2" id="interfaces">
+<h2>界面</h2>
+
+<p>健壮的监控系统应当既能用图形简洁地展示时间序列数据，也能用表格或多种图表形式组织数据。<a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-tertiary="interfaces for data display" data-type="indexterm" id="idm139660643122544"/>信息中心是呈现监控数据的主要界面，因此应选择最能清晰表达重点数据的形式，例如热图、直方图和对数刻度图。</p>
+
+<p>面对不同受众，往往需要用不同视图呈现同一份数据；高层管理人员关注的信息可能与 SRE 大不相同。创建信息中心时，要明确考虑内容使用者真正需要什么。每组信息中心都以一致方式展示同类数据，有助于沟通。</p>
+
+<p>你可能需要实时绘制某项指标按不同维度聚合后的信息，例如机器类型、服务器版本或请求类型。团队最好能熟练地对数据进行临时下钻分析。需要时，可以按多种指标切分数据，从中寻找相关性和模式。</p>
+</div></section>
+
+<section data-pdf-bookmark="Alerts" data-type="sect2"><div class="sect2" id="alerts">
+<h2>告警</h2>
+
+<p>能够对告警分类很有帮助：设置多个告警类别，便可采取程度相称的响应。<a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-tertiary="alerts" data-type="indexterm" id="idm139660643110096"/><a contenteditable="false" data-primary="alerts" data-secondary="provided by monitoring system" data-type="indexterm" id="idm139660643113920"/>为不同告警设置不同严重级别也很有用：如果较低的错误率持续超过一小时，可以创建工单进行调查；而错误率达到 100% 则属于必须立即响应的紧急情况。</p>
+
+<p><em>告警抑制</em>功能可以避免不必要的噪声干扰值班工程师。<a contenteditable="false" data-primary="alerts" data-secondary="alert suppression" data-type="indexterm" id="idm139660643110768"/> 例如：</p>
+
+<ul>
+	<li>
+	<p>所有节点都出现同样的高错误率时，只需针对全局错误率发出一次告警，而不必为每个节点分别告警。</p>
+	</li>
+	<li>
+	<p>服务的某个依赖项已经触发告警时（例如后端响应缓慢），就不必再针对本服务的错误率发出告警。</p>
+	</li>
+</ul>
+
+<p>事件结束后，还必须确保告警不再受到抑制。</p>
+
+<p>你对系统控制能力的要求，将决定是使用第三方监控服务，还是自行部署并运行监控系统。Google 在内部开发了自己的监控系统，但市面上也有许多开源和商业监控系统可供选择。<a contenteditable="false" data-primary="monitoring" data-secondary="desirable features of monitoring strategy" data-startref="ix_monfeat" data-type="indexterm" id="idm139660643105136"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Sources of Monitoring Data" data-type="sect1"><div class="sect1" id="sources_of_monitoring_data">
+<h1>监控数据的来源</h1>
+
+<p>选择何种监控系统，会受到所用监控数据源的影响。<a contenteditable="false" data-primary="monitoring" data-secondary="sources of data" data-type="indexterm" id="idm139660643100528"/> 本节讨论两种常见的监控数据源：日志和指标。还有一些同样有价值但本章不会介绍的数据源，例如<a href="http://bit.ly/2syvpOw">分布式追踪</a>和运行时内省。</p>
+
+<p><em>指标</em>是表示属性和事件的数值测量结果，<a contenteditable="false" data-primary="metrics" data-seealso="measurements" data-type="indexterm" id="idm139660643096816"/>通常通过按固定时间间隔采集大量数据点得到。<em>日志</em>则是只能追加的事件记录。<a contenteditable="false" data-primary="logs" data-type="indexterm" id="idm139660643094704"/>本章重点讨论支持丰富查询和聚合工具的结构化日志，而非纯文本日志。</p>
+
+<p>Google 基于日志的系统能够处理海量、<a contenteditable="false" data-primary="logs" data-secondary="logs-based monitoring systems" data-type="indexterm" id="idm139660643093616"/>粒度极细的数据。从事件发生到它在日志中可见，必然会存在一定延迟。对于时效性要求不高的分析，可以用批处理系统处理这些日志，通过临时查询加以分析，再用信息中心将结果可视化。例如，可以使用 <a href="https://cloud.google.com/dataflow/">Cloud Dataflow</a> <span class="keep-together">处理</span>日志，使用 <a href="https://cloud.google.com/bigquery/">BigQuery</a> 执行临时查询，再通过 <a href="https://datastudio.google.com/">Data Studio</a> 创建信息中心。</p>
+
+<p>相比之下，我们基于指标的监控系统<a contenteditable="false" data-primary="metrics" data-secondary="metric-based monitoring system" data-type="indexterm" id="idm139660643088288"/>会从 Google 的每项服务收集大量指标。它提供的信息粒度低得多，但几乎是实时的。其他基于日志和基于指标的监控系统通常也具有这些特点，不过也有例外，例如实时日志系统或高基数指标系统。</p>
+
+<p>我们的告警和信息中心通常使用指标。基于指标的监控系统具有实时性，工程师因而能够很快获知问题。我们往往用日志查找问题的根本原因，因为所需信息通常并未作为指标提供。</p>
+
+<p>如果报告没有很强的时效性要求，我们通常会用日志处理系统生成详细报告，因为日志提供的数据几乎总是比指标更加准确。</p>
+
+<p>如果已经<a contenteditable="false" data-primary="alerts" data-secondary="provided by monitoring system" data-tertiary="in metrics-based and logs-based systems" data-type="indexterm" id="idm139660643084656"/>基于指标发出告警，你可能还想增加基于日志的告警，例如在某个例外事件哪怕只发生一次时也收到通知。即使如此，我们仍建议使用基于指标的告警：当特定事件发生时递增某个计数器指标，再根据该指标的值配置告警。这样能把所有告警配置集中到一处，更便于管理（参见<a data-type="xref" href="#managing_your_monitoring_system">“管理监控系统”</a>）。</p>
+
+<section data-pdf-bookmark="Examples" data-type="sect2"><div class="sect2" id="examples">
+<h2>示例</h2>
+
+<p>下面几个真实案例<a contenteditable="false" data-primary="monitoring" data-secondary="choosing between monitoring systems, examples" data-type="indexterm" id="idm139660643081440"/>说明了应如何推理并选择监控系统。</p>
+
+<section data-pdf-bookmark="Move information from logs to metrics" data-type="sect3"><div class="sect3" id="move_information_from_logs_to_metrics">
+<h3>把信息从日志移至指标</h3>
+
+<section data-pdf-bookmark="Problem" data-type="sect4"><div class="sect4" id="problem">
+<h4>问题</h4>
+
+<p>HTTP 状态码是 App Engine 客户调试错误时的一项重要<a contenteditable="false" data-primary="HTTP status codes" data-type="indexterm" id="idm139660643073392"/>信号。<a contenteditable="false" data-primary="logs" data-secondary="choosing between log-based and metrics-based monitoring systems" data-type="indexterm" id="idm139660643071200"/><a contenteditable="false" data-primary="metrics" data-secondary="choosing between metrics-based and logs-based monitoring systems" data-type="indexterm" id="idm139660643071856"/>这项信息<a contenteditable="false" data-primary="debugging" data-secondary="in App Engine errors" data-type="indexterm" id="idm139660643069120"/>在日志中存在，却没有体现在指标中。<a contenteditable="false" data-primary="errors" data-secondary="debugging in different monitoring systems" data-type="indexterm" id="idm139660643066576"/>指标信息中心只能提供所有错误的全局比率，既不包含确切的错误码，也不说明错误原因。因此，调试问题需要经过以下流程：</p>
+
+<ol>
+	<li>
+	<p>查看全局错误图，找到错误发生的时间。</p>
+	</li>
+	<li>
+	<p>读取日志文件，查找包含错误的行。</p>
+	</li>
+	<li>
+	<p>尝试把日志文件中的错误与图表对应起来。</p>
+	</li>
+</ol>
+
+<p>日志工具无法体现问题规模，因此很难判断某一行日志中的错误是否频繁发生。日志中还混杂着许多无关内容，进一步增加了查找根本原因的难度。</p>
+</div></section>
+
+<section data-pdf-bookmark="Proposed solution" data-type="sect4"><div class="sect4" id="proposed_solution">
+<h4>建议的解决方案</h4>
+
+<p>App Engine 开发团队决定把 HTTP 状态码作为指标标签导出（例如 <code>requests_total{status=404}</code> 和 <code>requests_total​{status=500}</code>）。不同 HTTP 状态码的数量相对有限，因此这不会使指标数据量增长到不切实际的程度，却能让最相关的数据用于绘图和告警。<a contenteditable="false" data-primary="HTTP status codes" data-secondary="including in metrics-based monitoring" data-type="indexterm" id="idm139660643060096"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Outcome" data-type="sect4"><div class="sect4" id="outcome">
+<h4>结果</h4>
+
+<p>有了这个新标签，团队便能改进图表，用不同曲线分别表示不同错误类别和类型。客户现在可以根据暴露出来的错误码，迅速推测可能存在的问题。我们也可以为客户端错误和服务器错误设置不同的告警阈值，使告警触发更加准确。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Improve both logs and metrics" data-type="sect3"><div class="sect3" id="improve_both_logs_and_metrics">
+<h3>同时改进日志和指标</h3>
+
+<section data-pdf-bookmark="Problem" data-type="sect4"><div class="sect4" id="problem-id00006">
+<h4>问题</h4>
+
+<p>某个广告业务 SRE 团队维护着约 50 项服务，这些服务采用多种语言和框架编写。团队把日志作为判断是否符合 SLO 的权威事实来源。为了计算错误预算，每项服务都使用一段日志处理脚本，其中包含大量针对该服务的特殊情况。下面是一段处理某项服务单条日志记录的示例脚本：</p>
+
+<pre data-type="programlisting">
+If the HTTP status code was in the range (500, 599)
+AND the 'SERVER ERROR' field of the log is populated
+AND DEBUG cookie was not set as part of the request
+AND the url did not contain '/reports'
+AND the 'exception' field did not contain 'com.google.ads.PasswordException'
+THEN increment the error counter by 1
+</pre>
+
+<p>这些脚本难以维护，而且使用的数据无法提供给基于指标的监控系统。由于告警由指标驱动，有时告警并不对应用户可见的错误。每次告警都必须明确经过分诊，判断问题是否影响用户，这拖慢了响应速度。</p>
+</div></section>
+
+<section data-pdf-bookmark="Proposed solution" data-type="sect4"><div class="sect4" id="proposed_solution-id00007">
+<h4>建议的解决方案</h4>
+
+<p>团队创建了一个库，将其接入各应用所用语言和框架的处理逻辑。该库在处理请求时判断错误是否会影响用户。插桩代码同时把判断结果写入日志并导出为指标，从而提高两者的一致性。如果指标显示服务返回了错误，日志中就会包含确切的错误以及与请求相关的数据，以便复现和调试问题。相应地，日志中出现的任何影响 SLO 的错误也会改变 SLI 指标，团队随后便能据此发出告警。</p>
+</div></section>
+
+<section data-pdf-bookmark="Outcome" data-type="sect4"><div class="sect4" id="outcome-id00008">
+<h4>结果</h4>
+
+<p>团队为多项服务引入统一的控制面后，可以复用工具和告警逻辑，而不再实施多个定制方案。所有服务都不再需要复杂且因服务而异的日志<span class="keep-together">处理</span>代码，因而提高了可扩展性。告警与 SLO 直接关联后，就能更明确地指向可采取的行动，误报率也随之<span class="keep-together">大幅</span>下降。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Keep logs as the data source" data-type="sect3"><div class="sect3" id="keep_logs_as_the_data_source">
+<h3>继续以日志作为数据源</h3>
+
+<section data-pdf-bookmark="Problem" data-type="sect4"><div class="sect4" id="problem-id00009">
+<h4>问题</h4>
+
+<p>某个 SRE 团队在调查生产问题时，经常查看受影响的实体 ID，以确定对用户的影响及问题根因。与前面的 App Engine 示例一样，这项调查需要的数据只存在于日志中。团队响应事件时，必须为此临时编写日志查询。这一步延长了事件恢复时间：正确组织查询需要几分钟，查询日志本身还需要额外时间。</p>
+</div></section>
+
+<section data-pdf-bookmark="Proposed solution" data-type="sect4"><div class="sect4" id="proposed_solution-id00010">
+<h4>建议的解决方案</h4>
+
+<p>团队最初讨论过是否应当用指标取代日志工具。与 App Engine 示例不同，实体 ID 可能有数百万个不同的值，因此用它作为指标标签并不现实。</p>
+
+<p>团队最终决定编写脚本来执行所需的临时日志查询，并在告警邮件中注明应运行哪个脚本。必要时，他们可以把命令直接复制到终端中执行。</p>
+</div></section>
+
+<section data-pdf-bookmark="Outcome" data-type="sect4"><div class="sect4" id="outcome-id00011">
+<h4>结果</h4>
+
+<p>团队不必再承担组织正确临时日志查询所带来的认知负担，因此可以更快得到所需结果（尽管仍不及基于指标的方法快）。他们还有一个备用方案：告警一触发就自动运行脚本，并用一台小型服务器定期查询日志，持续获取具有一定新鲜度的数据。</p>
+</div></section>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Managing Your Monitoring System" data-type="sect1"><div class="sect1" id="managing_your_monitoring_system">
+<h1>管理监控系统</h1>
+
+<p>监控系统与所运行的其他服务同等重要。<a contenteditable="false" data-primary="monitoring" data-secondary="managing monitoring systems" data-type="indexterm" id="ix_monmg"/>因此，应当给予它与其重要性相称的关照。</p>
+
+<section data-pdf-bookmark="Treat Your Configuration as Code" data-type="sect2"><div class="sect2" id="treat_your_configuration_as_code">
+<h2>把配置视为代码</h2>
+
+<p>把系统配置视为代码并存入版本控制系统，<a contenteditable="false" data-primary="revision control system, storing monitoring system configuration in" data-type="indexterm" id="idm139660643026928"/>已经是常见做法。<a contenteditable="false" data-primary="configuration" data-secondary="monitoring system, treating as code" data-type="indexterm" id="idm139660643027296"/>这样做<a contenteditable="false" data-primary="monitoring" data-secondary="managing monitoring systems" data-tertiary="treating configuration as code" data-type="indexterm" id="idm139660643025920"/>有一些显而易见的好处：保留变更历史、把具体变更关联到任务跟踪系统、更容易回滚和执行 lint 检查，<sup><a data-type="noteref" href="ch04-zh.html#ch04fn1" id="ch04fn1-marker">1</a></sup>并能强制执行代码评审流程。</p>
+
+<p>我们强烈建议也把监控配置视为代码（有关配置的更多内容，请参阅<a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>）。我们更青睐支持基于意图的<span class="keep-together">配置</span>的监控系统，<a contenteditable="false" data-primary="intent-based configuration, monitoring system" data-type="indexterm" id="idm139660643022208"/>而不是只提供 Web UI 或 <a href="http://bit.ly/1G4WdV1">CRUD 风格</a> API 的系统。<a contenteditable="false" data-primary="CRUD-style APIs, monitoring system configuration" data-type="indexterm" id="idm139660643018448"/>许多只读取配置文件的开源二进制程序通常采用这种配置方式。对于传统上通过 UI 配置的组件，<a href="http://bit.ly/2so5Wrx">grafanalib</a> 等第三方方案也能实现这种方法。</p>
+</div></section>
+
+<section data-pdf-bookmark="Encourage Consistency" data-type="sect2"><div class="sect2" id="encourage_consistency">
+<h2>鼓励一致性</h2>
+
+<p>拥有多个使用监控的工程团队的大型公司，需要把握一个微妙的平衡：<a contenteditable="false" data-primary="monitoring" data-secondary="managing monitoring systems" data-tertiary="encouraging consistency" data-type="indexterm" id="idm139660643012432"/>集中式方案能够保证一致性，但另一方面，各团队可能又希望完全掌控自身配置的设计。</p>
+
+<p>正确的解决方案取决于组织自身。Google 的做法随时间不断演进，最终趋向于使用一个集中运行、以服务形式提供的统一框架。这个方案非常适合我们，原因有几个。统一框架能让工程师在转入新团队后更快上手，也让调试期间的协作更加容易。<a contenteditable="false" data-primary="debugging" data-type="indexterm" id="idm139660643013248"/>我们还有一个集中的信息中心服务，各团队的信息中心都可被发现和访问。如果能轻松看懂其他团队的信息中心，就能更快调试自己和对方的问题。</p>
+
+<p>如果可能，应让基本监控覆盖变得毫不费力。如果所有服务<sup><a data-type="noteref" href="ch04-zh.html#ch04fn2" id="ch04fn2-marker">2</a></sup>都导出一组一致的基本指标，就可以在整个组织内自动采集这些指标，并提供一套统一的信息中心。这样，任何新上线的组件都会自动具备基本监控。公司内的许多团队，甚至非工程团队，也能使用这些监控数据。</p>
+</div></section>
+
+<section data-pdf-bookmark="Prefer Loose Coupling" data-type="sect2"><div class="sect2" id="prefer_loose_coupling">
+<h2>优先选择松耦合</h2>
+
+<p>业务需求会变化，一年后的生产系统也会与现在不同。<a contenteditable="false" data-primary="monitoring" data-secondary="managing monitoring systems" data-tertiary="loose coupling of components" data-type="indexterm" id="idm139660643003216"/>同样，随着受监控服务呈现出不同的故障模式，监控系统也需要不断演进。</p>
+
+<p>我们建议让监控系统的各个组件保持松耦合。每个组件的配置方式以及监控数据的传递方式都应具备稳定的接口。监控数据的采集、存储、告警和可视化应由彼此独立的组件负责。稳定的接口能让你更容易将任一组件替换为更好的方案。</p>
+
+<p>把各项功能拆分到独立组件中，正在开源领域日益流行。十年前，<a href="https://www.zabbix.com/">Zabbix</a> 等监控系统会把所有功能组合在单一组件中。<a contenteditable="false" data-primary="alerts" data-secondary="separating alerting in monitoring systems" data-type="indexterm" id="idm139660643002160"/>现代设计通常会把采集与规则求值（可采用 <a href="https://prometheus.io/">Prometheus server</a> 等方案）、长期时间序列存储（<a href="https://www.influxdata.com/">InfluxDB</a>）、告警聚合（<a href="http://bit.ly/2soB22b">Alertmanager</a>）和信息中心（<a href="https://grafana.com/">Grafana</a>）分离开来。</p>
+
+<p>截至本书写作时，至少已有两种广受欢迎的开放标准，可用于对软件进行插桩并公开指标：</p>
+
+<dl>
+	<dt><dfn><a href="https://github.com/etsy/statsd">statsd</a></dfn></dt>
+	<dd><p>最初由 Etsy 编写、如今已移植到大多数编程语言的指标聚合守护进程。<a contenteditable="false" data-primary="statsd metric aggregation daemon" data-type="indexterm" id="idm139660642993904"/></p></dd>
+	<dt><dfn>Prometheus</dfn></dt>
+	<dd><p>一种开源监控方案，具有灵活的数据模型，支持指标标签，并提供强大的直方图功能。<a contenteditable="false" data-primary="Prometheus monitoring system" data-type="indexterm" id="idm139660642991888"/>其他系统如今也开始采用 Prometheus 格式，该格式正通过 <a href="https://openmetrics.io/">OpenMetrics</a> 推进标准化。</p></dd>
+</dl>
+
+<p>能够使用多个数据源的独立信息中心系统，<a contenteditable="false" data-primary="dashboards" data-secondary="separate dashboarding system in monitoring" data-type="indexterm" id="idm139660642989488"/>可以集中、统一地呈现服务全貌。Google 最近亲身体验到了这一优势：旧监控系统 Borgmon<sup><a data-type="noteref" href="ch04-zh.html#ch04fn3" id="ch04fn3-marker">3</a></sup> 把信息中心与告警规则放在同一份配置中。在迁移到新系统 <a href="https://youtu.be/LlvJdK1xsl4">Monarch</a> 时，我们决定把信息中心功能移到独立的服务 <a href="http://bit.ly/2sqRwad">Viceroy</a> 中。因为 Viceroy 既不是 Borgmon 的组件，也不是 Monarch 的组件，所以 Monarch 需要满足的功能要求更少。用户可以通过 Viceroy 展示来自两个监控系统的数据图表，<a contenteditable="false" data-primary="monitoring" data-secondary="managing monitoring systems" data-startref="ix_monmg" data-type="indexterm" id="idm139660642983360"/>从而逐步由 Borgmon 迁移到 Monarch。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Metrics with Purpose" data-type="sect1"><div class="sect1" id="metrics_with_purpose">
+<h1>有明确用途的指标</h1>
+
+<p><a data-type="xref" href="ch05-zh.html#alerting_on_slos">第 5 章</a>介绍了当系统的错误预算受到威胁时，如何利用 SLI 指标进行监控和告警。基于 SLO 的告警触发后，首先应当查看 SLI 指标。<a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-type="indexterm" id="ix_monmet"/><a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-type="indexterm" id="ix_metricvisuse"/>这些指标应当显示在服务信息中心的显著位置，最好就在其首页。</p>
+
+<p>调查违反 SLO 的原因时，你很可能无法从 SLO 信息中心获得足够的信息。这些信息中心能说明服务违反了 SLO，却不一定能解释原因。那么，监控信息中心还应显示哪些数据？</p>
+
+<p>我们发现，下面这些准则有助于实施指标。这些指标应当形成合理的监控体系，既能帮助调查生产问题，也能广泛呈现服务的各方面信息。</p>
+
+<section data-pdf-bookmark="Intended Changes" data-type="sect2"><div class="sect2" id="intended_changes">
+<h2>有意实施的变更</h2>
+
+<p>诊断基于 SLO 的告警时，需要从提示用户受到影响的告警指标，进一步追查到能够说明问题成因的指标。<a contenteditable="false" data-primary="changes" data-secondary="monitoring intended changes in services" data-type="indexterm" id="idm139660642968368"/><a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-tertiary="intended changes to your service" data-type="indexterm" id="idm139660642972080"/>近期有意对服务实施的变更可能就是罪魁祸首。应增加监控，让生产环境中的任何变更都清晰可见。<sup><a data-type="noteref" href="ch04-zh.html#ch04fn4" id="ch04fn4-marker">4</a></sup>为确定触发因素，我们建议：</p>
+
+<ul>
+	<li>
+	<p>监控二进制程序的版本。</p>
+	</li>
+	<li>
+	<p>监控命令行标志，尤其是用于启用或禁用服务功能的标志。</p>
+	</li>
+	<li>
+	<p>如果配置数据会动态推送到服务，则监控这份动态配置的版本。</p>
+	</li>
+</ul>
+
+<p>如果系统中的这些部分有任何一个没有版本号，就应当能够监控其最近一次构建或打包的时间戳。</p>
+
+<p>尝试判断中断是否与发布相关时，查看告警中链接的图表或信息中心，要比事后翻查 CI/CD（持续集成/持续交付）系统日志容易得多。</p>
+</div></section>
+
+<section data-pdf-bookmark="Dependencies" data-type="sect2"><div class="sect2" id="dependencies">
+<h2>依赖项</h2>
+
+<p>即使服务本身没有变化，它的任何依赖项也可能发生变化或出现问题。因此，<a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-tertiary="dependencies" data-type="indexterm" id="idm139660642957520"/>还应当<a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-tertiary="on dependencies" data-type="indexterm" id="idm139660642958208"/>监控<a contenteditable="false" data-primary="dependencies" data-secondary="monitoring system metrics from" data-type="indexterm" id="idm139660642955584"/>直接依赖项返回的响应。</p>
+
+<p>可以为每个依赖项导出请求和响应的字节数、延迟以及响应码。选择要绘制的指标时，应牢记四个<a href="http://bit.ly/2LSLpDQ">黄金信号</a>。<a contenteditable="false" data-primary="golden signals" data-see="Four Golden Signals" data-type="indexterm" id="idm139660642953200"/><a contenteditable="false" data-primary="Four Golden Signals" data-type="indexterm" id="idm139660642951712"/>还可以为指标添加标签，按响应码、RPC（远程过程调用）方法名称和对端作业名称进行细分。<a contenteditable="false" data-primary="RPCs (remote procedure calls)" data-secondary="monitoring system metrics on" data-type="indexterm" id="idm139660642950432"/></p>
+
+<p>理想情况下，应对更底层的 RPC 客户端库进行插桩，由它统一导出这些指标，而不是要求每个 RPC 客户端分别导出。<sup><a data-type="noteref" href="ch04-zh.html#ch04fn5" id="ch04fn5-marker">5</a></sup>对客户端库插桩可以提高一致性，并让新的依赖项无需额外工作便获得监控。</p>
+
+<p>有时你会遇到 API 非常狭窄的依赖项。它的所有功能都通过名为 <em>Get</em>、<em>Query</em> 或其他同样缺乏信息量的单一 RPC 提供，实际命令则作为该 RPC 的参数传入。对于这种依赖项，仅在客户端库中设置一个插桩点并不足够：你会看到延迟波动很大，并出现一定比例的错误，却无法判断这是否意味着这个不透明 API 的某一部分已经彻底失效。如果该依赖项非常关键，可以通过以下两种方式之一进行妥善监控：</p>
+
+<ul>
+	<li>
+	<p>专门为该依赖项导出独立指标，让生成指标的代码能够解析收到的请求，从中提取真正的信号。</p>
+	</li>
+	<li>
+	<p>请依赖项的所有者重写 API，提供覆盖面更广的接口，把不同功能拆分到不同的 RPC 服务和方法中。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Saturation" data-type="sect2"><div class="sect2" id="saturation">
+<h2>饱和度</h2>
+
+<p>应尽量监控并跟踪服务所依赖的每一种资源的使用情况。<a contenteditable="false" data-primary="utilization" data-secondary="monitoring system metrics on saturation" data-type="indexterm" id="idm139660642938720"/>有些资源存在不可逾越的硬性上限，例如分配给应用的 RAM、磁盘或 CPU 配额。<a contenteditable="false" data-primary="resources" data-secondary="monitoring resource usage" data-type="indexterm" id="idm139660642939072"/><a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-tertiary="on resource usage saturation" data-type="indexterm" id="idm139660642936368"/><a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-tertiary="on resource usage saturation" data-type="indexterm" id="idm139660642934816"/>另一些资源可能没有明确的硬性上限，却仍需管理，例如打开的文件描述符、各线程池中的活动线程、队列等待时间或写入日志的数据量。</p>
+
+<p>根据所用编程语言，还应监控其他资源：</p>
+
+<ul>
+	<li>
+	<p>Java：堆和<a href="http://bit.ly/2J9g3Ha">元空间</a>大小，以及根据所用垃圾回收类型选择的更具体指标</p>
+	</li>
+	<li>
+	<p>Go：goroutine 数量</p>
+	</li>
+</ul>
+
+<p>各种语言自身对跟踪这些资源的支持程度各不相同。</p>
+
+<p>除了按照<a data-type="xref" href="ch05-zh.html#alerting_on_slos">第 5 章</a>所述针对重大事件发出告警外，当特定资源接近耗尽时，可能也需要触发告警，例如：</p>
+
+<ul>
+	<li>
+	<p>资源存在硬性上限时</p>
+	</li>
+	<li>
+	<p>使用量超过某个阈值会导致性能下降时</p>
+	</li>
+</ul>
+
+<p>所有资源都应有监控指标，即使服务目前对这些资源管理得很好。这些指标对容量和资源规划至关重要。</p>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="Status of Served Traffic" data-type="sect2"><div class="sect2" id="status_of_served_traffic">
+<h2>所处理流量的状态</h2>
+
+<p>最好添加指标或指标标签，让信息中心可以按状态码细分已处理的流量，<a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-tertiary="status of served traffic" data-type="indexterm" id="idm139660642922320"/><a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-tertiary="status of served traffic" data-type="indexterm" id="idm139660642921168"/>除非服务用于 SLI 的指标已经包含这项信息。<a contenteditable="false" data-primary="HTTP status codes" data-secondary="monitoring system metrics on served traffic" data-type="indexterm" id="idm139660642921552"/>建议如下：</p>
+
+<ul>
+	<li>
+	<p>对于 HTTP 流量，应监控所有响应码。即使有些响应码不能为告警提供足够信号，也仍应监控，因为它们可能由客户端的不当行为触发。</p>
+	</li>
+	<li>
+	<p>如果对用户应用速率限制或配额限制，应监控因配额不足而被拒绝的请求数量汇总值。</p>
+	</li>
+</ul>
+
+<p>这些数据的图表可以帮助你发现生产变更期间错误量何时出现明显变化。</p>
+</div></section>
+
+<section data-pdf-bookmark="Implementing Purposeful Metrics" data-type="sect2"><div class="sect2" id="implementing_purposeful_metrics">
+<h2>实现用途明确的指标</h2>
+
+<p>对外提供的每一项指标都应有明确用途。<a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-tertiary="implementing purposeful metrics" data-type="indexterm" id="idm139660642911040"/><a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-tertiary="implementing purposeful metrics" data-type="indexterm" id="idm139660642912880"/>不要仅仅因为某些指标容易生成，就随手导出一批。相反，要考虑这些指标将如何使用。是否认真设计指标，会产生切实影响。</p>
+
+<p>理想情况下，用于告警的指标值只在系统进入问题状态时才发生显著变化，而在系统正常运行时保持稳定。另一方面，<a contenteditable="false" data-primary="debugging" data-secondary="metrics for" data-type="indexterm" id="idm139660642913184"/>调试指标没有这些要求；它们旨在告警触发时帮助人们了解发生了什么。优秀的调试指标会指向系统中可能引发问题的某个方面。撰写事后总结时，应思考哪些额外指标原本可以帮助你更快地诊断问题。<a contenteditable="false" data-primary="monitoring" data-secondary="providing visible and useful metrics" data-startref="ix_monmet" data-type="indexterm" id="idm139660642907840"/><a contenteditable="false" data-primary="metrics" data-secondary="visible and useful, from monitoring system" data-startref="ix_metricvisuse" data-type="indexterm" id="idm139660642904176"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Testing Alerting Logic" data-type="sect1"><div class="sect1" id="testing_alerting_logic">
+<h1>测试告警逻辑</h1>
+
+<p>在理想情况下，监控和告警代码应遵循与软件开发代码相同的测试标准。<a contenteditable="false" data-primary="monitoring" data-secondary="testing alerting logic" data-type="indexterm" id="idm139660642901024"/><a contenteditable="false" data-primary="alerts" data-secondary="testing alerting logic in monitoring system" data-type="indexterm" id="idm139660642898848"/><a contenteditable="false" data-primary="testing" data-secondary="alerting logic in monitoring system" data-type="indexterm" id="idm139660642897520"/>Prometheus 开发者正在<a href="http://bit.ly/2JcobXe">讨论为监控开发单元测试</a>，但目前还没有得到广泛采用、能够实现这一目标的系统。</p>
+
+<p>在 Google，我们使用一种领域特定语言创建合成时间序列，以此测试监控和告警。随后，我们根据派生时间序列中的值，或特定告警的触发状态及标签是否存在来编写断言。</p>
+
+<p>监控和告警通常是一个多阶段流程，因此也需要多组单元测试。这个领域目前在很大程度上仍不成熟；如果你希望在某个阶段实施监控测试，我们建议采用<a data-type="xref" href="#monitoring_testing_environment_tiers">图 4-1</a> 所示的三层方法。</p>
+
+<figure><div class="figure" id="monitoring_testing_environment_tiers"><img alt="监控测试环境的层次" src="assets/tsrw_0401.png"/>
+<h6><span class="label">图 4-1　</span>监控测试环境的层次</h6>
+</div></figure>
+
+<ol>
+	<li>
+	<p><strong>二进制程序上报：</strong>检查导出的指标变量在特定条件下是否按预期改变数值。</p>
+	</li>
+	<li>
+	<p><strong>监控配置：</strong>确保规则求值产生预期结果，并且特定条件会触发预期告警。</p>
+	</li>
+	<li>
+	<p><strong>告警配置：</strong>测试生成的告警能否根据告警标签值路由到预定目的地。</p>
+	</li>
+</ol>
+
+<p>如果无法通过合成方式测试监控，或者监控流程中有某个阶段实在无法测试，可以考虑创建一个持续运行的系统，导出请求数和错误数等已知指标。你可以用这个系统验证派生时间序列和告警。告警规则配置完成后，很可能数月甚至数年都不会触发。你必须确信，一旦指标越过特定阈值，正确的工程师就会收到内容合理的通知。</p>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00012">
+<h1>结语</h1>
+
+<p>SRE 岗位负责生产系统的可靠性，因此 SRE 往往必须深入熟悉服务的监控系统及其功能。如果缺乏这方面的知识，SRE 可能不知道该去哪里查看信息、如何识别异常行为，也不知道在<span class="keep-together">紧急情况</span>下如何找到所需信息。</p>
+
+<p>我们希望，通过说明哪些监控系统特性对我们有用以及有用的原因，能够帮助你评估监控策略与自身需求的契合程度，探索其他可以利用的功能，并考虑可能需要做出的调整。你很可能会发现，在监控策略中结合指标与日志这两类数据源很有帮助；具体应如何组合则高度依赖实际情境。务必采集具有明确用途的指标。这种用途可能是改善容量规划、协助调试，也可能是直接通知你发生了问题。</p>
+
+<p>部署监控后，还必须让它清晰可见且真正有用。为此，我们也建议测试监控设置。良好的监控系统会带来丰厚回报。投入充分精力思考哪些方案最符合需求，并不断迭代直至取得理想结果，是完全值得的。<a contenteditable="false" data-primary="monitoring" data-startref="ix_mon" data-type="indexterm" id="idm139660642875136"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch04fn1"><sup><a href="ch04-zh.html#ch04fn1-marker">1</a></sup> 例如，使用 promtool 验证 Prometheus 配置的语法是否正确。</p><p data-type="footnote" id="ch04fn2"><sup><a href="ch04-zh.html#ch04fn2-marker">2</a></sup> 可以通过公共库导出基本指标，例如 <a href="https://opencensus.io/">OpenCensus</a> 这样的插桩框架，或 <a href="https://istio.io/">Istio</a> 这样的服务网格。</p><p data-type="footnote" id="ch04fn3"><sup><a href="ch04-zh.html#ch04fn3-marker">3</a></sup> 关于 Borgmon 的概念和结构，请参阅<a href="ch10-zh.html">第 10 章</a>，该章出自《<em>Site Reliability Engineering</em>》。</p><p data-type="footnote" id="ch04fn4"><sup><a href="ch04-zh.html#ch04fn4-marker">4</a></sup> 这是适合通过日志进行监控的一种情形，尤其是因为生产变更相对少见。无论使用日志还是指标，都应在信息中心中呈现这些变更，以便调试生产问题时轻松访问。</p><p data-type="footnote" id="ch04fn5"><sup><a href="ch04-zh.html#ch04fn5-marker">5</a></sup> 请参阅 <a href="https://opencensus.io/"><em class="hyperlink">https://opencensus.io/</em></a>，其中提供了实现这一功能的一组库。</p></div></div></section></body></html>
