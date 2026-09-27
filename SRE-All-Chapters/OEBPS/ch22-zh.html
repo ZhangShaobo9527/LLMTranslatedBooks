@@ -1,0 +1,1010 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>多样化环境中的 SRE</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第22章 多样化环境中的SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch22">
+<h1><span class="label">第 22 章　</span>多样化环境中的 SRE</h1>
+
+
+<p class="byline">作者：Ana Oprea、Chris Jones、Derek Remund、Hannes Eder、
+<span class="keep-together">Ian Schlesinger、</span>Joanna Wijntjes 和 Yuri Grinshteyn<br/>
+
+<span class="keep-together">Carmela Quinito 协作</span></p>
+
+<p>谷歌首创的 SRE 方法将软件工程应用于生产问题，成效显著，因而吸引了众多行业的组织。本章首先探讨一种常见情形：如果你是小公司的第一位 SRE，或者公司正考虑招聘第一位 SRE，应当从何入手？如何在不被运维工作和琐事完全吞没的情况下改善或维持服务可靠性？</p>
+
+<p class="fix_tracking">随后，我们讨论因技术、组织或流程约束而难以照搬或调整 SRE 模式的组织。在梳理这些常见挑战后，我们将提出在此类条件下改进可靠性实践的方法。</p>
+
+<p>为了让这些情形更加具体，我们将介绍在不同环境中应用 SRE 的真实案例：快速扩张的 B2B 初创公司、跨国银行、大型抵押贷款机构，以及谷歌旗下的自动驾驶公司 Waymo。最后一节从安全与隐私的角度，探讨如何把 SRE 技能用于另一类场景。前文主要说明 SRE 如何与组织内其他独立职能沟通、分工；这一节则关注技术职能的汇合：为了保护生产环境，各角色之间的边界会自然变得模糊。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="人员与组织受限时的 SRE" data-type="sect1"><div class="sect1" id="ch22_sre_when_faced_with_staffing_and_organizational_constraints">
+<h1>人员与组织受限时的
+<span class="keep-together">SRE</span></h1>
+
+<p>在阅读有关 SRE 的资料时，很容易产生一种印象，认为 SRE 团队总是很大。SRE 书籍（包括我们自己的）通常描述一种全球轮班值班模式，其中工程师随时准备应对任何故障，以及拥有专门事件指挥官、通信负责人和运营负责人的事件响应团队，监督工程师团队工作以调试问题。</p>
+
+<p>这很容易让人以为，每位 SRE 身后总有一大群可靠的同事；更糟的是，还可能让人误以为，没有庞大团队的支持就无法践行 SRE。本节将概述小型 SRE 团队面临的一些挑战，并给出如何以较少人手发挥最大影响力的实用建议。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="独立 SRE：在初创公司或新小团队中生存与扩展 SRE" data-type="sect2"><div class="sect2" id="ch22_the_solo_sre_surviving_and_scaling_sre_in_a_startup_or_as_part_of_a_new_and_small_team">
+<h2>独立 SRE：在初创公司或新小团队中生存与扩展 SRE</h2>
+
+<p>谷歌SRE <a data-primary="small teams" data-secondary="scaling challenges" data-type="indexterm" id="sre_smtm_chal"/><a data-primary="teams" data-secondary="small" data-tertiary="scaling challenges" data-type="indexterm" id="tms_sml_scclchlng"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="scaling challenges" data-type="indexterm" id="sretms_sm_scalchlng"/>已经经历了足够长的时间，看着被重视的同事离开，并在其他公司成立SRE团队。我们有机会将SRE实践分享给谷歌以外的工程团队，在这个过程中，我们也学到了在没有我们内部可用的众多工具和框架的情况下，开始SRE是多么具有挑战性。但是，作为公司的首位SRE到来，或在一个希望开始进行SRE的小团队中工作，可能是一个令人兴奋的机会，可以专注于重要的事情并做出真正可衡量的贡献。</p>
+
+<p>公司决定招聘第一位 SRE，往往是因为刚经历过一次惨痛的中断，甚至是一连串中断。此时平台脆弱，发布依靠人工操作和监督，资金有限，所有人都在忙于救火。故障造成的公开影响可能已经严重威胁公司的生存，于是有人认为，招聘 SRE 或许能扭转局面。另一种常见动机是：虽然没有发生引人注目的公开故障，但全部资源都用来勉强维系一个极其脆弱的服务，只求它从外部看起来基本可靠。无论哪种情况，团队都几乎没有时间开发和部署新功能。</p>
+
+<p>现实是，当你成为一家组织的第一位或唯一一位 SRE 时，必须身兼数职。故障发生时，你是冲到一线、带领团队恢复稳定的消防员；你也是建设者，要找出应当补上哪些能力，才能防止下一次故障，或至少减轻其影响；你还是倡导者，要推动所有人接受新的运营方式。在大型组织中，你或许可以专攻可观测性、存储或新工具开发等领域；独立 SRE 却要包揽全部工作。你的利益相关者包括整个工程团队、产品团队乃至创始人。你必须在恢复生产稳定性（救火）与构建避免日后起火所需的自动化（工程工作）之间取得平衡。</p>
+
+<p class="pagebreak-before less_space"><a data-type="xref" href="#ch22_table_01">表 22-1</a> 比较单独 SRE 的角色与大公司中 SRE 的角色的不同方面。</p>
+<table id="ch22_table_01">
+<caption><span class="label">表 22-1。 </span>不同环境下 SRE 角色的特点</caption>
+<thead>
+<tr>
+<th/>
+<th>大型公司 SRE</th>
+<th>独立 SRE（初创公司）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><strong>重点</strong></p></td>
+<td><p>添加自动化，减少繁琐工作，构建和审查大规模系统的设计</p></td>
+<td><p>保持服务运行，使开发者尽可能自主</p></td>
+</tr>
+<tr>
+<td><p><strong>支柱</strong></p></td>
+<td><p>服务级别目标，错误预算</p></td>
+<td><p>基本可观测性和部署安全</p></td>
+</tr>
+<tr>
+<td><p><strong>时间分配</strong></p></td>
+<td><p>&lt;50% 重复性工作，&gt;50% 工程工作（注意，50% 的重复性工作并不是目标；消除得越多，就越能投入功能开发）</p></td>
+<td><p>积极的优先排序，在可能的情况下通过SLOs协助确定目标；通常从80%的重复性工作开始</p></td>
+</tr>
+</tbody>
+</table>
+
+<p>接下来，我们将探讨一些针对独立 SRE 的准则。这些内容对这位 SRE 的经理，以及正在考虑是否要<a data-primary="small teams" data-secondary="scaling challenges" data-startref="sre_smtm_chal" data-type="indexterm" id="id2897"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_scclchlng" data-tertiary="scaling challenges" data-type="indexterm" id="id2898"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_scalchlng" data-tertiary="scaling challenges" data-type="indexterm" id="id2899"/>招聘或调任某人担任公司首位 SRE 的人同样有价值。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="优先排序是关键" data-type="sect3"><div class="sect3" id="ch22_prioritization_is_key">
+<h3>优先排序是关键</h3>
+
+<p>作为唯一或<a data-primary="small teams" data-secondary="prioritizing tasks" data-type="indexterm" id="sre_smtm_prtsk"/><a data-primary="teams" data-secondary="small" data-tertiary="prioritizing tasks" data-type="indexterm" id="tms_sml_prtsk"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="prioritizing tasks" data-type="indexterm" id="sretms_sm_prtsk"/>首位 SRE，重要的是要承认，你不可能一次解决所有问题。你必须高效地进行优先排序，专注于那些能够减少最多重复劳动或降低最大风险的任务。制定你的优先级清单，与他人分享，考虑他人的建议，并且不要在不移除其他项目的情况下添加新内容。当你有了一份优先级列表时：</p>
+<ol>
+<li>
+<p>让你的第一个目标尽可能具体。</p>
+</li>
+<li>
+<p>选择其中一个目标，说明何时能拿出解决方案设计（如果确有必要），以及何时能够完成。</p>
+</li>
+<li>
+<p>完成目标后，更新清单并展示取得的改善。</p>
+</li>
+
+</ol>
+
+<p>你所体验到的成就感会鼓励你继续前进，着手处理清单上的下一个事项。</p>
+
+<p>以下是针对独立 SRE 的可能优先级堆栈，从最紧急到最不紧急（优先级为零或 P0 到 P3）：</p>
+<dl>
+<dt>止血 (P0)</dt>
+<dd>
+<p>立即稳定最严重、最频繁的故障模式。如果数据库每周崩溃两次，修复这个问题是你的主要任务，即使这意味着要推迟功能开发。绝对每个人都讨厌一次又一次地经历相同的宕机。解决这种重复发生的问题将带来巨大的缓解，并有助于建立对你工作的信心。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>建立可见性 (P1)</dt>
+<dd>
+<p>看不见的问题就无从修复。建立基本的端到端可观测性，是这一优先级清单中其他工作的基础。不要因追求完美而迟迟不做；先使用现成方案或公司已有的工具，让自己能够看清所负责服务的运行状况。日后时间或人手充裕时，再逐步改进。重点关注以下方面：</p>
+<dl>
+<dt>指标</dt>
+<dd>
+<p>监控关键的业务和系统指标（延迟、错误率、吞吐量）。努力避免客户向你报告关键问题的情况，而是要先行发现问题。</p>
+</dd>
+<dt>告警</dt>
+<dd>
+<p>关注症状，而不是原因（例如，“延迟很高”，而不是“CPU 达到 90%”）。确保你的警报可操作且噪音低。测试新的警报，或者至少在工作日开始时启用它们，而不是在下班回家时启用。</p>
+</dd>
+<dt>日志</dt>
+<dd>
+<p>为日志创建一个存放的地方以及传送日志的方式。这可以是一个 Elastic 集群，或者在刚开始时也可以是单台机器。日志应该以清晰的结构书写——JSON 很好，因为它既对机器友好，也对人类可读。工程师在调试问题时仍然喜欢添加打印语句是有充分理由的，因此你需要让他们使用起来方便。</p>
+</dd>
+</dl>
+</dd>
+<dt>自动化最可怕的任务（P2）</dt>
+<dd>
+<p>找出最令新同事恐惧、紧张或容易出错的那一个流程，通常它就在部署流水线中。你的第一个大型自动化项目，可以是把部署改造成一键执行、支持回滚且不中断服务的操作。其中最重要的通常是可回滚：人们会因此更有信心实施变更（因为随时可以退回），也不太会冒险采用“向前修复”——后者可能引发一轮又一轮故障。将这项高度可见的工作自动化，还会进一步增强大家对你的信任。</p>
+</dd>
+<dt>开发者自助服务（P3）</dt>
+<dd>
+<p>与其修复每一个开发人员提出的问题，不如投入时间创建工具和文档，使开发团队能够自行处理常规任务。这就是在不增加人员数量的情况下扩大影响力的方法。</p>
+</dd>
+</dl>
+
+<p>谨慎安排这个任务栈中各项工作的优先级<a data-primary="small teams" data-secondary="prioritizing tasks" data-startref="sre_smtm_prtsk" data-type="indexterm" id="id2900"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_prtsk" data-tertiary="prioritizing tasks" data-type="indexterm" id="id2901"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_prtsk" data-tertiary="prioritizing tasks" data-type="indexterm" id="id2902"/>，能让你从一开始就着手弥补单人 SRE 团队的不足。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="前90天" data-type="sect3"><div class="sect3" id="ch22_the_first_ninety_days">
+<h3>前90天</h3>
+
+<p>从 <a data-primary="small teams, first steps" data-type="indexterm" id="id2903"/><a data-primary="teams" data-secondary="small" data-tertiary="first steps" data-type="indexterm" id="id2904"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="first steps" data-type="indexterm" id="id2905"/>简单、集中化的可观测性。你不需要也不想要数以百万计的仪表板——你需要的是关于你负责的服务的少数几个问题的答案：</p>
+
+<ul>
+<li>
+<p>它宕机了吗？检查 ping 和健康检查。</p>
+</li>
+<li>
+<p>慢吗？检查边缘的延迟指标。</p>
+</li>
+<li>
+<p>它坏了吗？检查错误率或状态码。</p>
+</li>
+<li>
+<p>它是否正在驱赶用户？检查是否有错误或缺失的功能让他们感到沮丧。</p>
+</li>
+</ul>
+
+<p>使用轻量级的集成工具集（这里最好是单一供应商或开源解决方案），它可以集中管理日志、指标和跟踪信息。避免让自己处于必须整合多个不同系统的境地——这种整合工作是你在此阶段无法承担的繁琐劳动。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="利用人工智能寻求帮助" data-type="sect3"><div class="sect3" id="ch22_leveraging_ai_for_help">
+<h3>利用人工智能寻求帮助</h3>
+
+<p>AI 工具<a data-primary="small teams" data-secondary="AI tools" data-type="indexterm" id="id2906"/><a data-primary="teams" data-secondary="small" data-tertiary="AI tools" data-type="indexterm" id="id2907"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="AI tools" data-type="indexterm" id="id2908"/>可以成为组建新 SRE 团队时的得力助手。你可以用它们自动分析集中收集的日志、指标和跟踪信息。</p>
+
+<p>AI 工具可以分析指标的历史性能数据，找出延迟、可用性等关键指标的性能基线。这个数据驱动的办法能够为 SLO 提供切合实际的起点，反映服务的真实行为和用户体验；之后再随时间推移逐步调整。</p>
+
+<p>人工智能工具中的自然语言处理能力可以应用于用户反馈、支持工单或错误消息模式，以评估用户的挫败感（“这会让用户流失吗？”），提供超越传统指标的见解。目标是利用人工智能从你的可观测性数据中提供可操作的答案，减少对大量手动集成、仪表板泛滥和在定义服务水平目标（SLO）时的猜测的需求。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="操作手册" data-type="sect3"><div class="sect3" id="ch22_playbooks">
+<h3>操作手册</h3>
+
+<p>操作手册<a data-primary="small teams" data-secondary="playbooks" data-type="indexterm" id="sre_smtm_plybks"/><a data-primary="teams" data-secondary="small" data-tertiary="playbooks" data-type="indexterm" id="tms_sml_plybks"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="playbooks" data-type="indexterm" id="sretms_sm_plybks"/><a data-primary="playbooks" data-type="indexterm" id="plyboks"/>出人意料地容易引发争议：有那么多紧急问题要处理，有些人会觉得花时间编写手册并不划算。然而，写得好的操作手册可以发挥多重作用。它们可以帮助人们在你不在时解决问题，促进新员工的入职培训，并且可以作为未来自动化的伪代码——你将操作手册记录下来、测试并完善，它便成为今后解决问题所需自动化的第一版。在发生故障时，如果你知道需要采取的缓解措施，但没有人知道如何执行，因为唯一知道的人正在休假、住院或已经离职，这种情况会令人感到挫败。如果你已经花时间确保有一种直接的方法将你的服务回滚到已知的良好版本，你也需要花时间确保其他人知道如何实际操作——可能是在凌晨两点，当他们不是最清醒的时候。</p>
+
+<p>首先为最近的五次故障创建操作手册（例如，“数据库读/写过慢”、“API 返回 500 错误”或“部署失败”）。为非 SRE 编写这些操作手册，因为如果你所在的团队规模较小，尝试跟随步骤的可能很大程度上不是 SRE。使操作手册对希望帮助恢复服务的不同角色的人有用——比如，发现自己引入了问题的开发人员，或者收到告警的运维人员。此操作手册是你赋能开发人员和其他有技能的人员的机会。</p>
+
+<p>从一个写得很好的操作手册中，你可以获得的第一个好处之一是能够将初步的故障排查和诊断任务委派给更大的团队：操作手册会引导团队中的某个人完成关于问题的初步检查。它还应该激励你创建一个良好可用的工具集——如果你有一个可以处理任何调试问题的小型 bash 脚本，就将该脚本的关键部分工业化，使其他人也能参与工作。团队可能仍然需要升级问题给你，但当他们这样做时，他们已经完成了初步故障排查，这会为你节省时间和精力。一旦故障解决，你可以进行更新，使团队更接近能够在完全不需要升级给你的情况下解决问题的能力。</p>
+
+<p>随着你对服务操作的了解加深，以及随着服务的变更，操作手册可能会变得过时。建立一种在观察到问题时进行小幅、快速改进的文化，并确保征求关于哪些内容需要澄清的反馈。例如，一个团队可能正在经历某个部署，过程中出现了一种虽不影响服务但令人沮丧的故障模式。在这种情况下，你可以创建一份操作手册，向值班人员展示如何解决问题，然后随着不同的人遇到问题不断进行迭代和改进。</p>
+
+<p>如果你成功地让团队参与创建操作手册，你可以利用大型语言模型（LLM）使它们可被检索和交互。基于检索增强的生成技术可以让你为操作手册库建立索引，这样当发生事件时，你就不必手动翻阅文档；你可以直接询问回滚特定部署的步骤，从而有效地将静态操作手册转变为可查询的知识数据库，加快事件响应速度。</p>
+
+<p>发生中断时，操作手册应当成为关键资源。你需要用一种开销很低的方式，确保即使服务完全无法访问，最重要的信息依然可用。可选办法很多，例如 GitHub 仓库、本地计算机上的应急资料包或离线汇编文档。选择最适合自身情况的方式，优先保障最关键信息，确保需要时<a data-primary="small teams" data-secondary="playbooks" data-startref="sre_smtm_plybks" data-type="indexterm" id="id2909"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_plybks" data-tertiary="playbooks" data-type="indexterm" id="id2910"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_plybks" data-tertiary="playbooks" data-type="indexterm" id="id2911"/><a data-primary="playbooks" data-startref="plyboks" data-type="indexterm" id="id2912"/>随时能够取用。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="扩大自身能力" data-type="sect3"><div class="sect3" id="ch22_scaling_yourself">
+<h3>扩大自身能力</h3>
+
+<p>你只有<a data-primary="small teams" data-secondary="collaboration with coworkers" data-type="indexterm" id="sre_smtm_cloab"/><a data-primary="teams" data-secondary="small" data-tertiary="collaboration with coworkers" data-type="indexterm" id="tms_sml_cloab"/><a data-primary="SRE teams" data-secondary="small" data-tertiary="collaboration with coworkers" data-type="indexterm" id="sretms_sm_colab"/><a data-primary="collaboration" data-secondary="SRE small teams" data-type="indexterm" id="colabor"/>一个人，没有横跨两个时区、每组六人的两组值班团队。<sup><a data-type="noteref" href="ch22-zh.html#id2913" id="id2913-marker">1</a></sup> 你可能是一个公司中唯一的SRE，而该公司正在为一次重要的发布做准备。如前所述，你很可能是在一次严重故障之后被雇用的，所以这是一个高压的环境，而且你周围的每个人都有期望。在这种情况下，让自己能够提升能力将非常重要。</p>
+
+<p>最初的 SLO 和 SLI 应聚焦于服务中对用户最关键的部分。核心实现方式与大型公司相似，但最终结果要高度聚焦。为了落实
+<a data-type="xref" href="#ch22_the_first_ninety_days">“前 90 天”</a>中列出的优先事项，应识别关键用户旅程，并设置探测服务来衡量可用性、延迟、吞吐量和错误等重要 SLI。</p>
+
+<p>准确确定 SLO 后，你可以以它为依据，判断新提交的缺陷是否需要立即处理，或 SLO 本身是否需要调整。这些检查会形成一套基础，供你继续完善，并与团队和合作伙伴共享。</p>
+
+<p>在任何规模的公司中，与开发人员建立合作文化都是很重要的。然而，当你是唯一的 SRE，或者是在一个没有全天候值守的小团队中的 SRE 时，这一点尤为重要，因为开发人员最有能力帮助你提高服务的可靠性。SRE 常常以经常说“不要”而闻名，但他们也以在混乱和令人不安的故障发生时及时出现，并完成创建秩序、采取缓解措施以及（最终）建立理解所需的工作而闻名。让自己成为能够支持而不是阻碍他人的人，团队和文化就会繁荣发展。要关注更清晰、更容易的解决方案，以及可能在功能演进过程中引发问题的复杂性。在初创公司编写和支持代码可能是一场巨大的权衡游戏：我们是构建这个耗时但稳健的解决方案，还是选择这个更简单但速度更快的解决方案？这两种选择都有其价值，如果你与产品开发团队建立合作的文化，你可以一起平衡这些选项，并做出更好的决策。</p>
+
+<p>你可以建立一个由开发团队和你自己组成的值班轮换。你还有一个额外目标，即收集关于故障的信息并改进可观测性和服务水平目标，但产品开发团队最有可能知道今天发生的问题是他们前一天编写的代码中的错误导致的。参与共享值班轮换是宣传 SRE 规范的绝佳机会。如果发生故障，你可以担任事件经理的角色，并展示一种冷静、有效的方式来组织调试和缓解措施。故障过后，你可以确定原因因素，在内部发布事后分析，并对提议的行动项获取反馈。</p>
+
+<p>协作的重要部分之一是互相审查对方的工作。我们建议实施代码审查流程，即使人们在开始时有一些（或很多）抱怨。代码审查文化是自我强化的，让人们习惯于这样的理念：对一个变更进行额外审查并不会拖慢工作速度，而是另一种发现问题的方式。在此指出，可靠性实际上会<em>提高</em>速度，因为开发者需要耗费时间处理的故障更少。快速提交的有缺陷代码需要回滚，这会造成更大的拖累。</p>
+
+<p>审查过程可以成为发展 SRE 文化的起点，而对于独自的 SRE 来说，它可以成为发展团队的起点。审查提供以下好处：</p>
+
+<ul>
+<li>
+<p>至少还有其他一个人知道刚刚引入的更改，即使他们错过了刚刚写入的错误。他们已经批准了这次更改，因此他们也对接下来发生的事情承担责任。</p>
+</li>
+<li>
+<p>初级工程师通过审查高级工程师编写的代码来学习，而高级工程师审查初级工程师编写的代码可以提供指导。</p>
+</li>
+<li>
+<p>审阅者可以提供有用的建议，例如向代码中添加单元测试。</p>
+</li>
+<li>
+<p>审查者可以发现问题，即使在五个拉取请求中只有一个问题。</p>
+</li>
+</ul>
+
+<p>许多工具和自动化检查可以在提交拉取请求之前识别问题。越来越多地，人工智能也可以用来检查常见和不常见的故障。作为第一位SRE，或者是开始SRE团队的人，一个重要的工作是建立代码审查规范，并让开发人员摆脱随意提交任何内容、任何时间、无人审查的状态。相反，SRE和开发人员应撰写具有清晰描述的变更请求，并将其发送给同事进行审查。</p>
+
+<p>你可以使用人工智能来帮助审核更改；然而，在你发展的这一阶段，应将目标定为所有更改至少由另一名人类审查。这将有助于发现错误，并推动你形成责任文化。随着你通过定义服务等级目标（SLO）、将其集成到监控中以及建立对持续达成目标的信任来成熟你的服务运营，你可以明智地减少人工监督，并有信心任何服务<a data-primary="small teams" data-secondary="collaboration with coworkers" data-startref="sre_smtm_cloab" data-type="indexterm" id="id2914"/><a data-primary="teams" data-secondary="small" data-startref="tms_sml_cloab" data-tertiary="collaboration with coworkers" data-type="indexterm" id="id2915"/><a data-primary="SRE teams" data-secondary="small" data-startref="sretms_sm_colab" data-tertiary="collaboration with coworkers" data-type="indexterm" id="id2916"/><a data-primary="collaboration" data-secondary="SRE small teams" data-startref="colabor" data-type="indexterm" id="id2917"/> 性能下降将被迅速检测并缓解。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 在混合和传统环境中的应用" data-type="sect2"><div class="sect2" id="ch22_sre_applied_in_hybrid_and_legacy_environments">
+<h2>SRE 在混合和传统环境中的应用</h2>
+
+<p>在软件行业中，“混合与传统环境”通常指彼此隔离的环境<a data-primary="hybrid and legacy environments" data-type="indexterm" id="id2918"/><a data-primary="environments" data-secondary="hybrid and legacy" data-type="indexterm" id="id2919"/>，其中混合运行着内部开发的软件与外购的系统或组件。随着其他企业——尤其是那些在传统或混合环境中运营的企业——尝试采用 SRE 原则和实践时，他们通常会在两个主要领域面临挑战。第一个是组织结构、流程、访问模型及相关要求所施加的限制。第二个是技术和环境的限制。本部分提供了如何在您自己的环境和背景下应对这些挑战的建议。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="组织、流程和访问限制" data-type="sect2"><div class="sect2" id="ch22_organizational_process_and_access_constraints">
+<h2>组织、流程和访问限制</h2>
+
+<p>弥合安全要求与生产稳定性之间的差距<a data-primary="operational boundaries, importance" data-type="indexterm" id="id2920"/>，需要精心设计操作边界。在事件发生时，这些优先事项之间的紧张关系最为明显，此时必须在快速缓解与明确授权和可审计性之间取得平衡。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="事件期间的访问和权限" data-type="sect3"><div class="sect3" id="ch22_access_and_authority_during_incidents">
+<h3>事件期间的访问和权限</h3>
+
+<p>要准确、有效地<a data-primary="incident response" data-secondary="requirements for effective response" data-type="indexterm" id="inc_sreaccauth"/>检测、分诊和缓解生产问题，负责响应的工程师需要具备以下条件：</p>
+
+<ul>
+<li>
+<p>对服务、其依赖项以及底层基础设施有足够的可见性，以了解发生了什么</p>
+</li>
+<li>
+<p>有足够的访问权限以对这些系统进行所需的更改，以减轻正在发生的事件</p>
+</li>
+</ul>
+
+<p>谷歌SRE值班人员可以通过指标、日志、跟踪和其他调试信息访问他们需要了解系统本身状态的内容，而无需请求权限或升级到其他团队。由于多年在通用生产平台和工具集上的技术和文化投入，他们可以从同一个集中式可观察性系统获取依赖项的类似信息，而无需请求其他团队提供。然后，他们可以采取必要的措施将自己的服务恢复到已知的良好状态，例如回滚错误的配置或代码更改，或在物理网络或基础设施问题周围重定向流量。他们甚至可以通过暂时提升自己的权限，或者（更常见的是）准备一个错误更改的回滚并将其发送给服务所有者，从而对他们不直接拥有的服务采取行动。如果他们在任何时候犯错，他们个人不会因为让服务中断加重而承担责任，因此他们会觉得安全地去做他们认为当下最好的事情。</p>
+
+<p>我们见过许多由组织、遗留系统乃至监管约束引发的常见难题。例如，大型网络运营中心（NOC）的事件响应人员可能只能对生产系统做表层检查，无权自行变更。NOC 也可能采用外包人员；这些响应人员并非企业员工，操作权限有限，必须将请求升级给内部团队，才能获得更多访问权限或实施变更。</p>
+
+<p>在这类环境中，可以运用 SRE 原则，把从稳态运行切换到主动危机管理的过程制度化，从而改善事件响应。一种有效做法是指定事件指挥官（IC），无论组织规模或既有层级如何，都明确授权其指挥响应。IC 未必拥有触及每个系统的“全访问”技术权限，但拥有协调实际执行者的<em>正式授权</em>。在小型组织中，这可能仅仅意味着 IC 有权重新安排任何可用工程师的工作优先级。为了弥合指挥权与实际访问权限之间的差距，应预先定义紧急访问路径，例如由 IC 批准响应人员进行有时限的权限提升。事件持续期间，组织赋予 IC 全面指挥权，使其能够跨越组织孤岛。</p>
+
+<p>虽然给予工程师广泛的系统访问权限可以加快事故解决，但不可否认，这会引入显著的攻击面和潜在的信任问题。为了降低恶意行为、能力不足或外部胁迫的风险，这种自主性必须配备强有力的技术防护措施。组织可以通过默认实施最小权限访问、对敏感数据访问要求多方授权（例如两人规则），并维护所有生产操作的不可变审计日志，来最小化任何单个个体错误或恶意行为的影响范围。创建系统，要求每一次高级权限升级都是短期的、可记录的并有合理理由，同时利用这些系统赋予值班人员在系统中断时果断行动的能力，同时监控和审计他们对敏感用户数据（如聊天记录或财务记录）的访问。在谷歌，这些系统管理、审计并控制对生产系统的所有访问，无论是在事件响应期间，还是在日常<a data-primary="incident response" data-secondary="requirements for effective response" data-startref="inc_sreaccauth" data-type="indexterm" id="id2921"/> 故障排除或其他操作活动。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="防止事故的自主权和权威" data-type="sect3"><div class="sect3" id="ch22_autonomy_and_authority_to_prevent_incidents">
+<h3>防止事故的自主权和权威</h3>
+
+<p>为了持续提高系统的可靠性<a data-primary="incident response" data-secondary="requirements for reliability and supportability" data-type="indexterm" id="inc_reqrelsup"/>和可支持性，负责响应生产问题的工程师需要具备以下条件：</p>
+
+<ul>
+<li>
+<p>分配给事后分析和识别改进机会的工程能力（时间）。这种分配取决于领导层的优先级。</p>
+</li>
+<li>
+<p>拥有、构建和维护该服务的团队承诺投入工程能力来执行由此产生的行动项目。</p>
+</li>
+</ul>
+
+<p>理想情况下，SRE 与服务所有者或开发人员建立合作关系，同产品工程师一起把可靠性纳入设计，并解决生产环境中暴露的可靠性问题。在谷歌，如果这种合作关系破裂，SRE 无法在遵守运维工作上限的前提下继续支持服务，就有权退出该服务（见<a data-type="xref" href="ch07-zh.html#ch07">第 7 章</a>）。</p>
+
+<p>你所在的组织或许没有退出服务支持这一选项。事实上，承担生产职责的工程师可能无论“围墙另一边”发生什么，都必须继续支持服务、守住可靠性。改善这种局面的一种办法是开展<a data-primary="toil" data-secondary="audits" data-type="indexterm" id="id2922"/>琐事审计，并以结果为依据，争取投入更多时间进行自动化。审计的目标是量化最令人烦恼、最频繁的人工任务。实际执行这些工作的员工可以列出任务，估算自动化能够节省的时间及其他收益（例如可靠性提升），再用这些数据说服管理层为自动化工作安排时间。这样，问题就不再只是建议（“我们应该自动化”）或抱怨（“琐事太多了”），而会转化为商业论证（“把重复任务 X 自动化，可以腾出 Y 小时开发产品功能”）。</p>
+
+<p>在某些情况下，<a data-primary="automation" data-secondary="incident response" data-type="indexterm" id="id2923"/> 自动化可能会开启以前不可能实现的全新用例。自动扩展基础设施以满足用户需求是一个简单的例子。另一个例子是设置探测器来验证应用程序的性能和可用性——尤其是在应用程序进行灾难恢复、混沌测试或故障切换测试时。许多用户在灾难恢复测试期间进行简单的手动验证，以确认它“有效”。通过探测器流量从测试环境中获取可靠的服务级别指标（SLI），并在测试前、测试中和测试后跟踪应用程序健康状况，可以更完整地了解实验是通过还是失败。</p>
+
+<p>自动化虽是 SRE 的核心支柱，却不是一劳永逸、立刻就能节省时间的方案。正如 Lisanne Bainbridge 在“自动化的讽刺”研究中指出的（见边栏 <a data-type="xref" href="ch13-zh.html#ch13_lessons_from_the_ironies_of_automaton_by_lisanne_bainbridge">“自动化的讽刺”</a>），把任务从人转交给机器，往往只是用更复杂的监督和维护工作替代简单的人工操作。每套自动化系统都会增加新的调试面、集成难题，而且随着底层环境演进，最终还可能需要重写。因此，自动化的目标不只是消除琐事，而是有意识地用低频但价值更高的自动化维护工作，替代高频的人工劳动。</p>
+
+<p class="fix_tracking">另一种办法是让事件响应人员参与事后分析和行动项流程。如果支持团队的洞察未能转化为系统改进，通常是因为他们的经验没有被正式整理或沉淀为组织知识。主要响应人员
+<span class="keep-together">与产品开发团队及其知识体系相脱节</span>时，也会出现这种情况。SRE 模式把事后分析作为弥合这些缺口、推动系统性变革的正式机制。（关于无责事后分析的深入讨论，参见<a data-type="xref" href="ch10-zh.html#ch10">第 10 章</a>。）</p>
+
+<p>以无责方式从事件中学习，使响应人员面对的运维现实有了正式的表达渠道：如果他们无法解决问题，也无法提出更好的操作手册，这就会被视为需要通过行动项纠正的<em>组织失效</em>；问题会呈报领导层，并明确指定解决负责人。对于需要向政府主管机构负责的受监管企业（例如受美国联邦航空管理局或食品药品监督管理局监管的企业），发生问题后，事后分析还可能成为正式文件，用来证明正在采取<a href="https://oreil.ly/PKTKt">纠正和预防措施（CAPA）</a>。
+CAPA 随后会成为有据可查的监管要求，从而绕过常规官僚流程，提高可靠性修复的优先级。如果你在此类环境中工作，应该已经很熟悉相关法规；否则，当地合规部门<a data-primary="incident response" data-secondary="requirements for reliability and supportability" data-startref="inc_reqrelsup" data-type="indexterm" id="id2924"/>可以提供帮助。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="技术限制和障碍" data-type="sect2"><div class="sect2" id="ch22_technical_constraints_and_obstacles">
+<h2>技术限制和障碍</h2>
+
+<p>如果组织自行构建所运行的全部软件<a data-primary="software development" data-secondary="SRE role" data-type="indexterm" id="id2925"/>，SRE 职能就可以自由编写额外的软件来实现目标。SRE还可以直接修改它们支持的服务的代码，以提高可扩展性、可靠性和效率。然而，在实践中，大多数企业在第三方商业现成（COTS）软件上有大量的软件投资，而这些软件的代码很难修改，如果可以修改的话也极为困难。但即使在这种环境下，也有机会运用SRE的实践和原则进行改进。</p>
+
+<p>大多数企业并不在内部构建他们的软件堆栈，而是严重依赖第三方商业现成软件（COTS）。这不仅适用于业务应用程序，也适用于用于运行环境的基础设施和工具，例如监控、资源配置以及持续集成/持续交付（CI/CD）管道。</p>
+
+<p>无论软件的来源如何，当SRE职能被授权开发自己的自动化和软件层时，它能提供最大的价值。即使在处理无法直接修改的封闭系统时，SRE团队也可以识别出构建自定义包装器的高杠杆机会。这些工具使SRE能够扩展现有功能、隔离专有系统，并注入维持稳定生产环境所必需的标准化可靠性实践。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="封闭系统" data-type="sect3"><div class="sect3" id="ch22_closed_systems">
+<h3>封闭系统</h3>
+
+<p>当你无法改变<a data-primary="software development" data-secondary="SRE role" data-tertiary="working with third-party software" data-type="indexterm" id="stwdevsre_trdprt"/>第三方应用程序的内部机制时，应专注于稳定其周边系统和流程。利用现有资源，而不是尝试以 SRE 方式运行“几乎不可能”更改的系统。虽然核心专有软件无法通过代码进行管理，但支撑它的部署、网络和运营组件是可以管理的。基础设施即代码（IaC）工具，例如
+<a href="https://oreil.ly/4dp9K">Terraform</a>，可以为系统基础设施组件提供改进的一致性、部署速度和灾难恢复。这些工具应当帮助您在无需访问专有软件本身源代码的情况下降低风险。</p>
+
+<p>在生产环境中运行第三方系统，往往带来大量运维开销和重复的人工操作，也就是琐事。仍按前文建议，先开展琐事审计，找出支持该系统时最频繁的重复性人工任务。与其贸然构建复杂的自愈自动化，不如先用脚本执行常见的缓解操作，例如重启失败的服务，或在事件后清理缓存。脚本还可协助完成事件后的清理和验证，减少运维债务，让系统更容易得到支持。</p>
+
+<p>除了管理基础设施之外，SRE 还可以开发一个强大的内部 API 或包装层——通常被称为防腐层。通过构建这个组织完全拥有的中介层，SRE 可以以编程方式控制与第三方软件的通信路径。这使团队能够注入现成 COTS 产品可能缺乏的重要可靠性实践，例如标准化的可观测性、细粒度的速率限制和经过验证的配置管理。与其仅仅对不透明系统的行为做出反应，这种架构方法使 SRE 能够主动管理系统与其他环境的交互方式，有效地把僵化的第三方工具<a data-primary="software development" data-secondary="SRE role" data-startref="stwdevsre_trdprt" data-tertiary="working with third-party software" data-type="indexterm" id="id2926"/>转变为更可预测、更易管理的组件。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="异质性和孤岛" data-type="sect3"><div class="sect3" id="ch22_heterogeneity_and_silos">
+<h3>异质性和孤岛</h3>
+
+<p>谷歌目前以 Borg 基础设施为标准<a data-primary="environments" data-secondary="heterogenous, applying SRE practices" data-type="indexterm" id="env_het_srepract"/>（参见<a data-type="xref" href="ch03-zh.html#ch03_google_s_production_environment">“谷歌的生产环境”</a>），配套工具使 SRE 组织能够以统一方式运维许多（但绝非全部）服务，并应用
+<a href="https://oreil.ly/F334I">通用缓解措施</a>.<sup><a data-type="noteref" href="ch22-zh.html#id2927" id="id2927-marker">2</a></sup> 但是当你在管理一个复杂、长期存在且多样化的技术环境时，或者是一个被多种不同技术领域分隔开的环境时，会发生什么？在这种情况下，你如何应用现代 SRE 实践？</p>
+
+<p>务实是关键。当面对这些限制时，SRE 团队应优先考虑实际的、定制化的解决方案，而不是严格遵循标准框架。为了保持进展，可以考虑以下方法：</p>
+<dl>
+<dt>专注于通用缓解措施</dt>
+<dd>
+<p>确定可以快速且可靠地应用的缓解事件的方法，并且不一定需要深入的系统内部分析。</p>
+</dd>
+<dt>逐步采纳原则</dt>
+<dd>
+<p>不要一次性全面改造，而应分阶段引入 SRE 概念（见<a data-type="xref" href="ch04-zh.html#ch04_practical_considerations">“实践注意事项”</a>）。</p>
+</dd>
+<dt>专注于有限范围</dt>
+<dd>
+<p>从单一垂直领域或系统开始，将实施方案调整为“利用现有条件”，而不是等待基础设施升级。</p>
+</dd>
+<dt>定义特定情境的目标</dt>
+<dd>
+<p>为每个系统的实际运行情况设定合理的可靠性目标，而不是追求整个企业的统一标准。</p>
+</dd>
+<dt>优先准备刚性系统</dt>
+<dd>
+<p>对于难以修改的遗留系统或第三方系统，应将重点转向灾难测试、认证和现场演练，以应对由外部因素引起的紧急情况。对高度可靠和冗余的系统也应采取类似的处理方式。</p>
+</dd>
+</dl>
+
+<p>有关这些做法的实际示例，请参见 <a data-type="xref" href="#ch22_case_study_large_multinational_investment_and_consumer_bank">“案例研究：大型跨国投资与消费银行”</a>.</p>
+
+<p>接下来，不要试图标准化无法更改的组件本身，而应通过管理和操作这些组件的上层系统来引入标准化。例如，在各类基础设施<em>之上</em>构建轻量、标准化的工具链和流程，并使用 IaC 与统一的监控工具。像 Terraform 这样的工具可以通过管理所有新建和可现代化基础设施组件的配置和供应来提高部署的一致性和速度，并简化灾难恢复。由于这是一个复杂且耗时的过程，涉及大量组织间的沟通往返，标准化应逐步推进，将其视为长期演进，而非一夜之间的转变。</p>
+
+<p class="fix_tracking">标准化确保新系统能够统一部署，并减少未来的复杂性。为了在不同的技术栈中统一监控，引入基于症状的报警(<a data-type="xref" href="ch08-zh.html#ch08">第8章</a>）。由于异构系统的内部性能指标可能差异很大，将警报集中在用户满意度的直接指标（例如延迟或可用性）上，可以标准化事件响应体验。这种方法将关注点从复杂的内部细节转移到可衡量的业务影响上<a data-primary="environments" data-secondary="heterogenous, applying SRE practices" data-startref="env_het_srepract" data-type="indexterm" id="id2928"/>。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="人类在循环中" data-type="sect3"><div class="sect3" id="ch22_humans_in_the_loop">
+<h3>人在回路中</h3>
+
+<p>在某些情况下，<a data-primary="automation" data-secondary="applying selectively" data-type="indexterm" id="aut_apsel"/>人工操作更合适，甚至是强制要求；有时自动操作之前也必须先由人确认。可以借鉴航空业的做法，有选择地实施自动化，同时保留对核心系统变更的人工检查和验证。这样既能获得自动化在速度、可重复性和质量一致性方面的优势，又能维持人工决策链对系统的信任。对于预先定义的 SLO 违约或特定的高紧迫情形，如果全自动响应引入的风险低于人工介入过慢的风险，可以考虑自动修复。例如，检测到入站流量大幅增长后自动扩容，就是一种风险明确且可接受的自动响应场景。</p>
+
+<p>如果自动化失败或导致事故，请使用无责追溯流程来分析系统性故障（例如，自动化工具或配置中的缺陷），而不是个人错误。该流程应有助于建立工程师继续提出和构建自动化所需的心理安全感，而无需担心职业影响，同时随着时间的推移改进自动化本身。</p>
+
+<p>在航空、金融和医疗等受监管的行业中，只有在经过人工验证时才信任自动化——故障切换可能是自动的，但核心系统的实施通常需要人工检查。在这样的环境中，你可以专注于高度具体、低风险、高回报的自动化工作，同时在流程中规范人工角色。</p>
+
+<p>总之，把 SRE 原则应用于混合和遗留环境，确实会遇到独特的技术约束，包括依赖第三方和遗留基础设施，以及面对异构、彼此隔离的系统；但这些挑战并非无法克服。关键是把精力放在周边系统和流程上，采用适合具体环境的务实、渐进式方案，并以高度针对性的自动化减少琐事，同时通过无责事后分析持续改进。</p>
+
+<p>在混合和传统环境中实施 SRE 需要在理想的可靠性实践与根深蒂固的组织和技术限制现实之间保持务实的平衡。虽然技术债务和孤立的访问常常阻碍事件响应的速度，但前进的道路在于培养责任文化和渐进式标准化。赋予工程师在系统中断期间更大的可见性和行动权，以开始拆除导致平均解决时间（MTTR）高的障碍。力求根据自身需求调整核心 SRE 原则——如无责文化和以自动化为重点——而不是试图完美模仿云原生模型或“更像谷歌”。目标是将可靠性从专业任务转变为共同责任，并使即使是最分散的系统也能达到现代性能标准。通过持续的倡导和技术进步，你可以从单纯的维护转向可持续的、主动运营的未来<a data-primary="automation" data-secondary="applying selectively" data-startref="aut_apsel" data-type="indexterm" id="id2929"/>。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="现实世界的例子" data-type="sect1"><div class="sect1" id="ch22_real_world_examples">
+<h1>现实世界的例子</h1>
+
+<p>即使 SRE 落地工作拥有充足资源，要在既有企业中建立一套实践也会面临特有的挑战。过去十年间，谷歌工程师与各种客户合作，协助他们组建 SRE 团队、培育 SRE 实践，并在云端构建和运行可靠、可扩展的系统。这些客户既有大型企业和资金充足的初创公司，也有公共机构。下面的案例研究将介绍其中一些经验，展示如何在现实中把 SRE 融入现有组织结构。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="案例研究：快速扩展的B2B SaaS初创公司" data-type="sect2"><div class="sect2" id="ch22_case_study_rapidly_scaling_b2b_saas_startup">
+<h2>案例研究：快速扩展的B2B SaaS初创公司</h2>
+
+<p>一家最近获得融资的<a data-primary="B2B SAAS startup, retrofitting SRE practices case study" data-type="indexterm" id="btb_retrofit"/> SaaS 初创公司在经历突发增长后，需要稳定其平台，这种增长将其临时的工程实践推到了极限。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="情景" data-type="sect3"><div class="sect3" id="ch22_the_scenario">
+<h3>情景</h3>
+
+<p>公司成立两年后找到了产品市场契合点，用户流量随即暴增。为满足产品需求，最初只有两人的工程团队已经扩充到约 20 名开发人员，但运营模式仍停留在“车库创业”阶段：所有人都来搭把手，人人身兼数职，注意力总被最新出现或最显眼的问题吸引。</p>
+
+<p>除了文化问题之外，部署过程比理想情况更手动，文档化也不够完善，并且故障通常是通过用户反馈告诉创始人后才被发现。因此，核心工程团队一直处于不断应对紧急情况的状态，使得工作进展变得不可预测。领导层发现了这些问题，并聘请了一位新员工，专门通过SRE“为混乱带来秩序”。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="采纳方法" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach">
+<h3>采纳方法</h3>
+
+<p>新的 SRE 负责人面临运营债务和超负荷工作的工程师问题。两名工程师，一名资深和一名初级，被选中组成新的 SRE 团队的核心，使团队人数达到三人。他们直接在工程组内工作，作为完全成熟的软件工程师，但专注于 SRE 的任务。SRE 团队确定了四个需要优先解决的关键事项：</p>
+<dl>
+<dt>建立可见性</dt>
+<dd>
+<p>他们对可观测性工具进行了即时审查，并建立了指标、日志和跟踪的标准，他们与其他工程部门合作，系统地实施这些标准。</p>
+</dd>
+<dt>自动化最大的工作源</dt>
+<dd>
+<p>部署问题导致了大多数中断（至少从轶事上来看如此，后来通过更新的数据得到确认）。SRE 团队专注于清理部署自动化，并为大多数发布引入了“一键”回滚功能。</p>
+</dd>
+<dt>创建操作手册</dt>
+<dd>
+<p>他们从团队收集了隐性知识，并为最常见的十大故障模式编写了操作手册。</p>
+</dd>
+<dt>实施基本的SLO</dt>
+<dd>
+<p>在实施了更新的监控后，他们与产品经理和创始人合作，设定了反映用户体验期望的初始SLO。这些SLO并不完美，但它们为从用户角度重新评估可靠性奠定了基础。</p>
+</dd>
+</dl>
+
+<p>SRE 团队还建立了一个正式的值班轮换制度，涵盖了所有工程团队成员。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="结果" data-type="sect3"><div class="sect3" id="ch22_the_results">
+<h3>结果</h3>
+
+<p>通过专注于高影响力的自动化和开发者赋能，而不仅仅是负责值班和修复漏洞积压，这批初始的SRE成功地将公司从“持续灭火”阶段转变出来。在六个月内，以下改进得以巩固：</p>
+<dl>
+<dt>部署信心</dt>
+<dd>
+<p>部署从压力巨大的事件变成了频繁而常规的操作。平均无故障时间（MTTF）不仅有所延长，开发人员也因为更有信心能够回滚，而敢于承担更多风险，并取得了回报。</p>
+</dd>
+<dt>减少 MTTR/MTTD</dt>
+<dd>
+<p>随着 SLO 的使用普及，基于症状的告警使平均检测时间（MTTD）缩短，而通过使用操作手册和更一致、较少混乱的分诊，平均修复/恢复时间（MTTM/MTTR）得到改善。团队在其识别的关键用户旅程中整体停机时间约减少了 60%。</p>
+</dd>
+<dt>协作文化</dt>
+<dd>
+<p>将整个开发团队纳入值班轮换，并由SRE团队对开发人员进行赋能，这确保了随着SRE团队的发展，不会产生“扔给别人解决”的心态。</p>
+</dd>
+</dl>
+<dl class="pagebreak-before less_space">
+<dt>数据驱动的优先排序</dt>
+<dd>
+<p>SLO 和更详细的可靠性待办事项清单成为团队优先级排序的主要输入，使得决策更加客观，并最终提高了产品速度。一个主要功能比原计划提前整整 60 天上线。</p>
+</dd>
+</dl>
+
+<p>SRE 团队自那时起不断发展，现在作为一个独立团队与开发团队并行运作，并通过相同的工程领导链进行汇报。随着产品开发速度的提升，开发团队也得到了扩展，工程团队的开发人员与 SRE 的比例稳定在大约 7:1。大约一半的 SRE 是直接招聘的，而另一半则来自开发团队。尽管 SRE 对值班工作的负责程度随着时间增加，但所有开发人员仍然参与某些值班轮换。开发人员的运维工作 <a data-primary="B2B SAAS startup, retrofitting SRE practices case study" data-startref="btb_retrofit" data-type="indexterm" id="id2930"/>现在约占他们时间的5%，而当第一批SRE加入团队时，这一比例几乎达到一半。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="案例研究：大型跨国投资与消费银行" data-type="sect2"><div class="sect2" id="ch22_case_study_large_multinational_investment_and_consumer_bank">
+<h2>案例研究：大型跨国投资与消费银行</h2>
+
+<p>一家关键金融机构<a data-primary="banks, retrofitting SRE practices case study" data-type="indexterm" id="bnk_retrofit"/>正在寻求重新定义交易、电汇等关键产品的客户体验，并希望通过 SRE 来实现这一目标。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="情景" data-type="sect3"><div class="sect3" id="ch22_the_scenario_2">
+<h3>情景</h3>
+
+<p>一家拥有悠久技术历史的著名公司，随着时间的推移，该银行采用了各种基础设施环境和重叠的工具，每种工具都在一个或多个部门中作为特定问题的点解决方案使用。这些选择中的许多是由监管要求与与外部组织互操作的需求共同驱动的，这是全球金融体系中关键参与者的本质。同样，该银行多年来也发展了复杂的内部和外包能力网络，因此即使是诸如项目管理这样的基本职能，也会因不同的业务单元而由不同的团队以不同的方式执行。</p>
+
+<p>即使是最受尊敬的机构也能够认识到改进的必要性。在整个行业发生一系列中断之后，自我反思使公司得出一个严峻的结论：它知道问题出在哪里，以及何时发生，但由于组织分割和指责文化，其应对和解决复杂中断的能力受到了严重限制。这些障碍使得在复杂环境中进行操作变得极其困难。</p>
+
+<p>当谷歌首次开始与该组织合作进行 SRE 转型时，一位领导指出了一个核心问题：公司由几个不同的孤岛组成，每个孤岛都存在“在员工桌上安装电脑之前”，并作为一个准独立实体运作，其领导期望拥有近乎完全的控制权和决策权。任何建立 SRE 文化的方法都必须避免看起来侵犯这些垂直部门的自主权。</p>
+
+<p>这家银行确实有一些关键优势。员工的平均任职时间相当长，这意味着领域知识非常丰富。出于市场需要，该公司在某些领域也具有相对较高的技术水平。作为一家金融机构，对成功的明确责任以及对讨论风险的熟悉是可以被利用来建立 SRE 模型的文化价值观。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="采纳方法" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach_2">
+<h3>采纳方法</h3>
+
+<p>对SRE实践（如SLO和基于角色的事故响应）进行简单、普遍的推广，很可能会在分歧的辩论中陷入困境。多样性和主权问题需要一种基于能力的方法。我们专注于在各个垂直领域内识别和推进特定的SRE能力，以满足它们的独特需求。随后将标准化这些能力的实施。这种方法还可以通过建立一个标准能力“表面”来解决各种基础设施环境的差异，从而抽象出它们的不同。一些能力可以被要求作为基线，而采用目标可以针对每个垂直领域进行定制，或者在某些情况下更精细地定制，从而允许不同的业务保持控制感和所有权。</p>
+
+<p>在实践中，这种方法是这样进行的：</p>
+<ol>
+<li>
+<p>与某个行业领域合作，识别现有能力和关键痛点。</p>
+</li>
+<li>
+<p>确定关键服务的可靠性目标。</p>
+</li>
+<li>
+<p>将每个行业的痛点和需求组合与能力地图对齐，<sup><a data-type="noteref" href="ch22-zh.html#id2931" id="id2931-marker">3</a></sup>
+将能力分类为“先天存在的”、“必须具备的”、“可有可无的”、“不需要的”和“明确不希望的”.</p>
+</li>
+<li>
+<p>找出地图之间的共性，其中一些将因为我们作为协调员的温和推动而存在。</p>
+</li>
+<li>
+<p>将常见特征的子集作为生产应用的基线要求，并让各垂直领域批准。</p>
+</li>
+<li>
+<p>与每个垂直领域合作，定义获取所需能力的顺序和时间表。</p>
+</li>
+
+</ol>
+
+<p>在两年的时间里，各个垂直领域的 SRE 团队建立了诸如集中式 SLO 跟踪、基于角色的事件响应和自动回滚等能力。虽然他们并不总是完全同步行动，但这种半协调的方式将反对意见降到最低，同时引导了整个过程。最终，他们形成了一种一致的 SRE 方法，每个垂直领域保留对自身可靠性运营的所有权，同时将改进贡献回整个体系。</p>
+
+<p>另外两个关键策略，一个是组织上的，一个是技术上的，也为这一成功做出了贡献。在组织方面，至关重要的是任命一位高级管理人员在最高层面上为可靠性和 SRE 转型进行倡导，以在多年变革过程中保持动力。理想情况下，承担这一“首席可靠性官”角色的人应是接近 C 级的人员，能够充当灯塔，在不可避免的挑战出现时提供一致性、激励和思想领导力。在本案例中，鉴于组织规模，该角色由一位董事总经理担任。这位个人成功地利用其席位提出了一种类似于可靠性“元垂直”的概念。这是一个聪明的方法，考虑到银行先前的组织模式：高管领导理解垂直的概念，因此已经准备好接受来自这一关键可靠性工作的负责人反馈。</p>
+
+<p>从技术上讲，为了应对重叠工具的庞大格局，并尽量减少早期关于所有权的冲突，我们专注于采用“元工具”，尽可能与团队现有的软件和流程对接。这些元工具还帮助加快了建立 SRE 能力的过程。随后，减少工具数量的次要工作将在后期进行。例如，我们使用专门的 SLO 测量和报告软件（第三方 SaaS 产品），可以与所有主要的现有指标和日志系统集成，因此建立初始 SLO 的成功不依赖于各个服务团队现有监控的具体构建方式。</p>
+
+<p>在各垂直领域采用类似的SRE实践在一定程度上减少了指责行为，但一些问题仍然存在，特别是涉及严重的多服务事件时。针对这一领域，我们直接采取了措施，建立了全球标准化的事件响应流程，并通过灾难演练进行频繁而深入的演练。在这些演练中，我们让团队成员扮演各种角色，包括那些超出其通常团队范围的角色。成立了一个常设的事后分析委员会，来自所有与SRE相关的垂直领域，以防止回归到指责行为，并确保事件记录及后续行动项目的完整性和可操作性。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="结果" data-type="sect3"><div class="sect3" id="ch22_the_results_2">
+<h3>结果</h3>
+
+<p>工作仍在继续，因为这家银行是一个非常大的组织，但经过近两年的努力，许多团队已经改变了他们的业务方式。一些最大的变化包括：</p>
+
+<ul>
+<li>
+<p>在各垂直领域以相同方式跟踪和报告的SLO，使服务团队之间能够更好地协调，并且可以根据需求更自信地分配资源。总体上MTTR有所降低，部分原因是召集事故响应团队的效率提高。</p>
+</li>
+<li>
+<p>事故响应流程保持一致，同时仍允许本地服务团队在解决过程中发挥主要作用，而不是由中央团队主导事故响应并延长MTTM/MTTR。这通过减少升级步骤和在需要人工干预时缩短控制台响应时间，从而有助于降低MTTR。</p>
+</li>
+<li>
+<p>更少的服务管理层次，减少了协调所需的开销，并释放了个人更高的工作速度。在这种情况下，人员总数没有显著变化，但他们的分布转向更广泛、更灵活的层级，而不是深度超过五级的升级体系。</p>
+</li>
+<li>
+<p>创建被视为在各行业都有效且有用的理想服务水平目标，这与转型前盛行的孤岛式思维形成对比。这导致了SLO在整个业务范围内的扩散形成了飞轮效应。</p>
+</li>
+<li>
+<p>事后分析不再侧重追究责任，重复事件的发生频率也出现了可衡量的下降<a data-primary="banks, retrofitting SRE practices case study" data-startref="bnk_retrofit" data-type="indexterm" id="id2932"/>。</p>
+</li>
+</ul>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="案例研究：大规模抵押贷款贷方" data-type="sect2"><div class="sect2" id="ch22_case_study_large_scale_mortgage_lender">
+<h2>案例研究：大规模抵押贷款贷方</h2>
+
+<p>一家领先的抵押贷款机构<a data-primary="mortgage lenders, retrofitting SRE practices case study" data-type="indexterm" id="mortlndrs_retrofit"/>希望建立 SRE 实践，以帮助它满足借款人期望的截止时间。</p>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="情景" data-type="sect3"><div class="sect3" id="ch22_the_scenario_3">
+<h3>情景</h3>
+
+<p>这家贷款机构选择在技术上进行大量投资，因为其市场策略涉及与独立经纪人合作，这些经纪人主要根据抵押贷款体验的便利性和一致性来引入借款人。它还决定主要在内部发展这些能力，拥有数千名工程师员工构建和大规模运行软件堆栈。</p>
+
+<p>在急于扩展市场的过程中，公司更多地关注于“构建”而非“运行”，每个软件团队中都有一两个指定的个人实际上充当随叫随到的角色，有时甚至跨多个团队。在高层领导确实倡导用户体验的同时，他们对最佳情况的衡量与用户在遇到故障或性能问题时的实际体验之间存在脱节。可靠性在故障发生后可能暂时成为优先考虑的事项，但随后的改进在各团队之间分布不均，而且往往持续时间短，因为没有人真正负责生产标准，各个团队的努力缺乏协调。</p>
+
+<p>公司中的一些关键人物最终认识到这些努力是积极的，但不可持续的，他们寻求建立一个SRE文化和组织，以使公司能够真正实践以用户为中心的工程。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="采纳方法" data-type="sect3"><div class="sect3" id="ch22_the_adoption_approach_3">
+<h3>采纳方法</h3>
+
+<p>公司开始采用 SRE 的旅程，首先是在其一些最关键的服务团队中识别出关键开发人员、DevOps 工程师以及事实上的 SRE，并让他们在大约三个月的时间里参加 SRE 开发研讨会。参与者讨论了 SRE 的文化实践，学习并实践了构建 SLO 的艺术，定义了事件响应、事后分析、值班规划、重复性工作管理及类似职能的理想标准。目标是将 SRE 的种子植入他们的旗舰服务中。</p>
+
+<p>下一个优先事项是定义 SRE 参与模式。由于整个组织的规模以及在大规模投资之前需要验证概念，领导者选择从一个小型的集中式 SRE 团队开始，该团队将以以下方式与服务团队进行互动：<sup><a data-type="noteref" href="ch22-zh.html#id2933" id="id2933-marker">4</a></sup></p>
+
+<ul>
+<li>
+<p>根据需要通过问题流程提供建议、指导和帮助。</p>
+</li>
+<li>
+<p>与团队提供有时间限制的 90 天项目，以解决特定的可靠性问题或执行 SRE 方法的入职培训。</p>
+</li>
+<li>
+<p>对于最关键的服务，提供一到三名与这些团队对齐的指定 SRE，并将他们一定比例的时间（50-75%）用于提高这些服务的可靠性。</p>
+</li>
+<li>
+<p>构建持续的可靠性能力，以推广到所有服务团队。</p>
+</li>
+<li>
+<p>通过在集中团队中进行三到六个月的轮岗，为新的服务级 SRE 提供培训。</p>
+</li>
+</ul>
+
+<p>最初，这个团队主要由参与过 SRE 开发研讨会的人员组成。一旦通过与产品团队的几次关键合作展示了价值，就到了开始扩展的时候。</p>
+
+<p>集中团队开发了一个为期八周、每周八小时的 SRE 启动计划，以帮助服务团队为 SRE 采用做好准备。参与者学习了 SRE 和 SLO 基础知识，并了解了集中团队建立的工具和标准。随后，他们将这些经验带回各自团队，并在适当情况下，通过前述参与模型中的一个或多个选项，与集中团队进一步合作。该计划已多次运行，以扩大新兴 SRE 实践的影响范围。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="结果" data-type="sect3"><div class="sect3" id="ch22_the_results_3">
+<h3>结果</h3>
+
+<p class="fix_tracking">集中式 SRE 团队现在隶属于平台与可靠性工程部门，并与卓越中心团队合作制定生产标准。已有六十多名从业者成为 SRE 或嵌入各自团队的以可靠性为重点的开发人员，他们已经建立了一系列 SLO，可以用于更好地协调事件响应和应对不可持续的运营负载。此次转型仍处于初期阶段，但 SLO 的达成情况已经呈现出正向趋势，团队报告管理指令的矛盾情况有所减少。</p>
+
+<p>一个意外的改善是，“把无责原则当挡箭牌”的现象减少了。过去，团队为了避免指责任何人，只盯着自己的职责范围，并防御性地援引无责原则来推卸责任，反而拉长了 MTTM/MTTR。随着更清晰的 SRE 文化规范得到推广，并在关键服务团队中安排 SRE 推动者，组织文化正继续转向真正的无责方式：团队可以专注于技术和运维事实，而不必担心政治后果<a data-primary="mortgage lenders, retrofitting SRE practices case study" data-startref="mortlndrs_retrofit" data-type="indexterm" id="id2934"/>。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 管理现实世界的安全性：以 Waymo 为例" data-type="sect2"><div class="sect2" id="ch22_sre_managing_real_world_safety_an_example_with_waymo">
+<h2>SRE 管理现实世界的安全性：以 Waymo 为例</h2>
+
+<p>Google 事件管理（IMAG）协议<a data-primary="IMAG (Incident Management at Google)" data-type="indexterm" id="id2935"/>（见<a data-type="xref" href="ch10-zh.html#ch10">第 10 章</a>）是维持组织一致可靠性的基础。IMAG 的一个核心特征是在事件开始时就建立具有明确角色的事件响应小组。这些实践并非凭空产生；随着谷歌对事件响应的结构化方法迅速超越了最初的“人人参与并提供帮助”模型，它借鉴了大量现有的范式，发展出独特而有效的事件响应文化。</p>
+
+<p>本书第一版专设一章介绍
+<a href="https://sre.google/sre-book/lessons-learned">从其他行业学到的经验教训</a>，研究了诸如核能、航空、电信和医学等高风险领域——这些环境中的故障会立即产生现实世界的安全后果。这些行业面临的紧急情况大体可称为<em>危机</em>，对它们的响应则称为<em>危机管理</em>。</p>
+
+<p>如今科技行业的大多数SRE更多关注软件的正常运行时间，以一种更面向产品的方式，而不直接涉及安全关键的环境。软件事件通常被描述为故障。另一方面，Waymo必须在满足相同产品期望的同时，还要遵守额外的物理安全标准。这一差异反映在Waymo的事件响应实践中，我们将在这里详细描述。</p>
+
+<p>谷歌和整个科技行业的 SRE 将 IMAG 技能作为核心职责进行锻炼；调试和解决重大故障是该职业的标志。当 SRE 熟练掌握事件管理技能时，这些技能往往可以惊人地轻松应用于非技术危机，使他们能够为超越技术问题的公司范围内的事件提供有效的事件管理。在此过程中，他们可以产生超常的影响，这源于 IMAG 的跨学科根源，而这些根源起源于硅谷之外。以下各节将探讨这一能力在实践中的含义，以及组织何时应考虑将 SRE 的作用扩展到传统技术事件响应角色之外——作为公司范围内事件的先锋——通过 Waymo SRE 在公司中的附加角色案例研究。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>Waymo 是一家自动驾驶技术公司<a data-primary="Waymo" data-type="indexterm" id="id2936"/>，于 2016 年从 Google X 实验室独立出来。自那时以来，它已在六个主要城市向公众推出了全球首个完全自主的叫车服务（未来还会扩展到更多城市）。作为一家在云端使用复杂分布式系统并在车辆本身应用尖端技术的科技公司，Waymo 是科技公司如何在数字世界与物理世界之间架起桥梁的完美例子。这也是一个有用的展示，说明SRE角色如何以非传统方式应用可靠性、弹性和安全性的原则。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 值班的传统角色" data-type="sect3"><div class="sect3" id="ch22_traditional_role_of_sre_on_call">
+<h3>SRE 值班的传统角色</h3>
+
+<p>在许多组织中， <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="on-call rotation" data-type="indexterm" id="id2937"/><a data-primary="on-call rotation" data-type="indexterm" id="id2938"/>SRE 可能会参与多个值班等级。每位 SRE 都会为其本地团队或产品值班（他们的核心轮值）。一些 SRE 可能具有足够的背景知识，可以介入其更大组织内的任何事件。在 Google，有更高级别的值班轮值：对 IMAG 特别感兴趣的资深 SRE 可以选择加入名为技术事件响应团队（Tech IRT）的全工程值班轮值。这是一个中心团队，帮助协调、缓解和/或解决公司任何产品的重大服务中断问题。</p>
+
+<p>在Waymo，SRE可以加入的高级值班轮班类似于谷歌的技术IRT，但范围更广：Waymo IRT根本不专注于“技术”。Waymo的SRE像典型的SRE团队一样处理本地团队的故障。他们还负责领导Waymo事件管理计划，在重大事件中担任协调员和记录员的角色，这一角色超出了软件事件响应的范畴。</p>
+
+<p class="fix_tracking">正如<a data-type="xref" href="ch10-zh.html#ch10">第 10 章</a>所述，SRE 的事件管理传统上侧重于排障、调查和缓解。Waymo 面对的紧急情况，尤其是道路或车辆仓库中的事件，还涉及物理世界的可观测性和人工收集信息等挑战。在安全攸关的情况下，既要协调多项关键业务职能，又要让系统状态与现实情况保持一致，因此需要更高层次的事件管理角色：不仅统筹事件本身，还要统筹<em>许多必须并行推进的独立缓解工作</em>。实际上，Waymo 由可靠性工程师把 Tech IRT 模式扩展到更广的范围，除各种技术缓解措施外，还涵盖彻底解决危机所需的安全、法务、沟通和运营工作。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="SRE 协调大规模危机" data-type="sect3"><div class="sect3" id="ch22_sre_coordinating_a_large_scale_crisis">
+<h3>SRE 协调大规模危机</h3>
+
+<p>Waymo 的基石 <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="incident response model" data-type="indexterm" id="imag_wmirmod"/><a data-primary="incident response" data-secondary="Waymo model" data-type="indexterm" id="ir_wmod"/>文化是安全第一。当 Waymo 的 SRE 组织最初成立时，其系统可靠性源自谷歌的经验，并与 Waymo 对道路安全的高度关注相融合。虽然 Waymo 必须防范服务器故障，但它也必须为各种运营和安全相关的危机做好准备。为了满足这些业务需求，Waymo SRE 采用了 Alphabet SRE 团队中独特的角色。对于各种非纯工程关注的以安全为导向的事件（例如路上事故、物理安全问题以及特定地点的真实事件），Waymo SRE 将启动事件管理计划，并领导跨职能响应。</p>
+
+<p>在这个公司范围的事件响应模型中，SRE 处于主导地位，但依赖法律、安全、运营、沟通、政策、产品以及可能需要参与特定事件的其他团队的值班人员。请注意，这些团队并非工程团队，按这种方式升级的事件类型从部分与工程相关到完全无关。在这些情况下，Waymo 的 SRE 承担事件协调员的角色（稍后描述），而不负责实际的缓解措施。这是 Waymo 的 IRT 在紧急情况下与传统 SRE 值班轮换的主要区别。</p>
+
+<p>结构化事件响应的核心原则是建立明确的角色和期望，使响应者能够将认知能力专注于缓解问题，而不是去弄清楚应该打给谁或自己应该做什么。在这种模型中，SRE 通过两个独立、始终在线的角色（即，不是主要和次要角色，而是同时激活的两个主要角色）领导和促进事件响应与解决：</p>
+
+<ul>
+<li>
+<p><em>事件协调员</em>统筹整个事件及相关会议。他们不会单独解决问题，但了解各子团队的职责，以及何时启动相应的操作手册。协调员把握团队进度，从全局层面处理事件；必要时会安排分组讨论，在不干扰主团队的情况下解决细节。他们协调不同意见，确保安全和缓解工作始终优先。他们是 IRT 交响乐团的<em>指挥</em>：自己不演奏乐器，却负责指挥所有乐手。</p>
+</li>
+<li>
+<p><em>事件记录员</em>是会议的主要记录者，也负责屏幕共享。他们确保所有人充分理解当前状态，并记录事件进展。记录员会指出可能的矛盾（“你刚才说的是 <em>foo</em>，但现场最新消息是 <em>bar</em>，哪一个才对？”），并在时间线缺少关键信息时要求给出正式更新。对于持续时间较长的事件，这一角色尤其重要：准确的信息既能帮助后来加入的人迅速了解情况，也便于在事后复盘中回溯每一步。需要强调的是，尽管名称如此，这个角色<em>绝不只是速记员</em>。优秀的记录员是不可或缺的搭档，既负责多媒体呈现，也核查事实、检验判断并做好记录。他们与协调员密切配合，使事件会议顺畅高效地推进。</p>
+</li>
+</ul>
+
+<p>协调员与记录员共同引导事件响应，并听取已召集的值班专家意见。他们依据预先制定的决策矩阵和升级政策，按需引入更多或更高级别的利益相关者。事件解决（或至少得到缓解）后，两人即可结束响应。剩余工作是传统的事件后任务，并交给相应负责人：清理临时缓解措施、撰写复盘报告，以及落实行动项，防止今后发生类似事件。<a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-startref="imag_wmirmod" data-tertiary="incident response model" data-type="indexterm" id="id2939"/><a data-primary="incident response" data-secondary="Waymo model" data-startref="ir_wmod" data-type="indexterm" id="id2940"/></p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="为什么 SRE 能够管理危机而不仅仅是故障" data-type="sect3"><div class="sect3" id="ch22_why_sre_can_manage_a_crisis_and_not_just_an_outage">
+<h3>为什么 SRE 能够管理危机而不仅仅是故障</h3>
+
+<p>Waymo SRE 也会<a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-tertiary="safety-forward, non-engineering emergencies" data-type="indexterm" id="imag_wmirsaf"/><a data-primary="incident management" data-secondary="Waymo safety-forward, non-engineering emergencies" data-type="indexterm" id="ir_wmsaft"/>为分布式系统和面向客户的服务执行传统的 SRE 事件管理，但真正使该团队与众不同的是这些额外且范围更广的事件管理职责。Waymo SRE 的协调员和记录员承担的是非工程职能。他们的角色类似于传统 IMAG 中的事件指挥官和沟通负责人，但 Waymo 处理的事件并不限于软件工程，可能涉及人身伤害、财产损失乃至监管响应。那么，为什么要由可靠性<em>工程师</em>承担这些角色，解决<em>非工程</em>问题？原因有以下几点：</p>
+
+<ul>
+<li>
+<p>SRE 是事故响应人员和工程师的混合体。虽然协调员和书记角色不需要工程专业知识，但它们是纯粹事故管理的典范。Waymo 的其他角色可能对特定事件的细节了解更多，但没有人像 SRE 那样持续接受事故管理培训。让 SRE 担任高级协调员可以重用这一独特技能组合。</p>
+</li>
+<li>
+<p>协调员或事件指挥官的职责始终是确保问题得到缓解，而<em>不是亲自解决问题</em>（参见<a data-type="xref" href="ch10-zh.html#ch10">第 10 章</a>）。这意味着 SRE 是
+<em>事件管理流程</em> 自身，而不一定是作为涉及该事件系统的专家。</p>
+</li>
+<li>
+<p>SRE <em>也是</em>工程师。在 Waymo，SRE 团队负责值班，处理用于升级和组织事故级事件的工具。在缓解过程中经常使用的几个关键工具也是如此。因此，虽然核心事件通常不在SRE的专业领域内，但大部分关键的支持基础设施和流程工具是SRE的职责范围。</p>
+</li>
+<li>
+<p>有时，公司范围的大型事件<em>确实是</em>分布式系统问题——在这种情况下，一个团队经过培训，可以无缝处理、沟通并解决技术和操作方面的问题。</p>
+</li>
+<li>
+<p>正如本书中所讨论的，SRE 专注于流程改进和自动化。事件回顾通常包含最适合由 SRE 负责的工具或政策行动项。与主要事件处理流程紧密集成，使 SRE 能够通过第一手经验改进组织的流程和工具。</p>
+</li>
+<li>
+<p>通过培训现有的SRE团队领导公司范围内的非技术IRT轮值，公司获得了结构和协调。这能够缩短停机时间并降低问题的严重性，同时无需重复工作或增加大量额外人员。</p>
+</li>
+</ul>
+
+<p>归根结底，将事件管理用于以安全为先的、非工程类紧急情况的想法并不新鲜——各类组织和政府几十年来一直以某种形式在这样做。Waymo 方法的新颖之处在于重新利用现有的专业工程角色——SRE——来应用其中断管理。 <a data-primary="IMAG (Incident Management at Google)" data-secondary="Waymo" data-startref="imag_wmirsaf" data-tertiary="safety-forward, non-engineering emergencies" data-type="indexterm" id="id2941"/><a data-primary="incident management" data-secondary="Waymo safety-forward, non-engineering emergencies" data-startref="ir_wmsaft" data-type="indexterm" id="id2942"/>技能组合扩展到整个公司的事件管理。</p>
+</div></section>
+
+
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="当 SRE 是——以及不是——危机协调员的合适人选时" data-type="sect3"><div class="sect3" id="ch22_when_sre_is_and_is_not_a_good_fit_for_crisis_coordinator">
+<h3>当 SRE 是——以及不是——危机协调员的合适人选时</h3>
+
+<p>由 SRE 承担广泛职责的<a data-primary="IMAG (Incident Management at Google)" data-secondary="crisis coordination considerations" data-type="indexterm" id="imag_ccordcons"/><a data-primary="incident management" data-secondary="crisis coordination considerations" data-type="indexterm" id="ir_cordcons"/>事件管理模式，并不适合每一家企业或每一个行业。不过，在评估是否扩展 SRE 职责时，可以关注两个简单指标：组织规模是否处于合适区间，以及公司职能是否足够多样。如果公司符合这些条件，选择由 SRE 主导的事件模式，可能会更充分地利用人力，并取得更好的事件管理成效。</p>
+
+<p>首先要考虑公司的相对规模。具体界线当然因公司而异，但总体而言，这种模式既不适合很小的公司（例如早期初创企业），也不适合非常大的公司（例如拥有 5000 名员工的企业）。规模较小时，初创公司应对重大紧急事件通常比较临时，很可能所有能帮忙的人都会参加“全员上阵”的响应。规模足够大时，公司则可能有资源配备专职的企业事件响应人员，无须由 SRE 承担这一角色。让 SRE 主导公司级重大事件，最适合的规模区间是：“所有资深人员都加入视频会议”已经不可行之后（而且这种方式<em>确实</em>会比你预想的更早失效），以及“我们已有专门团队处理此类紧急事件”之前。</p>
+
+<p>第二个重要因素是公司内部职能的多样性。如果企业性质和预期事件需要广泛的跨职能参与，由 SRE 管理非技术 IRT 的效果最好。因为当许多不同角色必须协同工作时，SRE 作为不隶属于特定业务领域的事件管理者，最能通过<em>协调</em>各方创造价值。如果公司几乎全由工程师组成，预期事件也主要与工程有关，那么传统的 SRE 技术 IRT 已经足够。反之，如果营销部门占员工总数的 75%，SRE 在运营中只占很小一部分，由更了解业务背景的营销负责人领导 IRT 或许更合理。指导原则是：如果 SRE 主导的 IRT 在大多数事件中始终高度依赖同一个<a data-primary="IMAG (Incident Management at Google)" data-secondary="crisis coordination considerations" data-startref="imag_ccordcons" data-type="indexterm" id="id2943"/><a data-primary="incident management" data-secondary="crisis coordination considerations" data-startref="ir_cordcons" data-type="indexterm" id="id2944"/>职能群体，这种模式可能就不合适。</p>
+</div></section>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="用于安全和隐私的SRE" data-type="sect1"><div class="sect1" id="ch22_sre_for_security_and_privacy">
+<h1>用于安全和隐私的SRE</h1>
+
+<p>SRE 的事件<a data-primary="security" data-secondary="risk identification considerations" data-type="indexterm" id="sec_rskidcons"/><a data-primary="risk management" data-secondary="risk identification" data-type="indexterm" id="rskman_rskid"/> 管理技能组合并不是唯一可以跨职能使用的多用途资产。成功的可靠性工程依赖于建设性悲观主义的态度——也就是说，观察一个系统并理解它的薄弱环节在哪里，这些薄弱环节在什么条件下和以何种方式可能会失效，以及如何加强、重新设计甚至移除它们。<sup><a data-type="noteref" href="ch22-zh.html#id2945" id="id2945-marker">5</a></sup></p>
+
+<p>SRE 只是利用这些视角来将风险控制在可容忍范围内的一个学科；还有几个其他角色，SRE 经常与之互动，也分享这种态度——只是对手不同而已。从某种意义上说，SRE 的对手是这样一个简单的事实：在足够大的规模下，即使是十亿分之一的概率也会频繁发生，需要被认真对待。相关角色则会考虑其他对手：最常见的是在安全环境中，有人试图滥用系统并将其用于非预期目的。同样，在隐私环境中，对手可能试图以意想不到的方式使用系统，从而发现他们不应该知道的其他用户的信息。</p>
+
+<p>对隐私、可靠性和安全性的威胁建模是有效工程师评估系统（无论是设计时还是实际实现时）的关键部分。<sup><a data-type="noteref" href="ch22-zh.html#id2946" id="id2946-marker">6</a></sup> 虽然 SRE 可能将容量不足视为威胁，并考虑负载削减、将流量转向其他位置或降低响应质量作为可能的缓解措施，但隐私工程师可能会评估同一系统的重新识别风险，并通过匿名化或严格限制数据访问和保留来缓解该风险。</p>
+
+<p>隐私、可靠性和安全性也共享许多日常任务，尽管带有各自领域的特点。每个功能：</p>
+
+<ul class="pagebreak-before less_space">
+<li>
+<p>对事件做出回应<sup><a data-type="noteref" href="ch22-zh.html#id2947" id="id2947-marker">7</a></sup></p>
+</li>
+<li>
+<p>尝试从事故中学习并识别减轻措施、预防措施，甚至架构和结构方法，以使整个类别的故障变得不可能</p>
+</li>
+<li>
+<p>建立共识并理想情况下实施这些响应</p>
+</li>
+<li>
+<p>记录所学内容以便将来受益</p>
+</li>
+</ul>
+
+<p>当发现新的漏洞时，安全团队和 SRE 团队通常会密切合作，在不影响可用性的情况下尽快在整个系统中修补它。以下各节将描述 <a data-primary="security" data-secondary="risk identification considerations" data-startref="sec_rskidcons" data-type="indexterm" id="id2948"/><a data-primary="risk management" data-secondary="risk identification" data-startref="rskman_rskid" data-type="indexterm" id="id2949"/>一些展示安全性与可靠性之间关键联系的事件。</p>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Crowdstrike 软件更新后的 IT 中断" data-type="sect2"><div class="sect2" id="ch22_it_disruptions_after_crowdstrike_software_update">
+<h2>Crowdstrike 软件更新后的 IT 中断</h2>
+
+<p>2024 年 7 月 19 日，全球各地的企业<a data-primary="Crowdstrike, software update incident response" data-type="indexterm" id="id2950"/>报告了由 CrowdStrike Falcon 安全软件引发的大范围 IT 中断。Falcon 是提供多种安全服务的端点保护平台，受影响组织遍及众多
+<a href="https://oreil.ly/tm5dJ">行业</a>。谷歌云
+<a href="https://oreil.ly/zU2yl">检测到</a>
+一些客户在 Google Compute Engine (GCE) 上运行的 Windows 虚拟机遇到了蓝屏死机和崩溃循环。这些运行 CrowdStrike Falcon 的虚拟机在 CrowdStrike 软件更新后开始出现故障。CrowdStrike 迅速部署了一个
+<a href="https://oreil.ly/C-Hiv">修复程序</a>，但部分客户仍受到影响。</p>
+
+<p>正如<a href="https://oreil.ly/f2Ds6">《构建安全可靠的系统》第 15 章</a>所指出的：“<em>大多数系统最终都会失败</em>。调查复杂系统的能力取决于多项因素：除了能够访问足够的日志和调试信息来源，还必须具备适当的专业知识。”在 CrowdStrike 事件期间，谷歌客户支持团队收到了大量请求。他们的首要任务是确定谁能找出促成因素并为客户解决问题，这要求他们了解<a href="https://oreil.ly/lE_uA">角色与职责</a>。尽管 GCE SRE 看起来是调查的合适团队，但其职责范围不包括与客户环境特定问题相关的事件；他们的重点是虚拟机基础设施。支持尝试联系的第二个团队是 Guest OS 工程团队，他们也无法提供帮助，因为 CrowdStrike 是第三方软件，客户需要手动安装在他们的虚拟机上，并不是作为 Google Windows 镜像的一部分提供的。最终，支持联系了 CrowdStrike，他们合作找到了一个解决方案。</p>
+
+<p class="pagebreak-before less_space">虽然谷歌云服务未受到直接影响，谷歌云团队仍与 CrowdStrike 紧密合作，帮助客户解决剩余问题，例如在谷歌云恢复虚拟机上运行命令以修复受影响的文件（见 <a href="https://oreil.ly/N_qI8">GitHub</a>）。成功应对这次可靠性中断，需要客户支持团队跨越组织边界，与 SRE 和安全团队合作，找出安全软件所引发问题的根本原因。</p>
+</div></section>
+
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Log4j 漏洞" data-type="sect2"><div class="sect2" id="ch22_log4jvulnerability">
+<h2>Log4j 漏洞</h2>
+
+<p>Apache 日志框架 Log4j<a data-primary="Log4j, vulnerability incident response" data-type="indexterm" id="lg4j_vuln"/> 是一个基于 Java 的开源日志框架，用于收集和管理系统活动信息，而这些信息对
+<a href="https://oreil.ly/zA7Si">问题调查</a>至关重要。Log4j 免费、易用，而且非常擅长完成其设计用途，因此深受 Java 开发人员欢迎，并被嵌入无数软件包。</p>
+
+<p>2021 年 11 月，人们发现一个漏洞，攻击者可能借此攻陷运行 Log4j 的系统，并在易受攻击的服务器上执行任意代码。美国国家标准与技术研究院（NIST）在国家漏洞数据库中发布了一项关键 CVE（通用漏洞披露，用于编目漏洞），严重性评分为 10/10（最高级别）。据<a href="https://oreil.ly/6F5RN">网络安全审查委员会</a>介绍，该漏洞可通过向 Log4j 发送特制日志消息来利用。攻击者如果能够控制日志消息或其参数，在启用消息查找替换时，可以执行从远程服务器加载的任意代码（见
+<a href="https://oreil.ly/QGFx9">谷歌云 关于调查和应对 Apache 的建议
+<em>Log4j 2</em> 漏洞</a>）。</p>
+
+<p>随着 Log4j 漏洞的范围和紧迫性浮出水面，谷歌的中央安全团队与技术事件响应小组（Tech IRT）合作应对该问题。技术事件响应小组在各部门启动了团队，以创建可扩展的响应小组来应对整个组织的问题。每个响应小组都被要求执行红色代码响应（Code Red）。<sup><a data-type="noteref" href="ch22-zh.html#id2951" id="id2951-marker">8</a></sup> 红色代码的退出标准包括多个要求，其中包括将所有 Log4j 实例升级到安全版本、在暂时无法升级的情况下提交例外情况，以及记录团队负责的每个系统的状态。这些初始步骤由 SRE 和安全部门集中协调。</p>
+
+<p class="pagebreak-before less_space">随着内部调查推进，沟通和客户支持团队持续发布安全公告，在需要客户采取行动时发送<a href="https://oreil.ly/eVH2j">强制性服务公告（MSA）</a>，并共享相关信息。</p>
+
+<p>大规模响应需要SRE、安全、技术项目管理、产品、支持、传播和法律团队的协作。其中一个特别顺利的方面是在Code Red开始时定义端到端流程。此外，保持对已经识别出风险并需要修复的产品的概览，使得可以集中追踪进展和代码更改，而无需与特定联系人进行直接沟通。在响应期间，执行和高级领导的赞助、参与和优先排序至关重要，这次响应正值假期期间的代码冻结期。需要改进的一个方面是验证过程：产品团队本可以使用更具体的说明，来展示他们已将系统升级到安全版本。</p>
+
+<p>除了 Log4j 漏洞事件本身的细节，关于 SRE 与安全团队为何必须紧密协作，更多通用层面的原因可参见
+<a href="https://oreil.ly/9kx2j"><em>《构建安全可靠的系统》</em>第 1 章</a>。快速恢复、调查系统和日志、依照 IMAG 协议开展全面危机管理，以及 Tech IRT 的组织结构，都有助于有效应对大规模安全事件。</p>
+
+<p>软件质量、隐私、可靠性和安全领域的从业者，都能从相邻学科中学到很多。不要害怕研究同行多年来积累的经验，看看其中是否有<a data-primary="Log4j, vulnerability incident response" data-startref="lg4j_vuln" data-type="indexterm" id="id2952"/>值得在自己组织中借鉴的做法。</p>
+</div></section>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="总结" data-type="sect1"><div class="sect1" id="ch22_conclusion">
+<h1>总结</h1>
+
+<p>在大型科技公司之外实施 SRE 原则需要的是文化转变，而不仅仅是简单的工具强制。主要的挑战是将经过验证的可靠性原则和实践适应为适合你组织的灵活工具包。要取得成功，你需要选择影响最大的实践（例如定义 SLO 和 SLI、减少重复性工作，以及鼓励无责备的事后分析文化），并使其与你公司的独特规模、预算、业务优先级和监管约束相一致。你和你的组织必须努力定义对你来说 SRE 的意义。你对 SRE 的采纳可能表现为平台工程、专门的值班轮换，或增强的 DevOps 职能。一旦那项工作完成，你需要确保新的 SRE 团队拥有必要的自主权和管理层的支持，以便推动提升你们可靠性标准所需的工程工作。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2913"><sup><a href="ch22-zh.html#id2913-marker">1</a></sup> 参见<a data-type="xref" href="ch06-zh.html#ch06_on_call_considerations">“值班注意事项”</a>中的建议。</p><p data-type="footnote" id="id2927"><sup><a href="ch22-zh.html#id2927-marker">2</a></sup> 通用缓解措施是能够缩短多种生产中断的持续时间或降低其影响的措施，而不是只针对某一种具体故障场景定制的措施。</p><p data-type="footnote" id="id2931"><sup><a href="ch22-zh.html#id2931-marker">3</a></sup> 例如 <a href="https://r9y.dev">r9y</a>。</p><p data-type="footnote" id="id2933"><sup><a href="ch22-zh.html#id2933-marker">4</a></sup> 参见<a data-type="xref" href="ch07-zh.html#ch07_kitchen_sink">“包揽一切”</a>中的说明。</p><p data-type="footnote" id="id2945"><sup><a href="ch22-zh.html#id2945-marker">5</a></sup> 参见 Todd Underwood 在第 27 届大型计算机系统管理会议（LISA ’13）上的演讲<a href="https://oreil.ly/5ux36">《Post-ops：关于软件、脆弱性与可靠性的非手术故事》</a>；演示文稿也可<a href="https://oreil.ly/axmmO">在线获取</a>。</p><p data-type="footnote" id="id2946"><sup><a href="ch22-zh.html#id2946-marker">6</a></sup> 有关主要面向安全领域的威胁建模概述，请参见 Heather Adkins 等人所著《构建安全可靠的系统》的<a href="https://oreil.ly/E2lLz">第 14 章</a>（<em>O’Reilly，2020</em>），以及 Gayathri Mohan 与 Jim Gumbley 的 2025 年文章<a href="https://oreil.ly/qjF3b">《软件团队威胁建模指南》</a>。在隐私领域，请参见 Cara Bloom 在 PEPR ’22 上的演讲<a href="https://oreil.ly/yZOCP">《隐私威胁建模》</a>；在可靠性领域，请参见<a data-type="xref" href="ch12-zh.html#ch12">第 12 章</a>。</p><p data-type="footnote" id="id2947"><sup><a href="ch22-zh.html#id2947-marker">7</a></sup> 有关隐私事件响应，请参见 Lea Kissner 在 PEPR 2020 上的演讲<a href="https://oreil.ly/mZat1">《事情出错时》</a>。有关更广泛的安全响应注意事项，请参见 Alex Nelson 等人的<a href="https://oreil.ly/xAfwD">《网络安全风险管理的事件响应建议与注意事项》</a>（NIST 特别出版物 800-61 第三版，2025），以及 Heather Adkins 等人所著《构建安全可靠的系统》（O’Reilly，2020）的<a href="https://oreil.ly/CDHo8">第 17 章<em>（安全响应）</em></a>。</p><p data-type="footnote" id="id2951"><sup><a href="ch22-zh.html#id2951-marker">8</a></sup> 谷歌使用颜色代码表示不同类型紧急情况和战略举措的严重程度。红色代码的优先级最高，适用于已经造成重大损害，或将在未来 24 至 48 小时内造成损害的问题。黄色代码的优先级次之，适用于可能在下个季度引发业务问题或中断的问题。</p></div></div></section></body></html>
