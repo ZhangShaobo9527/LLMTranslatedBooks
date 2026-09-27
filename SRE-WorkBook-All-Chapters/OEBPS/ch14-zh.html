@@ -1,0 +1,257 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>配置设计与最佳实践</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 14. Configuration Design and Best Practices" data-type="chapter" epub:type="chapter"><div class="chapter" id="configuration_design_and_best_practices">
+<h1><span class="label">第 14 章　</span>配置设计与最佳实践</h1>
+
+<p class="byline">作者：Štěpán Davidovič<br/>
+Niall Richard Murphy、Christophe Kalt 和 Betsy Beyer 参与撰写</p>
+
+<p>无论在哪里，配置系统都是 SRE 的常见工作。<a contenteditable="false" data-primary="configuration" data-type="indexterm" id="ix_cfg"/> 这项工作可能既令人疲惫，又因细节繁多而令人沮丧；如果工程师并不十分熟悉所配置的系统，或者配置在设计时没有充分考虑清晰性和易用性，情况尤其如此。配置通常发生在两类场景中：一是在时间充裕时完成初始设置，二是在处理事故、需要紧急重新配置时。</p>
+
+<p>本章从基础设施系统设计者和维护者的视角审视配置，并介绍我们以安全、可持续的方式设计配置时积累的经验与策略。</p>
+
+<section data-pdf-bookmark="What Is Configuration?" data-type="sect1"><div class="sect1" id="what_is_configurationquestion_mark">
+<h1>什么是配置？</h1>
+
+<p>部署软件系统时，我们不会把它们视为固定不变的事物。<a contenteditable="false" data-primary="configuration" data-secondary="about" data-type="indexterm" id="idm139660638862032"/>业务需求、基础设施要求和其他因素不断演变，系统因而始终处于变化之中。如果需要迅速改变系统行为，而代码变更又必须经过成本高昂、耗时漫长的重新构建和部署流程，那么修改代码就无法满足要求。此时可以使用配置（configuration）：粗略地说，它是一种用于修改系统行为的人机界面，能以较低开销改变系统功能。SRE 在部署系统、调优性能以及响应事故时经常使用配置。</p>
+
+<p class="pagebreak-before">可以把系统看成由三个关键部分组成：</p>
+
+<ul>
+	<li>
+	<p>软件</p>
+	</li>
+	<li>
+	<p>系统处理的数据集</p>
+	</li>
+	<li>
+	<p>系统配置</p>
+	</li>
+</ul>
+
+<p>这些部分凭直觉不难辨认，但实际往往没有清晰的界线。<a contenteditable="false" data-primary="programming languages" data-secondary="use for configuration" data-type="indexterm" id="idm139660638858240"/>例如，许多系统使用编程语言进行配置，或至少能够引用编程语言。Apache 及其模块就是一例，例如 <a href="http://bit.ly/2HcOqen">mod_lua</a> 及其请求钩子；另一个例子是窗口管理器 XMonad 及其<a href="http://bit.ly/2JlpXJg">基于 Haskell 的配置</a>。同样，数据集也可能包含代码，例如 SQL 存储过程，其复杂程度足以构成完整应用。</p>
+
+<p>良好的配置界面能让用户快速、有把握地修改配置，并对变更进行测试。如果用户没有简单明了的配置更新方式，就更容易犯错，还会面临更高的认知负担和陡峭的学习曲线。</p>
+
+<section data-pdf-bookmark="Configuration and Reliability" data-type="sect2"><div class="sect2" id="configuration_and_reliability">
+<h2>配置与可靠性</h2>
+
+<p>系统最终由人管理，因此配置也由人负责。<a contenteditable="false" data-primary="configuration" data-secondary="and reliability" data-type="indexterm" id="idm139660638852064"/><a contenteditable="false" data-primary="reliability" data-secondary="configuration and" data-type="indexterm" id="idm139660638851008"/>配置人机界面的质量，会影响组织可靠运行系统的能力。配置界面设计得好坏，对系统长期可维护性的影响，与代码质量的影响类似。</p>
+
+<p>不过，配置与代码在几个方面存在显著差异。通过代码改变系统能力，通常要经历漫长而复杂的流程，包括小步增量修改、代码审查和测试。相比之下，只改一个配置项就可能使功能发生巨变。例如，一条错误的防火墙规则就可能把您挡在自己的系统之外。与代码不同，配置往往存在于未经测试、甚至无法测试的环境中。</p>
+
+<p>系统配置有时必须在巨大压力下修改。事故期间，配置系统能否简单、安全地调整至关重要。早期飞机的界面设计就是前车之鉴：令人困惑的控制装置和指示仪表曾导致事故。当时的研究表明，无论飞行员的技能或经验如何，操作失误都很常见。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn1" id="ch14fn1-marker">1</a></sup> 易用性与可靠性之间的联系同样适用于计算系统。设想一下，把操纵杆和表盘式仪表换成 <em>.conf</em> 文件与监控图表后会怎样。</p>
+</div></section>
+
+<section data-pdf-bookmark="Separating Philosophy and Mechanics" data-type="sect2"><div class="sect2" id="separating_philosophy_and_mechanics">
+<h2>区分理念与机制</h2>
+
+<p>设计新软件，或用现有软件组件组装新系统时，我们通常都会讨论配置。 <a contenteditable="false" data-primary="configuration" data-secondary="separating philosophy and mechanics" data-type="indexterm" id="idm139660638840768"/>系统要怎样配置？配置如何加载？我们把配置这个总主题分为两部分：配置理念与配置机制。</p>
+
+<p>配置理念讨论的是完全独立于所选语言及其他实现机制的方面，包括如何组织配置、如何选择恰当的抽象层次，以及如何顺畅支持不同的用例。</p>
+
+<p>配置机制则涵盖语言设计、部署策略以及与其他系统交互等主题。本章对机制着墨较少，部分原因是语言选择等话题在业界已有广泛讨论。此外，一个组织可能早已有配置基础设施等强约束，因此配置机制很难一概而论。下一章介绍 Jsonnet，将以现有软件为背景给出配置机制、尤其是语言设计方面的实际示例。</p>
+
+<p>把理念与机制分开讨论，有助于更清晰地分析配置。实际工作中，如果配置要求用户提供大量难以理解的输入，那么 XML 或 Lua 等配置语言的实现细节并不重要。反过来，即使输入本身极其简单，若必须通过非常笨拙的界面录入，也会产生问题。以（非常）早期的 Linux 内核配置过程为例：用户必须在命令行终端中依次执行命令，逐项设置参数。哪怕只纠正一个最简单的错误，也要从头重走一遍配置流程。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn2" id="ch14fn2-marker">2</a></sup></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Configuration Philosophy" data-type="sect1"><div class="sect1" id="configuration_philosophy">
+<h1>配置理念</h1>
+
+<p>本节讨论与具体实现完全无关的配置问题，因此这些原则适用于各种实现。<a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-type="indexterm" id="ix_cfgphil"/></p>
+
+<p>按照下面介绍的理念，最理想的配置就是完全不需要配置。在理想情况下，系统会根据部署方式、工作负载，或新系统部署时已经存在的配置片段，自动识别正确配置。当然，对许多系统而言，这个理想在实践中很难完全实现。不过，它明确指出了配置应前进的方向：减少大量可调参数，走向简单。</p>
+
+<p>过去，关键任务系统会提供大量控制装置（本质上就是系统配置），但也要求操作员接受大量培训。请看<a data-type="xref" href="#control_panel_in_the_nasa_spacecraft_cont">图 14-1</a>所示的 NASA 航天器控制中心复杂操作台。在现代计算机系统中，对业界绝大多数组织而言，这类培训已不再可行。</p>
+
+<figure><div class="figure" id="control_panel_in_the_nasa_spacecraft_cont"><img alt="NASA 航天器控制中心的控制台，展示了配置可能达到的复杂程度" src="assets/tsrw_1401.png"/>
+<h6><span class="label">图 14-1 </span>NASA 航天器控制中心的控制台，展示了配置可能达到的复杂程度</h6>
+</div></figure>
+
+<p>这种理想状态虽然会削弱我们对系统的控制能力，却也减少了出错面，并降低了操作员的认知负担。随着系统日益复杂，操作员的认知负担变得越来越<span class="keep-together">重要</span>。</p>
+
+<p>我们在 Google 的实际系统中运用这些原则后，系统通常很容易在内部得到广泛采用，用户支持成本也很低。</p>
+
+<section data-pdf-bookmark="Configuration Asks Users Questions" data-type="sect2"><div class="sect2" id="configuration_asks_users_questions">
+<h2>配置是在向用户提问</h2>
+
+<p>无论配置什么、采用何种方式配置，人机交互最终都可以归结为一个向用户提问的界面，请用户输入系统应如何运行。<a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-tertiary="configuration asks users questions" data-type="indexterm" id="idm139660638834720"/>无论用户是在编辑 XML 文件，还是在使用图形化配置向导，这种抽象方式都成立。</p>
+
+<p>在现代软件系统中，可以从两种不同的<span class="keep-together">视角</span>看待这个模型：</p>
+
+<dl>
+	<dt><dfn>以基础设施为中心的视角</dfn></dt>
+	<dd><p>应当提供尽可能多的配置项。<a contenteditable="false" data-primary="infrastructure-centric view (configuration)" data-type="indexterm" id="idm139660638818912"/>这样用户便能精确地按自身需求调节系统。配置项越多越好，因为系统可以调到尽善尽美。</p></dd>
+	<dt><dfn>以用户为中心的视角</dfn></dt>
+	<dd><p>配置会提出一系列基础设施问题；用户必须先回答这些问题，才能继续处理真正的业务目标。<a contenteditable="false" data-primary="user-centric view (configuration)" data-type="indexterm" id="idm139660638816048"/> 配置项越少越好，因为回答配置问题是一种负担。</p></dd>
+</dl>
+
+<p>基于尽量减少用户输入这一基本理念，我们更倾向于以用户为中心的视角。</p>
+
+<p>这项软件设计决策的影响并不限于配置。以用户为中心设计配置，意味着软件必须围绕核心受众的一组具体用例来设计，因此需要开展用户研究。相反，以基础设施为中心的软件实际上只提供基础能力；要把它变成实用系统，用户还必须完成大量配置。这两种模式并非截然对立，但要兼顾二者可能相当困难。看似违反直觉的是，配置选项有限的软件有时比功能极其灵活的软件更容易普及：因为软件基本能够“开箱即用”，用户上手所需的投入会小得多。</p>
+
+<p>最初采用基础设施中心视角的系统，可以随着自身成熟，通过多种方式移除一些配置项，逐渐转向以用户为中心；后文将讨论其中若干方法。</p>
+</div></section>
+
+<section data-pdf-bookmark="Questions Should Be Close to User Goals" data-type="sect2"><div class="sect2" id="questions_should_be_close_to_user_goals">
+<h2>问题应贴近用户目标</h2>
+
+<p>既然遵循以用户为中心的配置理念，就应确保用户能轻松理解所提问题与自身目标的关系。<a contenteditable="false" data-primary="user-centric view (configuration)" data-secondary="questions asked should be close to user goals" data-type="indexterm" id="idm139660638833120"/><a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-tertiary="questions should be close to user goals" data-type="indexterm" id="idm139660638801984"/> 用户输入的性质可以看成一条连续谱：一端是用户用自己的语言描述需求，配置项较少；另一端则由用户精确描述系统应怎样实现需求，配置项更多。</p>
+
+<p>可以用泡茶来类比系统配置。配置项较少时，用户只需说“热绿茶”，就能得到大致符合要求的饮品。连续谱的另一端，则要指定整个过程：水量、烧水温度、茶叶品牌与口味、浸泡时间、茶杯类型，以及杯中茶水的量。更多配置项或许能让结果更接近完美，但严格遵循这些细节所付出的成本，可能超过一杯近乎完美的茶所带来的边际收益。</p>
+
+<p>这个类比对用户和配置系统的开发者都有帮助。用户指定精确步骤时，系统必须照做；如果用户改为描述高层目标，系统就可以持续演进，不断改进目标的实现方式。为此，第一步必须事先充分理解用户希望系统实现什么目标。</p>
+
+<p>为了具体说明这条连续谱在实践中的表现，可以考虑作业调度。假设您需要运行一次性的分析流程。像 <a href="https://kubernetes.io/">Kubernetes</a> 或 <a href="http://mesos.apache.org/">Mesos</a> 这样的系统可以帮助您实现运行分析这一<em>真正</em>目标，而不必操心分析流程究竟应在哪台或哪些物理机器上运行。</p>
+</div></section>
+
+<section data-pdf-bookmark="Mandatory and Optional Questions" data-type="sect2"><div class="sect2" id="mandatory_and_optional_questions">
+<h2>必答问题与可选问题</h2>
+
+<p>一套配置可能包含两类问题：必答问题与可选问题。 <a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-tertiary="mandatory and optional questions" data-type="indexterm" id="idm139660638802640"/><a contenteditable="false" data-primary="user-centric view (configuration)" data-secondary="mandatory and optional configuration questions" data-type="indexterm" id="idm139660638810352"/>必须回答必答问题，配置才能提供任何功能。例如，某项操作的费用应由谁承担。可选问题不决定核心功能，但回答后可以提升功能质量，例如设置工作进程数量。</p>
+
+<p>为了保持以用户为中心并便于采用，系统应尽量减少必答配置问题。这并不容易，却十分重要。有人可能认为增加一两个小步骤成本很低，但工程师的日常工作往往就是由无穷无尽的小步骤串成的。有原则、有系统地减少这些小步骤，能够显著提高生产效率。</p>
+
+<p>最初的必答问题通常来自设计系统时考虑过的问题。减少必答问题最容易的办法，是将其改为可选问题，也就是提供对大多数乃至全部用户都安全有效的默认答案。例如，与其要求用户指定是否试运行，不如默认执行试运行。</p>
+
+<p>默认值通常是静态的硬编码值，但并非必须如此。它也可以根据系统的其他属性动态确定。善用动态默认值，可以进一步简化配置。</p>
+
+<p>下面用几个例子说明动态默认值。计算密集型系统通常可以通过一个配置项决定部署多少个计算线程。动态默认值可以让部署的线程数等于系统（或容器）的可用处理器核心数；此时，单一静态默认值并无用处。采用动态默认值后，就不必要求用户针对系统部署的每个平台确定恰当的线程数。同样，单独部署在容器中的 Java 二进制程序，可以根据容器的可用内存自动调整堆限制。这两个动态默认值示例都反映了常见部署方式。如果需要限制资源用量，配置中仍应允许覆盖动态默认值。</p>
+
+<p>已经实现的动态默认值未必适合所有人。随着时间推移，用户可能偏好其他做法，并要求加强对动态默认值的控制。如果相当一部分配置用户都报告动态默认值有问题，很可能说明决策逻辑已经不符合当前用户群体的需求。此时应考虑做覆盖面更广的改进，让动态默认值无需增加配置项也能正常工作。如果只有少数用户不满意，让他们手动设置配置项可能更合适。系统复杂度越高，用户付出的工作也越多，例如阅读文档所需的认知负担会增加。</p>
+
+<p>无论选择静态还是动态默认值，在为可选问题确定默认答案时，都要仔细考虑选择的影响。经验表明，大多数用户会沿用默认值，所以这既是机会也是责任。恰当的默认值可以温和地引导用户走向正确方向，错误的默认值却会造成巨大危害。可以看看计算机科学以外的默认设置及其影响：器官捐献默认采用加入制、同时允许个人退出的国家，其 <a href="http://bit.ly/2kEGp9c">器官捐献者比例远高于</a> 默认采用退出制的国家。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn3" id="ch14fn3-marker">3</a></sup> 仅仅选定一个默认值，就会对整个医疗体系中的选择产生深远影响。</p>
+
+<p>有些可选问题一开始并没有明确用例，可以考虑彻底删除。大量可选问题可能令用户困惑，因此只有真实需求出现时才应添加配置项。最后，如果配置语言使用继承机制，那么最好允许叶级配置中的任意可选问题恢复默认值。</p>
+</div></section>
+
+<section data-pdf-bookmark="Escaping Simplicity" data-type="sect2"><div class="sect2" id="escaping_simplicity">
+<h2>突破简单配置的限制</h2>
+
+<p>到目前为止，我们一直在讨论如何把系统配置精简到最简单的形式。<a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-tertiary="escaping simplicity" data-type="indexterm" id="idm139660638795008"/>不过，配置系统可能还要照顾高级用户。回到泡茶的类比：如果我们确实需要让茶浸泡一段特定<span class="keep-together">时间</span>，该怎么办？<a contenteditable="false" data-primary="simplicity" data-secondary="escaping in configuration" data-type="indexterm" id="idm139660638807360"/></p>
+
+<p>一种兼顾高级用户的策略，是找出普通用户与高级用户需求的最低共同点，并把相应的复杂程度设为默认水平。缺点是这个决定会影响所有人：即使最简单的用例，现在也必须从底层角度来考虑。</p>
+
+<p>如果把配置理解为对默认行为的可选覆盖，用户可以先配置“绿茶”，再补充“浸泡五分钟”。这种模式仍使默认配置保持较高的抽象层次，贴近用户目标，同时允许用户微调底层细节。这种方法并不新鲜。C++ 或 Java 等高级编程语言也有类似做法：程序员可以在主要由高级语言编写的代码中加入机器（或虚拟机）指令。某些消费软件也会提供高级选项界面，让用户获得比常规界面更精细的控制。</p>
+
+<p>设计时不妨以减少整个组织花在配置上的总时数为优化目标。不仅要考虑配置操作本身，还要考虑用户面对大量选项时可能出现的决策瘫痪、走错方向后修正配置所需的时间、信心不足导致的变更速度下降等因素。比较配置设计方案时，如果某个方案能显著简化最常见用例，那么即使它要求用更少但难度高得多的步骤完成复杂配置，也可能更值得选择。</p>
+
+<p>如果不只是极少数用户需要复杂配置，说明您可能误判了常见用例。此时应重新审视系统最初的产品假设，并开展更多用户研究。<a contenteditable="false" data-primary="configuration" data-secondary="philosophy of" data-startref="ix_cfgphil" data-type="indexterm" id="idm139660638784688"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Mechanics of Configuration" data-type="sect1"><div class="sect1" id="mechanics_of_configuration">
+<h1>配置机制</h1>
+
+<p>前文讨论的是配置理念。 <a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-type="indexterm" id="ix_cfgmech"/>本节转而关注用户与配置交互的具体机制。</p>
+
+<section data-pdf-bookmark="Separate Configuration and Resulting Data" data-type="sect2"><div class="sect2" id="separate_configuration_and_resulting_data">
+<h2>将配置与生成的数据分离</h2>
+
+<p>配置应使用哪种语言存储，是一个绕不开的问题。可以选择 INI、YAML 或 XML 文件那样的纯数据形式。<a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-tertiary="separating configuration and resulting data" data-type="indexterm" id="idm139660638773216"/> 也可以用高级语言存储配置，以支持灵活得多的配置方式。<a contenteditable="false" data-primary="languages, configuration" data-secondary="choosing language to store configuration in" data-type="indexterm" id="idm139660638769184"/></p>
+
+<p>归根结底，向用户提出的所有问题都会转化为静态信息。其中可能包括“应使用多少个线程？”这种显然静态的答案；即使是“每个请求应使用哪个函数？”，也不过是对某个函数的静态引用。</p>
+
+<p>对于配置<a contenteditable="false" data-primary="code" data-secondary="configuration as code or data" data-type="indexterm" id="idm139660638771616"/>究竟是代码还是数据这个由来已久的问题，我们的经验表明，同时采用<em>代码和数据</em>并将二者分离，是最佳选择。<a contenteditable="false" data-primary="programming languages" data-secondary="configuration as code" data-type="indexterm" id="idm139660638763664"/>系统基础设施应处理普通的静态数据，<a contenteditable="false" data-primary="data formats for configuration information" data-type="indexterm" id="idm139660638761840"/>其格式可以是 <a href="http://bit.ly/1HhFC5L">Protocol Buffers</a>、<a href="http://yaml.org/">YAML</a> 或 <a href="https://www.json.org/">JSON</a>。这并不意味着用户必须直接与纯数据交互。用户可以使用生成这些数据的高级界面；而这种数据格式又可以供 API 使用，以便进一步叠加系统并实现自动化。</p>
+
+<p>这种高级界面几乎可以采用任何形式：基于 Python 的领域特定语言（DSL）、Lua 等高级语言，或 Jsonnet 这样的专用语言（我们将在 <a data-type="xref" href="ch15.html#configuration_specifics">第 15 章</a>中详细讨论）。可以把这类界面视为编译过程，就像处理 C++ 代码一样。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn4" id="ch14fn4-marker">4</a></sup> 高级界面甚至可以完全不用语言，而由 <span class="keep-together">Web 界面</span>接收配置。</p>
+
+<p>从刻意与静态数据表示分离的配置界面起步，可以提高系统的部署灵活性。不同组织可能有不同的文化惯例或产品要求，例如公司内部必须使用特定语言，或需要向最终用户开放配置。这样灵活的系统可以适应多样的配置需求，也能轻松支持多种语言。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn5" id="ch14fn5-marker">5</a></sup> 参见 <a data-type="xref" href="#configuration_flow_with_a_separate_config">图 14-2</a>。</p>
+
+<p>这种分离对用户可以完全透明。用户通常只需编辑配置语言文件，其余工作都在幕后完成。例如，用户向系统提交变更后，新存储的配置会自动编译成原始数据。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn6" id="ch14fn6-marker">6</a></sup></p>
+
+<figure><div class="figure" id="configuration_flow_with_a_separate_config"><img alt="配置界面与配置数据基础设施相互分离时的配置流程。Web 界面通常也会显示当前配置，因此二者之间是双向关系。" src="assets/tsrw_1402.png"/>
+<h6><span class="label">图 14-2 </span>配置界面与配置数据基础设施相互分离时的配置流程。请注意，Web 界面通常也会显示当前配置，因此二者之间是双向关系。</h6>
+</div></figure>
+
+<p>获得静态配置数据后，还可以将其用于数据分析。例如，如果生成的配置数据<a contenteditable="false" data-primary="JSON" data-secondary="configuration data in" data-type="indexterm" id="idm139660638746624"/>采用 JSON 格式，就可以<a href="http://bit.ly/2szj3W3">将其载入 PostgreSQL，并通过数据库查询进行分析</a>。作为基础设施所有者，您随后可以快速、轻松地查询哪些配置参数正由哪些人使用。这类查询有助于识别可以删除的功能，或衡量有缺陷的选项会产生多大影响。</p>
+
+<p>使用最终配置数据时，最好同时保存有关配置接收方式的元数据。 <a contenteditable="false" data-primary="Jsonnet" data-type="indexterm" id="idm139660638747744"/>例如，如果知道数据来自 Jsonnet 配置文件，或者掌握该文件编译成数据之前的完整原始路径，就能追查到配置作者。</p>
+
+<p>配置语言本身采用静态数据也完全可行。例如，基础设施与界面都可以使用普通 JSON。但应避免让界面使用的数据格式与内部数据格式紧密耦合。比如，可以在内部使用一种数据结构，其中包含从配置中读取的数据结构；内部结构还可以保存完全针对实现的专用数据，而这些数据根本无需暴露到系统之外。</p>
+</div></section>
+
+<section data-pdf-bookmark="Importance of Tooling" data-type="sect2"><div class="sect2" id="importance_of_tooling">
+<h2>工具的重要性</h2>
+
+<p>工具可以决定配置系统是沦为混乱的噩梦，还是成为可持续、可扩展的系统；<a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-tertiary="importance of tooling" data-type="indexterm" id="idm139660638737264"/>但配置系统的设计者往往会忽视工具。<a contenteditable="false" data-primary="tools" data-secondary="in configuration system" data-type="indexterm" id="idm139660638736400"/>本节介绍一套理想配置系统应当具备的关键工具。</p>
+
+<section data-pdf-bookmark="Semantic validation" data-type="sect3"><div class="sect3" id="semantic_validation">
+<h3>语义验证</h3>
+
+<p>大多数语言都自带语法验证，但不要忽略语义验证。<a contenteditable="false" data-primary="languages, configuration" data-secondary="semantic validation" data-type="indexterm" id="idm139660638731120"/><a contenteditable="false" data-primary="semantic validation (configuration)" data-type="indexterm" id="idm139660638732256"/>配置即使语法有效，是否真能完成有用的工作？用户是否因为拼写错误而引用了不存在的目录？是否因为单位与预期不同，申请了实际拥有内存的一千倍？</p>
+
+<p>尽最大可能验证配置在语义上有意义，有助于防止中断并降低运维成本。面对每一种可能的错误配置，都应思考：能否在用户提交配置时就予以阻止，而不是等变更提交之后才处理？</p>
+</div></section>
+
+<section data-pdf-bookmark="Configuration syntax" data-type="sect3"><div class="sect3" id="configuration_syntax">
+<h3>配置语法</h3>
+
+<p>确保配置能实现用户意图固然关键，消除操作层面的障碍也同样重要。<a contenteditable="false" data-primary="languages, configuration" data-secondary="configuration syntax features" data-type="indexterm" id="idm139660638724480"/><a contenteditable="false" data-primary="configuration syntax, tooling for" data-type="indexterm" id="idm139660638727456"/> 从语法角度看，配置语言应提供以下能力：</p>
+
+<dl>
+	<dt><dfn>编辑器中的语法高亮（适用于公司内部使用的编辑器）</dfn></dt>
+	<dd><p>复用现有语言时，这个问题通常已经解决。不过，领域特定语言可能包含额外的“语法糖”，为其提供专门的高亮仍有帮助。</p></dd>
+	<dt><dfn>静态检查工具（linter）</dfn></dt>
+	<dd><p>使用静态检查工具识别语言使用方式中的常见不一致。<a href="https://www.pylint.org/">Pylint</a> 就是一种广为使用的语言检查工具。<a contenteditable="false" data-primary="linters" data-type="indexterm" id="idm139660638721824"/></p></dd>
+	<dt><dfn>自动语法格式化工具</dfn></dt>
+	<dd><p>内置标准化能够减少对格式这类次要问题的争论，也能在贡献者切换项目时降低认知负担。标准格式还可能使自动编辑更加容易，这对大型组织中广泛使用的系统很有帮助。现有语言中的自动格式化工具包括 clang-format<sup><a data-type="noteref" href="ch14-zh.html#ch14fn7" id="ch14fn7-marker">7</a></sup> 和 <a href="http://bit.ly/2LdJFDL">autopep8</a>。</p></dd>
+</dl>
+
+<p>这些工具让用户可以放心地编写和编辑配置，确信语法是正确的。<sup><a data-type="noteref" href="ch14-zh.html#ch14fn8" id="ch14fn8-marker">8</a></sup> 在依赖空白字符表达结构的配置中，缩进错误可能造成严重后果；标准格式化可以防止其中一部分问题。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Ownership and Change Tracking" data-type="sect2"><div class="sect2" id="ownership_and_change_tracking">
+<h2>所有权与变更跟踪</h2>
+
+<p>配置可能影响企业和机构的关键系统，因此必须做好用户隔离，并了解系统中发生了哪些变更。<a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-tertiary="ownership and change tracking" data-type="indexterm" id="idm139660638710720"/><a contenteditable="false" data-primary="ownership" data-secondary="of configurations" data-type="indexterm" id="idm139660638712128"/> 正如 <a data-type="xref" href="ch10-zh.html#postmortem_culture_learning_from_failure">第 10 章</a>所述，有效的事后总结文化不会归咎个人。不过，无论是在事故期间还是事后总结过程中，了解谁修改了配置以及配置变更如何影响系统都很有帮助。不论事故源于意外还是恶意行为，这一点都成立。</p>
+
+<p>系统中的每一段配置都应有明确的所有者。例如，使用配置文件时，可以让每个目录归一个生产团队所有。如果目录中的文件只能有一个所有者，跟踪变更者就容易得多。</p>
+
+<p>无论采用何种方式，对配置进行版本控制，<a contenteditable="false" data-primary="versioning, using with configurations" data-type="indexterm" id="idm139660638706992"/>都可以回溯并查看任意时刻的配置内容。如今，把配置文件签入 Subversion 或 Git 等版本控制系统已是常见做法；对通过 Web 界面或远程 API 接收的配置，版本控制同样重要。还可以让配置与被配置的软件建立更紧密的关联，从而避免无意中配置软件尚未提供或已不再支持的功能。</p>
+
+<p>与此相关，记录配置变更及其在系统上的实际应用情况也很有用，有时甚至是必需的。 <a contenteditable="false" data-primary="changes" data-secondary="change tracking for configurations" data-type="indexterm" id="idm139660638703760"/>提交新版配置并不总意味着配置会立即应用，后文还会详细说明。事故响应期间，如果怀疑系统配置变更是肇因，就应能迅速确定该次变更包含的全部配置编辑。这样既能有把握地回滚，也能通知配置受到影响的相关人员。</p>
+</div></section>
+
+<section data-pdf-bookmark="Safe Configuration Change Application" data-type="sect2"><div class="sect2" id="safe_configuration_change_application">
+<h2>安全应用配置变更</h2>
+
+<p>如前所述，配置能够轻易大幅改变系统功能，却往往没有单元测试，甚至难以测试。<a contenteditable="false" data-primary="changes" data-secondary="safe configuration change application" data-type="indexterm" id="idm139660638698992"/><a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-tertiary="safe configuration change application" data-type="indexterm" id="idm139660638700464"/> 为了避免可靠性事故，我们需要明确安全应用配置变更意味着什么。</p>
+
+<p>配置变更若要安全，必须具备三项主要特性：</p>
+
+<ul>
+	<li>
+	<p>能够逐步部署，避免一次性全量变更</p>
+	</li>
+	<li>
+	<p>变更被证明有危险时能够回滚</p>
+	</li>
+	<li>
+	<p>变更若导致操作员失去对系统的控制，能够自动回滚；至少也必须能够停止继续推进</p>
+	</li>
+</ul>
+
+<p>部署新配置时，应避免一次性推送到整个系统。应当逐步推送，这样就能发现问题，并在造成全面中断之前终止有问题的发布。这也是 Kubernetes 等工具更新软件或配置时采用滚动更新策略<a contenteditable="false" data-primary="rolling update strategy" data-type="indexterm" id="idm139660638692256"/>、而不是同时更新所有 Pod 的原因之一。（相关讨论参见<a data-type="xref" href="ch16.html#canarying_releases">第 16 章</a>。）</p>
+
+<p>回滚能力对于缩短事故持续时间十分重要。 <a contenteditable="false" data-primary="rollback strategy for releases" data-secondary="configuration changes" data-type="indexterm" id="idm139660638687920"/>与其尝试用临时修补来纠正问题，不如回滚导致问题的配置，往往能更快缓解中断；毕竟，人们本来就难以确信临时补丁一定会改善情况。</p>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>配置必须是自包含的（hermetic），才能前滚和回滚。如果配置依赖自包含环境之外、可能自行发生变化的外部资源，就会很难回滚。例如，存储在版本控制系统中、却引用网络文件系统上数据的配置并非自包含。</p>
+</div>
+
+<p>最后同样重要的是，系统处理可能导致操作员突然失去控制的变更时，应格外谨慎。桌面系统修改屏幕分辨率后，通常会显示倒计时；如果用户不确认变更，系统就会恢复原设置。这是因为错误的显示器设置可能使用户无法撤销变更。同样，系统管理员在设置系统时，意外通过防火墙把自己挡在系统之外也很常见。</p>
+
+<p>这些原则并非配置独有，同样适用于升级二进制程序、推送新数据集等其他已部署系统变更方式。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00074">
+<h1>总结</h1>
+
+<p>看似微小的配置<a contenteditable="false" data-primary="configuration" data-secondary="mechanics of" data-startref="ix_cfgmech" data-type="indexterm" id="idm139660638681424"/>变更也可能给生产系统带来巨大影响，因此必须有意识地设计配置，以降低这些风险。配置设计兼具 API 设计与 UI 设计的特点，应当有明确目的，而不能只是系统实现的副作用。将配置分为理念与机制，有助于我们设计内部系统时厘清思路，也能恰当地界定讨论范围。</p>
+
+<p>落实这些建议需要投入时间，并持之以恒。<a contenteditable="false" data-primary="ACM Queue article on Canary Analysis service" data-type="indexterm" id="idm139660638684544"/> 关于我们如何在实践中运用这些原则，可以参阅 <a href="http://bit.ly/2xyjq9f">ACM Queue 上关于金丝雀分析服务的文章</a>。设计这个实际内部系统时，我们花了大约一个月来减少必答问题，并为可选问题寻找合适答案。最终得到的配置系统非常简单，也因为易用而在内部得到广泛采用。用户很容易理解系统，能够有把握地修改配置，因此几乎不需要我们提供用户支持。当然，我们并未彻底消除错误配置和用户支持需求，也从未期待能够做到。<a contenteditable="false" data-primary="configuration" data-startref="ix_cfg" data-type="indexterm" id="idm139660638673792"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch14fn1"><sup><a href="ch14-zh.html#ch14fn1-marker">1</a></sup> Kim Vicente，<em>The Human Factor</em>（纽约：Routledge，2006 年），第 71—76 页。</p><p data-type="footnote" id="ch14fn2"><sup><a href="ch14-zh.html#ch14fn2-marker">2</a></sup> 尽管这显然是一种夸张说法，但这篇<a href="http://bit.ly/2J6JA8F">讨论最差音量控制界面的 Reddit 帖子</a>可以帮助我们理解：在回答同一个“音量应该是多少？”的问题时，良好与糟糕的交互机制有何差别。</p><p data-type="footnote" id="ch14fn3"><sup><a href="ch14-zh.html#ch14fn3-marker">3</a></sup> 全文：<a href="http://www.dangoldstein.com/papers/DefaultsScience.pdf"><em class="hyperlink">http://www.dangoldstein.com/papers/DefaultsScience.pdf</em></a>。</p><p data-type="footnote" id="ch14fn4"><sup><a href="ch14-zh.html#ch14fn4-marker">4</a></sup> Jsonnet 可以编译为 Kubernetes YAML，是上述类比在现实中的实例。参见<a href="http://ksonnet.heptio.com/"><em class="hyperlink">http://ksonnet.heptio.com/</em></a>。</p><p data-type="footnote" id="ch14fn5"><sup><a href="ch14-zh.html#ch14fn5-marker">5</a></sup> 当组织迁移到新技术、整合被收购的组织，或在专注于共享基础设施的同时采用不同的开发与系统管理实践时，这项能力会很有用。</p><p data-type="footnote" id="ch14fn6"><sup><a href="ch14-zh.html#ch14fn6-marker">6</a></sup> 新配置可以通过多种实际方法自动编译成原始数据。例如，如果配置存储在版本控制系统中，可以使用提交后钩子触发编译；也可以通过周期性更新流程完成，只是会产生一定延迟。</p><p data-type="footnote" id="ch14fn7"><sup><a href="ch14-zh.html#ch14fn7-marker">7</a></sup> 虽然 C++ 不太可能用来编写配置，但 <a href="http://bit.ly/2swrrG0">clang-format</a> 充分说明：即使一种语言比大多数配置语言更复杂，也完全可以实现自动格式化。</p><p data-type="footnote" id="ch14fn8"><sup><a href="ch14-zh.html#ch14fn8-marker">8</a></sup> 在超大型组织中，最好还能标注广泛复用的配置中已弃用的部分。如果已有替代方案，自动重写工具就能推动集中变更，帮助避免遗留问题。</p></div></div></section></body></html>
