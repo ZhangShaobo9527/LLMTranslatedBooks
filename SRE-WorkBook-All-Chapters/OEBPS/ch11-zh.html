@@ -1,0 +1,387 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>负载管理</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 11. Managing Load" data-type="chapter" epub:type="chapter"><div class="chapter" id="managing_load">
+<h1><span class="label">第 11 章　 </span>负载管理</h1>
+
+<p class="byline">作者：Cooper Bethea、Gráinne Sheerin、Jennifer Mace 和 Ruth King，Gary Luo 和 Gary O’Connor 参与撰写</p>
+
+<p>任何服务都不可能在所有时间都保持 100% 可用：客户端可能不顾服务承受能力，需求可能增长到原来的 50 倍，服务可能因流量激增而崩溃，甚至船锚也可能勾断跨大西洋海底电缆。有人依赖你的服务；作为服务所有者，我们关心用户。面对这一连串可能引发故障的因素，怎样才能让基础设施尽可能具备适应性和可靠性？</p>
+
+<p>本章介绍 Google 的流量管理方法，希望这些最佳实践能帮助你提升服务的效率、可靠性和可用性。多年来，我们发现，没有任何一种方案能够单独实现网络负载的均衡与稳定。因此，我们综合运用相互配合的工具、技术和策略，以维持服务的可靠性。</p>
+
+<p>在深入本章之前，建议先阅读我们的第一本 SRE 图书第 19 章（<a href="http://bit.ly/2LQ6TRQ">“前端负载均衡”</a>）和第 20 章（<a href="http://bit.ly/2J4faDU">“数据中心内的负载均衡”</a>）所讨论的理念。</p>
+
+<section data-pdf-bookmark="Google Cloud Load Balancing" data-type="sect1"><div class="sect1" id="google_cloud_load_balancing">
+<h1>Google Cloud 负载均衡</h1>
+
+<p>如今，大多数公司不会自行开发和维护全球负载均衡方案，而是选择大型公有云提供商的负载均衡服务。<a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-type="indexterm" id="ix_ldbal"/><a contenteditable="false" data-primary="Google Cloud Load Balancing" data-type="indexterm" id="ix_GCLB"/><a contenteditable="false" data-primary="Google Cloud Load Balancer (GCLB)" data-type="indexterm" id="idm139660640210928"/> 下面以 Google Cloud Load Balancer（GCLB）为大规模负载均衡的具体示例，<a contenteditable="false" data-primary="GCLB (Google Cloud Load Balancer)" data-seealso="Google Cloud Load Balancing" data-type="indexterm" id="idm139660640202080"/> 但我们介绍的最佳实践几乎都同样适用于其他云提供商的负载均衡器。</p>
+
+<p>过去 18 年间，Google 持续建设基础设施，使服务更快速、更可靠。如今，YouTube、Maps、Gmail、Search 以及众多其他产品和服务都由这些系统承载。GCLB 是我们对外提供的全球负载 <span class="keep-together">均衡</span> 方案，它源自 Google 内部开发的一套全球负载均衡系统。</p>
+
+<p>本节介绍 GCLB 的各个组件，以及它们如何协同处理用户请求。我们将跟踪一个典型用户请求从产生到送达目的地的全过程。Niantic 的 <a href="#case_study_1_pokeacutemon_go_on_gclb">Pokémon GO</a> 案例展示了 GCLB 在现实环境中的具体实现。</p>
+
+<p><a href="http://bit.ly/2LQ6TRQ">第一本 SRE 图书的第 19 章</a> 介绍了基于 DNS 的负载均衡：它是在用户连接开始之前分配负载的最简单、最有效的方法。我们也讨论了这种方法固有的问题：它依赖客户端正确地让 DNS 记录过期并重新获取记录。正因如此，GCLB 不采用 DNS 负载均衡。</p>
+
+<p>我们改用 <em>任播（anycast）</em>：这种方法不依赖 DNS 地理定位，也能把客户端引导到最近的集群。 <a contenteditable="false" data-primary="anycast" data-type="indexterm" id="idm139660640198144"/>Google 的全球负载均衡器知道客户端的位置，并将数据包导向最近的 Web 服务。这样既能用单个 <a href="http://bit.ly/2kFchKX">虚拟 IP（VIP）</a>为用户提供低延迟，又能延长 DNS 记录的生存时间（TTL），进一步降低延迟。</p>
+
+<section data-pdf-bookmark="Anycast" data-type="sect2"><div class="sect2" id="anycast">
+<h2>任播</h2>
+
+<p>任播是一种网络寻址和 <a contenteditable="false" data-primary="routing" data-secondary="anycast methodology" data-type="indexterm" id="idm139660640193376"/>路由方法。<a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="using anycast" data-type="indexterm" id="idm139660640190704"/> 它会把<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="anycast network addressing and routing" data-type="indexterm" id="idm139660640188976"/> 单个发送方的数据报路由到一组候选接收节点中拓扑距离最近的节点；这些节点都使用同一个目的 IP 地址。Google 在网络中的多个位置通过 <a href="http://bit.ly/2J5GyBi">边界网关协议（BGP）</a> 发布 IP 地址。<a contenteditable="false" data-primary="BGP (Border Gateway Protocol)" data-type="indexterm" id="idm139660640186704"/> 我们依靠 BGP 路由网格，将用户的数据包送到能够终止传输控制协议（TCP）会话的最近前端位置。<a contenteditable="false" data-primary="TCP" data-type="indexterm" id="idm139660640187312"/> 这种部署消除了单播 IP 数量膨胀以及为用户寻找最近前端的问题，但仍有两个主要问题：</p>
+
+<ul>
+	<li>
+	<p>附近用户过多，可能压垮某个前端站点。</p>
+	</li>
+	<li>
+	<p>BGP 路由重算可能会重置连接。</p>
+	</li>
+</ul>
+
+<p>假设某 ISP 经常重新计算 BGP 路由，导致其中一位用户在两个前端站点之间来回选择。每当 BGP 路由发生“抖动”，这位用户的数据包就会被导向一个没有相应 TCP 会话状态的新前端，所有进行中的 TCP 流都会被重置。为解决这些问题，我们利用连接级<a contenteditable="false" data-primary="Maglev" data-type="indexterm" id="idm139660640183984"/> 负载均衡器 Maglev（稍后介绍），即使路由发生抖动，也能让同一 TCP 流始终汇聚到同一个前端站点。我们把这项技术称为 <em>稳定任播</em>。</p>
+
+<section data-pdf-bookmark="Stabilized anycast" data-type="sect3"><div class="sect3" id="stabilized_anycast">
+<h3>稳定任播</h3>
+
+<p>如 <a data-type="xref" href="#stabilized_anycast-id00059">图 11-1</a>所示，Google 使用自研负载均衡器 Maglev 实现稳定任播。<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="anycast network addressing and routing" data-tertiary="stabilized anycast" data-type="indexterm" id="idm139660640175376"/><a contenteditable="false" data-primary="Maglev" data-secondary="implementing stabilized anycast with" data-type="indexterm" id="idm139660640175840"/><a contenteditable="false" data-primary="anycast" data-secondary="stabilized, implementation of" data-type="indexterm" id="idm139660640172832"/> 为稳定任播，我们让每台 Maglev 机器都能把客户端 IP 映射到最近的 Google 前端站点。有时，Maglev 处理一个发往任播 VIP 的数据包时，会发现该客户端其实更靠近另一个前端站点。此时，Maglev 会把数据包转发给位于最近前端站点的另一台 Maglev，由后者完成投递。最近前端站点中的 Maglev 机器只需像处理普通数据包一样处理它，并将其路由到本地后端。</p>
+
+<figure><div class="figure" id="stabilized_anycast-id00059"><img alt="稳定任播" src="assets/tsrw_1101.png"/>
+<h6><span class="label">图 11-1． </span>稳定任播</h6>
+</div></figure>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Maglev" data-type="sect2"><div class="sect2" id="maglev">
+<h2>Maglev</h2>
+
+<p><a href="http://bit.ly/2LcdhBw">Maglev</a>，如 <a data-type="xref" href="#maglev-id00060">图 11-2</a>所示，是 Google 自研的分布式包级负载均衡器。 <a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="Maglev load balancer" data-type="indexterm" id="idm139660640165136"/><a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="Maglev packet-level load balancer" data-type="indexterm" id="idm139660640165664"/>Maglev 机器是云架构不可或缺的一部分，负责管理进入集群的流量，并在各前端服务器之间提供有状态的 TCP 级负载均衡。Maglev 与传统硬件负载均衡器有几项关键区别：</p>
+
+<ul>
+	<li>
+	<p>发往某个 IP 地址的所有数据包，都可以<a contenteditable="false" data-primary="Equal-Cost Multi-Path (ECMP) forwarding" data-type="indexterm" id="idm139660640159408"/>通过 <a href="http://bit.ly/2H9vYDr">等价多路径（ECMP）转发</a>均匀分散到一组 Maglev 机器上。因此，只要向机器池添加服务器，就能提升 Maglev 的容量。均匀分散数据包还让 Maglev 能以 <em>N</em> + 1 模式提供冗余；相比传统负载均衡系统通常依靠主／备节点对实现 1 + 1 冗余，这种模式提升了可用性和可靠性。</p>
+	</li>
+	<li>
+	<p>Maglev 是 Google 的自研方案。我们对系统拥有端到端的控制权，因此可以快速实验和迭代。</p>
+	</li>
+	<li>
+	<p>Maglev 在数据中心的通用硬件上运行，大幅简化了部署。</p>
+	</li>
+</ul>
+
+<figure><div class="figure" id="maglev-id00060"><img alt="Maglev" src="assets/tsrw_1102.png"/>
+<h6><span class="label">图 11-2． </span>Maglev</h6>
+</div></figure>
+
+<p>Maglev 投递数据包时使用 <em>一致性哈希</em> 和 <em>连接跟踪</em>。 <a contenteditable="false" data-primary="connection tracking" data-type="indexterm" id="idm139660640152368"/><a contenteditable="false" data-primary="consistent hashing" data-type="indexterm" id="idm139660640151392"/>这些技术把 TCP 流汇聚到我们的 HTTP<a contenteditable="false" data-primary="Maglev" data-secondary="packet delivery using consistent hashing and connection tracking" data-type="indexterm" id="idm139660640149232"/> 反向代理上；这种代理也称为 <em>Google 前端</em>，简称 <em>GFE</em>，负责终止 TCP 会话。<a contenteditable="false" data-primary="Google Front Ends (GFE)" data-type="indexterm" id="idm139660640147040"/> 一致性哈希和连接跟踪使 Maglev 能按数据包而不是按连接数扩展。当路由器收到发往 Maglev 所托管 VIP 的数据包时，会通过 ECMP 将其转发给集群中的任意 Maglev 机器。Maglev 收到数据包后，会计算其五元组哈希值<sup><a data-type="noteref" href="ch11-zh.html#ch11fn1" id="ch11fn1-marker">1</a></sup> ，再到连接跟踪表中查找该值；表中保存着近期连接的路由结果。如果找到匹配项且所选后端服务仍然健康，Maglev 就复用该连接；否则退回到一致性哈希来选择后端。两种技术结合后，各台 Maglev 机器之间便无须共享连接状态。</p>
+</div></section>
+
+<section data-pdf-bookmark="Global Software Load Balancer" data-type="sect2"><div class="sect2" id="global_software_load_balancer">
+<h2>全局软件负载均衡器</h2>
+
+<p>GSLB 是 Google 的全局软件 <a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="Global Software Load Balancer (GSLB)" data-type="indexterm" id="idm139660640145664"/>负载均衡器。 <a contenteditable="false" data-primary="Global Software Load Balancer (GSLB)" data-type="indexterm" id="idm139660640144192"/><a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="Global Software Load Balancer (GSLB)" data-type="indexterm" id="idm139660640143120"/>它能在集群之间均衡实时用户流量，使用户需求与可用服务容量相匹配，并能以用户无感的方式处理服务故障。如 <a data-type="xref" href="#gslb">图 11-3</a>所示，GSLB 同时控制连接向 GFE 的分配，以及请求向后端服务的分配。<a contenteditable="false" data-primary="GSLB (Global Software Load Balancer)" data-type="indexterm" id="idm139660640137312"/> 借助 GSLB，我们可以使用运行在不同集群中的后端和 GFE 为用户提供服务。GSLB 不仅在前端与后端之间均衡负载，还了解后端服务的健康状况，能够自动将流量从故障集群中排空。</p>
+
+<figure><div class="figure" id="gslb"><img alt="GSLB" src="assets/tsrw_1103.png"/>
+<h6><span class="label">图 11-3． </span>GSLB</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Google Front End" data-type="sect2"><div class="sect2" id="google_front_end">
+<h2>Google 前端</h2>
+
+<p>如 <a data-type="xref" href="#gfe">图 11-4</a>所示，GFE 位于外部世界与 Google 的各类服务（网页搜索、图片搜索、Gmail 等）之间，通常是客户端 HTTP(S) 请求遇到的第一台 Google 服务器<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="Google Front End (GFE)" data-type="indexterm" id="idm139660640130800"/> 。<a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="Google Front End" data-type="indexterm" id="idm139660640128880"/><a contenteditable="false" data-primary="Google Front Ends (GFE)" data-type="indexterm" id="idm139660640126944"/> GFE 终止客户端的 TCP 和 SSL 会话，并检查 HTTP 标头及 URL 路径，以确定应由哪个后端服务处理请求。确定请求目的地后，GFE 会重新加密数据并转发请求。有关此加密过程的更多信息，请参阅白皮书 <a href="http://bit.ly/2snyOR0">“Google Cloud 中的传输加密”</a>。</p>
+
+<p>GFE 还负责对后端执行健康检查。如果后端服务器返回 <em>否定确认</em> （即对请求返回 NACK），或者健康检查超时，GFE 就停止向故障后端发送流量。<a contenteditable="false" data-primary="negative acknowledgments (NACKs)" data-type="indexterm" id="idm139660640123456"/> 我们利用这一信号，在不影响正常运行时间的情况下更新 GFE 后端。可以让 GFE 后端进入一种模式：它会让健康检查失败，但继续响应已在处理的请求。这样就能平稳地将 GFE 后端移出服务，而不打断任何用户请求。我们称之为“跛鸭”模式，第一本 SRE 图书的 <a href="http://bit.ly/2J4faDU">第 20 章</a> 对此有更详细的讨论。</p>
+
+<figure><div class="figure" id="gfe"><img alt="GFE" src="assets/tsrw_1104.png"/>
+<h6><span class="label">图 11-4． </span>GFE</h6>
+</div></figure>
+
+<p>GFE 还会与近期活跃的所有后端维持持久会话，确保请求一到达就有连接可用。这一策略有助于降低用户延迟，尤其是在 GFE 与后端之间使用 SSL 保护连接时。</p>
+</div></section>
+
+<section data-pdf-bookmark="GCLB: Low Latency" data-type="sect2"><div class="sect2" id="gclb_low_latency">
+<h2>GCLB：低延迟</h2>
+
+<p>我们的网络供给策略旨在降低最终用户访问服务的延迟。由于通过 HTTPS 协商安全连接需要<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="low latency with GCLB" data-type="indexterm" id="idm139660640117376"/><a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="GCLB, low latency with" data-type="indexterm" id="idm139660640121264"/> 客户端与服务器之间进行两次网络往返，因此最大限度降低请求在这一段所花的时间尤为重要。 <a contenteditable="false" data-primary="latency" data-secondary="low latency with GCLB" data-type="indexterm" id="idm139660640118560"/>为此，我们将网络边缘扩展到能够承载 Maglev 和 GFE 的位置。这些组件尽可能在靠近用户的位置终止 SSL，再通过长期保持的加密连接，将请求转发给网络更深处的后端服务。</p>
+
+<p>我们在这个由 Maglev 和 GFE 增强的边缘网络之上构建 GCLB。客户创建负载均衡器时，我们会配置一个任播 VIP，并设定 Maglev 在网络边缘的各个 GFE 之间进行全球负载均衡。GFE 负责终止 SSL、接收并缓冲 HTTP 请求、将请求转发给客户的后端服务，再把响应代理回用户。GSLB 是连接各层的纽带：它让 Maglev 找到最近且仍有可用容量的 GFE 位置，也让 GFE 将请求路由到最近且仍有可用容量的 VM 实例组。</p>
+</div></section>
+
+<section data-pdf-bookmark="GCLB: High Availability" data-type="sect2"><div class="sect2" id="gclb_high_availability">
+<h2>GCLB：高可用性</h2>
+
+<p>为了向客户提供高可用性，GCLB 提供可用性为 99.99% 的 SLA<sup><a data-type="noteref" href="ch11-zh.html#ch11fn2" id="ch11fn2-marker">2</a></sup> 。此外，<a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-tertiary="GCLB, high availability with" data-type="indexterm" id="idm139660640106896"/>  <a contenteditable="false" data-primary="Google Cloud Load Balancer (GCLB)" data-secondary="high availability with" data-type="indexterm" id="idm139660640105424"/>GCLB<a contenteditable="false" data-primary="availability" data-secondary="high availability with GCLB" data-type="indexterm" id="idm139660640103888"/> 还提供支持工具，帮助客户提升和管理自身应用的可用性。可以把负载均衡系统理解为一种流量管理员：正常运行时，GCLB 将流量路由到最近且有可用容量的后端；当某个服务实例故障时，GCLB 会替你检测故障，并把流量路由到健康实例。</p>
+
+<p>金丝雀发布和渐进式发布有助于 GCLB 保持高可用性。<a contenteditable="false" data-primary="canarying releases" data-secondary="with GCLB" data-type="indexterm" id="idm139660640100784"/> 金丝雀发布是我们的标准发布流程之一。如 <a data-type="xref" href="ch16.html#canarying_releases">第 16 章</a> 所述，该流程先将新应用部署到极少量服务器上，再逐步增加流量，并仔细观察系统行为，确认没有出现回归。这样可以在金丝雀阶段尽早发现回归，减小其影响。如果新版本崩溃或健康检查因其他原因失败，负载均衡器会绕过它。如果发现非致命回归，可以通过管理操作把该实例组从负载均衡器中移除，而不必改动应用的主版本。</p>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 1: Pokémon GO on GCLB" data-type="sect2"><div class="sect2" id="case_study_1_pokeacutemon_go_on_gclb">
+<h2>案例研究 1：Pokémon GO 使用 GCLB</h2>
+
+<p>Niantic 于 2016 年夏季推出 Pokémon GO。<a contenteditable="false" data-primary="Pokémon GO on GCLB, case study" data-type="indexterm" id="ix_Pkemn"/> 这是<a contenteditable="false" data-primary="load  balancing" data-secondary="Google Cloud" data-tertiary="case study, Pokémon GO on GCLB" data-type="indexterm" id="ix_ldbalGCcs"/> 多年来首款新的 Pokémon 游戏，也是首款 Pokémon 官方智能手机游戏， <a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="case study, Pokémon GO on GCLB" data-type="indexterm" id="ix_GCLBcs"/>还是 Niantic 首次与大型娱乐公司合作的项目。游戏一经推出便大获成功，受欢迎程度超出所有人的预料。那个夏天，人们经常能看到玩家聚集在现实地标周围对战；这些地标在虚拟世界中就是 Pokémon 道馆。</p>
+
+<p>Pokémon GO 的成功远超 Niantic 工程团队的预期。上线前，他们对软件栈进行了负载测试，测试能力达到最乐观流量估算值的 5 倍。实际上线时的每秒请求数（RPS）却接近该估算值的 50 倍，足以给几乎任何软件栈带来扩展难题。更复杂的是，Pokémon GO 的世界高度互动，并由全球用户共同共享。同一区域内的所有玩家看到同一个游戏世界视图，也会在其中相互交互。这要求游戏近乎实时地产生并分发所有参与者共享状态的更新。</p>
+
+<p>要让游戏扩展到预期用户数的 50 倍，Niantic 工程团队付出了令人惊叹的努力。此外，Google 各处的许多工程师也协助扩展服务，确保成功上线。迁移到 GCLB 后两天内，Pokémon GO 应用便成为 GCLB 上规模最大的单项服务，足以与其他十大 GCLB 服务中的任何一个比肩。</p>
+
+<p>如 <a data-type="xref" href="#pokeacutemon_go_left_parenthesispre_gclbr">图 11-5</a>所示，Pokémon GO 上线时使用 Google 的区域级 <a href="http://bit.ly/2J87EUx">网络负载均衡器（NLB）</a>，在一个 <a href="http://bit.ly/2vgpMsX">Kubernetes</a> 集群中对入站流量进行负载均衡。每个集群都包含若干 <a href="https://www.nginx.com/">Nginx</a> 实例 Pod；这些实例充当第 7 层反向代理，负责终止 SSL、缓冲 HTTP 请求，并在应用服务器后端的各个 Pod 之间执行路由和负载均衡。</p>
+
+<figure><div class="figure" id="pokeacutemon_go_left_parenthesispre_gclbr"><img alt="Pokémon GO（迁移 GCLB 前）" src="assets/tsrw_1105.png"/>
+<h6><span class="label">图 11-5． </span>Pokémon GO（迁移 GCLB 前）</h6>
+</div></figure>
+
+<p>NLB 负责 IP 层的负载均衡，因此使用 NLB 的服务实际上会成为 Maglev 的后端。在本案例中，依赖 NLB 给 Niantic 带来了以下影响：</p>
+
+<ul class="pagebreak-before">
+	<li>
+	<p>Nginx 后端负责终止客户端 SSL；从客户端设备到 Niantic 前端代理需要进行两次往返。</p>
+	</li>
+	<li>
+	<p>必须缓冲客户端的 HTTP 请求，导致代理层资源耗尽；当客户端只能缓慢发送字节时，问题尤其严重。</p>
+	</li>
+	<li>
+	<p>包级代理无法有效缓解 <a href="http://bit.ly/2J7NKgw">SYN 泛洪</a> 等低层网络攻击。</p>
+	</li>
+</ul>
+
+<p>为了适当扩展，Niantic 需要在大型边缘网络上运行高层代理，而 NLB 无法提供这种方案。</p>
+
+<section data-pdf-bookmark="Migrating to GCLB" data-type="sect3"><div class="sect3" id="migrating_to_gclb">
+<h3>迁移到 GCLB</h3>
+
+<p>一次大规模 SYN 泛洪攻击使 Pokémon GO 迁移到 GCLB 成为当务之急。这次迁移由 Niantic、Google 客户可靠性工程（CRE）团队和 SRE 团队共同完成。<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="case study, Pokémon GO on GCLB" data-tertiary="migrating to GCLB" data-type="indexterm" id="idm139660640073232"/> 最初的切换选在流量低谷进行，当时并无异常。然而，随着流量升至峰值，Niantic 和 Google 都遇到了意料之外的问题。双方发现，Pokémon GO 的真实客户端流量需求比此前观测值高出 200%。Niantic 前端代理收到的请求太多，无法跟上所有入站连接。以这种方式被拒绝的连接不会出现在入站请求监控中，后端甚至没有机会看到这些请求。</p>
+
+<p>这波流量激增引发了典型的级联故障。API 的多项支撑服务——Cloud Datastore、Pokémon GO 后端与 API 服务器，以及负载均衡系统本身——都超出了 Niantic 云项目的可用容量。过载使 Niantic 后端变得极其缓慢，却没有直接拒绝请求；在负载均衡层看来，就是请求超时。在这种情况下，负载均衡器会重试 GET 请求，进一步增加系统负载。极高的请求量叠加额外重试，使 GFE 中的 SSL 客户端代码承受了前所未有的压力，因为它不断尝试重新连接无响应的后端。 <a contenteditable="false" data-primary="Google Front Ends (GFE)" data-secondary="capacity reduction caused by synchronous client retries" data-type="indexterm" id="idm139660640064000"/>这导致 GFE 性能严重下降，使 GCLB 的全球容量实际上降低了 50%。</p>
+
+<p>后端发生故障后，Pokémon GO 应用会代用户重试失败请求。当时的重试策略是立即重试一次，随后采用固定退避。随着故障持续，服务有时会迅速返回大量错误，例如共享后端重启时。这些错误响应实际上让客户端重试同步发生，形成“惊群”问题：大量客户端请求几乎同时发出。如 <a data-type="xref" href="#traffic_spikes_caused_by_synchronous_clie">图 11-6</a>所示，这些同步请求尖峰急剧攀升，达到此前全球 RPS 峰值的 20 倍。</p>
+
+<figure><div class="figure" id="traffic_spikes_caused_by_synchronous_clie"><img alt="客户端同步重试造成的流量尖峰" src="assets/tsrw_1106.png"/>
+<h6><span class="label">图 11-6． </span>客户端同步重试造成的流量尖峰</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Resolving the issue" data-type="sect3"><div class="sect3" id="resolving_the_issue">
+<h3>解决问题</h3>
+
+<p>请求尖峰与 GFE 容量下降叠加，导致所有 GCLB 服务出现排队和高延迟。<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="case study, Pokémon GO on GCLB" data-tertiary="resolving issue with request spikes and GFE" data-type="indexterm" id="idm139660640069232"/> Google 的流量 SRE 值班人员采取了以下措施，减少其他 GCLB 用户遭受的连带影响：</p>
+
+<ol>
+	<li>
+	<p>将能够承载 Pokémon GO 流量的 GFE 与负载均衡器主池隔离。</p>
+	</li>
+	<li>
+	<p>扩大隔离出的 Pokémon GO 资源池，使其即使在性能下降的情况下也能处理峰值流量。这把容量瓶颈从 GFE 转移到了 Niantic 软件栈；那里的服务器仍会超时，尤其是在客户端重试开始同步并形成尖峰时。</p>
+	</li>
+	<li>
+	<p>在 Niantic 同意后，流量 SRE 实施管理覆盖，限制负载均衡器代表 Pokémon GO 接受流量的速率。这一策略把客户端需求控制在足够低的水平，使 Niantic 得以恢复正常运行并开始向上扩容。</p>
+	</li>
+</ol>
+
+<p><a data-type="xref" href="#pokeacutemon_go_gclb">图 11-7</a> 展示了最终的网络配置。</p>
+
+<figure><div class="figure" id="pokeacutemon_go_gclb"><img alt="Pokémon GO GCLB" src="assets/tsrw_1107.png"/>
+<h6><span class="label">图 11-7． </span>Pokémon GO 的 GCLB 架构</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="Future-proofing" data-type="sect3"><div class="sect3" id="future_proofing">
+<h3>增强未来适应能力</h3>
+
+<p>此次事件过后，Google 和 Niantic 都对系统做出了重大调整。<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="case study, Pokémon GO on GCLB" data-tertiary="future-proofing" data-type="indexterm" id="idm139660640064752"/> Niantic 在客户端中引入抖动和截断指数退避<sup><a data-type="noteref" href="ch11-zh.html#ch11fn3" id="ch11fn3-marker">3</a></sup> ，抑制了级联故障期间出现的大规模同步重试尖峰。<a contenteditable="false" data-primary="truncated exponential backoff" data-type="indexterm" id="idm139660640050160"/><a contenteditable="false" data-primary="jitter" data-type="indexterm" id="idm139660640047152"/> Google 意识到 GFE 后端也可能是重要的负载来源，于是建立了准入评估和负载测试实践，用于检测缓慢或行为异常的后端导致的 GFE 性能下降。最后，两家公司都认识到，应尽可能在靠近客户端的位置测量负载。如果 Niantic 和 Google CRE 当时能够准确预测客户端 RPS 需求，我们就会提前为 Niantic 扩充比实际规模更大的资源，<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-secondary="case study, Pokémon GO on GCLB" data-startref="ix_GCLBcs" data-type="indexterm" id="idm139660640045952"/> <a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-startref="ix_ldbalGCcs" data-tertiary="case study, Pokémon GO on GCLB" data-type="indexterm" id="idm139660640043648"/> 然后再 <a contenteditable="false" data-primary="Pokémon GO on GCLB, case study" data-startref="ix_Pkemn" data-type="indexterm" id="idm139660640041456"/>切换到 GCLB。<a contenteditable="false" data-primary="Google Cloud Load Balancing" data-startref="ix_GCLB" data-type="indexterm" id="idm139660640039712"/><a contenteditable="false" data-primary="load balancing" data-secondary="Google Cloud" data-startref="ix_ldbal" data-type="indexterm" id="idm139660640038352"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="Autoscaling" data-type="sect1"><div class="sect1" id="autoscaling">
+<h1>自动扩缩容</h1>
+
+<p>GCLB 等工具可以帮助你在整个服务集群中高效均衡负载，使服务更加稳定可靠。 <a contenteditable="false" data-primary="autoscaling" data-type="indexterm" id="ix_autosc"/>但有时，为处理现有流量而预留的资源就是不够。<a contenteditable="false" data-primary="scaling" data-seealso="autoscaling" data-type="indexterm" id="idm139660640030944"/> 你可以利用 <a href="http://bit.ly/2xBvgzu">自动扩缩容</a> 有策略地调整服务集群规模。无论是增加每台机器的资源，即纵向扩缩容，还是增加资源池中的机器总数，即横向扩缩容，自动扩缩容都是一种强大工具。正确使用时，它能提升服务的可用性和资源利用率；配置或使用不当时，则会给服务带来负面影响。本节介绍自动扩缩容的一些最佳实践、常见故障模式和当前局限。</p>
+
+<section data-pdf-bookmark="Handling Unhealthy Machines" data-type="sect2"><div class="sect2" id="handling_unhealthy_machines">
+<h2>处理不健康的机器</h2>
+
+<p>自动扩缩容通常不考虑实例状态，而是对所有实例的利用率取平均值，并假定各实例处理请求的效率相同。<a contenteditable="false" data-primary="autoscaling" data-secondary="handling unhealthy machines" data-type="indexterm" id="idm139660640032880"/><a contenteditable="false" data-primary="unhealthy instances, handling" data-type="indexterm" id="idm139660640028144"/> 如果机器没有提供服务，即成为 <em>不健康实例</em>，却仍被计入平均利用率，自动扩缩容就会出问题：在这种情况下，扩缩容根本不会发生。多种问题都可能触发这一故障模式，包括：</p>
+
+<ul>
+	<li>
+	<p>实例需要很长时间才能做好服务准备，例如加载二进制文件或预热时</p>
+	</li>
+	<li>
+	<p>实例卡在不提供服务的状态，即成为“僵尸”实例</p>
+	</li>
+</ul>
+
+<p>可以采用多种方法改善这种情况。以下措施既可组合使用，也可单独使用：</p>
+
+<dl>
+	<dt><dfn>负载均衡</dfn></dt>
+	<dd><p>根据负载均衡器观测到的容量指标执行自动扩缩容。这样会自动从平均值中排除不健康实例。<a contenteditable="false" data-primary="load balancing" data-secondary="using with autoscaling" data-type="indexterm" id="idm139660640020320"/></p></dd>
+	<dt><dfn>等待新实例稳定后再收集指标</dfn></dt>
+	<dd><p>可以配置自动扩缩容器，只在新实例变得健康后才开始收集其信息；GCE 把这段不参与统计的时间称为 <em>冷却期</em>。</p></dd>
+	<dt><dfn>自动扩缩容与自动修复</dfn></dt>
+	<dd><p>自动修复会监控实例，并在实例不健康时尝试重启。<a contenteditable="false" data-primary="autohealing" data-type="indexterm" id="idm139660640014000"/> 通常，可以配置自动修复器来监控实例暴露的健康指标。如果发现实例停机或不健康，它就会尝试重启。配置自动修复器时，务必为实例在重启后恢复健康留出足够时间。</p></dd>
+</dl>
+
+<p>综合使用这些方案，可以优化横向自动扩缩容，使其只跟踪健康机器。请记住，服务运行期间，自动扩缩容器会持续调整服务集群的规模，而创建新实例绝非瞬间完成。</p>
+</div></section>
+
+<section data-pdf-bookmark="Working with Stateful Systems" data-type="sect2"><div class="sect2" id="working_with_stateful_systems">
+<h2>处理有状态系统</h2>
+
+<p>有状态系统会把同一用户会话中的所有请求始终发送到同一台后端服务器。 <a contenteditable="false" data-primary="autoscaling" data-secondary="working with stateful systems" data-type="indexterm" id="idm139660640012016"/><a contenteditable="false" data-primary="stateful systems" data-secondary="using autoscaling with" data-type="indexterm" id="idm139660640013264"/>如果这些既有会话路径负担过重，增加实例，也就是横向扩容，并不能解决问题。对有状态系统而言，更好的策略是采用智能的任务级路由来分散负载，例如使用一致性哈希<sup><a data-type="noteref" href="ch11-zh.html#ch11fn4" id="ch11fn4-marker">4</a></sup>。<a contenteditable="false" data-primary="consistent hashing" data-secondary="using with stateful systems" data-type="indexterm" id="idm139660640005248"/></p>
+
+<p>纵向自动扩缩容对有状态系统可能很有帮助。 <a contenteditable="false" data-primary="load balancing" data-secondary="task-level, using with autoscaling on stateful systems" data-type="indexterm" id="idm139660640003040"/>将它与任务级负载均衡结合、均衡系统负载后，纵向自动扩缩容可以帮助吸收短期热点。但要谨慎使用：纵向扩缩容通常会统一作用于所有实例，因此低流量实例也可能被扩得过大，造成浪费。</p>
+</div></section>
+
+<section data-pdf-bookmark="Configuring Conservatively" data-type="sect2"><div class="sect2" id="configuring_conservatively">
+<h2>采用保守配置</h2>
+
+<p>使用自动扩缩容来扩容，比用它缩容更重要，风险也更低，因为扩容失败可能导致过载和流量丢弃。 <a contenteditable="false" data-primary="autoscaling" data-secondary="configuring conservatively" data-type="indexterm" id="idm139660639997568"/>大多数自动扩缩容器在设计上都会刻意让自身对流量上升比对流量下降更敏感。扩容时，它们倾向于快速增加额外服务容量；缩容时则更加谨慎，会等待更长时间，确认缩容条件持续成立后才缓慢减少资源。</p>
+
+<p>服务离瓶颈越远，能够吸收的负载尖峰就越大。建议配置自动扩缩容器，使服务与 CPU 等关键系统瓶颈保持足够距离。自动扩缩容器也需要充足的反应时间，尤其是新实例无法立即启动并提供服务时。建议面向用户的服务预留足够的富余容量，同时满足过载保护和冗余需求。<sup><a data-type="noteref" href="ch11-zh.html#ch11fn5" id="ch11fn5-marker">5</a></sup></p>
+</div></section>
+
+<section data-pdf-bookmark="Setting Constraints" data-type="sect2"><div class="sect2" id="setting_constraints">
+<h2>设置约束</h2>
+
+<p>自动扩缩容器非常强大；如果配置错误，扩容可能失去控制。引入缺陷或更改设置，都可能意外造成严重后果。<a contenteditable="false" data-primary="autoscaling" data-secondary="setting constraints on the autoscaler" data-type="indexterm" id="idm139660639996256"/> 例如，请考虑以下场景：</p>
+
+<ul>
+	<li>
+	<p>你配置自动扩缩容，让它根据 CPU 利用率调整规模。随后发布了包含缺陷的新版本，导致服务器只消耗 CPU 却不完成任何工作。自动扩缩容器会反复扩大该作业的实例规模，直到耗尽所有可用 <a href="http://bit.ly/2sqo0RO">配额</a> 。</p>
+	</li>
+	<li>
+	<p>服务本身没有任何变化，但某个依赖项发生故障。所有请求因此卡在服务器上，迟迟无法完成，同时不断占用资源。自动扩缩容器会扩大作业规模，导致越来越多的流量被卡住；故障依赖项承受的负载随之增加，甚至可能无法恢复。</p>
+	</li>
+</ul>
+
+<p>最好限制自动扩缩容器可执行的操作。应设置扩缩容的上下限，并确保配额足以扩展到设定的边界。这样既能避免配额耗尽，也有助于容量规划。</p>
+</div></section>
+
+<section data-pdf-bookmark="Including Kill Switches and Manual Overrides" data-type="sect2"><div class="sect2" id="including_kill_switches_and_manual_overri">
+<h2>设置紧急停止开关和手动覆盖</h2>
+
+<p>为防自动扩缩容出现问题，最好准备一个紧急停止开关。 <a contenteditable="false" data-primary="autoscaling" data-secondary="including kill switches and manual overrides" data-type="indexterm" id="idm139660639984672"/><a contenteditable="false" data-primary="manual overrides and kill switches in autoscaling" data-type="indexterm" id="idm139660639985808"/><a contenteditable="false" data-primary="kill switches and manual overrides in autoscaling" data-type="indexterm" id="idm139660639983872"/>确保值班工程师知道如何禁用自动扩缩容，以及必要时如何手动调整规模。自动扩缩容的紧急停止功能应当简单、醒目、迅速，而且文档完善。</p>
+</div></section>
+
+<section data-pdf-bookmark="Avoiding Overloading Backends" data-type="sect2"><div class="sect2" id="avoiding_overloading_backends">
+<h2>避免后端过载</h2>
+
+<p>配置正确的自动扩缩容器会在流量增加时扩容，而流量增长会沿着调用栈向下产生影响。<a contenteditable="false" data-primary="backend services, avoiding overloading in autoscaling" data-type="indexterm" id="idm139660639977744"/><a contenteditable="false" data-primary="autoscaling" data-secondary="avoiding overloading backends" data-type="indexterm" id="idm139660639979232"/> 数据库等后端服务必须能吸收服务器可能产生的额外负载。因此，在部署自动扩缩容器之前，最好对后端服务进行详细的依赖分析，尤其要考虑有些服务的扩展能力比另一些更接近线性。确保后端有足够的富余容量处理增长的流量，并能在过载时实现优雅降级。应利用分析数据确定自动扩缩容配置的边界。</p>
+
+<p>服务部署通常运行多种共享配额的微服务。如果某个微服务为应对流量尖峰而扩容，它可能占用大部分配额。如果一个微服务的流量增长会带动其他微服务的流量增长，剩余微服务就没有可用配额来扩展。在这种情况下，依赖分析有助于指导你提前实施有限扩容。另一种方法是为各微服务设置独立配额，但这可能需要把服务拆分到不同项目中。</p>
+</div></section>
+
+<section data-pdf-bookmark="Avoiding Traffic Imbalance" data-type="sect2"><div class="sect2" id="avoiding_traffic_imbalance">
+<h2>避免流量失衡</h2>
+
+<p>有些自动扩缩容器（如 AWS EC2 和 GCP）能够在 <a contenteditable="false" data-primary="autoscaling" data-secondary="avoiding traffic imbalance" data-type="indexterm" id="idm139660639976576"/>区域实例组（<a href="http://bit.ly/2J7NNJe">RMiGs</a>）的各可用区之间均衡实例。除了常规自动扩缩容之外， <a contenteditable="false" data-primary="regional groups of instances (RMiGs), autoscalers balancing instances across" data-type="indexterm" id="idm139660639967600"/>这些自动扩缩容器还会运行一个独立作业，不断尝试让区域内各可用区的规模趋于均衡。以这种方式重新均衡实例，可以避免某个可用区规模过大。如果所用系统按可用区分配配额，这一策略还能让配额使用更加均衡。<a contenteditable="false" data-primary="autoscaling" data-startref="ix_autosc" data-type="indexterm" id="idm139660639963680"/> 此外，跨区域自动扩缩容也能增加故障域的多样性。 </p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Combining Strategies to Manage Load" data-type="sect1"><div class="sect1" id="combining_strategies_to_manage_load">
+<h1>综合运用负载管理策略</h1>
+
+<p>当系统足够复杂时，可能需要使用不止一种负载管理方式。 <a contenteditable="false" data-primary="load balancing" data-secondary="combining strategies to manage load" data-type="indexterm" id="ix_ldbalcom"/><a contenteditable="false" data-primary="autoscaling" data-secondary="load-based, using with load balancing" data-type="indexterm" id="idm139660639970320"/>例如，你可能运行多个托管实例组，它们随负载扩缩，并为了提供容量而复制到多个区域；因此，还需要在区域之间均衡流量。 <a contenteditable="false" data-primary="load" data-secondary="load-based autoscaling" data-type="indexterm" id="idm139660639962432"/>此时，系统必须同时使用 <em>负载均衡</em> 和 <em>基于负载的自动扩缩容</em>。</p>
+
+<p>又如，你的网站运行在分布于世界各地的三处主机托管设施中。为了降低延迟，你希望就近提供服务；但部署更多机器需要数周，因此超出本地容量的流量必须溢出到其他位置。如果网站突然在社交媒体走红，流量骤增至五倍，你会希望尽可能处理力所能及的请求。为此，可以实施负载削减，丢弃超额流量。此时，系统必须同时使用 <em>负载均衡</em> 和 <em>负载削减</em>。<a contenteditable="false" data-primary="load shedding" data-type="indexterm" id="idm139660639950640"/></p>
+
+<p>再如，数据处理流水线位于某个云区域的 Kubernetes 集群中。数据处理速度显著下降时，系统会配置更多 Pod 来承担工作。但是，如果数据到达速度太快，以至于读取数据会耗尽内存或拖慢垃圾回收，Pod 就可能需要暂时或永久削减这部分负载。此时，系统必须同时使用 <em>基于负载的自动扩缩容</em> 和 <em>负载削减</em> 技术。<a contenteditable="false" data-primary="autoscaling" data-secondary="load-based, using with load shedding" data-type="indexterm" id="idm139660639952384"/></p>
+
+<p>负载均衡、负载削减和自动扩缩容系统的目标相同：均衡并稳定系统负载。这三类系统往往分别实现、安装和配置，看起来彼此独立。然而，如 <a data-type="xref" href="#full_traffic_management_system">图 11-8</a>所示，它们并非完全独立。下面的案例研究展示了这些系统如何相互影响。</p>
+
+<figure><div class="figure" id="full_traffic_management_system"><img alt="完整的流量管理系统" src="assets/tsrw_1108.png"/>
+<h6><span class="label">图 11-8． </span>完整的流量管理系统</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Case Study 2: When Load Shedding Attacks" data-type="sect2"><div class="sect2" id="case_study_2_when_load_shedding_attacks">
+<h2>案例研究 2：负载削减的反噬</h2>
+
+<p>假设有一家名为 Dressy 的虚构公司，通过应用在线销售连衣裙。由于这项服务的负载由用户流量驱动，<a contenteditable="false" data-primary="load balancing" data-secondary="combining strategies to manage load" data-startref="ix_ldbalcom" data-type="indexterm" id="idm139660639948032"/> Dressy 的开发团队把应用部署在三个区域。<a contenteditable="false" data-primary="load shedding" data-secondary="case study, when load shedding attacks" data-type="indexterm" id="ix_ldshd"/> 他们以为，这样既能快速响应用户请求，也能挺过单个可用区故障。</p>
+
+<p>Dressy 的客服团队开始收到客户无法访问应用的投诉。开发团队调查后发现了一个问题：负载均衡器莫名其妙地把所有用户流量都导向区域 A，尽管该区域早已不堪重负，而同样规模的区域 B 和 C 却空空如也。事件时间线（见 <a data-type="xref" href="#regional_traffic">图 11-9</a>）如下：</p>
+
+<ol>
+	<li>
+	<p>当天开始时，流量图显示三个集群都稳定在 90 RPS。</p>
+	</li>
+	<li>
+	<p>上午 10:46，热切的顾客开始寻找优惠，三个区域的流量都开始上升。</p>
+	</li>
+	<li>
+	<p>上午 11:00，区域 A 比区域 B 和 C 稍早达到 120 RPS。</p>
+	</li>
+	<li>
+	<p>上午 11:10，区域 A 继续增长到 400 RPS，而 B 和 C 降至 40 RPS。</p>
+	</li>
+	<li>
+	<p>负载均衡器最终稳定在这一状态。</p>
+	</li>
+	<li>
+	<p>到达区域 A 的大多数请求都返回 503 错误。</p>
+	</li>
+	<li>
+	<p>请求落到该集群的用户开始投诉。</p>
+	</li>
+</ol>
+
+<figure><div class="figure" id="regional_traffic"><img alt="区域流量" src="assets/tsrw_1109.png"/>
+<h6><span class="label">图 11-9． </span>区域流量</h6>
+</div></figure>
+
+<p>如果开发团队查看过负载均衡器的饱和度图，就会发现非常奇怪的现象。负载均衡器能够感知利用率：它读取 Dressy 容器的 CPU 利用率，并据此估算饱和程度。在它看来，区域 A 平均每个请求消耗的 CPU 只有 B 或 C 的十分之一。于是负载均衡器判定所有区域负载相同，认为工作已经完成。</p>
+
+<section data-pdf-bookmark="What was happening?" data-type="sect3"><div class="sect3" id="what_was_happeningquestion_mark">
+<h3>发生了什么？</h3>
+
+<p>本周早些时候，为防止级联过载，团队启用了负载削减。每当 CPU 利用率达到某个阈值，服务器便不再尝试处理新收到的请求，而是直接返回错误。这一天，区域 A 比其他区域稍早达到该阈值。每台服务器先拒绝 10% 的请求，随后拒绝 20%，再增加到 50%。在此期间，CPU 使用率保持不变。</p>
+
+<p>对负载均衡系统来说，每多丢弃一个请求，每请求 CPU 成本就会进一步下降。区域 A 看起来远比 B 和 C 高效：它在 CPU 为 80%（负载削减上限）时承载 240 RPS，而 B 和 C 只能处理 120 RPS。于是，系统顺理成章地决定向 A 发送更多请求。</p>
+</div></section>
+
+<section data-pdf-bookmark="What went wrong?" data-type="sect3"><div class="sect3" id="what_went_wrongquestion_mark">
+<h3>哪里出了问题？</h3>
+
+<p>简而言之，负载均衡器不知道这些“高效”请求其实是错误，因为负载削减系统与负载均衡系统之间没有通信。两套系统分别添加、分别启用，很可能由不同工程师完成。没有人把它们作为一个统一的负载管理系统来审视。</p>
+</div></section>
+
+<section data-pdf-bookmark="Lessons learned" data-type="sect3"><div class="sect3" id="lessons_learned-id00061">
+<h3>经验教训</h3>
+
+<p>要有效管理系统负载，无论配置单项负载管理工具，还是管理工具间的相互作用，都必须有意识地统筹设计。例如在 Dressy 案例中，只要在负载均衡器逻辑中增加错误处理就能解决问题。假设每个“错误”请求都按 120% CPU 利用率计算，任何超过 100 的数值都可以，那么区域 A 就会呈现为过载状态。请求将分散到 B 和 C，系统也会重新趋于均衡。</p>
+
+<p>同样的逻辑可以推广到任意负载管理策略组合。采用新的负载管理工具时，应仔细检查它与系统现有工具如何交互，并为交互点添加监测。增加监控以发现反馈回路。确保各负载管理系统的紧急关闭触发器能够协调工作；如果这些系统的行为严重失控，还应考虑增加自动关闭触发器。如果不提前采取适当防范措施，往往只能在事故复盘之后被迫补上。</p>
+
+<p>“采取预防措施”说起来容易。更具体地说，可以根据部署的负载管理类型考虑以下措施：</p>
+
+<dl>
+	<dt><dfn>负载均衡</dfn></dt>
+	<dd>
+	<p>负载均衡通过把请求路由<a contenteditable="false" data-primary="load balancing" data-secondary="combining strategies to manage load" data-tertiary="precautions with" data-type="indexterm" id="idm139660639925520"/> 到离用户最近的位置来尽量降低延迟。自动扩缩容 <a contenteditable="false" data-primary="autoscaling" data-secondary="using with load balancing and load shedding, precautions with" data-type="indexterm" id="idm139660639932304"/>可以与负载均衡协作：扩大靠近用户的位置的规模，再把更多流量路由到那里，从而形成正反馈回路。</p>
+
+	<p>如果需求主要集中在离某个位置最近的区域，该位置会持续扩张，直到所有服务容量都集中于一处。一旦该位置停机，其他位置便会过载，流量也可能被丢弃，而这些位置无法瞬间扩容。可以为每个位置设置最小实例数，为故障转移保留富余容量，从而避免这种情况。</p>
+	</dd>
+	<dt><dfn>负载削减</dfn></dt>
+	<dd><p>最好设置适当阈值，让系统先执行自动扩缩容，再触发负载削减。<a contenteditable="false" data-primary="load shedding" data-secondary="case study, when load shedding attacks" data-tertiary="precautions with load shedding" data-type="indexterm" id="idm139660639920752"/> 否则，系统可能会丢弃本可在先行扩容后成功处理的流量。</p></dd>
+	<dt><dfn>使用 RPC 管理负载</dfn></dt>
+	<dd>
+	<p>处理正确的请求对效率至关重要：不要为了处理无法让用户受益的请求而扩容，也不要因为正在处理不重要的请求而无谓地削减负载。同时使用自动扩缩容和负载削减时，务必为 RPC 请求设置截止时间。<a contenteditable="false" data-primary="RPCs (remote procedure calls)" data-secondary="managing load with" data-type="indexterm" id="idm139660639919984"/></p>
+
+	<p>进程会为所有进行中的请求占用资源，并在请求完成后释放资源。如果没有明确的截止时间，系统会一直为所有进行中的请求保留资源，直至达到可能的最大上限。默认截止时间通常是一个很大的数值，具体取决于语言实现：有些语言 API 使用固定时刻，有些使用持续时长。这会让客户端以及最终用户经历更高延迟，也会使服务面临内存等资源耗尽并崩溃的风险。</p>
+
+	<p>为了优雅地处理这种情况，建议服务器终止耗时过长的请求，客户端则取消对自己已无用的请求。例如，如果客户端已向用户返回错误，服务器就不应再启动代价高昂的搜索操作。要明确服务行为预期，可以直接在 API 的 <em>.proto</em> 文件中添加注释，建议一个默认截止时间。同时还应有意识地为客户端设置截止时间；相关示例见博客文章 <a href="http://bit.ly/2xwpwXL">“gRPC 与截止时间”</a>。</p>
+	</dd>
+</dl>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00062">
+<h1>总结</h1>
+
+<p>根据 Google 的 <a contenteditable="false" data-primary="load shedding" data-secondary="case study, when load shedding attacks" data-startref="ix_ldshd" data-type="indexterm" id="idm139660639907152"/>经验，不存在完美的流量管理配置。自动扩缩容是强大的工具，却也很容易配置错误。如果不慎重配置，后果可能十分严重。例如，分别孤立配置负载均衡、负载削减和自动扩缩容时，三者之间可能形成灾难性的反馈循环。Pokémon GO 案例表明，只有从整体上理解各系统之间的相互作用，流量管理才能发挥最佳效果。</p>
+
+<p>我们一再看到，当所有机制同步失效时，无论负载削减、自动扩缩容还是限流，都救不了服务。例如在 Pokémon GO 案例中，同步的客户端重试形成“惊群”，负载均衡器还在等待无响应的后端服务器。要让服务以可控方式失效，必须提前规划并缓解潜在问题。缓解策略可能包括设置标志、改变默认行为、启用开销较高的日志记录，或公开流量管理系统用来决策的参数当前值。</p>
+
+<p>希望本章介绍的策略和经验能帮助你管理自己服务的流量，让用户获得满意的体验。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch11fn1"><sup><a href="ch11-zh.html#ch11fn1-marker">1</a></sup> 五元组包括：源地址、目的地址、源端口、目的端口和传输协议类型。</p><p data-type="footnote" id="ch11fn2"><sup><a href="ch11-zh.html#ch11fn2-marker">2</a></sup> 请参阅 Google Cloud Platform 博客文章 <a href="http://bit.ly/2LL02ch">“SLO、SLI、SLA，天哪——CRE 实践经验”</a> ，了解 SLO 与 SLA 的区别。</p><p data-type="footnote" id="ch11fn3"><sup><a href="ch11-zh.html#ch11fn3-marker">3</a></sup> 有关这一主题的更多信息，请参阅第一本 SRE 图书的 <a href="http://bit.ly/2Hbpl3z">第 22 章</a> 。</p><p data-type="footnote" id="ch11fn4"><sup><a href="ch11-zh.html#ch11fn4-marker">4</a></sup> 参见 <em>《Site Reliability Engineering》</em>, <a href="http://bit.ly/2LQ6TRQ">第 19 章</a>。</p><p data-type="footnote" id="ch11fn5"><sup><a href="ch11-zh.html#ch11fn5-marker">5</a></sup> 有关容量规划中冗余的更多信息，请参阅 <em>《Site Reliability Engineering》</em>, <a href="http://bit.ly/2syqM76">附录 B</a>。</p></div></div></section></body></html>
