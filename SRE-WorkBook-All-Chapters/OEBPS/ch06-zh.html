@@ -1,0 +1,929 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>消除运维琐事</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第6章 消除运维琐事" data-type="chapter" epub:type="chapter"><div class="chapter" id="eliminating_toil">
+<h1><span class="label">第6章 </span>消除运维琐事</h1>
+
+<p class="byline">David Challoner、Joanna Wijntjes、David Huska、<br/>Matthew Sartwell、Chris Coykendall、Chris Schrier、<br/>John Looney 和 Vivek Rau<br/> 著；Betsy Beyer、Max Luebbe、Alex Perry 和 Murali Suriar 协作</p>
+
+<p>Google 的 SRE 会花大量时间做优化：通过项目工作以及与开发人员协作，尽可能挖掘系统<a contenteditable="false" data-primary="toil, eliminating" data-type="indexterm" id="ix_toil"/>的每一分性能。不过，需要优化的不只是计算资源，SRE 如何使用自己的时间同样重要。我们首先要避免承担可归为<em>运维琐事</em>（toil）的任务。关于运维琐事的完整讨论，请参阅<a href="http://bit.ly/2Lg1TEN">第5章</a>（<em>《网站可靠性工程》</em>）。本章将运维琐事定义为：维护服务时反复出现、可以预见且持续不断的一系列任务。</p>
+
+<p>对于任何负责生产服务的团队，运维琐事似乎都难以避免。系统维护必然需要一定量的发布、升级、重启和告警分诊等工作。如果不加约束、也不进行核算，这些活动很快就会吞噬整个团队。Google 规定 SRE 团队用于运维工作的时间不得超过 50%，其中既包括琐事，也包括不属于琐事的运维工作（原因详见我们第一本书的<a href="http://bit.ly/2Lg1TEN">第5章</a>）。这个目标未必适合你的组织，但为琐事设定上限仍然大有裨益，因为识别并量化琐事，是优化团队时间使用方式的第一步。</p>
+
+<section class="pagebreak-before" data-pdf-bookmark="什么是运维琐事？" data-type="sect1"><div class="sect1" id="what_is_toilquestion_mark">
+<h1>什么是运维琐事？</h1>
+
+<p>运维琐事并非非黑即白，而是分布在一个连续谱上，可以用我们第一本书介绍的以下<a contenteditable="false" data-primary="toil, eliminating" data-secondary="characteristics and examples of toil" data-type="indexterm" id="ix_toildef"/>特征来衡量。下面为每项特征各举一个<span class="keep-together">具体例子：</span></p>
+
+<dl>
+	<dt><dfn>需要人工操作</dfn></dt>
+	<dd><p>当 Web 服务器上的 <em>tmp</em> 目录使用率达到 95% 时，工程师 Anne 会登录服务器，遍历文件系统，找出并删除多余的日志文件。</p></dd>
+	<dt><dfn>重复发生</dfn></dt>
+	<dd><p><em>tmp</em> 目录被占满不太可能只发生一次，因此修复它的任务会反复出现。</p></dd>
+	<dt><dfn>可以自动化<sup><a data-type="noteref" href="ch06-zh.html#ch06fn1" id="ch06fn1-marker">1</a></sup></dfn></dt>
+	<dd><p>如果团队的故障处理文档写着“登录 X，执行这条命令，检查输出；如果看到……就重启 Y”，那么对具备软件开发能力的人来说，这些指令本质上就是伪代码！在 <em>tmp</em> 目录的例子中，解决方案已经实现了部分自动化。如果连脚本都不需要人来运行，而是把问题检测和修复全部自动化，会更好。更进一步，还可以提交补丁，从根本上避免软件再次以这种方式出错。</p></dd>
+	<dt><dfn>缺乏策略价值、被动响应</dfn></dt>
+	<dd><p>如果“磁盘已满”“服务器宕机”一类告警过多，就会分散工程师处理更高价值工程工作的注意力，还可能掩盖其他更严重的告警，最终损害服务健康状况。</p></dd>
+	<dt><dfn>没有持久价值</dfn></dt>
+	<dd><p>完成任务往往会带来令人满足的成就感，但这种反复获得的满足从长远看并不是好事。例如，关闭告警生成的工单，确实能保证用户查询继续流转、HTTP 请求继续返回小于 400 的状态码。然而，今天处理完这张工单并不能防止问题日后重现，因此收益十分短暂。</p></dd>
+	<dt><dfn>增长速度至少与其来源一样快</dfn></dt>
+	<dd><p>许多运维工作的增长速度与底层基础设施的规模相同，甚至更快。例如，硬件维修耗费的时间通常会与服务器集群规模同步增长。实体维修工作或许不可避免地随机器数量增长，但相关的辅助任务（如修改软件或配置）未必也要如此。</p></dd>
+</dl>
+
+<p>造成琐事的工作不一定同时符合上述所有标准，但要记住，琐事有许多不同形态。除了这些特征，还应考虑某项工作对团队士气的影响：人们是否喜欢做它，并能从中获得成就感？还是因为它枯燥、回报感低而总被搁置？<sup><a data-type="noteref" href="ch06-zh.html#ch06fn2" id="ch06fn2-marker">2</a></sup>琐事会一点点消磨团队士气。花在琐事上的时间，通常也就无法用于深入思考和发挥创造力。减少琐事，意味着承认工程师的精力应当用在人类判断力和创造力真正能够发挥作用的地方。</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="example_manual_response_to_toil">
+<h5>示例：以人工方式应对运维琐事</h5>
+
+<blockquote data-type="epigraph" epub:type="epigraph">
+<p>John Looney，Facebook 生产工程经理<br/>，内心永远是一名 SRE</p>
+</blockquote>
+
+<p>某项工作是否属于琐事，并不总是一目了然。有时，看似“有创造力”的方案——编写一个临时绕行办法——并不是正确选择。理想情况下，组织应当奖励消除根因的修复，而不是只把问题遮掩起来的修补。</p>
+
+<p>我在 2005 年 4 月加入 Google 后接到的第一项任务，是登录故障机器，调查故障原因，然后修好机器或把它交给硬件技术人员。起初任务看起来很简单，直到我发现任何时候都有两万多台机器处于故障状态！</p>
+
+<p>我检查的第一台故障机器，根文件系统已经被某个经 Google 修改的网络驱动产生的数 GB 无意义日志完全塞满。随后我又发现一千台机器存在同样的问题。我向同事说明了处理方案：编写脚本，通过 <code>ssh</code> 登录所有故障机器，检查根文件系统是否已满；如果已满，就截断 <em>/var/log</em> 中所有超过 1 MB 的日志，再重启 syslog。</p>
+
+<p>同事对这个方案反应冷淡，让我停下来重新思考。他指出，只要可能，就应该修复根因。从中长期看，写脚本掩盖问题的严重程度既浪费时间——因为<em>真正的</em>问题没有解决——也可能在以后引发更多问题。</p>
+
+<p>分析表明，每台服务器每小时的成本大约是 1 美元。按我当时的思路，成本难道不应该是最重要的指标吗？我没有想到，如果只修复症状，就不会再有人有动力解决根因：内核团队的发布测试套件并没有检查这些机器产生的日志量。</p>
+
+<p>资深工程师让我查看内核源代码，找出有问题的那一行，并向内核团队提交缺陷，推动他们改进测试套件。我用客观的成本收益分析说明，这个问题每小时给 Google 造成 1,000 美元损失，最终说服开发人员采用我的补丁修复问题。</p>
+
+<p>当晚，我的补丁就进入了新的内核版本；第二天，我把它部署到受影响的机器上。随后一周，内核团队也更新了测试套件。与其每天早晨修好这些机器、获得短暂的兴奋感，如今我更享受那种经过思考并真正把问题解决好的满足。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="characteristics and examples of toil" data-startref="ix_toildef" data-type="indexterm" id="idm139660642469248"/></p>
+</div></aside>
+</div></section>
+
+<section data-pdf-bookmark="衡量运维琐事" data-type="sect1"><div class="sect1" id="measuring_toil">
+<h1>衡量运维琐事</h1>
+
+<p>怎样判断运维工作中有多少属于琐事<a contenteditable="false" data-primary="measurements" data-secondary="measuring toil" data-type="indexterm" id="ix_meastoil"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="measuring toil" data-type="indexterm" id="ix_toilmeas"/>？决定采取措施减少琐事之后，又怎样判断投入是否成功、是否值得？许多 SRE 团队依靠经验和直觉回答这些问题。这种做法或许能取得成果，但我们还能做得更好。</p>
+
+<p><em>经验和直觉既不可重复，也不够客观，更无法轻易传递。</em>同一团队或组织的成员，对琐事浪费了多少工程投入往往会得出不同结论，因此对治理工作的优先级判断也不同。此外，减少琐事的工作可能持续数个季度，甚至数年——本章的一些案例正是如此。在此期间，团队的优先事项和人员都可能变化。要长期保持方向并证明成本合理，就需要客观衡量进展。团队通常还要从多个候选项目中选择一个。客观衡量琐事，才能比较问题的严重程度并合理排序，使工程投入获得最大回报。</p>
+
+<p>开始减少琐事的项目之前，必须分析成本与收益，并确认消除琐事节省的时间，至少应与开发并持续维护自动化方案所投入的时间相当（见<a data-type="xref" href="#estimate_the_amount_of_time_youapostrophe">图6-1</a>）。如果只简单比较投入与节省的工时，有些项目看起来可能“不划算”；但考虑到自动化带来的许多间接或无形收益，它们仍可能非常值得实施。这些潜在收益包括：</p>
+
+<ul>
+	<li>
+	<p>随着时间推移，可投入工程项目的精力增加，其中一部分项目还会进一步减少琐事</p>
+	</li>
+	<li>
+	<p>提升团队士气，降低人员流失和倦怠</p>
+	</li>
+	<li>
+	<p>减少处理中断事件时的上下文切换，提高团队生产力</p>
+	</li>
+	<li>
+	<p>让流程更清晰、更标准化</p>
+	</li>
+	<li>
+	<p>提升团队成员的技术能力，促进职业发展</p>
+	</li>
+	<li>
+	<p>缩短培训时间</p>
+	</li>
+	<li>
+	<p>减少人为错误造成的故障</p>
+	</li>
+	<li>
+	<p>改善安全性</p>
+	</li>
+	<li>
+	<p>缩短对用户请求的响应时间</p>
+	</li>
+</ul>
+
+<figure><div class="figure" id="estimate_the_amount_of_time_youapostrophe"><img alt="估算减少运维琐事所需的时间，并确保收益大于成本" src="assets/tsrw_0601.png"/>
+<h6><span class="label">图6-1.</span> 估算减少运维琐事需要投入的时间，并确保收益大于成本（来源：<a href="http://xkcd.com/1319/">xkcd.com/1319/</a>）</h6>
+</div></figure>
+
+<p class="pagebreak-before">那么，我们建议如何衡量运维琐事呢？</p>
+
+<ol>
+	<li>
+	<p>识别琐事。第一本 SRE 著作的<a href="http://bit.ly/2Lg1TEN">第5章</a>给出了从运维工作中识别琐事的指导。由谁来识别最合适，取决于组织自身情况。理想情况下，应由相关利益方参与，包括实际执行这些工作的人。</p>
+	</li>
+	<li>
+	<p>选择合适的度量单位，用来表示投入这项琐事的<em>人力</em>。分钟和小时是自然的选择，因为它们客观且人人都能理解。还要计入上下文切换的成本。如果工作分散或零碎，也可以采用其他广为理解的人力投入单位，例如一次补丁应用、一张已处理工单、一次手动生产变更、一轮可预见的邮件往来或一次硬件操作。只要单位客观、一致且含义清楚，就可以用来衡量琐事。</p>
+	</li>
+	<li>
+	<p>在减少琐事的工作开始前、进行中和完成后，都要持续跟踪这些指标。应使用工具或脚本简化采集过程，别让度量琐事本身又制造出新的琐事！<a contenteditable="false" data-primary="toil, eliminating" data-secondary="measuring toil" data-startref="ix_meastoil" data-type="indexterm" id="idm139660642447328"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="measuring toil" data-startref="ix_toilmeas" data-type="indexterm" id="idm139660642445776"/></p>
+	</li>
+</ol>
+</div></section>
+
+<section data-pdf-bookmark="运维琐事分类" data-type="sect1"><div class="sect1" id="toil_taxonomy">
+<h1>运维琐事分类</h1>
+
+<p>运维琐事像摇摇欲坠的桥梁或漏水的大坝一样，隐藏在平淡<a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-type="indexterm" id="ix_toiltax"/>无奇的日常工作中。本节所列类别并不完备，只涵盖一些常见类型。其中许多看起来就是“正常”的工程工作——事实也确实如此。因此，把琐事理解为连续谱，而不是二元分类，会更有帮助。</p>
+
+<section data-pdf-bookmark="业务流程" data-type="sect2"><div class="sect2" id="business_processes">
+<h2>业务流程</h2>
+
+<p>这可能是最常见的琐事来源。团队也许负责某类计算资源——计算、存储、网络、负载均衡器、数据库等——以及承载这些资源的硬件。你们要接入新用户，配置并保护他们的机器，执行软件更新，还要增减服务器以调节容量；同时也要尽量降低这些资源的成本或浪费。团队实际上成了人与机器之间的接口，通常通过工单响应内部客户的需求。组织甚至可能同时存在多套工单和工作受理系统。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="business processes" data-type="indexterm" id="idm139660642436032"/><a contenteditable="false" data-primary="business processes producing toil" data-type="indexterm" id="idm139660642436400"/><a contenteditable="false" data-primary="tickets" data-secondary="ticket toil" data-type="indexterm" id="idm139660642436896"/></p>
+
+<p>工单型琐事颇为隐蔽，因为工单驱动的业务流程通常确实能够达成目标。用户得到了所需结果，而琐事往往均匀分散在全队，不会显眼到主动要求治理。只要存在工单驱动的流程，附近就可能在悄悄积累琐事。即使暂时没有明确的自动化计划，也可以先简化、精炼流程：这样以后更容易实现自动化，在此之前也更便于管理。</p>
+</div></section>
+
+<section data-pdf-bookmark="生产中断" data-type="sect2"><div class="sect2" id="production_interrupts">
+<h2>生产中断</h2>
+
+<p>生产中断是为了维持系统运行而必须及时处理的一类日常维护任务。例如，磁盘、内存或 I/O 资源突然不足时，可能要手动释放磁盘空间，或重启发生内存泄漏的应用。也可能需要提交硬盘更换申请、手动“踢醒”无响应的系统，或调整容量来应对当前及预期负载。总体而言，这类中断会夺走原本可以投入更重要工作的注意力。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="production interrupts" data-type="indexterm" id="idm139660642430880"/><a contenteditable="false" data-primary="production interrupts" data-type="indexterm" id="idm139660642431568"/></p>
+</div></section>
+
+<section data-pdf-bookmark="发布护航" data-type="sect2"><div class="sect2" id="release_shepherding">
+<h2>发布护航</h2>
+
+<p>在许多组织中，部署工具会自动护送版本从开发环境进入生产环境。即使已经实现自动化，并具备充分的代码覆盖、代码审查和多种自动化测试，这个过程也不总是一帆风顺。根据工具能力和发布频率的不同，发布申请、回滚、紧急补丁以及重复或手工的配置变更，仍可能产生琐事。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="release shepherding" data-type="indexterm" id="idm139660642429728"/><a contenteditable="false" data-primary="releases" data-secondary="shepherding" data-type="indexterm" id="idm139660642428096"/></p>
+</div></section>
+
+<section data-pdf-bookmark="迁移" data-type="sect2"><div class="sect2" id="migrations">
+<h2>迁移</h2>
+
+<p>你可能经常需要从一种技术迁移到另一种技<a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="migrations" data-type="indexterm" id="idm139660642421312"/><a contenteditable="false" data-primary="migrations" data-type="indexterm" id="idm139660642416448"/>术。由于从 X 迁移到 Y 理应只做一次，这类工作通常靠人工或少量脚本完成。迁移有多种形式，例如更换数据存储、云服务商、源代码管理系统、应用程序库或工具。</p>
+
+<p>如果以人工方式执行大规模迁移，其中很可能包含大量琐事。因为迁移是一次性工作，人们很容易倾向于手工完成，甚至把它视为“项目工作”而不是“琐事”；然而，迁移工作同样可能符合琐事的多项特征。从技术上说，修改备份工具以支持另一种数据库属于软件开发，但本质上可能只是重构代码，用一个接口替换另一个接口。这项工作具有重复性，而且备份工具所提供的业务价值基本没有变化。</p>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="成本工程与容量规划" data-type="sect2"><div class="sect2" id="cost_engineering_and_capacity_planning">
+<h2>成本工程与容量规划</h2>
+
+<p>无论是自有硬件还是使用基础设施提供商（云服务），成本工程和容量规划通常都伴随着一些琐事。例如：<a contenteditable="false" data-primary="cost engineering" data-type="indexterm" id="idm139660642410608"/><a contenteditable="false" data-primary="capacity planning" data-type="indexterm" id="idm139660642411136"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="cost engineering and capacity planning" data-type="indexterm" id="idm139660642409360"/></p>
+
+<ul>
+	<li>
+	<p>为计算、内存、IOPS（每秒输入/输出操作次数）等资源规划既经济又能应对突发需求的基础容量。这可能转化为采购订单、AWS 预留实例，或云服务/基础设施即服务合同谈判。</p>
+	</li>
+	<li>
+	<p>为产品发布、节假日等关键高流量事件做好准备，并在事件后恢复常态。</p>
+	</li>
+	<li>
+	<p>审查上下游服务的服务等级和限制。</p>
+	</li>
+	<li>
+	<p>针对不同的资源配置优化工作负载。（是购买一台大型设备，还是四台小型设备？）</p>
+	</li>
+	<li>
+	<p>针对专有云服务产品的具体计费方式优化应用程序，例如 AWS 的 DynamoDB 或 GCP 的 Cloud Datastore。</p>
+	</li>
+	<li>
+	<p>重构工具，以便更充分地利用价格较低的“竞价”或“可抢占”资源。</p>
+	</li>
+	<li>
+	<p>处理资源超额分配问题，无论问题发生在上游基础设施提供商一侧，还是下游客户一侧。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="不透明架构的故障排查" data-type="sect2"><div class="sect2" id="troubleshooting_for_opaque_architectures">
+<h2>不透明架构的故障排查</h2>
+
+<p>分布式微服务架构已经十分普遍。系统越分散，新的故障模式就越多。组织可能没有资源构建成熟的分布式追踪、高保真监控或详细仪表盘；即使已经配备这些工具，也未必能覆盖所有系统。故障排查甚至可能仍要逐台登录系统，再用脚本工具临时编写日志分析查询。<a contenteditable="false" data-primary="architectures (opaque), troubleshooting for" data-type="indexterm" id="idm139660642397728"/><a contenteditable="false" data-primary="troubleshooting for opaque architectures" data-type="indexterm" id="idm139660642396096"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-tertiary="troubleshooting for opaque architectures" data-type="indexterm" id="idm139660642394592"/></p>
+
+<p>故障排查本身并不是坏事，但精力应当用于新出现的故障模式，而不是每周重复处理脆弱架构造成的同类问题。每增加一个可用性为 P 的关键上游依赖，组合故障概率就会使可用性下降 1−P。一个可用性为四个 9 的服务，增加九个同样为四个 9 的关键依赖后，整体就只剩三个 9。<a contenteditable="false" data-primary="availability" data-secondary="factoring dependencies into" data-type="indexterm" id="idm139660642390320"/><a contenteditable="false" data-primary="dependencies" data-secondary="effects on availability" data-type="indexterm" id="idm139660642388832"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="taxonomy of toil" data-startref="ix_toiltax" data-type="indexterm" id="idm139660642386752"/><sup><a data-type="noteref" href="ch06-zh.html#ch06fn3" id="ch06fn3-marker">3</a></sup></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="运维琐事管理策略" data-type="sect1"><div class="sect1" id="toil_management_strategies">
+<h1>运维琐事管理策略</h1>
+
+<p>只要在运营具有一定规模的生产系统，管理运维琐事就至关重要。识别<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-type="indexterm" id="ix_toilmgmt"/>并量化琐事之后，还需要制定消除它的计划。这些工作可能需要数周甚至数个季度，因此必须有一套稳固的总体策略。</p>
+
+<p>从源头消除琐事是最佳方案；如果做不到，就必须采用其他方式加以处理。在深入介绍两个案例之前，本节先给出规划减少琐事工作时可以考虑的一些通用策略。两个案例会表明，不同团队乃至不同公司的琐事各有细节，但某些做法对任何规模、任何类型的组织都同样适用。后面的案例至少会具体展示以下每一种模式。</p>
+
+<section data-pdf-bookmark="识别并衡量运维琐事" data-type="sect2"><div class="sect2" id="identify_and_measure_toil">
+<h2>识别并衡量运维琐事</h2>
+
+<p>建议采用数据驱动的方法识别<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="identifying and measuring toil" data-type="indexterm" id="idm139660642377808"/>和比较琐事来源，客观决定如何治理，并量化减少琐事项目节省的时间，也就是投资回报。<a contenteditable="false" data-primary="measurements" data-secondary="measuring toil" data-type="indexterm" id="idm139660642378336"/>如果团队已被琐事压得喘不过气，应把减少琐事作为独立项目来做。Google 的 SRE 团队经常用缺陷记录跟踪琐事，并综合修复成本和可节省时间为其排序。具体方法和指导参见<a data-type="xref" href="#measuring_toil">“衡量运维琐事”</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="通过工程手段从系统中消除琐事" data-type="sect2"><div class="sect2" id="engineer_toil_out_of_the_system">
+<h2>通过工程手段从系统中消除琐事</h2>
+
+<p>处理琐事的最佳策略是从源头消除它。在投入精力管理现有系统和流程产生的琐事之前，先判断能否通过改变系统来减少或彻底消除这些琐事。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="engineering toil out of the system" data-type="indexterm" id="idm139660642376128"/></p>
+
+<p>负责生产系统的团队拥有关于系统运行方式的宝贵经验。他们最清楚哪些怪癖和烦琐环节会制造最多琐事。SRE 团队应利用这些知识，与产品开发团队合作，构建更便于运维的软件，使其不仅琐事更少，也更易扩展、更安全、更有韧性。</p>
+</div></section>
+
+<section data-pdf-bookmark="拒绝琐事" data-type="sect2"><div class="sect2" id="reject_the_toil">
+<h2>拒绝琐事</h2>
+
+<p>被琐事淹没的团队，应根据数据决定怎样使用时间和工程投入最合适。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="rejecting toil" data-type="indexterm" id="idm139660642367088"/>根据我们的经验，虽然看似违反直觉，但首先应考虑拒绝一项琐事密集型任务。对于某类琐事，要比较处理与不处理的成本。另一种方法是有意延后处理，让任务积累后再批量或并行<span class="keep-together">执行</span>。集中处理可减少打断，也更容易发现琐事模式，继而有针对性地将其消除。</p>
+</div></section>
+
+<section data-pdf-bookmark="利用 SLO 减少琐事" data-type="sect2"><div class="sect2" id="use_slos_to_reduce_toil">
+<h2>利用 SLO 减少琐事</h2>
+
+<p>如<a data-type="xref" href="ch02-zh.html#implementing_slos">第2章</a>所述，服务<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="using to reduce toil" data-type="indexterm" id="idm139660642360608"/>应当<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="using SLOs to reduce toil" data-type="indexterm" id="idm139660642359088"/>有<a href="http://bit.ly/2LL02ch">书面的服务等级目标（SLO）</a>。定义良好的 SLO 能帮助工程师做出有依据的决策。例如，如果某些运维任务不会消耗或超出服务的错误预算，就可以选择不做。随着服务增长，关注整体服务健康状况、而不是单台设备的 SLO 更灵活，也更可持续。如何编写有效的 SLO，请参阅<a data-type="xref" href="ch02-zh.html#implementing_slos">第2章</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="从人工支撑的接口开始" data-type="sect2"><div class="sect2" id="start_with_human_backed_interfaces">
+<h2>从人工支撑的接口开始</h2>
+
+<p>如果业务问题特别复杂，存在许多边界情况或请求类型，可以把部分自动化作为通往完全自动化的过渡步骤。在这种模式下，服务通常通过明确的 API 接收结构化数据，但部分后续操作仍由工程师处理。即使还保留一些人工工作，这种“幕后工程师”模式也能让团队逐步迈向完全自动化。利用客户输入逐渐统一数据收集方式；自由格式的请求越少，就越接近以程序处理所有请求。这既能减少与客户反复沟通——客户现在清楚需要提供哪些信息——也能避免在尚未完全梳理和理解问题领域之前，就过度设计一个一步到位的庞大方案。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="starting with human-backed interfaces" data-type="indexterm" id="idm139660642352368"/><a contenteditable="false" data-primary="human-backed interfaces, starting with" data-type="indexterm" id="idm139660642353840"/><a contenteditable="false" data-primary="automation" data-secondary="partial automation with human-backed interfaces" data-type="indexterm" id="idm139660642352752"/></p>
+</div></section>
+
+<section data-pdf-bookmark="提供自助服务" data-type="sect2"><div class="sect2" id="provide_self_service_methods">
+<h2>提供自助服务</h2>
+
+<p>通过类型明确的接口定义服务内容后（参见<a data-type="xref" href="#start_with_human_backed_interfaces">“从人工支撑的接口开始”</a>），就应转向让用户自助操作。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="providing self-service methods" data-type="indexterm" id="idm139660642344688"/><a contenteditable="false" data-primary="self-service methods for users" data-type="indexterm" id="idm139660642354368"/>可以提供网页表单、可执行程序或脚本、API，甚至只需编写文档，说明如何向服务的配置文件提交拉取请求。例如，不再要求工程师提交工单来申请开发用虚拟机，而是提供一个简单的网页表单或脚本来触发配置。对于特殊请求或执行失败，脚本可以平稳降级为工单。<sup><a data-type="noteref" href="ch06-zh.html#ch06fn4" id="ch06fn4-marker">4</a></sup>人工支撑的接口是减少琐事的良好起点，但服务负责人仍应尽可能让服务实现自助。</p>
+</div></section>
+
+<section data-pdf-bookmark="争取管理层和同事的支持" data-type="sect2"><div class="sect2" id="get_support_from_management_and_colleague">
+<h2>争取管理层和同事的支持</h2>
+
+<p>短期内，减少琐事的项目会占用原本可以处理功能请求、性能改进和其他运维任务的人力。但只要项目成功，长期来看团队会更健康、更愉快，也会拥有更多时间投入工程改进。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="getting support from management and colleagues" data-type="indexterm" id="idm139660642334272"/></p>
+
+<p>组织中的所有人都应认同减少琐事是值得追求的目标。管理者的支持对于帮助团队抵御新增需求至关重要。应使用客观的琐事指标，为拒绝不合理需求提供依据。</p>
+</div></section>
+
+<section data-pdf-bookmark="把减少琐事作为一项功能来推动" data-type="sect2"><div class="sect2" id="promote_toil_reduction_as_a_feature">
+<h2>把减少琐事作为一项功能来推动</h2>
+
+<p>要形成有力的商业论证，可以寻找机会，把减少琐事的策略与其他受欢迎的功能或业务目标结合起来。如果安全性、可扩展性或可靠性等配套目标对客户足够有吸引力，他们就更愿意放弃当前会制造琐事的系统，转向不会如此耗费人力的新系统。这样一来，减少琐事只是帮助用户时顺带获得的好处。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="promoting toil reduction as a feature" data-type="indexterm" id="idm139660642336752"/></p>
+</div></section>
+
+<section data-pdf-bookmark="从小处着手，逐步改进" data-type="sect2"><div class="sect2" id="start_small_and_then_improve">
+<h2>从小处着手，逐步改进</h2>
+
+<p>不要试图一开始就设计出能够消除一切琐事的完美系统。先自动化少数高优先级事项，再利用由此节省的时间改进方案，并应用沿途积累的经验。选择 MTTR（平均修复时间）等明确指标来衡量成效。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="starting small, then improving" data-type="indexterm" id="idm139660642327984"/></p>
+</div></section>
+
+<section data-pdf-bookmark="提高一致性" data-type="sect2"><div class="sect2" id="increase_uniformity">
+<h2>提高一致性</h2>
+
+<p>在大规模环境中，生产环境越多样，管理难度就会呈指数增长。特殊设备需要持续进行耗时且容易出错的管理和事件响应。可以采用“宠物与牲畜”的思路<a contenteditable="false" data-primary="uniformity, increasing" data-type="indexterm" id="idm139660642324800"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="increasing uniformity" data-type="indexterm" id="idm139660642326160"/><a contenteditable="false" data-primary="automation" data-secondary="increasing uniformity in production environment" data-type="indexterm" id="idm139660642321600"/><a contenteditable="false" data-primary="tools" data-secondary="increasing uniformity in" data-type="indexterm" id="idm139660642318448"/><a contenteditable="false" data-primary="pets vs. cattle approach" data-type="indexterm" id="idm139660642319536"/><sup><a data-type="noteref" href="ch06-zh.html#ch06fn5" id="ch06fn5-marker">5</a></sup>来增加冗余，并强制环境保持一致。哪些对象应视为“牲畜”，取决于组织的需求和规模；网络链路、交换机、机器、整机架，甚至整个集群，都可能被当作可互换单元。</p>
+
+<p>将设备转向“牲畜”式管理可能有较高的初始成本，但从中长期看，可以降低维护、灾难恢复和资源利用成本。多种设备采用统一接口，意味着配置一致、彼此可替换、维护需求更少。为不同设备提供一致的流量导出、流量恢复和关机等接口，也能让自动化更加灵活、更易扩展。</p>
+
+<p>Google 会调整业务激励，鼓励工程团队围绕不断演进的内部技术和工具体系实现统一。团队可以自由选择方案，但必须自行承担不受支持的工具或遗留系统所产生的琐事。</p>
+</div></section>
+
+<section data-pdf-bookmark="评估自动化风险" data-type="sect2"><div class="sect2" id="assess_risk_within_automation">
+<h2>评估自动化风险</h2>
+
+<p>自动化能节省不计其数的人力，但在不恰当的条件下也可能触发故障。一般来说，防御式软件设计总是有益；当自动化掌握管理员级权限时，它更是不可或缺。每项操作在执行前都应评估安全性，包括可能降低服务容量或冗余度的变更。实现自动化时，我们建议遵循以下做法：<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="assessing risks in automation" data-type="indexterm" id="idm139660642307968"/><a contenteditable="false" data-primary="automation" data-secondary="assessing risks of" data-type="indexterm" id="idm139660642306784"/></p>
+
+<ul>
+	<li>
+	<p>即使输入来自上游系统，也要按不可信输入进行防御式处理，并结合上下文仔细验证。</p>
+	</li>
+	<li>
+	<p>加入与人工操作员可能间接获得的告警信息等效的保护措施。它可以只是简单的命令超时，也可以是对当前系统指标或现有故障数量进行更复杂的检查。因此，监控、告警和检测系统应同时便于机器和人工操作员使用。</p>
+	</li>
+	<li>
+	<p>要意识到，即使只是读取操作，如果实现得过于简单粗暴，也可能使设备负载骤升并触发故障。随着自动化规模扩大，这类安全检查最终甚至可能成为主要负载。</p>
+	</li>
+	<li>
+	<p>尽量降低自动化安全检查不完备所造成的故障影响。自动化一旦遇到不安全状态，应默认转交人工处理。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="自动化处理琐事" data-type="sect2"><div class="sect2" id="automate_toil_response">
+<h2>自动化处理琐事</h2>
+
+<p>确定某项琐事可以自动化后，应认真考虑怎样在软件中恰当地映射人工流程。通常不应逐字逐步照搬人工工作流。同时也要注意，自动化不能让人失去对故障原因的理解。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="automating toil response" data-type="indexterm" id="idm139660642303184"/><a contenteditable="false" data-primary="automation" data-secondary="automating toil response" data-type="indexterm" id="idm139660642300544"/></p>
+
+<p>流程得到完整记录后，应尝试把人工工作拆成可独立实现的组件，并由此构建可组合的软件库，供后续自动化项目复用。后面的数据中心维修案例会说明，自动化往往也提供了重新审视和简化人工流程的机会。</p>
+</div></section>
+
+<section data-pdf-bookmark="使用开源和第三方工具" data-type="sect2"><div class="sect2" id="use_open_source_and_third_party_tools">
+<h2>使用开源和第三方工具</h2>
+
+<p>有时，减少琐事不必全部从头自己完成。一次性迁移等工作可能不值得专门开发定制工具，但你的组织很可能不是第一个走这条路的。应寻找使用或扩展开源库及第三方工具的机会，以降低开发成本，至少也能帮助团队迈向部分自动化。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="using open source and third-party tools" data-type="indexterm" id="idm139660642293760"></a><a contenteditable="false" data-primary="tools" data-secondary="using open source and third-party tools" data-type="indexterm" id="idm139660642296688"></a></p>
+</div></section>
+
+<section data-pdf-bookmark="利用反馈持续改进" data-type="sect2"><div class="sect2" id="use_feedback_to_improve">
+<h2>利用反馈持续改进</h2>
+
+<p>应主动向使用你的工具、工作流和自动化的人收集反馈。用户会依据自己对底层系统的理解，对工具作出不同假设；他们越不熟悉这些系统，主动获取反馈就越重要。可以利用问卷、用户体验（UX）研究等机制了解工具的实际使用方式，并把反馈纳入后续改进，构建更有效的自动化。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="using feedback to improve" data-type="indexterm" id="idm139660642289600"></a><a contenteditable="false" data-primary="feedback from users, toil management with" data-type="indexterm" id="idm139660642288592"></a></p>
+
+<p>人工意见只是需要考虑的一类反馈。还应使用延迟、错误率、返工率以及整个流程中各参与团队节省的人力时间等指标，衡量自动化任务的效果。理想情况下，应找到可在自动化或减少琐事工作前后进行比较的高层指标。<a contenteditable="false" data-primary="measurements" data-secondary="effectiveness of automated tasks" data-type="indexterm" id="idm139660642284528"></a><a contenteditable="false" data-primary="automation" data-secondary="measuring effectiveness of automated tasks" data-type="indexterm" id="idm139660642285792"></a></p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="legacy_systems">
+<h5>遗留系统</h5>
+
+<p>大多数承担类似 SRE 职责的工程师，都在工作中遇到过至少一个遗留系统。这些老系统往往在用户体验、安全性、可靠性或可扩展性方面存在问题。它们像神秘的黑盒：“大体能用”，却很少有人真正理解其工作原理。修改它们既令人畏惧又成本高昂，而维持运行通常还需要大量繁琐的运维仪式。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-tertiary="legacy systems" data-type="indexterm" id="idm139660642281760"/><a contenteditable="false" data-primary="legacy systems" data-type="indexterm" id="idm139660642279984"/></p>
+
+<p>摆脱遗留系统通常会经历以下几个阶段：</p>
+
+<ol>
+	<li>
+	<p><strong>回避：</strong>不正面处理问题可能有很多理由，例如没有资源替换系统、替换成本和业务风险不划算，或市场上根本没有明显更好的方案。回避实际上是在选择接受技术债，并从 SRE 原则退回传统系统管理模式。</p>
+	</li>
+	<li>
+	<p><strong>封装/增强：</strong>可以让 SRE 在遗留系统外围构建一层抽象 API、自动化、配置管理、监控和测试，把工作从系统管理员手中转移出来。遗留系统本身依然难以变更，但至少可以可靠识别异常，并在适当时回滚。这仍是一种回避，却像把高息技术债置换成低息技术债，通常是为渐进式替换所做的过渡安排。</p>
+	</li>
+	<li>
+	<p><strong>替换/重构：</strong>替换遗留系统可能需要极大的决心、耐心，以及大量沟通和文档工作，最好渐进实施。一种方法是在遗留系统前定义统一接口，对其进行抽象。借助金丝雀发布或蓝绿部署等发布工程技术，可以通过这层接口<a href="http://bit.ly/2HbyKbw">缓慢而安全地把用户迁移到替代方案</a>。遗留系统的“规范”往往只体现在历史使用方式中，因此应构建达到生产规模、包含历史预期输入输出的数据集，用来确认新系统没有偏离预期行为，或者只以预期方式发生偏离。</p>
+	</li>
+	<li>
+	<p><strong>退役/移交所有权：</strong>最终，大多数客户或功能会迁移到一个或多个替代方案。为了协调业务激励，仍未迁移的少数用户可以接手遗留系统剩余部分的所有权。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="toil management strategies" data-startref="ix_toilmgmt" data-type="indexterm" id="idm139660642266032"></a></p>
+	</li>
+</ol>
+</div></aside>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="案例研究" data-type="sect1"><div class="sect1" id="case_studies">
+<h1>案例研究</h1>
+
+<p>下面的案例展示了刚才讨论的减少琐事策略。每个故事都涉及 Google 基础设施的一个重要领域：它已经无法继续让系统规模以低于人力投入的速度增长；随着时间推移，投入越来越多工程工时，获得的边际回报却越来越小。现在你会认出，其中很大一部分投入就是琐事。我们会逐一说明工程师如何识别、评估和缓解这些琐事，并讨论结果与经验教训。</p>
+
+<p>第一个案例中，Google 的数据中心网络遇到了扩展问题：大量由 Google 设计的组件和链路都需要监控、故障缓解与维修。我们需要一种策略，尽量减少数据中心技术人员在这些工作中承担的琐事。</p>
+
+<p>第二个案例关注一个团队：他们运行一套“离群”的专用硬件，用来支撑在 Google 内部根深蒂固、琐事密集的业务流程。这个案例说明了重新评估并替换运维成本高昂的业务流程能带来什么好处，也表明即使受到大型组织惯性的制约，只要坚持不懈，仍然可以迁移到替代方案。</p>
+
+<p>综合来看，这两个案例为前面介绍的每一种减少琐事策略都提供了具体示例。每个案例开头都会列出与之相关的策略。</p>
+</div></section>
+
+<section data-pdf-bookmark="案例研究1：通过自动化减少数据中心的运维琐事" data-type="sect1"><div class="sect1" id="case_study_1_reducing_toil_in_the_datacen">
+<h1>案例研究1：通过自动化减少数据中心的运维琐事</h1>
+
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>案例研究<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-type="indexterm" id="ix_toilcase1"/>1涉<a contenteditable="false" data-primary="automation" data-secondary="using to reduce toil in datacenter, case study" data-type="indexterm" id="ix_autocase"/>及的减少琐事<a contenteditable="false" data-primary="datacenters" data-secondary="using automation to reduce toil, case study" data-type="indexterm" id="ix_dactrcase"/>策略：</p>
+
+<ul>
+	<li>
+	<p>通过工程手段从系统中消除琐事</p>
+	</li>
+	<li>
+	<p>从小处着手，逐步改进</p>
+	</li>
+	<li>
+	<p>提高一致性</p>
+	</li>
+	<li>
+	<p>利用 SLO 减少琐事</p>
+	</li>
+	<li>
+	<p>评估自动化风险</p>
+	</li>
+	<li>
+	<p>利用反馈持续改进</p>
+	</li>
+	<li>
+	<p>自动化处理琐事</p>
+	</li>
+</ul>
+</div>
+
+<section data-pdf-bookmark="背景" data-type="sect2"><div class="sect2" id="background">
+<h2>背景</h2>
+
+<p>这个案例发生在 Google 的数据中心。与其他数据中心一样，Google 的机器连接到交换机，交换机再连接到路由器；流量通过链路进出这些路由器，而链路又连接到互联网上的其他路由器。随着 Google 处理互联网流量的需求增长，承载这些流量所需的机器数量急剧增加。为了高效、经济地服务海量流量，数据中心的规模和复杂度也不断上升。于是，数据中心的人工维修从偶尔出现、颇有挑战性的工作，变成频繁而机械的重复劳动——这正是琐事的两个信号。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="background" data-type="indexterm" id="ix_toilcase1bkg"></a></p>
+
+<p>Google 最初运营自有数据中心时，每个数据中心的网络拓扑只包含少量网络设备，用来管理大量机器的流量。单台网络设备故障可能严重影响网络性能，但规模不大的工程师团队足以排查这少量设备。早期阶段，工程师会手动调试问题，并把流量从故障组件上移走。</p>
+
+<p>下一代数据中心拥有多得多的机器，并<a contenteditable="false" data-primary="software-defined networking (SDN)" data-type="indexterm" id="idm139660642231104"/>采用<a href="http://bit.ly/2LfbMCG">折叠 Clos 拓扑的软件定义网络（SDN）</a>，交换机数量<a contenteditable="false" data-primary="Clos network topology" data-type="indexterm" id="idm139660642231680"/>大幅增加。<a data-type="xref" href="#small_clos_networkcomma_which_supports_48">图6-2</a>展示了一个小型数据中心 Clos 交换网络中流量路径的复杂程度。设备按比例增多，也意味着可能故障的组件更多。虽然单次故障对网络性能的影响比以前小，但问题总量开始压垮工程人员。</p>
+
+<p>复杂的布局不仅带来了大量需要调试的新问题，也让技术人员困惑：究竟要检查哪些链路？应该更换哪块线卡<sup><a data-type="noteref" href="ch06-zh.html#ch06fn6" id="ch06fn6-marker">6</a></sup>？第2层交换机与第1层或第3层交换机有什么不同？关闭一台交换机会不会影响用户？</p>
+
+<figure><div class="figure" id="small_clos_networkcomma_which_supports_48"><img alt="一个小型 Clos 网络，第1层下方可连接 480 台机器" src="assets/tsrw_0602.png"/>
+<h6><span class="label">图6-2.</span> 一个小型 Clos 网络，第1层下方可连接 480 台机器</h6>
+</div></figure>
+
+<p>故障线卡维修显然形成了不断增长的积压，因此我们把它作为数据中心网络维修自动化的第一阶段。本案例先介绍如何为第一代线卡 Saturn 引入维修自动化，再讨论下一代 Jupiter 网络架构所做的改进。</p>
+
+<p>如<a data-type="xref" href="#datacenter_left_parenthesissaturnright_pa">图6-3</a>所示，在自动化项目之前，数据中心线卡维修流程<a contenteditable="false" data-primary="line-card repair" data-secondary="workflow before automation" data-type="indexterm" id="idm139660642229040"/>中的每次处理都要求工程师完成以下步骤：</p>
+
+<ol>
+	<li>
+	<p>确认可以安全地从受影响交换机导出流量。</p>
+	</li>
+	<li>
+	<p>把流量从故障设备移走，即执行“导出流量”操作。</p>
+	</li>
+	<li class="pagebreak-before">
+	<p>重启或维修设备，例如更换线卡。</p>
+	</li>
+	<li>
+	<p>把流量恢复到设备，即执行“恢复流量”操作。</p>
+	</li>
+</ol>
+
+<p>导出流量、恢复流量和维修设备的步骤固定而重复，是典型的运维琐事。这种重复性还会引发新的问题。例如，工程师处理线卡时可能同时在调试更困难的问题；一旦分心，就可能误把尚未配置的交换机重新接入网络。</p>
+
+<figure><div class="figure" id="datacenter_left_parenthesissaturnright_pa"><img alt="自动化之前的数据中心（Saturn）线卡维修流程：所有步骤都需要人工操作" src="assets/tsrw_0603.png"/>
+<h6><span class="label">图6-3.</span> 自动化之前的数据中心（Saturn）线卡维修流程：所有步骤都需要人工操作</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="问题陈述" data-type="sect2"><div class="sect2" id="problem_statement">
+<h2>问题陈述</h2>
+
+<p>数据中心维修问题包含以下几个方面：<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-startref="ix_toilcase1bkg" data-tertiary="background" data-type="indexterm" id="idm139660642219616"></a><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="problem statement" data-type="indexterm" id="idm139660642217584"></a></p>
+
+<ul>
+	<li>
+	<p>团队扩张速度赶不上故障增长速度，修复问题的速度也不足以避免<span class="keep-together">网络架构</span>受到负面影响。</p>
+	</li>
+	<li>
+	<p>频繁重复相同步骤，造成了过多的人为错误。</p>
+	</li>
+	<li>
+	<p>不同线卡故障的影响并不相同，而我们无法优先处理更严重的故障。</p>
+	</li>
+	<li>
+	<p>有些故障只是暂时性的。我们希望先尝试重启线卡或重新安装交换机；如果问题再次发生，再由程序捕获并标记设备以便更换。</p>
+	</li>
+	<li>
+	<p>新拓扑要求我们在采取行动前，手动评估隔离容量的风险。每次人工评估都可能出错并引发故障。现场工程师和技术人员也没有好办法判断计划中的维修会影响多少设备和链路。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect2"><div class="sect2" id="what_we_decided_to_do">
+<h2>我们的决定</h2>
+
+<p>我们没有继续把每个问题都交给工程师做风险评估、导出流量、恢复流量和验证，<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660642207824"/>而是决定构建一个自动化框架，在适当情况下配合现场技术人员，以程序方式<span class="keep-together">完成这些操作</span>。</p>
+</div></section>
+
+<section data-pdf-bookmark="第一版设计：Saturn 线卡维修" data-type="sect2"><div class="sect2" id="design_first_effort_saturn_line_card_repa">
+<h2>第一版设计：Saturn 线卡维修</h2>
+
+<p>我们的总体目标是构建一个系统，让它直接响应网络设备上检测到的问题，而不是依赖工程师分诊和修复。我们不再把“线卡故障”告警发给工程师，而是让软件请求导出流量，并为技术人员创建维修任务。新系统有几个值得注意的特点：<a contenteditable="false" data-primary="line-card repair" data-secondary="design first effort, Saturn line-card repair" data-type="indexterm" id="idm139660642199664"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="design first effort, Saturn line-card repair" data-type="indexterm" id="idm139660642200560"/></p>
+
+<ul>
+	<li>
+	<p>我们尽可能复用现有工具。如<a data-type="xref" href="#datacenter_left_parenthesissaturnright_pa">图6-3</a>所示，告警系统已经能够检测网络架构中线卡的问题；我们把这些告警改作自动维修的触发器。新流程还复用了工单系统来支持网络维修。</p>
+	</li>
+	<li>
+	<p>我们内置了自动风险评估，防止导出流量时意外隔离设备，并在必要时触发安全机制，从而消除了一个主要的人为错误来源。</p>
+	</li>
+	<li>
+	<p>我们采用由软件记录的“累计故障”策略：第一次故障只重启线卡并重新安装软件；第二次故障则触发线卡更换，并把故障卡完整退回供应商。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="实现" data-type="sect2"><div class="sect2" id="implementation">
+<h2>实现</h2>
+
+<p>新的<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="implementation, Saturn line-card repair with automation" data-type="indexterm" id="idm139660642194672"/>自动化<a contenteditable="false" data-primary="line-card repair" data-secondary="Saturn automated line-card repair workflow" data-type="indexterm" id="idm139660642188352"/>流程如<a data-type="xref" href="#saturn_line_card_repair_workflow_with_aut">图6-4</a>所示，步骤如下：</p>
+
+<ol>
+	<li>
+	<p>系统检测到有问题的线卡，并把相应症状记录到数据库中的具体组件上。</p>
+	</li>
+	<li>
+	<p>维修服务读取问题并在交换机上启用维修流程。服务先进行风险评估，确认操作不会隔离任何容量，然后执行：</p>
+
+	<ol type="a">
+		<li>
+		<p>从整台交换机导出流量。</p>
+		</li>
+		<li>
+		<p>关闭线卡。</p>
+		</li>
+		<li>
+		<p>如果这是第一次故障，则重启线卡并恢复交换机流量，至此流程结束。</p>
+		</li>
+		<li>
+		<p>如果这是第二次故障，则进入第3步。</p>
+		</li>
+	</ol>
+	</li>
+	<li>
+	<p>工作流管理器检测到新任务，将它放入维修任务池，等待技术人员领取。</p>
+	</li>
+	<li>
+	<p>技术人员领取任务后，会在界面中看到红色“停止”标志，表示开始维修前必须先导出交换机流量。随后分三步完成维修：</p>
+
+	<ol type="a">
+		<li>
+		<p>在技术人员界面中点击“准备组件”按钮，启动机箱流量导出。</p>
+		</li>
+		<li>
+		<p>等待红色“停止”标志消失，表示流量导出完成，可以开始处理任务。</p>
+		</li>
+		<li>
+		<p>更换线卡并关闭任务。</p>
+		</li>
+	</ol>
+	</li>
+	<li>
+	<p>自动维修系统重新启用线卡。等待线卡完成初始化后，工作流管理器触发操作，恢复交换机流量并关闭维修任务。</p>
+	</li>
+</ol>
+
+<figure><div class="figure" id="saturn_line_card_repair_workflow_with_aut"><img alt="自动化后的 Saturn 线卡维修流程：人工只需按下按钮并更换线卡" src="assets/tsrw_0604.png"/>
+<h6><span class="label">图6-4. </span>自动化后的 Saturn 线卡维修流程：人工只需按下按钮并更换线卡</h6>
+</div></figure>
+
+<p>新系统让工程团队摆脱了大量琐事，从而能把更多时间投入其他有价值的项目，例如下一代 Clos 拓扑 Jupiter。<a contenteditable="false" data-primary="line-card repair" data-secondary="Saturn vs. Jupiter line-card repair" data-type="indexterm" id="idm139660642167952"></a><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="design second effort, Saturn vs. Jupiter line-card repair" data-type="indexterm" id="idm139660642166848"></a></p>
+</div></section>
+
+<section data-pdf-bookmark="第二版设计：Saturn 与 Jupiter 的线卡维修" data-type="sect2"><div class="sect2" id="design_second_effort_saturn_line_card_rep">
+<h2>第二版设计：Saturn 与 Jupiter 的线卡维修</h2>
+
+<p>数据中心的容量需求几乎每 12 个月翻一番。因此，下一代数据中心网络架构 Jupiter 的规模超过此前任何 Google 网络架构的六倍，问题数量也扩大了六倍。Jupiter 给维修自动化带来了扩展挑战，因为每一层都可能有数千条光纤链路和数百块线卡发生故障。好在潜在故障点增多的同时，冗余度也大幅提高，使我们能够实施更大胆的自动化。如<a data-type="xref" href="#saturn_line_card_down_automation_left_par">图6-5</a>所示，我们保留了 Saturn 流程的一些通用部分，并做了几项重要修改：</p>
+
+<ul>
+	<li>
+	<p>自动执行流量导出和重启后，如果系统判定需要更换硬件，就把任务交给技术人员。不过，不再要求技术人员点击“准备按钮以导出交换机流量”，而是由系统在交换机故障时自动导出整台交换机的流量。</p>
+	</li>
+	<li>
+	<p>增加自动化，在组件更换后安装并下发配置。</p>
+	</li>
+	<li>
+	<p>增加自动验证，确认维修成功后再恢复交换机流量。</p>
+	</li>
+	<li>
+	<p>优先尝试在不让技术人员介入的情况下恢复交换机，除非确实别无选择。</p>
+	</li>
+</ul>
+
+<figure><div class="figure" id="saturn_line_card_down_automation_left_par"><img alt="Saturn 线卡故障自动化（左）与 Jupiter 自动化（右）" src="assets/tsrw_0605.png"/>
+<h6><span class="label">图6-5. </span>Saturn 线卡故障自动化（左）与 Jupiter 自动化（右）</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="实现" data-type="sect2"><div class="sect2" id="implementation-id00015">
+<h2>实现</h2>
+
+<p>对于 Jupiter 交换机上的每个线卡问题，我们采用简单统一的流程：将交换机标记为故障、导出流量，然后开始维修。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="implementation, Jupiter line-card repair" data-type="indexterm" id="idm139660642152560"/></p>
+
+<p class="pagebreak-before">自动化执行以下步骤：</p>
+
+<ol>
+	<li>
+	<p>系统检测到交换机故障，并在数据库中记录相应症状。</p>
+	</li>
+	<li>
+	<p>维修服务读取问题并在交换机上启用维修：导出整台交换机的流量，并记录导出原因。</p>
+
+	<ol type="a">
+		<li>
+		<p>如果这是六个月内的第二次故障，转到第4步。</p>
+		</li>
+		<li>
+		<p>否则，转到第3步。</p>
+		</li>
+	</ol>
+	</li>
+	<li>
+	<p>尝试用两种不同方法对交换机断电重启。</p>
+
+	<ol type="a">
+		<li>
+		<p>如果断电重启成功，则运行自动验证，再安装并配置交换机。随后删除维修原因、从数据库清除问题，并恢复交换机流量。</p>
+		</li>
+		<li>
+		<p>如果前面的完整性检查失败，则把任务连同操作说明交给技术人员。</p>
+		</li>
+	</ol>
+	</li>
+	<li>
+	<p>如果这是第二次故障，就直接把任务交给技术人员并要求更换硬件。更换后运行自动验证，再安装并配置交换机；随后删除维修原因、从数据库清除问题，并恢复交换机流量。</p>
+	</li>
+</ol>
+
+<p>新的工作流管理彻底重写了旧维修系统。我们再次尽可能复用现有工具：</p>
+
+<ul>
+	<li>
+	<p>配置新交换机所用的安装和验证操作，同样可用于验证更换后的交换机。</p>
+	</li>
+	<li>
+	<p>快速部署新的网络架构，需要能够以程序方式执行 BERT<sup><a data-type="noteref" href="ch06-zh.html#ch06fn7" id="ch06fn7-marker">7</a></sup> 和布线审计<sup><a data-type="noteref" href="ch06-zh.html#ch06fn8" id="ch06fn8-marker">8</a></sup>。恢复流量前，我们复用这项能力，对进入维修流程的链路自动运行测试模式，并通过识别故障链路进一步改善性能。</p>
+	</li>
+</ul>
+
+<p>接下来顺理成章的改进，是自动缓解并修复 Jupiter 交换机线卡上的内存错误。如<a data-type="xref" href="#jupiter_memory_error_repair_workflow_befo">图6-6</a>所示，在自动化之前，这套流程高度依赖工程师判断故障来自硬件还是软件，再酌情导出流量、重启交换机或安排维修。</p>
+
+<figure><div class="figure" id="jupiter_memory_error_repair_workflow_befo"><img alt="自动化之前的 Jupiter 内存错误维修流程" src="assets/tsrw_0606.png"/>
+<h6><span class="label">图6-6.</span> 自动化之前的 Jupiter 内存错误维修流程</h6>
+</div></figure>
+
+<p>自动化不再尝试诊断内存错误，从而简化了维修流程（原因参见<a data-type="xref" href="#sometimes_imperfect_automation_is_good_en">“不完美的自动化有时已经足够”</a>）。我们改为像处理<span class="keep-together">线卡故障</span>一样处理内存错误。要让自动化覆盖这类错误，只需在配置文件中增加一种症状，使系统对新的问题类型采取行动。<a data-type="xref" href="#jupiter_memory_error_repair_workflow_with">图6-7</a>展示了内存错误的自动化处理流程。</p>
+
+<figure><div class="figure" id="jupiter_memory_error_repair_workflow_with"><img alt="自动化后的 Jupiter 内存错误维修流程" src="assets/tsrw_0607.png"/>
+<h6><span class="label">图6-7.</span> 自动化后的 Jupiter 内存错误维修流程</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect2"><div class="sect2" id="lessons_learned">
+<h2>经验教训</h2>
+
+<p>在持续数年的网络维修自动化工作中，我们总结出许多如何有效减少琐事的通用经验。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-tertiary="lessons learned" data-type="indexterm" id="ix_toilcase1less"></a></p>
+
+<section data-pdf-bookmark="用户界面不应引入额外开销或复杂性" data-type="sect3"><div class="sect3" id="uis_should_not_introduce_overhead_or_comp">
+<h3>用户界面不应引入额外开销或复杂性</h3>
+
+<p>在 Saturn 线卡上，更换线卡需要先导出整台交换机的流量。如果过早执行，等待备件和技术人员期间，交换机上所有正常线卡的可用容量都会损失。我们在界面中加入“准备组件”按钮，让技术人员等到即将更换线卡时才导出整台交换机的流量，从而避免其余部分无谓停机（见<a data-type="xref" href="#saturn_line_card_down_automation_left_par">图6-5</a>中的“按下准备按钮，导出交换机流量”）。</p>
+
+<p>界面和维修流程的这一设计引发了几个意料之外的<span class="keep-together">问题</span>：</p>
+
+<ul>
+	<li>
+	<p>按下按钮后，技术人员看不到流量导出的进度，只能等待系统允许继续操作。</p>
+	</li>
+	<li>
+	<p>按钮无法可靠地与交换机的实际状态同步。结果，有时交换机已经导出流量却没有得到维修；有时技术人员又会在流量尚未导出的交换机上操作，造成业务流量中断。</p>
+	</li>
+	<li>
+	<p>没有启用自动化的组件出现问题时，只会返回一条笼统的“联系工程团队”消息。经验较少的技术人员不知道怎样最快找到能提供帮助的人，而被联系的工程师也未必能立即响应。</p>
+	</li>
+</ul>
+
+<p>根据用户反馈，以及功能复杂度导致的回归问题，我们在后续流程中确保技术人员到达交换机之前，交换机已经处于安全且可维修的状态。</p>
+</div></section>
+
+<section data-pdf-bookmark="不要依赖人的经验" data-type="sect3"><div class="sect3" id="donapostrophet_rely_on_human_expertise">
+<h3>不要依赖人的经验</h3>
+
+<p>我们过度依赖经验丰富的数据中心技术人员来发现系统错误。例如，软件可能显示可以安全维修，但交换机实际上尚未导出流量。此外，还有几项工作必须由技术人员手动完成，却没有自动化提示。</p>
+
+<p>经验很难复制。一次影响尤其严重的事件中，一名技术人员为了加快“按按钮并等待结果”的过程，同时对数据中心内所有待修线卡发起流量导出，造成网络拥塞和用户可见的丢包。软件没有预见并阻止这种操作，因为我们没有让新手技术人员参与自动化测试。</p>
+</div></section>
+
+<section data-pdf-bookmark="设计可复用的组件" data-type="sect3"><div class="sect3" id="design_reusable_components">
+<h3>设计可复用的组件</h3>
+
+<p>应尽量避免单体式设计。复杂的自动化工作流应由可分离的组件构成，每个组件只负责一项明确任务。早期 Jupiter 自动化的关键组件可以轻松复用或调整，支持后续每一代网络架构；基于已有自动化构建功能，也让新增能力更加容易。后续各种 Jupiter 类网络架构都能利用早期迭代的成果。</p>
+</div></section>
+
+<section data-pdf-bookmark="不要把问题想得过于复杂" data-type="sect3"><div class="sect3" id="donapostrophet_overthink_the_problem">
+<h3>不要把问题想得过于复杂</h3>
+
+<p>我们对 Jupiter 线卡的内存错误问题分析过度。为了精确诊断，我们试图区分可通过重启修复的软件错误和必须更换线卡的硬件错误，还想分辨哪些错误会影响流量、哪些不会。我们用了近三年（2012—2015 年），收集了 650 多个独立内存错误的数据，才意识到这项工作可能做过了头，至少不应让它阻塞维修自动化项目。</p>
+
+<p>一旦决定对检测到的所有错误都采取行动，就很容易复用现有维修自动化，实施一项简单策略：遇到内存错误就导出流量、重启并重新安装交换机。如果问题再次发生，就判断故障很可能来自硬件，并申请更换组件。我们用一个季度收集数据，发现大多数错误都是暂时性的；多数交换机重启并重新安装后即可恢复。执行维修并不需要更多数据，因此把自动化推迟三年并无必要。</p>
+</div></section>
+
+<section data-pdf-bookmark="不完美的自动化有时已经足够" data-type="sect3"><div class="sect3" id="sometimes_imperfect_automation_is_good_en">
+<h3>不完美的自动化有时已经足够</h3>
+
+<p>在恢复流量前用 BERT 验证链路很有帮助，但 BERT 工具不支持网络管理链路。我们把这些链路纳入现有维修自动化，并通过检查允许它们跳过验证。由于这些链路不承载客户流量，我们认为绕过验证可以接受；如果后来证明验证很重要，再补充这项能力即可。</p>
+</div></section>
+
+<section data-pdf-bookmark="维修自动化不是“一劳永逸”" data-type="sect3"><div class="sect3" id="repair_automation_is_not_fire_and_forget">
+<h3>维修自动化不是“一劳永逸”</h3>
+
+<p>自动化的生命周期可能很长，因此人员离开或加入团队时，要为项目连续性做好规划。新工程师应接受遗留系统培训，以便修复缺陷。由于 Jupiter 网络架构的零件短缺，Saturn 网络架构远远超过原定退役日期仍在运行，迫使我们在其生命周期很晚的阶段继续加入改进。</p>
+
+<p>自动化一旦采用，可能会长期固化下来，既有好处也有坏处。应尽可能让设计能够灵活演进；依赖僵化的自动化会使系统难以适应变化。基于策略的自动化把意图与通用执行引擎明确分离，有助于让演进过程更加透明。</p>
+</div></section>
+
+<section data-pdf-bookmark="内置风险评估和纵深防御" data-type="sect3"><div class="sect3" id="build_in_risk_assessment_and_defense_in_d">
+<h3>内置风险评估和纵深防御</h3>
+
+<p>我们为 Jupiter 构建了新工具，在执行流量导出前评估风险。由于其中的复杂性，又加入了第二道检查，形成纵深防御。第二道检查分别限制受影响链路和设备的数量；任一阈值被突破，系统都会自动创建跟踪缺陷，要求进一步调查。我们不断调整阈值以减少误报。最初这只是主风险评估稳定前的临时措施，后来却证明它还能有效发现断电和软件缺陷造成的异常维修率（示例参见<a href="http://bit.ly/2LfMKDh">“自动化：让故障规模化”</a>，出自<em>《网站可靠性工程》</em>）。</p>
+</div></section>
+
+<section data-pdf-bookmark="争取故障预算和管理层支持" data-type="sect3"><div class="sect3" id="get_a_failure_budget_and_manager_support">
+<h3>争取故障预算和管理层支持</h3>
+
+<p>维修自动化有时会失败，尤其是在刚引入时。管理层的支持对于保护项目、授权团队坚持推进至关重要。建议为消除琐事的自动化设立错误预算。还应向外部利益相关方说明：尽管自动化存在失败风险，它仍不可或缺，并能推动可靠性和效率持续改进。</p>
+</div></section>
+
+<section data-pdf-bookmark="从全局出发思考" data-type="sect3"><div class="sect3" id="think_holistically">
+<h3>从全局出发思考</h3>
+
+<p>真正需要克服的障碍，是待自动化场景本身的复杂度。着手自动化之前，应重新审视系统：能否先简化系统或工作流？</p>
+
+<p>要关注所自动化工作流的所有环节，而不只是给自己制造琐事的部分。应让直接参与工作的人参加测试，并主动听取他们的反馈、寻求协助。如果他们出错，要弄清界面怎样才能更清楚，或还需要增加哪些安全检查。还要确保自动化不会制造新的琐事，例如创建不必要、仍需人工处理的工单。给其他团队添麻烦，只会增加他们对后续自动化工作的抵触。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacener with automation" data-startref="ix_toilcase1less" data-tertiary="lessons learned" data-type="indexterm" id="idm139660642103680"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, reducing toil in datacenter with automation" data-startref="ix_toilcase1" data-type="indexterm" id="idm139660642089856"/><a contenteditable="false" data-primary="datacenters" data-secondary="using automation to reduce toil, case study" data-startref="ix_dactrcase" data-type="indexterm" id="idm139660642090544"/><a contenteditable="false" data-primary="automation" data-secondary="using to reduce toil in datacenter, case study" data-startref="ix_autocase" data-type="indexterm" id="idm139660642088320"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="案例研究2：停用以文件服务器为后端的主目录" data-type="sect1"><div class="sect1" id="case_study_2_decommissioning_filer_backed">
+<h1>案例研究2：停用以文件服务器为后端的主目录</h1>
+
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>案例研究2涉<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-type="indexterm" id="ix_toilcase2"/>及的减少琐事<a contenteditable="false" data-primary="legacy systems" data-secondary="decommissioning filer-backed home directories, case study" data-type="indexterm" id="ix_legacycs"/>策略：</p>
+
+<ul>
+	<li>
+	<p>考虑停用遗留系统</p>
+	</li>
+	<li>
+	<p>把减少琐事作为一项功能来推动</p>
+	</li>
+	<li>
+	<p>争取管理层和同事的支持</p>
+	</li>
+	<li>
+	<p>拒绝琐事</p>
+	</li>
+	<li>
+	<p>从人工支撑的接口开始</p>
+	</li>
+	<li>
+	<p>提供自助服务</p>
+	</li>
+	<li>
+	<p>从小处着手，逐步改进</p>
+	</li>
+	<li>
+	<p>利用反馈持续改进</p>
+	</li>
+</ul>
+</div>
+
+<section data-pdf-bookmark="背景" data-type="sect2"><div class="sect2" id="background-id00016">
+<h2>背景</h2>
+
+<p>Google 创业早期，公司数据存储（CDS）SRE 团队为所有 Google 员工提供主目录。与企业 IT 中常见的 Active Directory 漫游配置文件类似，员工可以跨工作站和平台使用同一主目录。CDS 团队还提供“团队共享”，支持团队间在共享存储空间中协作。主目录和团队共享由一组通过 NFS/CIFS 提供服务的 NetApp 存储设备（即文件服务器）承载。这种存储的运维成本很高，但当时为 Google 员工提供了急需的服务。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="background" data-type="indexterm" id="idm139660642065072"/><a contenteditable="false" data-primary="NFS/CIFS protocols" data-type="indexterm" id="idm139660642066112"/></p>
+</div></section>
+
+<section data-pdf-bookmark="问题陈述" data-type="sect2"><div class="sect2" id="problem_statement-id00017">
+<h2>问题陈述</h2>
+
+<p>多年以后，这类文件服务器方案大多已被其他更好的存储方案取代，包括版本控制系统 Piper<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="problem statement" data-type="indexterm" id="idm139660642061072"/><sup><a data-type="noteref" href="ch06-zh.html#ch06fn9" id="ch06fn9-marker">9</a></sup>/Git-on-Borg<sup><a data-type="noteref" href="ch06-zh.html#ch06fn10" id="ch06fn10-marker">10</a></sup>、Google Drive、G Suite Team Drive、Google Cloud Storage，以及名为 x20 的内部全球分布式共享文件系统。这些替代方案在许多方面更具优势：</p>
+
+<ul class="pagebreak-before">
+	<li>
+	<p>NFS/CIFS 协议原本就不是为跨广域网运行而设计的，即使只有几十毫秒延迟，用户体验也会迅速恶化。数据只能驻留在一个位置，这会给远程员工和全球分布的团队带来问题。</p>
+	</li>
+	<li>
+	<p>与替代方案相比，这些设备的运行和扩容成本很高。</p>
+	</li>
+	<li>
+	<p>要让 NFS/CIFS 协议兼容 Google 的 Beyond Corp<a contenteditable="false" data-primary="Beyond Corp network security protocol" data-type="indexterm" id="idm139660642049552"/><sup><a data-type="noteref" href="ch06-zh.html#ch06fn11" id="ch06fn11-marker">11</a></sup> 网络安全模型，需要投入大量工作。</p>
+	</li>
+</ul>
+
+<p>与本章最相关的是，主目录和团队共享会产生大量琐事。存储配置的许多环节都由工单驱动。虽然这些流程往往已有部分脚本化，但仍占据 CDS 团队相当多的琐事时间。我们花大量时间创建和配置共享、修改访问权限、排查最终用户问题，并通过上线和下线操作管理容量。除了配置、更新和备份，CDS 还负责这些专用硬件的采购配置、上架和布线。受延迟要求限制，我们常常必须把设备部署在远程办公室而不是 Google 数据中心；为了管理一次部署，团队成员有时要长途出差。</p>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect2"><div class="sect2" id="what_we_decided_to_do-id00018">
+<h2>我们的决定</h2>
+
+<p>首先，我们收集数据。CDS 创建了 Moonwalk 工具，分析员工如何使用我们的服务。我们采集日活跃用户（DAU）、月活跃用户（MAU）等传统商业智能指标，并提出“哪些职类确实会使用主目录”“每天使用文件服务器的用户最常访问哪类文件”等问题。Moonwalk 结合用户调查证实，文件服务器当前承载的业务需求，可以由运维开销和成本更低的替代方案更好地满足。另一个有力的商业理由也推动我们摆脱文件服务器：如果能把大多数用例迁移到 G Suite/GCP，就可以用所得经验改进这些产品，进而帮助其他大型企业迁移到 G Suite/GCP。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="decision on the solution" data-type="indexterm" id="idm139660642035216"/></p>
+
+<p>没有单一替代方案能覆盖文件服务器的所有现有用例。但把问题拆成更小、可处理的组成部分后，我们发现少数几种方案合起来能够覆盖全部用例。它们更加专用，但每一种都比通用的文件服务器方案提供更好的用户体验。例如：<a contenteditable="false" data-primary="storage systems" data-secondary="alternatives to filer-based home directories" data-type="indexterm" id="idm139660642032480"/></p>
+
+<dl>
+	<dt><dfn>x20<sup><a data-type="noteref" href="ch06-zh.html#ch06fn12" id="ch06fn12-marker">12</a></sup></dfn></dt>
+	<dd><p>非常适合让团队在全球范围共享二进制文件等静态制品<a contenteditable="false" data-primary="x20 filesystem" data-type="indexterm" id="idm139660642038896"></a></p></dd>
+	<dt><dfn><a href="http://bit.ly/2soMbjQ">G Suite Team Drive</a></dfn></dt>
+	<dd><p>非常适合办公文档协作，而且对用户侧延迟的容忍度远高于 NFS<a contenteditable="false" data-primary="G Suite Team Drive" data-type="indexterm" id="idm139660642047664"></a></p></dd>
+	<dt><dfn>Google Colossus 文件系统</dfn></dt>
+	<dd><p>让团队共享大型数据文件时，比 NFS 更安全、也更易扩展<a contenteditable="false" data-primary="Google’s Colossus File System" data-type="indexterm" id="idm139660642045104"></a></p></dd>
+	<dt><dfn>Piper/Git-on-Borg</dfn></dt>
+	<dd><p>能更好地同步 dotfile（工程师的个性化工具偏好配置）<a contenteditable="false" data-primary="Piper/Git-on-Borg version control system" data-type="indexterm" id="idm139660642043584"></a></p></dd>
+	<dt><dfn>新的“历史记录即服务”工具</dfn></dt>
+	<dd><p>可以保存跨工作站的命令行历史记录</p></dd>
+</dl>
+
+<p>随着我们梳理用例并找到替代方案，停用计划逐渐成形。</p>
+</div></section>
+
+<section data-pdf-bookmark="设计与实现" data-type="sect2"><div class="sect2" id="design_and_implementation">
+<h2>设计与实现</h2>
+
+<p>摆脱文件服务器是一项持续迭代、历时多年的工作，涉及多个内部项目：<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="design and implementation" data-type="indexterm" id="idm139660642022864"/></p>
+
+<dl>
+	<dt><dfn>Moira</dfn></dt>
+	<dd><p>停用主目录</p></dd>
+	<dt><dfn>Tekmor</dfn></dt>
+	<dd><p>迁移主目录用户中的长尾部分</p></dd>
+	<dt><dfn>Migra</dfn></dt>
+	<dd><p>停用团队共享</p></dd>
+	<dt><dfn>Azog</dfn></dt>
+	<dd><p>停用主目录/共享基础设施及相关硬件</p></dd>
+</dl>
+
+<p>本案例聚焦第一个项目 Moira。后续项目都建立在 Moira 的经验和成果之上。</p>
+
+<p>如<a data-type="xref" href="#four_stages_of_project_moira">图6-8</a>所示，Moira 分为四个阶段。</p>
+
+<figure><div class="figure" id="four_stages_of_project_moira"><img alt="Moira 项目的四个阶段" src="assets/tsrw_0608.png"/>
+<h6><span class="label">图6-8.</span> Moira 项目的四个阶段</h6>
+</div></figure>
+
+<p>停用遗留系统的第一步，是阻止新增采用；更现实的做法往往是放慢新增速度或提高采用门槛。从用户手中收回已经提供的东西，远比一开始就不提供更痛苦。Moonwalk 数据表明，非工程岗位的 Google 员工最少使用共享主目录，因此第一阶段以他们为目标。随着各阶段范围扩大，我们对替代存储方案以及迁移流程和工具也越来越有信心。项目的每一阶段都有相应设计文档，从安全性、可扩展性、测试和发布等维度审查方案。我们也特别关注用户体验、预期和沟通，确保每一阶段受影响的用户都理解停用项目的原因，以及归档或迁移数据的最简便方式。</p>
+</div></section>
+
+<section data-pdf-bookmark="关键组件" data-type="sect2"><div class="sect2" id="key_components">
+<h2>关键组件</h2>
+
+<section data-pdf-bookmark="Moonwalk" data-type="sect3"><div class="sect3" id="moonwalk">
+<h3>Moonwalk</h3>
+
+<p>虽然已有用户共享目录的基本统计数据（例如共享大小），但还需要理解用户工作流，才能为停用决策提供依据。为此，我们建立了 Moonwalk 系统来收集和报告这些信息。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="key components of the solution" data-type="indexterm" id="ix_toilcase2key"/><a contenteditable="false" data-primary="Moonwalk" data-type="indexterm" id="idm139660642007968"/></p>
+
+<p>Moonwalk 把谁在何时访问哪些文件的数据存入 BigQuery，使我们能够生成报告、执行临时查询，更好地理解用户。借助 BigQuery，我们汇总了 25 亿个文件的访问模式，这些文件占用 300 TB 磁盘空间，归属于全球 60 个地点、124 台 NAS 设备、400 个磁盘卷中的 60,000 个 POSIX 用户。</p>
+</div></section>
+
+<section data-pdf-bookmark="Moira 门户" data-type="sect3"><div class="sect3" id="moira_portal">
+<h3>Moira 门户</h3>
+
+<p>用户规模庞大，无法用人工工单流程管理主目录停用工作。我们必须尽量减少整个过程中的人工接触，包括调查用户、解释停用原因，并引导他们归档数据或迁移到替代方案。最终需求包括：<a contenteditable="false" data-primary="Moira portal" data-type="indexterm" id="idm139660642006272"/></p>
+
+<ul>
+	<li>
+	<p>介绍项目的入口页面</p>
+	</li>
+	<li>
+	<p>持续更新的常见问题解答</p>
+	</li>
+	<li>
+	<p>当前用户共享目录的状态和使用信息</p>
+	</li>
+	<li>
+	<p>申请、停用、归档、删除、延期或重新激活共享目录的选项</p>
+	</li>
+</ul>
+
+<p>由于必须覆盖多种用户场景，业务逻辑变得相当复杂。例如，用户可能离开 Google、暂时休假，或其数据正处于诉讼保全状态。<a data-type="xref" href="#business_logic_based_upon_user_scenarios">图6-9</a>给出了设计文档中的状态图示例，展示了这种复杂性。</p>
+
+<figure><div class="figure" id="business_logic_based_upon_user_scenarios"><img alt="基于用户场景的业务逻辑" src="assets/tsrw_0609.png"/>
+<h6><span class="label">图6-9. </span>基于用户场景的业务逻辑</h6>
+</div></figure>
+
+<p>门户采用的技术比较简单：使用 Python 和 Flask 框架编写，读写 Bigtable，并通过若干后台作业和调度器管理工作。</p>
+</div></section>
+
+<section data-pdf-bookmark="归档与迁移自动化" data-type="sect3"><div class="sect3" id="archiving_and_migration_automation">
+<h3>归档与迁移自动化</h3>
+
+<p>我们需要许多辅助工具，把门户与配置管理衔接起来，并查询用户信息、与用户沟通。还必须确保把正确的信息发给正确的人。误报（错误地通知用户需要采取行动）和漏报（拿走某项资源前没有通知用户）都不可接受；此处出错会损害信誉，并增加客户支持工作。<a contenteditable="false" data-primary="migrations" data-secondary="automation in filer-backed home directory decommissioning" data-type="indexterm" id="idm139660641990112"/><a contenteditable="false" data-primary="automation" data-secondary="archiving and migration, in filer-backed home directory decommissioning" data-type="indexterm" id="idm139660641989152"/></p>
+
+<p>我们与替代存储系统的负责人合作，把所需功能加入他们的路线图。随着项目推进，原本不够成熟的方案逐渐更适合文件服务器用例。我们还复用并扩展其他团队的工具。例如，门户的自动归档功能使用了另一团队内部开发的工具，将数据从 Google Cloud Storage 迁移到 Google Drive。</p>
+
+<p>项目整个生命周期都需要大量软件开发。我们根据下一阶段的需求和用户反馈，不断构建、迭代 Moonwalk 报告流水线、门户，以及用于管理共享目录停用和归档的自动化。直到第三阶段，也就是接近两年后，系统才接近功能完备；即便如此，仍需额外工具处理约 800 名“长尾”用户。这种缓慢而稳健的方式带来了明确好处，它使我们能够：</p>
+
+<ul>
+	<li>
+	<p>保持精干团队，平均由三名 CDS 团队成员参与</p>
+	</li>
+	<li>
+	<p>减少对用户工作流的干扰</p>
+	</li>
+	<li>
+	<p>限制 Techstop（Google 内部技术支持组织）承担的琐事</p>
+	</li>
+	<li>
+	<p>按需构建工具，避免浪费工程投入</p>
+	</li>
+</ul>
+
+<p>与所有工程决策一样，这里也存在取舍：项目会持续很久，因此团队在构建这些方案的同时，仍必须承受文件服务器带来的运维琐事。</p>
+
+<p>项目于 2016 年正式完成。主目录数量从 65,000 个减少到撰写本文时的约 50 个。（当前的 Azog 项目旨在迁移最后这些用户，并彻底停用文件服务器硬件。）用户体验得到改善，CDS 也淘汰了运维成本高昂的硬件和流程。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-startref="ix_toilcase2key" data-tertiary="key components of the solution" data-type="indexterm" id="idm139660641972528"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect2"><div class="sect2" id="lessons_learned-id00019">
+<h2>经验教训</h2>
+
+<p>没有任何一种替代方案能够单独取代 Google 员工使用了 14 年以上的文件服务器存储，但我们并不需要整体一对一替换。我们实际上把方案从通用但受限的文件系统层上移到多个面向特定应用的方案，以牺牲灵活性换取更好的可扩展性、延迟容忍度和安全性。Moira 团队必须预判多种用户路径，并考虑成熟度各不相同的替代方案；同时还要管理用户预期：这些方案合起来能提供更好的体验，但迁移过程不会毫无痛苦。一路走来，我们总结出以下有效减少琐事的经验。<a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-tertiary="lessons learned" data-type="indexterm" id="ix_toilcase2less"/></p>
+
+<section data-pdf-bookmark="质疑既有假设，淘汰代价高昂的业务流程" data-type="sect3"><div class="sect3" id="challenge_assumptions_and_retire_expensiv">
+<h3>质疑既有假设，淘汰代价高昂的业务流程</h3>
+
+<p>业务需求会漂移，新方案也不断出现，因此值得定期质疑琐事密集型业务流程。<a contenteditable="false" data-primary="business processes producing toil" data-secondary="questioning" data-type="indexterm" id="idm139660641971184"/>正如<a data-type="xref" href="#toil_management_strategies">“运维琐事管理策略”</a>所述，拒绝琐事——决定不再执行制造琐事的任务——往往是最简单的消除方式，尽管实施起来未必迅速或容易。除了减少琐事，还应以用户分析和其他商业理由强化论证。停用文件服务器最主要的商业理由，是 Beyond Corp 安全模型带来的收益。因此，Moira 虽然能显著减少 CDS 团队的琐事，但强调停用文件服务器的多项安全收益，能形成更有说服力的商业案例。</p>
+</div></section>
+
+<section data-pdf-bookmark="构建自助服务接口" data-type="sect3"><div class="sect3" id="build_self_service_interfaces">
+<h3>构建自助服务接口</h3>
+
+<p>我们为 Moira 构建了成本较高的定制门户，但通常也有更简单的办法。<a contenteditable="false" data-primary="self-service methods for users" data-type="indexterm" id="idm139660641958400"/>Google 的许多团队使用版本控制来管理和配置服务，并以拉取请求的形式处理组织内请求，在 Google 称为<em>变更列表</em>（CL）。这种做法几乎不需要服务团队介入，同时又能利用代码审查和持续部署流程来验证、测试并部署内部服务配置变更。</p>
+</div></section>
+
+<section data-pdf-bookmark="从人工支撑的接口开始" data-type="sect3"><div class="sect3" id="start_with_human_backed_interface-id00020">
+<h3>从人工支撑的接口开始</h3>
+
+<p>Moira 团队曾多次采用“幕后工程师”方式，把自动化与工程师的人工工作结合起来。例如，共享目录申请会创建跟踪缺陷，自动化在处理请求时持续更新它。系统还会给最终用户分配缺陷，提醒他们处理自己的共享目录。工单可以充当自动化的简易图形界面：记录工作、更新利益相关方，并在自动化失灵时提供简单的人工后备机制。在我们的案例中，如果用户迁移时需要帮助，或自动化无法处理请求，缺陷会自动转入由 SRE 人工处理的队列。<a contenteditable="false" data-primary="automation" data-secondary="partial automation with human-backed interfaces" data-type="indexterm" id="idm139660641963168"/><a contenteditable="false" data-primary="human-backed interfaces, starting with" data-type="indexterm" id="idm139660641966704"/></p>
+</div></section>
+
+<section data-pdf-bookmark="消除“雪花”式特例" data-type="sect3"><div class="sect3" id="melt_snowflakes">
+<h3>消除“雪花”式特例</h3>
+
+<p>自动化偏爱一致性。Moira 的工程师选择改造自动化，让它专门处理共享目录的边界情况；或者删除、修改不符合规范的共享目录，使其满足工具预期。这样一来，大部分迁移流程都接近了零人工接触。<a contenteditable="false" data-primary="uniformity, increasing" data-type="indexterm" id="idm139660641948272"/></p>
+
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p><strong>趣闻：</strong>在 Google，把现实改造成符合代码预期、而不是修改代码去适应现实的做法称为“买下侏儒”。这个说法来自公司早期购物搜索引擎 Froogle 的一则传说。</p>
+
+<p>Froogle 上线初期，一个严重的搜索质量缺陷导致搜索“跑鞋”时，穿着跑鞋的花园侏儒会排在结果前列。多次修复失败后，有人注意到这只侏儒并非量产商品，而是 eBay 上一件支持“立即购买”的孤品，于是他们干脆把它买了下来（见<a data-type="xref" href="#garden_gnome_that_wouldnapostrophet_go_aw">图6-10</a>）。</p>
+</div>
+
+<figure><div class="figure" id="garden_gnome_that_wouldnapostrophet_go_aw"><img alt="那个怎么也赶不走的花园侏儒" src="assets/tsrw_0610.png"/>
+<h6><span class="label">图6-10. </span>那个怎么也赶不走的花园侏儒</h6>
+</div></figure>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="运用组织层面的助推手段" data-type="sect3"><div class="sect3" id="employ_organizational_nudges">
+<h3>运用组织层面的助推手段</h3>
+
+<p>应设法推动新用户采用更好、最好也更少产生琐事的替代方案。为此，Moira 要求新的共享目录或配额申请经过升级审批，并表彰主动停用共享目录的用户。还应提供完善的服务配置、最佳实践和适用场景文档。Google 团队常用代码实验或操作手册，教用户针对常见场景配置和使用服务，因此大多数新用户接入都不需要服务团队协助。<a contenteditable="false" data-primary="legacy systems" data-secondary="decommissioning filer-backed home directories, case study" data-startref="ix_legacycs" data-type="indexterm" id="idm139660641946544"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-startref="ix_toilcase2less" data-tertiary="lessons learned" data-type="indexterm" id="idm139660641937984"/><a contenteditable="false" data-primary="toil, eliminating" data-secondary="case study, decommissioning filer-backed home directories" data-startref="ix_toilcase2" data-type="indexterm" id="idm139660641944288"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="结语" data-type="sect1"><div class="sect1" id="conclusion-id00021">
+<h1>结语</h1>
+
+<p>运行生产服务所产生的运维琐事，至少会随服务的复杂度和规模线性增长。自动化通常是消除琐事的黄金标准，也可以与其他多种策略结合使用。即使某项琐事不值得投入成本实现完全自动化，也可以通过部分自动化或改变业务流程等方式，减轻工程和运维负担。</p>
+
+<p>本章介绍的消除琐事模式和方法，可以推广到各种大型生产服务。消除琐事能够释放工程时间，使团队专注于服务中更具持久价值的方面；随着现代服务架构的复杂度和规模不断增长，也能把人工任务控制在最低水平。</p>
+
+<p>必须注意，消除琐事并不总是最佳选择。正如本章反复强调的，应当考虑识别琐事、设计方案以及实施流程或自动化所需的可衡量成本。识别出琐事后，关键是结合指标、投资回报率分析、风险评估和迭代开发，判断何时值得减少它。</p>
+
+<p>运维琐事通常起初很小，却可能迅速膨胀，最终吞噬整个团队。SRE 团队必须坚持不懈地消除琐事，因为即使任务看似艰巨，收益通常仍会超过成本。本章介绍的每个项目都要求相关团队保持毅力与投入；他们有时要面对质疑或组织惯性，也始终要与其他高优先级事项竞争资源。希望这些故事能鼓励你识别并量化自己的琐事，继而着手消除它。即使今天还无法投入大型项目，也可以先做一个小型概念验证，逐步改变团队对待琐事的态度。<a contenteditable="false" data-primary="toil, eliminating" data-startref="ix_toil" data-type="indexterm" id="idm139660641927840"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch06fn1"><sup><a href="ch06-zh.html#ch06fn1-marker">1</a></sup>在这里列出的特征中，“能否自动化”最具主观性。随着你通过自动化消除琐事并积累经验，判断也会不断变化。原本看似无解（或风险过高）的问题领域，在你习惯“让机器人来干活”之后，可能就会变得可行。</p><p data-type="footnote" id="ch06fn2"><sup><a href="ch06-zh.html#ch06fn2-marker">2</a></sup>有些工程师并不介意长期处理琐事——每个人对琐事的耐受阈值并不相同。但从长远看，琐事会使职业发展停滞，并因倦怠加剧人员流失。一定程度的琐事无法避免，但为了团队、服务和个人的健康，我们建议在可行之处尽量减少它。</p><p data-type="footnote" id="ch06fn3"><sup><a href="ch06-zh.html#ch06fn3-marker">3</a></sup>换言之，如果某项服务及其九个依赖项的可用性都为 99.99%，那么该服务的总体可用性就是 0.9999<sup>10</sup> = 99.9%。关于依赖项如何影响服务可用性的进一步讨论，请参阅<a href="http://queue.acm.org/detail.cfm?id=3096459">《服务可用性演算》</a>。</p><p data-type="footnote" id="ch06fn4"><sup><a href="ch06-zh.html#ch06fn4-marker">4</a></sup>当然，有些一次性需求无法通过自助服务处理（“你要一台内存<em>多大</em>的虚拟机？”），但目标应当是覆盖大多数用例。即使只把 80%～90% 的请求转为自助服务，也足以大幅减少工作量。</p><p data-type="footnote" id="ch06fn5"><sup><a href="ch06-zh.html#ch06fn5-marker">5</a></sup>简而言之，就是从各自独立的专用设备转向具有统一接口的设备集群。关于这一类比的详细说明，请参阅<a data-type="xref" href="#case_study_1_reducing_toil_in_the_datacen">“案例研究1：通过自动化减少数据中心的运维琐事”</a>。</p><p data-type="footnote" id="ch06fn6"><sup><a href="ch06-zh.html#ch06fn6-marker">6</a></sup>线卡是一种模块化组件，通常为网络提供多个接口。它与其他线卡和组件一起插在机箱背板上。模块化网络交换机由机箱、背板、电源接入模块、控制卡模块以及一块或多块线卡组成。每块线卡为机器或其他交换机中的线卡提供网络连接。与 USB 网络适配器类似，只要线卡已经完成“流量疏导”，即其他接口已被告知停止向其发送流量，就可以在不关闭整台交换机的情况下更换它。</p><p data-type="footnote" id="ch06fn7"><sup><a href="ch06-zh.html#ch06fn7-marker">7</a></sup>误码率测试（Bit Error Rate Test）：在恢复服务之前检查链路是否存在异常。</p><p data-type="footnote" id="ch06fn8"><sup><a href="ch06-zh.html#ch06fn8-marker">8</a></sup>检查端口是否接错线。</p><p data-type="footnote" id="ch06fn9"><sup><a href="ch06-zh.html#ch06fn9-marker">9</a></sup>Piper 是 Google 的内部版本控制系统。详情参见 Rachel Potvin 和 Josh Levenberg 的论文“Why Google Stores Billions of Lines of Code in a Single Repository”，载于 <em>Communications of the ACM</em> 59(7), 2016，第 78～87 页，<a href="http://bit.ly/2J4jgMi"><em class="hyperlink">http://bit.ly/2J4jgMi</em></a>。</p><p data-type="footnote" id="ch06fn10"><sup><a href="ch06-zh.html#ch06fn10-marker">10</a></sup>Google 还为未存放在 Piper 中的代码提供可扩展的自助式 Git 托管服务。</p><p data-type="footnote" id="ch06fn11"><sup><a href="ch06-zh.html#ch06fn11-marker">11</a></sup><a href="https://cloud.google.com/beyondcorp/">Beyond Corp</a> 是一项从传统的边界安全模型转向基于密码学身份的安全模型的计划。当 Google 笔记本电脑连接内部服务时，该服务会综合验证标识笔记本电脑的加密证书、用户持有的第二因素（例如 USB 安全密钥）、客户端设备的配置与状态，以及用户凭据，以确认连接是否可信。</p><p data-type="footnote" id="ch06fn12"><sup><a href="ch06-zh.html#ch06fn12-marker">12</a></sup>x20 是 Google 内部使用的全球共享、高可用文件系统，提供类似 POSIX 的文件系统语义。</p></div></div></section></body></html>
