@@ -1,0 +1,716 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>配置细节</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 15. Configuration Specifics" data-type="chapter" epub:type="chapter"><div class="chapter" id="configuration_specifics">
+<h1><span class="label">第 15 章　</span>配置细节</h1>
+
+<p class="byline">作者：Dave Cunningham、Misha Brukman<br/>
+Christophe Kalt 和 Betsy Beyer 参与撰写</p>
+
+<p>管理生产系统是 SRE 为组织创造价值的诸多方式之一。要在生产环境中配置和运行应用，就必须深入了解这些系统的组成与工作原理。发生故障时，值班工程师需要确切知道配置位于何处，以及如何修改。如果团队或组织没有投入精力解决配置带来的琐事，这项职责就会成为负担。</p>
+
+<p>本书用了大量篇幅讨论琐事（参见<a data-type="xref" href="ch06-zh.html#eliminating_toil">第 6 章</a>）。如果您的 SRE 团队深受配置相关琐事所累，希望本章介绍的一些方法能帮助您减少配置变更所占用的时间。</p>
+
+<section data-pdf-bookmark="Configuration-Induced Toil" data-type="sect1"><div class="sect1" id="configuration_induced_toil">
+<h1>配置引发的琐事</h1>
+
+<p>项目生命周期刚开始时，配置通常比较轻量、直观。<a contenteditable="false" data-primary="configuration" data-secondary="configuration-induced toil" data-type="indexterm" id="idm139660638670736"/>您可能只有几个采用<em>纯数据</em>格式的文件，例如 <a href="http://bit.ly/2HbuBo2">INI</a>、<a href="http://json.org">JSON</a>、<a href="http://yaml.org">YAML</a> 或 XML。<a contenteditable="false" data-primary="toil" data-secondary="configuration-induced" data-type="indexterm" id="idm139660638664112"/>管理这些文件几乎不会产生琐事。但随着应用、服务器和变体不断增加，配置可能变得极其复杂冗长。例如，过去只需编辑一个配置文件就能“更改一项设置”，如今却要更新多个位置的配置文件。这样的配置也难以阅读，因为重要差异淹没在大量无关的重复细节中。我们把<a contenteditable="false" data-primary="replication toil" data-type="indexterm" id="idm139660638654800"/>这类配置工作称为<em>复制型琐事</em>（replication toil）：也就是管理散布在整个系统中的重复配置。这种琐事并非大型组织和庞大系统所独有，在拥有许多独立配置组件的微服务架构中尤其常见。</p>
+
+<p>面对复制型琐事，工程师通常会构建自动化工具或配置框架，目标是消除配置系统中的重复，使配置更易理解和维护。这种做法会复用软件工程技术，往往还会引入“配置语言”（configuration language）。Google SRE 已经创建了多种配置语言，用来减少规模最大、最复杂的生产系统中的琐事。</p>
+
+<p>遗憾的是，这种策略不一定能消除配置琐事。摆脱数量惊人的零散配置后，项目及其配置库又会迅速扩张。<a contenteditable="false" data-primary="complexity toil" data-type="indexterm" id="idm139660638662112"/>于是，您不可避免地会遇到<em>复杂性琐事</em>（complexity toil）：处理复杂自动化系统涌现出的、有时并不理想的行为，是一项困难而令人沮丧的工作。这类琐事通常出现在规模较大的组织中（工程师超过 10 人），并会随组织增长而加剧。越早着手解决越好，因为配置的规模和复杂度只会随时间增长。</p>
+</div></section>
+
+<section data-pdf-bookmark="Reducing Configuration-Induced Toil" data-type="sect1"><div class="sect1" id="reducing_configuration_induced_toil">
+<h1>减少配置引发的琐事</h1>
+
+<p>如果项目中充斥着配置相关琐事，可以采用几种基本策略来<a contenteditable="false" data-primary="toil" data-secondary="configuration-induced" data-tertiary="reducing" data-type="indexterm" id="idm139660638660048"/>改善<a contenteditable="false" data-primary="configuration" data-secondary="configuration-induced toil" data-tertiary="reducing" data-type="indexterm" id="idm139660638660416"/>现状。</p>
+
+<p>少数情况下，如果应用是自行开发的，可以选择彻底取消配置。某些配置工作可能天然更适合由应用本身而非配置语言处理：应用能够取得机器信息，因此由它设置默认值或许更合理；应用也能根据负载扩缩容，因此可以动态调整某些值。</p>
+
+<p>如果不能取消配置，而且<em>复制型琐事</em>已成为问题，可以考虑通过自动化减少配置库中的重复。<a contenteditable="false" data-primary="replication toil" data-secondary="automating for configuration" data-type="indexterm" id="idm139660638647104"/>您可以集成一种新的配置语言，也可能需要改进或替换现有的配置方案。<sup><a data-type="noteref" href="ch15-zh.html#ch15fn1" id="ch15fn1-marker">1</a></sup>下一节<a data-type="xref" href="#critical_properties_and_pitfalls_of_confi">“配置系统的关键特性与陷阱”</a>将就如何选择或<span class="keep-together">设计</span>这种系统给出一些指导。</p>
+
+<p>如果决定建立新的配置框架，就需要把配置语言与待配置的应用集成起来。<a data-type="xref" href="#integrating_an_existing_application_kuber">“集成现有应用：Kubernetes”</a>以 Kubernetes 为例说明如何集成现有应用，<a data-type="xref" href="#integrating_custom_applications_left_pare">“集成定制应用（内部开发的软件）”</a>则给出更通用的建议。这些<span class="keep-together">小节</span>使用 Jsonnet 演示了一些示例；我们选择它，是为了用一种有代表性的配置语言加以说明。</p>
+
+<p>无论是继续采用现有方案，还是实现一种新的配置语言，只要已经建立配置系统来缓解复制型琐事，<a data-type="xref" href="#effectively_operating_a_configuration_sys">“有效运维配置系统”</a>、<a data-type="xref" href="#when_to_evaluate_configuration">“何时求值配置”</a>和<span class="keep-together"><a data-type="xref" href="#guarding_against_abusive_configuration">“防范滥用配置”</a></span>中的最佳实践都能帮助您优化方案，而不受所用语言限制。采用这些流程和工具，有助于尽量减少复杂性琐事。</p>
+</div></section>
+
+<section data-pdf-bookmark="Critical Properties and Pitfalls of Configuration Systems" data-type="sect1"><div class="sect1" id="critical_properties_and_pitfalls_of_confi">
+<h1>配置系统的关键特性与陷阱</h1>
+
+<p><a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>概述了所有配置系统都应具备的一些关键特性。<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-type="indexterm" id="ix_cfgcrit"/>除了轻量、易学、简单、表达能力强等普遍的理想要求外，高效的配置系统还必须：</p>
+
+<ul>
+	<li>
+	<p>通过管理配置文件的<em>工具</em>（检查器、调试器、格式化工具、IDE 集成等），保障配置健康度，增强工程师的信心并提高生产效率。</p>
+	</li>
+	<li>
+	<p>对配置进行<em>自包含式</em>（hermetic）求值，以支持回滚和一般意义上的<span class="keep-together">可重放性</span>。</p>
+	</li>
+	<li>
+	<p><em>将配置与数据分离</em>，以便轻松分析配置，并支持多种配置接口。</p>
+	</li>
+</ul>
+
+<p>这些特性的关键意义尚未得到广泛认识，而我们形成今天的理解也确实经历了漫长过程。在此期间，Google 曾开发过几个缺少这些关键特性的配置系统，而且遇到这种问题的不止我们。流行的配置系统种类繁多，但几乎都至少落入过下面一个陷阱。</p>
+
+<section data-pdf-bookmark="Pitfall 1: Failing to Recognize Configuration as a Programming Language Problem" data-type="sect2"><div class="sect2" id="pitfall_1_failing_to_recognize_configurat">
+<h2>陷阱 1：没有认识到配置是编程语言问题</h2>
+
+<p>如果没有刻意设计一门语言，最后得到的“语言”几乎不可能是<a contenteditable="false" data-primary="languages, configuration" data-secondary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638622368"/>一门好语言。<a contenteditable="false" data-primary="programming languages" data-secondary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638623456"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="failing to recognize configuration as programming language problem" data-type="indexterm" id="idm139660638620256"/></p>
+
+<p>配置语言描述的是数据而非行为，但仍具有编程语言的其他特征。如果配置策略一开始就以采用纯数据格式为目标，编程语言特性往往会从后门悄然渗入。<a contenteditable="false" data-primary="data-only languages (configuration)" data-type="indexterm" id="idm139660638617680"/>结果这种格式并未保持为<em>纯数据</em>语言，反而变成了一门晦涩复杂的<em>编程</em>语言。</p>
+
+<p>例如，有些系统会在待预配虚拟机（VM）的模式（schema）中加入 <code>count</code> 属性。该属性并非虚拟机本身的属性，而是表示您需要多台虚拟机。它虽有用，却属于编程语言而非数据格式的特性，因为它需要外部求值器或解释器。传统编程语言会把这类逻辑放在数据产物之外，例如使用 <code>for</code> 循环或列表推导式，按需生成更多虚拟机。</p>
+
+<p>另一个例子是，配置语言不断增加<a href="http://bit.ly/2LQyXnZ">字符串插值规则</a>，却不支持通用表达式。<a contenteditable="false" data-primary="string interpolation" data-type="indexterm" id="idm139660638611472"/>这些字符串表面上“只是数据”，实际上却可能包含复杂代码，包括数据结构操作、校验和计算、base64 编码等。</p>
+
+<p>流行的 YAML + Jinja 方案也有缺点。XML、JSON、YAML 和文本格式的协议缓冲区等简单纯数据格式，非常适合纯数据用例。<a contenteditable="false" data-primary="protocol buffers" data-type="indexterm" id="idm139660638607744"/><a contenteditable="false" data-primary="templates" data-secondary="templating engines, using for configuration" data-type="indexterm" id="idm139660638606688"/>同样，Jinja2 或 Go 模板等文本模板引擎也非常适合生成 HTML。但把两者组合成配置语言后，无论对人还是工具都难以维护和分析。在上述各种情况下，这个陷阱最终都会留下一门复杂晦涩、不适合工具处理的“语言”。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 2: Designing Accidental or Ad Hoc Language Features" data-type="sect2"><div class="sect2" id="pitfall_2_designing_accidental_or_ad_hoc">
+<h2>陷阱 2：随意或临时拼凑语言特性</h2>
+
+<p>SRE 通常是在大规模运维系统时，才切身感受到配置的易用性问题。<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="designing accidental or ad hoc language features" data-type="indexterm" id="idm139660638603776"/>新语言不会拥有完善的工具支持，例如 IDE 支持和优秀的检查器；如果语言语义没有文档说明或十分晦涩，开发定制工具也会非常痛苦。<a contenteditable="false" data-primary="programming languages" data-secondary="designing accidental or ad hoc language features in configuration system" data-type="indexterm" id="idm139660638604096"/></p>
+
+<p>随着时间推移，不断为简单配置格式添加临时拼凑的编程语言特性，或许能凑出功能完整的方案；但这类语言比经过正式设计的同类语言更复杂，表达能力通常也更弱。由于作者无法预先考虑各特性之间的相互作用，它们还容易产生各种陷阱和怪异行为。</p>
+
+<p>与其寄希望于配置系统永远不会复杂到需要基本编程结构，不如在最初的设计阶段就考虑这些需求。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 3: Building Too Much Domain-Specific Optimization" data-type="sect2"><div class="sect2" id="pitfall_3_building_too_much_domain_specif">
+<h2>陷阱 3：过度针对特定领域优化</h2>
+
+<p>新的领域专用方案用户群越小，就越需要等待更长时间，才能积累到足以证明值得开发工具的用户数量。<a contenteditable="false" data-primary="domain-specific optimization (excessive) in configurations" data-type="indexterm" id="idm139660638599200"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="building too much domain-specific optimization" data-type="indexterm" id="idm139660638601248"/>由于这门语言在该领域之外几乎无用，工程师不愿投入时间透彻理解它，<a href="https://stackoverflow.com/">Stack Overflow</a> 之类的学习资源也更难找到。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 4: Interleaving “Configuration Evaluation” with “Side Effects”" data-type="sect2"><div class="sect2" id="pitfall_4_interleaving_quotation_markconf">
+<h2>陷阱 4：把“配置求值”与“副作用”交织在一起</h2>
+
+<p>副作用包括修改外部系统，或在配置运行期间查询带外数据源（DNS、虚拟机 ID、最新构建版本）。<a contenteditable="false" data-primary="side effects, interleaving with configuration evaluation" data-type="indexterm" id="idm139660638591472"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="interleaving configuration evaluation with side effects" data-type="indexterm" id="idm139660638590800"/></p>
+
+<p>允许这些副作用的系统会<em>破坏自包含性</em>，也会妨碍<em>配置与数据分离</em>。极端情况下，如果不花钱预留云资源，甚至无法调试配置。为了实现配置与数据分离，应先对配置求值，再把结果数据交给用户分析，最后才允许产生副作用。</p>
+</div></section>
+
+<section data-pdf-bookmark="Pitfall 5: Using an Existing General-Purpose Scripting Language Like Python, Ruby, or Lua" data-type="sect2"><div class="sect2" id="pitfall_5_using_an_existing_general_purpo">
+<h2>陷阱 5：使用 Python、Ruby 或 Lua 等现有通用脚本语言</h2>
+
+<p>这看似是避开前四个陷阱的简便方法，但使用通用脚本语言的实现通常十分笨重，或者需要侵入式沙箱才能保证自包含性。<a contenteditable="false" data-primary="scripting languages, general-purpose, using for configuration system" data-type="indexterm" id="idm139660638582448"/><a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-tertiary="using general-purpose scripting languages" data-type="indexterm" id="idm139660638583728"/><a contenteditable="false" data-primary="programming languages" data-secondary="using existing general-purpose scripting languages for configuration" data-type="indexterm" id="idm139660638585248"/><a contenteditable="false" data-primary="languages, configuration" data-secondary="using existing general-purpose scripting languges for configuration" data-type="indexterm" id="idm139660638580608"/>通用语言能够访问本地系统，出于安全考虑也可能必须使用沙箱。</p>
+
+<p>此外，我们不能假定配置维护人员熟悉所有这些语言。</p>
+
+<p>为了避开这些陷阱，人们开发了可复用的配置<a contenteditable="false" data-primary="domain-specific languages (DSLs) for configuration" data-type="indexterm" id="idm139660638578576"/>领域专用语言（DSL），例如 <a href="http://bit.ly/2xyUPRT">HOCON</a>、<a href="http://bit.ly/2kIuDec"><span class="keep-together">Flabbergast</span></a>、<a href="http://bit.ly/2J9Bx6E">Dhall</a> 和 <a href="http://jsonnet.org"><span class="keep-together">Jsonnet</span></a>。我们建议采用现有 DSL 来编写配置。即使某种 DSL 看起来远超当前需求，将来您也可能用到它的附加功能；而且始终可以通过内部风格指南限制语言功能。</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_very_quick_introduction_to_jsonnet">
+<h5>Jsonnet 极简介绍</h5>
+
+<p>Jsonnet 是一种自包含的开源 DSL，可以作为库或命令行工具，为任何应用提供配置。<a contenteditable="false" data-primary="Jsonnet" data-secondary="quick introduction to" data-type="indexterm" id="idm139660638569712"/>它在 Google 内外都有广泛应用。<sup><a data-type="noteref" href="ch15-zh.html#ch15fn2" id="ch15fn2-marker">2</a></sup></p>
+
+<p>这门语言的设计力求让程序员感到熟悉：它采用类似 Python 的语法、面向对象机制和函数式结构。它是 JSON 的扩展，这意味着 JSON 文件本身就是一个输出自身的 Jsonnet 程序。与 JSON 相比，Jsonnet 对引号和逗号的限制更宽松，还支持注释。更重要的是，它加入了计算结构。</p>
+
+<p>阅读本章其余内容并不要求您非常熟悉 Jsonnet 语法，不过花几分钟浏览<a href="http://bit.ly/2xIUZWX">在线教程</a>会帮助您建立基本认识。</p>
+</div></aside>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>无论在 Google 内部还是本书读者当中，都不存在占据主导地位的配置语言；但为了举例，我们必须选择<em>某一种</em>语言。<a contenteditable="false" data-primary="Jsonnet" data-type="indexterm" id="idm139660638566288"/>本章使用 Jsonnet 展示<a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>所提建议的实际示例。</p>
+
+<p>如果您尚未选定特定配置语言，又希望使用 Jsonnet，可以直接套用本章示例。无论如何，我们都尽量让读者能够轻松地从代码示例中提炼出其背后的通用经验。</p>
+
+<p>此外，部分示例会探讨一些通常只会出现在编程书籍中的概念，例如图灵完备性。我们谨慎地把讨论控制在必要深度，只解释那些确实曾在生产环境中给我们带来问题的细微之处。在大多数复杂系统中，故障都发生在边界处；配置系统当然也不例外。<a contenteditable="false" data-primary="configuration" data-secondary="critical properties and pitfalls of configuration systems" data-startref="ix_cfgcrit" data-type="indexterm" id="idm139660638564800"/></p>
+</div>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Integrating a Configuration Language" data-type="sect1"><div class="sect1" id="integrating_a_configuration_language">
+<h1>集成配置语言</h1>
+
+<p>本节使用 Jsonnet 讨论如何把配置语言与需要<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-type="indexterm" id="idm139660638553120"/>配置的应用集成起来；不过<a contenteditable="false" data-primary="languages, configuration" data-secondary="integrating a configuration language" data-type="indexterm" id="idm139660638557680"/>同样的技术也适用于其他配置语言。</p>
+
+<section data-pdf-bookmark="Generating Config in Specific Formats" data-type="sect2"><div class="sect2" id="generating_config_in_specific_formats">
+<h2>生成特定格式的配置</h2>
+
+<p>配置语言可能原生就能输出所需格式。例如，Jsonnet 输出 JSON，与许多应用兼容。<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-tertiary="generating config in specific formats" data-type="indexterm" id="idm139660638551616"/><a contenteditable="false" data-primary="JSON" data-type="indexterm" id="idm139660638549872"/>对于 JavaScript、<a contenteditable="false" data-primary="JavaScript" data-type="indexterm" id="idm139660638547488"/><a contenteditable="false" data-primary="YAML" data-type="indexterm" id="idm139660638548160"/>YAML 或 <a href="https://github.com/hashicorp/hcl">HashiCorp 配置语言</a>等扩展自 JSON 的语言，其使用方也可以直接采用 JSON。如果属于这种情况，就无需再做集成工作。<a contenteditable="false" data-primary="HashiCorp Configuration Language" data-type="indexterm" id="idm139660638543792"/></p>
+
+<p>对于其他没有原生支持的配置格式：</p>
+
+<ol>
+	<li>
+	<p>需要找到一种在配置语言中表示配置数据的方法。这通常并不困难，因为映射、列表、字符串和其他原始值等配置值都很通用，各种语言均可表示。</p>
+	</li>
+	<li>
+	<p>在配置语言中表示这些数据后，就可以利用该语言的结构减少重复，从而减少琐事。</p>
+	</li>
+	<li>
+	<p>需要为所需的输出格式编写或复用序列化函数。例如，Jsonnet 标准库提供了把其内部的类 JSON 表示输出为 INI 和 XML 的函数。<a contenteditable="false" data-primary="Jsonnet" data-secondary="library functions for outputting INI and XML" data-type="indexterm" id="idm139660638538064"/>如果配置数据很难用配置语言表示，例如 Bash 脚本，可以把基本字符串模板技术作为最后手段。实际示例参见 <a href="http://bit.ly/2La0zDe"><em class="hyperlink">http://bit.ly/2La0zDe</em></a>。</p>
+	</li>
+</ol>
+</div></section>
+
+<section data-pdf-bookmark="Driving Multiple Applications" data-type="sect2"><div class="sect2" id="driving_multiple_applications">
+<h2>驱动多个应用</h2>
+
+<p>能够用配置语言驱动任意现有应用后，或许就能用同一份配置同时服务于多个应用。<a contenteditable="false" data-primary="configuration" data-secondary="integrating a configuration language" data-tertiary="driving multiple applications" data-type="indexterm" id="idm139660638539584"/>如果这些应用使用不同的配置格式，就需要进行一些转换。能够生成所需格式的配置后，便可以轻松统一和同步整个配置库，并消除其中的重复。考虑到 JSON 及其衍生格式非常普遍，您甚至可能无须生成不同格式。例如，部署架构以 <a href="http://bit.ly/2JkMq9f">GCP Deployment Manager</a>、<a href="https://amzn.to/2kFPkHF">AWS Cloud Formation</a> 或 <a href="https://www.terraform.io/">Terraform</a> 管理基础设施，同时以 Kubernetes 管理容器时，就是如此。</p>
+
+<p>此时，您可以：</p>
+
+<ul>
+	<li>
+	<p>只定义一次端口，通过一次 Jsonnet 求值同时输出 Nginx Web 服务器配置和 Terraform 防火墙配置。</p>
+	</li>
+	<li>
+	<p>使用同一组文件配置监控信息中心、保留策略和告警通知流水线。</p>
+	</li>
+	<li>
+	<p>通过在两个列表间移动初始化命令，管理虚拟机启动脚本与磁盘映像构建脚本之间的性能取舍。</p>
+	</li>
+</ul>
+
+<p>把彼此分散的配置汇集到一处后，便有很多机会对其进行精简和抽象。配置甚至可以嵌套，例如可以把 <a href="https://cassandra.apache.org/">Cassandra 配置</a>嵌入其基础设施的 Deployment Manager 配置，或嵌入 Kubernetes ConfigMap。优秀的配置语言能够处理各种棘手的字符串引号问题，让这种操作自然又简单。</p>
+
+<p>为了方便为各种应用写出许多不同文件，Jsonnet 提供了一种模式：配置求值会生成单个 JSON 对象，其中将文件名映射到按需格式化的文件内容。在其他配置语言中，可以输出字符串到字符串的映射，再通过后处理步骤或包装脚本写入文件，以模拟这一功能。</p>
+</div></section>
+</div></section>
+
+<section class="pagebreak-before" data-pdf-bookmark="Integrating an Existing Application: Kubernetes" data-type="sect1"><div class="sect1" id="integrating_an_existing_application_kuber">
+<h1>集成现有应用：Kubernetes</h1>
+
+<p>以下几个原因使 Kubernetes 成为很有意思的案例：<a contenteditable="false" data-primary="Kubernetes" data-type="indexterm" id="ix_Kubint"/><a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-type="indexterm" id="ix_cfgintKub"/></p>
+
+<ul>
+	<li>
+	<p>运行在 Kubernetes 上的作业需要配置，而且配置可能变得复杂。</p>
+	</li>
+	<li>
+	<p>Kubernetes 没有捆绑配置语言；值得庆幸的是，连临时拼凑的语言也没有。</p>
+	</li>
+</ul>
+
+<p>如果 Kubernetes 对象只有最低限度的复杂性，用户直接使用 YAML 即可。基础设施规模较大的用户则会用 Jsonnet 等语言扩展 Kubernetes 工作流，获得该规模下所需的抽象能力。</p>
+
+<section data-pdf-bookmark="What Kubernetes Provides" data-type="sect2"><div class="sect2" id="what_kubernetes_provides">
+<h2>Kubernetes 提供什么</h2>
+
+<p>Kubernetes 是一个开源系统，用于在机器集群上编排容器化工作负载。<a contenteditable="false" data-primary="Kubernetes" data-secondary="capabilities of" data-type="indexterm" id="idm139660638511712"/>它的 API 既能管理容器本身，也能管理许多重要细节，例如容器间通信、集群内外通信、负载均衡、存储、渐进式发布和自动扩缩容。每个配置项都<a contenteditable="false" data-primary="JSON" data-secondary="configuration items in Kubernetes represented as JSON objects" data-type="indexterm" id="idm139660638512240"/>表示为一个 JSON 对象，并可通过 API 端点管理。命令行工具 kubectl 可以从磁盘读取这些对象并发送给 API。</p>
+
+<p>在磁盘上，这些 JSON 对象实际编码为 YAML 流。<sup><a data-type="noteref" href="ch15-zh.html#ch15fn3" id="ch15fn3-marker">3</a></sup>YAML 易于阅读，也很容易通过常见的库转换为 JSON。开箱即用的操作方式是：编写表示 Kubernetes 对象的 YAML 文件，再运行 kubectl 把它们部署到集群。<a contenteditable="false" data-primary="YAML" data-secondary="JSON object encoded as YAML streams in Kubernetes" data-type="indexterm" id="idm139660638508000"/></p>
+
+<p>有关配置 Kubernetes 的最佳实践，请参阅 <a href="http://bit.ly/2J4kqr5">Kubernetes 的相关文档</a>。</p>
+</div></section>
+
+<section data-pdf-bookmark="Example Kubernetes Config" data-type="sect2"><div class="sect2" id="example_kubernetes_config">
+<h2>Kubernetes 配置示例</h2>
+
+<p>YAML 是 Kubernetes 配置的用户界面，提供注释等简单功能，语法也很简洁，大多数人都觉得它比原始 JSON 更易使用。<a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-tertiary="example Kubernetes config" data-type="indexterm" id="idm139660638502816"/><a contenteditable="false" data-primary="Kubernetes" data-secondary="example Kubernetes config" data-type="indexterm" id="idm139660638501296"/>但在抽象能力方面，YAML 并不理想：它只提供锚点，<sup><a data-type="noteref" href="ch15-zh.html#ch15fn4" id="ch15fn4-marker">4</a></sup>而锚点在实践中很少有用，Kubernetes 也不支持。</p>
+
+<p>假设您要复制一个 Kubernetes 对象四次，各副本使用不同的命名空间、标签和其他细微变体。遵循不可变基础设施的最佳实践，您会保存全部四个变体的配置，也就会重复配置中其他完全相同的部分。下面的代码片段展示其中一个变体；为简洁起见，另外三个文件从略：</p>
+
+<pre data-type="programlisting">
+<strong># example1.yaml</strong>
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: guestbook
+    tier: frontend
+  name: frontend
+  namespace: prod
+spec:
+  externalTrafficPolicy: Cluster
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: guestbook
+    tier: frontend
+  sessionAffinity: None
+  type: NodePort
+</pre>
+
+<p>由于关键差异被掩盖，这些变体很难阅读和维护。</p>
+</div></section>
+
+<section data-pdf-bookmark="Integrating the Configuration Language" data-type="sect2"><div class="sect2" id="integrating_the_configuration_language">
+<h2>集成配置语言</h2>
+
+<p>正如<a data-type="xref" href="#configuration_induced_toil">“配置引发的琐事”</a>所述，管理大量 YAML 文件可能耗费许多时间。<a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-tertiary="integrating the configuration language" data-type="indexterm" id="idm139660638491648"/><a contenteditable="false" data-primary="Kubernetes" data-secondary="integrating the configuration language" data-type="indexterm" id="idm139660638492528"/><a contenteditable="false" data-primary="languages, configuration" data-secondary="integrating in Kubernetes" data-type="indexterm" id="idm139660638489104"/>配置语言可以简化这项工作。最直接的方法是每次执行 Jsonnet 时输出一个 Kubernetes 对象，然后把得到的 JSON 直接通过管道传给 kubectl；kubectl 会像处理 YAML 一样处理 JSON。<a contenteditable="false" data-primary="Jsonnet" data-secondary="using with Kubernetes configurations" data-type="indexterm" id="idm139660638489424"/><a contenteditable="false" data-primary="YAML" data-secondary="configs written in, JSON and" data-type="indexterm" id="idm139660638487664"/>也可以输出 YAML 流，即这类对象构成的序列；<sup><a data-type="noteref" href="ch15-zh.html#ch15fn5" id="ch15fn5-marker">5</a></sup>或者输出单个 kubectl 列表对象；还可以让 Jsonnet 从同一份配置输出多个文件。进一步讨论参见 <a href="http://bit.ly/2snCIcC"><span class="keep-together">Jsonnet</span> 网站</a>。</p>
+
+<p>开发者应注意，一般而言，YAML 可以编写 JSON 无法表达的配置，因此 Jsonnet 也无法生成这类配置。YAML 配置可以包含 NaN 等特殊 IEEE 浮点值，也可以包含字段名并非字符串的对象，例如以数组、其他对象或 null 为字段名。实践中很少使用这些特性，而 Kubernetes 也不允许使用，因为发送给 API 时配置必须编码为 JSON。</p>
+
+<p>下面的代码片段展示上述 Kubernetes 配置示例用 Jsonnet 表示时的样子：</p>
+
+<pre data-type="programlisting">
+<strong>// templates.libsonnet</strong>
+{
+  MyTemplate:: {
+    local service = self,
+    tier:: error 'Needs tier',
+    apiVersion: 'v1',
+    kind: 'Service',
+
+    local selector_labels = { app: 'guestbook', tier: service.tier },
+
+    metadata: {
+      labels: selector_labels,
+      name: 'guestbook-' + service.tier,
+      namespace: 'default',
+    },
+
+    spec: {
+      externalTrafficPolicy: 'Cluster',
+      ports: [{
+        port: 80,
+        protocol: 'TCP',
+        targetPort: 80,
+      }],
+      selector: selector_labels,
+      sessionAffinity: 'None',
+      type: 'NodePort',
+    },
+  },
+}
+
+<strong>// example1.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'frontend',
+}
+
+<strong>// example2.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'backend',
+  metadata+: {
+    namespace: 'prod',
+  },
+}
+
+<strong>// example3.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'frontend',
+  metadata+: {
+    namespace: 'prod',
+    labels+: { foo: 'bar' },
+  },
+}
+
+<strong>// example4.jsonnet</strong>
+local templates = import 'templates.libsonnet';
+
+templates.MyTemplate {
+  tier: 'backend',
+}
+</pre>
+
+<p>请注意：</p>
+
+<ul>
+	<li>
+	<p>我们通过四次实例化抽象模板来表示全部四个变体，不过也可以使用函数式抽象。</p>
+	</li>
+	<li>
+	<p>示例为每个实例使用单独的 Jsonnet 文件，也可以把它们合并到一个文件中。</p>
+	</li>
+	<li>
+	<p>在抽象模板中，命名空间默认为 <code>default</code>，而 tier 必须被覆盖。</p>
+	</li>
+	<li>
+	<p>乍看之下，Jsonnet 稍显冗长；但随着模板实例数量增加，它能够减少琐事。</p>
+	</li>
+</ul>
+
+<p>在 <code>MyTemplate</code> 中，<code>local</code> 关键字定义变量 <code>service</code>，并将其初始化为 <code>self</code>，即对最近一层外部对象的引用。这样一来，即使在重新定义了 <code>self</code> 的嵌套对象中，也能引用该外部对象。</p>
+
+<p><code>tier</code> 字段使用两个冒号，而不是常规 JSON 中的一个冒号，因此它在生成的 JSON 中会被隐藏，不会输出。否则 Kubernetes 会把 <code>tier</code> 当作无法识别的字段而拒绝配置。隐藏字段仍可被覆盖和引用；本例中的引用方式是 <code>service.tier</code>。</p>
+
+<p>这个模板不能单独使用，因为引用 <code>service.tier</code> 会触发 <code>error</code> 结构，抛出包含指定文本的运行时错误。为避免该错误，模板的每个实例都会用其他表达式覆盖 <code>tier</code> 字段。换言之，这种模式表达了类似纯虚方法或抽象方法的概念。</p>
+
+<p>使用函数进行抽象时，只能对配置进行参数化。相比之下，模板允许覆盖父对象中的任意字段。正如<a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>所述，简单性应当是设计的根本，但在必要时跳出简单性的能力也很重要。<a contenteditable="false" data-primary="simplicity" data-secondary="escaping in configuration" data-type="indexterm" id="idm139660638462992"/><a contenteditable="false" data-primary="templates" data-secondary="using for configurations" data-type="indexterm" id="idm139660638459632"/>模板覆盖提供了一个实用的逃生口，可以修改通常会被认为过于底层的具体细节。例如：</p>
+
+<pre data-type="programlisting">
+templates.MyTemplate {
+  tier: 'frontend',
+  spec+: {
+    sessionAffinity: 'ClientIP',
+  },
+}
+</pre>
+
+<p>下面是把现有模板<a contenteditable="false" data-primary="Jsonnet" data-secondary="converting existing template to" data-type="indexterm" id="idm139660638456736"/>转换为 Jsonnet 的典型流程：</p>
+
+<ol>
+	<li>
+	<p>把其中一个 YAML 变体转换为 JSON。</p>
+	</li>
+	<li>
+	<p>用 Jsonnet 格式化工具处理得到的 JSON。</p>
+	</li>
+	<li>
+	<p>手动加入 Jsonnet 结构，对代码进行抽象和实例化，如示例所示。</p>
+	</li>
+</ol>
+
+<p>该示例演示了如何在保留部分字段差异的同时消除重复。差异越细微，例如字符串仅略有不同；或越难表达，例如配置存在结构差异，需要在数组中增加元素，或对数组的所有元素应用同一种差异，使用配置语言的优势就越明显。</p>
+
+<p>一般而言，抽象不同配置之间的共性有助于实现关注点分离，其益处与编程语言的模块化相同。抽象能力可用于多种场景：</p>
+
+<ul>
+	<li>
+	<p>一个团队可能需要创建多个<em>几乎</em>相同却仍有差别的配置版本，例如管理不同环境（生产、预发布、开发、测试）中的部署，针对不同架构调优部署，或调整不同地理区域的容量。</p>
+	</li>
+	<li>
+	<p>组织中可能有一个基础设施团队，负责维护 API 服务框架、缓存服务器或 MapReduce 等供应用团队使用的可复用组件。对于每种组件，基础设施团队都可以维护一个模板，定义大规模运行该组件所需的 Kubernetes 对象。各应用团队再实例化该模板，加入自己应用的具体信息。<a contenteditable="false" data-primary="Kubernetes" data-startref="ix_Kubint" data-type="indexterm" id="idm139660638445296"/><a contenteditable="false" data-primary="configuration" data-secondary="integrating existing application, Kubernetes" data-startref="ix_cfgintKub" data-type="indexterm" id="idm139660638450464"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Integrating Custom Applications (In-House Software)" data-type="sect1"><div class="sect1" id="integrating_custom_applications_left_pare">
+<h1>集成定制应用（内部开发的软件）</h1>
+
+<p>如果基础设施使用定制应用，即内部开发而非购买的现成软件，可以在设计这些应用时让它们与可复用的配置语言共存。<a contenteditable="false" data-primary="configuration" data-secondary="integrating custom applications" data-type="indexterm" id="ix_cfgintcusapp"/>无论是编写配置文件，还是为了调试或与其他工具集成而查看生成的配置数据，本节建议都应能改善用户的整体配置体验。这些建议还应简化应用设计，并将配置与数据分离。</p>
+
+<p>处理定制应用的总体策略应当是：</p>
+
+<ul>
+	<li>
+	<p>让配置语言处理它本来就为之设计的部分，即问题中的语言层面。</p>
+	</li>
+	<li>
+	<p>让应用处理其他所有功能。</p>
+	</li>
+</ul>
+
+<p>以下最佳实践使用 Jsonnet 举例，但同样的建议也适用于其他语言：<a contenteditable="false" data-primary="Jsonnet" data-type="indexterm" id="idm139660638437632"/></p>
+
+<ul>
+	<li>
+	<p>只读取一个纯数据文件，让配置语言通过导入把配置拆分到多个文件中。这样，配置语言实现只需输出一个文件，应用也只需读取一个文件。此外，由于应用可以用不同方式组合文件，这种策略明确而清晰地规定了文件如何组合成应用配置。</p>
+	</li>
+	<li>
+	<p>用对象表示具名实体的集合，其中字段名就是实体名称，字段值保存实体的其余部分。避免使用对象数组，并在每个元素中<a contenteditable="false" data-primary="JSON" data-secondary="examples of bad and good JSON output by Jsonnet" data-type="indexterm" id="idm139660638431104"/>设置 name 字段。</p>
+
+	<p>不良 JSON：</p>
+
+	<pre data-type="programlisting">
+[
+  { "name": "cat", ... },
+  { "name": "dog", ... }
+]
+</pre>
+
+	<p>良好 JSON：</p>
+
+	<pre data-type="programlisting">
+{
+  "cat": { ... },
+  "dog": { ... }
+}
+</pre>
+
+	<p>这种策略让集合以及其中的各个动物都更易扩展，也可以按名称引用实体，例如 <code>animals.cat</code>，而不必依赖脆弱的索引，例如 <code>animals[0]</code>。</p>
+	</li>
+	<li>
+	<p>不要在顶层按类型对实体分组。应调整 JSON 结构，把逻辑相关的配置归入同一棵子树。这样，配置语言层面的抽象就能遵循功能边界。</p>
+
+	<p class="pagebreak-before">不良 JSON：</p>
+
+	<pre data-type="programlisting">
+{
+  "pots": { "pot1": { ... }, "pot2": { ... } },
+  "lids": { "lid1": { ... }, "lid2": { ... } }
+}
+</pre>
+
+	<p>良好 JSON：</p>
+
+	<pre data-type="programlisting">
+{
+  "pot_assembly1": { "pot": { ... }, "lid": { ... } },
+  "pot_assembly2": { "pot": { ... }, "lid": { ... } }
+}
+</pre>
+
+	<p>在配置语言层面，这种策略可以实现如下抽象：</p>
+
+	<pre data-type="programlisting">
+local kitchen = import 'kitchen.libsonnet';
+{
+  pot_assembly1: kitchen.CrockPot,
+  pot_assembly2: kitchen.SaucePan { pot+: { color: 'red' } },
+}
+</pre>
+	</li>
+	<li>
+	<p>数据表示的设计通常应保持简单：</p>
+
+	<ul>
+		<li>
+		<p>不要在数据表示中嵌入语言特性，原因参见<a data-type="xref" href="#pitfall_1_failing_to_recognize_configurat">“陷阱 1：没有认识到配置是编程语言问题”</a>。这类抽象能力不足，只会造成困惑，因为它迫使用户决定究竟使用数据表示中的抽象特性，还是配置<span class="keep-together">语言</span>中的抽象特性。</p>
+		</li>
+		<li>
+		<p>不必担心数据表示过于冗长。减少冗长的方案会引入复杂性，而这个问题可以在配置语言中解决。</p>
+		</li>
+		<li>
+		<p>不要让应用解释定制的字符串插值语法，例如字符串中的条件表达式或占位符引用。有时解释无法避免，例如需要描述生成纯数据版本配置后才会执行的动作，包括告警、处理器等。但除此之外，应尽量让配置语言承担语言层面的工作。</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p>如前所述，如果<em>可以</em>彻底取消配置，这始终是最佳选择。配置语言虽然能通过带默认值的模板隐藏底层模型的复杂性，但生成的配置数据并未完全隐藏：工具可能处理它，人可能检查它，它也可能被载入配置数据库。出于同样原因，不要依赖配置语言修正底层模型中不一致的命名、单复数或错误，而应直接修正模型。如果无法修正模型中的不一致，最好在语言层面接受它们，以免造成更多不一致。</p>
+
+<p>根据我们的经验，随着系统运行时间增长，配置变更往往会成为故障根因中的主导因素；参见<a data-type="xref" href="app03.html#results_of_postmortem_analysis">附录 C</a>列出的主要故障原因。验证配置变更是维持可靠性的关键步骤。我们建议配置求值后立即验证生成的配置数据。只做语法验证，例如检查 JSON 能否解析，无法发现许多缺陷。完成通用模式验证后，还要检查应用领域特有的属性，例如必填字段是否存在、引用的文件名是否存在，以及给定值是否处于允许范围内。</p>
+
+<p>可以<a contenteditable="false" data-primary="Jsonnet" data-secondary="validating JSON with JSONschema" data-type="indexterm" id="idm139660638415808"/>使用 <a href="http://json-schema.org/">JSON Schema</a> 验证 Jsonnet 生成的 JSON。对于使用<a href="http://bit.ly/2szjO1l">协议缓冲区</a>的应用，可以很容易地用 Jsonnet 生成其规范 JSON 形式，而协议缓冲区实现会在反序列化期间执行验证。<a contenteditable="false" data-primary="protocol buffers" data-type="indexterm" id="idm139660638413392"/></p>
+
+<p>无论采用哪种验证方式，都不要忽略无法识别的字段名，因为它们可能说明配置语言层面存在拼写错误。对于不应输出的字段，Jsonnet 可以用 <code>::</code> 语法将其隐藏。在预提交钩子中执行相同验证也是个好办法。<a contenteditable="false" data-primary="configuration" data-secondary="integrating custom applications" data-startref="ix_cfgintcusapp" data-type="indexterm" id="idm139660638410864"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Effectively Operating a Configuration System" data-type="sect1"><div class="sect1" id="effectively_operating_a_configuration_sys">
+<h1>有效运维配置系统</h1>
+
+<p>无论使用哪种语言实现“配置即代码”，<a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-type="indexterm" id="ix_cfgopsys"/>我们都建议遵循那些普遍有助于软件工程的规范和流程。</p>
+
+<section data-pdf-bookmark="Versioning" data-type="sect2"><div class="sect2" id="versioning">
+<h2>版本管理</h2>
+
+<p>配置语言通常会促使工程师编写模板库和实用函数库。<a contenteditable="false" data-primary="versioning, using with configurations" data-type="indexterm" id="idm139660638399040"/>这些库通常由一个团队维护，<a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="versioning" data-type="indexterm" id="idm139660638397744"/>却可能被许多其他团队使用。需要对库进行破坏性变更时，有两种选择：</p>
+
+<ul>
+	<li>
+	<p>提交一次全局更新，修改所有客户端代码，并重构代码以确保其继续工作；组织层面可能无法做到这一点。</p>
+	</li>
+	<li>
+	<p>对库进行版本管理，让不同使用方可以采用不同版本并独立迁移。选择继续使用弃用版本的使用方无法获得新版本的优势，还会积累技术债务；总有一天，他们必须重构代码以使用新库。</p>
+	</li>
+</ul>
+
+<p>包括 Jsonnet 在内的大多数语言都不专门支持版本管理；但可以轻松使用目录实现。<a contenteditable="false" data-primary="Jsonnet" data-secondary="versioning in" data-type="indexterm" id="idm139660638391600"/>有关 Jsonnet 中的实际示例，请参阅 <a href="http://bit.ly/2snzCW0">ksonnet-lib 代码库</a>，其中版本号是导入路径的第一部分：</p>
+
+<pre data-type="programlisting">
+local k = import 'ksonnet.beta.2/k.libsonnet';
+</pre>
+</div></section>
+
+<section data-pdf-bookmark="Source Control" data-type="sect2"><div class="sect2" id="source_control">
+<h2>源代码管理</h2>
+
+<p><a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>主张保留配置变更的历史记录，包括变更者，并确保能够轻松、可靠地回滚。<a contenteditable="false" data-primary="source control, using with configurations" data-type="indexterm" id="idm139660638386592"/><a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="using source control" data-type="indexterm" id="idm139660638385232"/>把配置纳入源代码管理既能获得所有这些能力，也能对配置变更进行代码审查。</p>
+</div></section>
+
+<section data-pdf-bookmark="Tooling" data-type="sect2"><div class="sect2" id="tooling">
+<h2>工具</h2>
+
+<p>应考虑如何强制执行风格规范和检查配置，并调查是否有编辑器插件能把这些工具集成到工作流中。<a contenteditable="false" data-primary="tools" data-secondary="for configuration systems" data-type="indexterm" id="idm139660638381616"/>目标是在所有作者之间保持一致风格、提高可读性并发现错误。有些编辑器支持写入后钩子，可以代为运行格式化工具和其他外部工具。也可以使用预提交钩子运行同样的工具，确保提交的配置具有较高质量。</p>
+</div></section>
+
+<section data-pdf-bookmark="Testing" data-type="sect2"><div class="sect2" id="testing">
+<h2>测试</h2>
+
+<p>我们建议为上游模板库实现单元测试。<a contenteditable="false" data-primary="templates" data-secondary="testing templates in a configuration system" data-type="indexterm" id="idm139660638376336"/><a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-tertiary="testing" data-type="indexterm" id="idm139660638377312"/><a contenteditable="false" data-primary="testing" data-secondary="for configuration systems" data-type="indexterm" id="idm139660638373776"/>确保以各种方式实例化这些库时，它们都能生成预期的具体配置。同样，函数库也应包含单元测试，以便有把握地维护。</p>
+
+<p>在 Jsonnet 中，可以把测试编写成 Jsonnet 文件，<a contenteditable="false" data-primary="Jsonnet" data-secondary="writing tests as Jsonnet files" data-type="indexterm" id="idm139660638372144"/>执行以下操作：</p>
+
+<ol>
+	<li>
+	<p>导入待测试的库。</p>
+	</li>
+	<li>
+	<p>调用该库。</p>
+	</li>
+	<li>
+	<p>使用 <code>assert</code> 语句或标准库的 <code>assertEqual</code> 函数验证输出。后者会在错误<span class="keep-together">消息</span>中列出所有不匹配的值。</p>
+	</li>
+</ol>
+
+<p>下面的示例测试 <code>joinName</code> 函数和 <code>MyTemplate</code>：</p>
+
+<pre data-type="programlisting">
+<strong>// utils_test.jsonnet</strong>
+local utils = import 'utils.libsonnet';
+
+std.assertEqual(utils.joinName(['foo', 'bar']), 'foo-bar') &amp;&amp;
+std.assertEqual(utils.MyTemplate { tier: 'frontend' }, { ... })
+</pre>
+
+<p>对于规模更大的测试套件，可以采用 <a href="http://bit.ly/2xzbOTZ">Jsonnet 社区成员开发的更全面的单元测试框架</a>。使用该框架可以结构化地定义和运行测试套件，例如报告所有失败测试，而不是在第一个断言失败时就中止执行。<a contenteditable="false" data-primary="configuration" data-secondary="effectively operating a configuration system" data-startref="ix_cfgopsys" data-type="indexterm" id="idm139660638360768"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="When to Evaluate Configuration" data-type="sect1"><div class="sect1" id="when_to_evaluate_configuration">
+<h1>何时求值配置</h1>
+
+<p>我们所说的关键特性包括<em>自包含性</em>（hermeticity），也就是说，无论配置语言在何时何地执行，都必须生成相同的配置数据。<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-type="indexterm" id="ix_cfgeval"/>正如<a data-type="xref" href="ch14-zh.html#configuration_design_and_best_practices">第 14 章</a>所述，如果系统依赖可在自包含环境之外发生变化的资源，回滚就可能非常困难，甚至无法完成。<a contenteditable="false" data-primary="Jsonnet" data-secondary="generating JSON for configuration evaluation" data-type="indexterm" id="ix_Jsonnet"/>一般而言，自包含性意味着 Jsonnet 代码始终可以与其代表的展开后 JSON 互换。因此，从 Jsonnet 更新之后到需要 JSON 之前，您可以在任意时刻从 Jsonnet 生成 JSON，甚至可以每次需要时都生成。</p>
+
+<p>我们建议在版本控制系统中存储配置。这样，最早可以在提交前验证配置。另一个极端是由应用在需要 JSON 数据时对配置求值。折中方案则是在构建时求值。每种选择都有不同取舍，应根据具体用例进行优化。</p>
+
+<section data-pdf-bookmark="Very Early: Checking in the JSON" data-type="sect2"><div class="sect2" id="very_early_checking_in_the_json">
+<h2>很早：提交 JSON</h2>
+
+<p>可以先从 Jsonnet 代码生成 JSON，再把二者<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="early evaluation, checking in the JSON" data-type="indexterm" id="idm139660638349152"/>一并提交到版本控制系统。典型工作流如下：</p>
+
+<ol>
+	<li>
+	<p>修改 Jsonnet 文件。</p>
+	</li>
+	<li>
+	<p>运行 Jsonnet 命令行工具，也可以通过脚本封装，重新生成 JSON 文件。</p>
+	</li>
+	<li>
+	<p>使用预提交钩子，确保 Jsonnet 代码与 JSON 输出始终一致。</p>
+	</li>
+	<li>
+	<p>把所有内容打包成拉取请求，接受代码审查。</p>
+	</li>
+</ol>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros">
+<h3>优点</h3>
+
+<ul>
+	<li>
+	<p>审查者可以对具体变更做合理性检查。例如，重构根本不应影响生成的 JSON。</p>
+	</li>
+	<li>
+	<p>无论对生成后的文件还是抽象配置，都可以跨版本查看各行的作者归属信息。这有助于审计变更。</p>
+	</li>
+	<li>
+	<p>无须在运行时执行 Jsonnet，有助于限制复杂度、二进制文件大小和风险暴露。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons">
+<h3>缺点</h3>
+
+<ul>
+	<li>
+	<p>生成的 JSON 不一定易读，例如其中可能嵌入很长的字符串。</p>
+	</li>
+	<li>
+	<p>JSON 也可能因其他原因不适合提交到版本控制系统，例如文件过大或包含机密信息。</p>
+	</li>
+	<li>
+	<p>如果多个 Jsonnet 文件的许多并发编辑最终汇聚到同一个 JSON 文件中，可能出现合并冲突。</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Middle of the Road: Evaluate at Build Time" data-type="sect2"><div class="sect2" id="middle_of_the_road_evaluate_at_build_time">
+<h2>折中方案：构建时求值</h2>
+
+<p>可以在构建时运行 Jsonnet 命令行工具，把生成的 JSON 嵌入发布产物，例如 tarball，从而避免把 JSON 提交到源代码管理系统。<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="middle of the road, evaluation at build time" data-type="indexterm" id="idm139660638330928"/>应用代码只需在初始化时从磁盘读取 JSON 文件。如果使用 Bazel，可以借助 <a href="http://bit.ly/2xz0QxH">Jsonnet Bazel 规则</a>轻松实现。在 Google，我们通常偏爱这种方法，原因是它具有下面这些优点。</p>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros-id00075">
+<h3>优点</h3>
+
+<ul>
+	<li>
+	<p>无需在每个拉取请求中重新构建 JSON 文件，就能控制运行时复杂度、二进制文件大小和风险暴露。</p>
+	</li>
+	<li>
+	<p>源 Jsonnet 代码与生成的 JSON 不存在不同步的风险。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons-id00076">
+<h3>缺点</h3>
+
+<ul>
+	<li>
+	<p>构建过程更复杂。</p>
+	</li>
+	<li>
+	<p>代码审查期间更难评估具体变更。</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Late: Evaluate at Runtime" data-type="sect2"><div class="sect2" id="late_evaluate_at_runtime">
+<h2>较晚：运行时求值</h2>
+
+<p>链接 Jsonnet 库后，应用本身可以随时解释<a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-tertiary="late evaluation at runtime" data-type="indexterm" id="idm139660638317120"/>配置，得到所生成 JSON 配置的内存表示。</p>
+
+<section data-pdf-bookmark="Pros" data-type="sect3"><div class="sect3" id="pros-id00077">
+<h3>优点</h3>
+
+<ul>
+	<li>
+	<p>无须预先求值，因此更简单。</p>
+	</li>
+	<li>
+	<p>可以在<span class="keep-together">执行</span>期间对用户提供的 Jsonnet 代码求值。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Cons" data-type="sect3"><div class="sect3" id="cons-id00078">
+<h3>缺点</h3>
+
+<ul>
+	<li>
+	<p>链接任何库都会增大资源占用和风险暴露。</p>
+	</li>
+	<li>
+	<p>配置缺陷可能要到运行时才被发现，这已经太晚了。</p>
+	</li>
+	<li>
+	<p>如果 Jsonnet 代码不可信，必须格外谨慎。原因参见<a data-type="xref" href="#guarding_against_abusive_configuration">“防范滥用配置”</a>。</p>
+	</li>
+</ul>
+
+<p>回到贯穿本章的示例：如果要生成 Kubernetes 对象，应当何时运行 Jsonnet？</p>
+
+<p>答案取决于具体实现。如果构建的是 ksonnet 一类工具，即从本地文件系统运行 Jsonnet 代码的客户端命令行工具，最简单的方案是把 Jsonnet 库链接到工具中，并在进程内对 Jsonnet 求值。由于代码运行在作者自己的机器上，这样做是安全的。</p>
+
+<p><a href="http://Box.com">Box.com</a> 的基础设施使用 Git 钩子把配置变更推送到生产环境。为了避免在服务器上执行 Jsonnet，Git 钩子处理的是保存在代码库中的生成后 JSON。对于 Helm 或 Spinnaker 之类的部署管理守护进程，唯一选择是在服务器运行时对 Jsonnet 求值，但需注意下一节所述的限制。<a contenteditable="false" data-primary="Jsonnet" data-secondary="generating JSON for configuration evaluation" data-startref="ix_Jsonnet" data-type="indexterm" id="idm139660638299440"/><a contenteditable="false" data-primary="configuration" data-secondary="when to evaluate" data-startref="ix_cfgeval" data-type="indexterm" id="idm139660638297568"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Guarding Against Abusive Configuration" data-type="sect1"><div class="sect1" id="guarding_against_abusive_configuration">
+<h1>防范滥用配置</h1>
+
+<p>与长期运行的服务不同，配置求值应当迅速结束并产出结果配置。但由于缺陷或蓄意攻击，配置求值可能占用任意多的 CPU 时间或内存。<a contenteditable="false" data-primary="configuration" data-secondary="guarding against abusive configuration" data-type="indexterm" id="idm139660638295520"/><a contenteditable="false" data-primary="Jsonnet" data-secondary="guarding against abusive configurations in" data-type="indexterm" id="idm139660638302864"/>为说明原因，请看下面这个永不终止的 Jsonnet 程序：</p>
+
+<pre data-type="programlisting">
+local f(x) = f(x + 1); f(0)
+</pre>
+
+<p>无限占用内存的程序与此类似：</p>
+
+<pre data-type="programlisting">
+local f(x) = f(x + [1]); f([])
+</pre>
+
+<p>也可以不用函数而用对象写出等价示例，其他配置语言同样如此。</p>
+
+<p>您可能会限制语言，使其不再<a href="http://bit.ly/2J4jgfi">图灵完备</a>，以免过度消耗资源。然而，强制所有<span class="keep-together">配置</span>终止，并不一定能防止资源消耗过量。很容易写出耗时或耗内存如此之多，以至于实际上无法终止的程序。<span class="keep-together">例如</span>：</p>
+
+<pre data-type="programlisting">
+local f(x) = if x == 0 then [] else [f(x - 1), f(x - 1)]; f(100)
+</pre>
+
+<p>实际上，即使采用 XML 和 YAML 这类简单配置格式，<a href="http://bit.ly/2szYkl5">这样的程序也确实存在</a>。</p>
+
+<p>实践中，这些场景的风险取决于具体情况。风险较低的一端，是命令行工具使用 Jsonnet 构建 Kubernetes 对象，再部署这些对象。<a contenteditable="false" data-primary="Kubernetes" data-secondary="using Jsonnet to build and deploy objects" data-type="indexterm" id="idm139660638287760"/>此时 Jsonnet 代码可信：意外造成程序不终止的情况很少见，即使发生也可用 Ctrl-C 中止；意外耗尽内存的可能性更是极低。另一个极端是 Helm 或 Spinnaker 之类的服务，它们接受最终用户提供的任意配置代码，并在请求处理程序中求值。此时必须格外谨慎，防止拒绝服务（DoS）攻击占满请求处理程序或耗尽内存。</p>
+
+<p>如果在请求处理程序中对不可信的 Jsonnet 代码求值，可以把 Jsonnet 执行放入沙箱，避免此类攻击。一种简便策略是使用单独进程和 <code>ulimit</code>，或非 UNIX 系统上的等效工具。<a contenteditable="false" data-primary="ulimit utility" data-type="indexterm" id="idm139660638282096"/>通常需要派生进程调用命令行可执行文件，而不是链接 Jsonnet 库。这样，无法在给定资源限制内完成的程序会安全失败，并通知最终用户。为了进一步防范针对 C++ 内存漏洞的攻击，可以使用 Jsonnet 的原生 Go 实现。</p>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00079">
+<h1>总结</h1>
+
+<p>无论使用 Jsonnet、采用其他配置语言，还是自行开发配置语言，我们都希望您能运用这些最佳实践，管理生产系统配置带来的复杂性和运维负担，从而有把握地完成配置工作。</p>
+
+<p>配置语言至少应具备以下关键特性：良好的<em>工具</em>、<em>自包含的</em>配置，以及<em>配置与数据分离</em>。</p>
+
+<p>您的系统可能还没有复杂到需要配置语言。随着复杂度增加，可以考虑迁移到 Jsonnet 之类的领域专用语言。这样既能提供一致、结构良好的接口，也能释放 SRE 团队的时间，让他们投入其他重要项目。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch15fn1"><sup><a href="ch15-zh.html#ch15fn1-marker">1</a></sup>请注意，您或许可以编写软件，把旧配置语言转换成新语言；但如果原始源语言不符合标准或存在缺陷，这种方法就不可行。</p><p data-type="footnote" id="ch15fn2"><sup><a href="ch15-zh.html#ch15fn2-marker">2</a></sup>从计算生物学到电子游戏，各个领域都在使用 Jsonnet，但最积极的采用者来自 Kubernetes 社区。Box.com 使用 Jsonnet 描述其基于 Kubernetes 的内部基础设施平台所运行的工作负载。Databricks 和 Bitnami 也广泛使用这门语言。</p><p data-type="footnote" id="ch15fn3"><sup><a href="ch15-zh.html#ch15fn3-marker">3</a></sup>YAML 流是包含多个 YAML 文档的文件，各文档之间用 <code>"---"</code> 分隔。</p><p data-type="footnote" id="ch15fn4"><sup><a href="ch15-zh.html#ch15fn4-marker">4</a></sup>参见《YAML 规范》第 6.9.2 节。</p><p data-type="footnote" id="ch15fn5"><sup><a href="ch15-zh.html#ch15fn5-marker">5</a></sup>在 YAML 规范中，<em>对象</em>称为<em>文档</em>。</p></div></div></section></body></html>
