@@ -1,0 +1,591 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 协作模式</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 18. SRE Engagement Model" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_engagement_model">
+<h1><span class="label">第 18 章　 </span>SRE 协作模式</h1>
+
+<p class="byline">作者：Michael Wildpaner、Gráinne Sheerin、Daniel Rogers，<br/>
+以及 Surya Prashanth Sanagavarapu（《纽约时报》）<br/>
+Adrian Hilton 和 Shylaja Nukala 参与撰写</p>
+
+<p><a href="http://bit.ly/2Lc14wG">第 32 章</a> 在我们的第一本 SRE 图书中介绍了 SRE 团队可用于分析和提高服务可靠性的技术与流程方法。 <a contenteditable="false" data-primary="SRE engagement model" data-type="indexterm" id="ix_SREeng"/>这些策略包括生产就绪评审（Production Readiness Review，PRR）、早期协作和持续改进。<a contenteditable="false" data-primary="Production Readiness Reviews (PRRs)" data-type="indexterm" id="idm139660637709360"/></p>
+
+<p>简而言之，SRE 原则旨在保障产品可靠性的同时，最大限度提高开发团队的工程速度。这个双重目标既有利于产品用户，也有利于公司。不过，即使最优秀的 SRE 团队，能力也有上限；当所覆盖的领域过于庞大、复杂时，SRE 模式的效果会减弱。<a contenteditable="false" data-primary="microservices" data-secondary="limiting how much an SRE team can accomplish" data-type="indexterm" id="idm139660637702416"/> 当前的微服务浪潮使这个问题更加突出：一家小公司拥有的微服务数量，也很容易超过一支 SRE 团队的承载能力。面对庞大的生产环境，SRE 团队明知无法覆盖每项服务，就必须决定把注意力放在哪里，才能取得最佳成效。产品开发团队和 SRE 团队可以协作确定正确的着力点。</p>
+
+<p>本章从一支准备为新服务提供支持的 SRE 团队的视角出发，探讨如何以最有效的方式与服务及其所属的开发团队和产品团队开展协作。SRE 协作通常围绕一项或多项服务展开，但协作内容远不止服务本身；重点还在于理解开发团队和产品团队的目标，并找到适当的支持方式。</p>
+
+<p>无论组织规模如何，本章的大部分讨论都适用。虽然我们经常使用 <em>团队</em> 一词，但理论上一支团队也可以从一个人起步（只是这个人会相当忙碌）。无论团队规模多大，都应主动界定 SRE 的角色，并管理好与产品开发团队的沟通和协作。</p>
+
+<section data-pdf-bookmark="The Service Lifecycle" data-type="sect1"><div class="sect1" id="service_lifecycle">
+<h1>服务生命周期</h1>
+
+<p>如第一本 SRE 图书的 <a href="http://bit.ly/2LexAhJ">前言</a> 所述，SRE 团队对服务可靠性的贡献贯穿服务生命周期的所有阶段。<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-type="indexterm" id="ix_serlife"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="service lifecycle" data-type="indexterm" id="ix_SREengserlf"/> 早在任何 SRE 开始为该服务值班之前，他们运用生产环境知识和经验，就能显著提升 <span class="keep-together">服务</span>的可靠性。</p>
+
+<p><a data-type="xref" href="#level_of_sre_engagement_during_the_servic">图 18-1</a> 展示了服务整个生命周期中理想的 SRE 参与程度。不过，SRE 团队可能在生命周期的任何阶段开始与服务协作。例如，如果开发团队开始规划一项由 SRE 支持的服务的替代方案，SRE 可能很早就参与新服务。另一种情况是，一项服务已经全面开放数月或数年，随后遇到可靠性或扩缩容方面的挑战，SRE 团队才与其正式建立协作关系。本节说明 SRE 团队如何在各个阶段有效发挥作用。</p>
+
+<figure><div class="figure" id="level_of_sre_engagement_during_the_servic"><img alt="服务生命周期中的 SRE 参与程度" src="assets/tsrw_1801.png"/>
+<h6><span class="label">图 18-1　 </span>服务生命周期中的 SRE 参与程度</h6>
+</div></figure>
+
+<section data-pdf-bookmark="Phase 1: Architecture and Design" data-type="sect2"><div class="sect2" id="phase_1_architecture_and_design">
+<h2>阶段 1：架构与设计</h2>
+
+<p>SRE 可以通过多种方式影响<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="architecture and design phase" data-type="indexterm" id="idm139660637685088"/> 软件系统的架构和设计 <a contenteditable="false" data-primary="architecture  and design phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637683616"/> <a contenteditable="false" data-primary="design phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637682384"/>：</p>
+
+<ul>
+	<li>
+	<p>制定最佳实践，例如抵御各种单点故障，供开发团队构建新产品时采用</p>
+	</li>
+	<li>
+	<p>根据以往经验，记录特定基础设施系统的使用准则和禁忌，使开发者能够明智地选择构建模块、正确使用它们，并避开已知陷阱</p>
+	</li>
+	<li>
+	<p>在早期以顾问方式参与，详细讨论具体的架构和设计选择，并借助有针对性的原型验证假设</p>
+	</li>
+	<li>
+	<p>加入开发团队并参与开发工作</p>
+	</li>
+	<li>
+	<p>共同设计服务的一部分</p>
+	</li>
+</ul>
+
+<p>开发周期越往后，修复架构错误就越困难。SRE 尽早参与，可以避免系统接触真实用户并需要随服务增长而扩展时才被迫进行代价高昂的重新设计。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 2: Active Development" data-type="sect2"><div class="sect2" id="phase_2_active_development">
+<h2>阶段 2：主动开发</h2>
+
+<p>产品在主动<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="active development phase" data-type="indexterm" id="idm139660637672096"/> 开发阶段逐渐成形时，SRE 可以开始对服务进行 <a contenteditable="false" data-primary="active development phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637670624"/> <em>生产化</em> ，使其达到可投入生产环境的状态。生产化通常包括容量规划、配置额外资源以实现冗余、规划流量突增和过载的处理方式、<a contenteditable="false" data-primary="productionizing a service" data-type="indexterm" id="idm139660637667760"/> 实现负载均衡，以及建立监控、告警和性能调优等可持续的运维实践。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 3: Limited Availability" data-type="sect2"><div class="sect2" id="phase_3_limited_availability">
+<h2>阶段 3：有限开放</h2>
+
+<p>随着服务逐步进入 Beta 阶段，用户数量、用例种类、使用强度以及对可用性和性能的要求都会提高。<a contenteditable="false" data-primary="limited availability phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637666096"/><a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="limited availability phase" data-type="indexterm" id="idm139660637664656"/> 此时，SRE 可以帮助度量和评估可靠性。 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="defining before general availability phase of service lifecycle" data-type="indexterm" id="idm139660637661712"/>我们强烈建议在全面开放（general availability，GA）之前定义 SLO，让服务团队能够客观衡量服务的可靠程度。这样，产品团队仍有机会撤回无法达到可靠性目标的产品。</p>
+
+<p>在这一阶段，SRE 团队还可以帮助系统 <a contenteditable="false" data-primary="scaling" data-secondary="during limited availability phase of service lifecycle" data-type="indexterm" id="idm139660637659712"/>扩展：建立容量模型，为后续发布阶段获取资源，并将服务启用和原地调整容量自动化。SRE 可以确保监控覆盖充分，并帮助创建最好能与即将采用的服务 SLO 相匹配的告警。</p>
+
+<p>服务的使用情况仍在变化，因此团队还在了解服务的运行方式及其故障模式的管理方法，SRE 团队在事件响应和运维职责方面可能会承担更多工作。我们建议开发团队和 SRE 团队共同分担这些工作。这样，开发团队可以积累服务运维经验，SRE 也能全面了解服务。运维工作和事件管理所得的经验，会帮助服务所有者确定在全面开放前需要对系统做出的变更和更新。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 4: General Availability" data-type="sect2"><div class="sect2" id="phase_4_general_availability">
+<h2>阶段 4：全面开放</h2>
+
+<p>在这个阶段，服务已经通过生产就绪 <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="general availability phase" data-type="indexterm" id="idm139660637655952"/>评审（详见 <a href="http://bit.ly/2Lc14wG">第 32 章</a>《<em>Site Reliability Engineering</em>》）并 <a contenteditable="false" data-primary="general availability phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637653600"/>向所有用户开放。虽然 SRE 通常承担大部分运维工作，开发团队仍应继续处理少量运维和事件响应工作，以免失去对服务这些方面的认识。他们可以长期安排一名开发者加入值班轮换，帮助开发团队持续了解运维负载。</p>
+
+<p>在全面开放初期，开发团队专注于提高服务成熟度并发布首批新功能，同时还需要掌握系统在真实负载下的特性。到了全面开放后期，开发团队会提供小规模的增量功能和修复，其中一部分来自运维需求和生产事件的反馈。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 5: Deprecation" data-type="sect2"><div class="sect2" id="phase_5_deprecation">
+<h2>阶段 5：弃用</h2>
+
+<p>没有任何系统会永远运行。<a contenteditable="false" data-primary="deprecation phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637645056"/> 如果有了更好的替代系统，<a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="deprecation phase" data-type="indexterm" id="idm139660637650832"/> 现有系统将不再接纳新用户，全部工程工作会集中于把用户从现有系统迁移到新系统。SRE 在基本没有开发团队参与的情况下运行现有系统，并通过开发和运维工作支持迁移。</p>
+
+<p>虽然现有系统所需的 SRE 投入有所减少，但 SRE 实际上同时支持着两套完整系统，因此应相应调整人员数量和配置。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 6: Abandoned" data-type="sect2"><div class="sect2" id="phase_6_abandoned">
+<h2>阶段 6：已放弃</h2>
+
+<p>服务被放弃后，开发团队通常会重新承担运维支持。 <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="abandoned phase" data-type="indexterm" id="idm139660637649008"/><a contenteditable="false" data-primary="abandoned phase (service lifecycle), SRE engagement in" data-type="indexterm" id="idm139660637649264"/>SRE 仅在力所能及的范围内协助处理服务事件。对于有内部用户的服务，SRE 会把服务管理工作移交给仍在使用它的用户。本章提供了两个案例，说明 SRE 如何把服务交还给开发团队。</p>
+</div></section>
+
+<section data-pdf-bookmark="Phase 7: Unsupported" data-type="sect2"><div class="sect2" id="phase_7_unsupported">
+<h2>阶段 7：停止支持</h2>
+
+<p>此时已经没有用户， <a contenteditable="false" data-primary="unsupported phase, service lifecycle" data-type="indexterm" id="idm139660637638320"/>服务也 <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-secondary="unsupported phase" data-type="indexterm" id="idm139660637637216"/>已经关闭。SRE 会协助删除生产配置和 <a contenteditable="false" data-primary="service lifecycle, SRE engagement during" data-startref="ix_serlife" data-type="indexterm" id="idm139660637633360"/>文档中对该服务的引用。<a contenteditable="false" data-primary="SRE engagement model" data-secondary="service lifecycle" data-startref="ix_SREengserlf" data-type="indexterm" id="idm139660637634528"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Setting Up the Relationship" data-type="sect1"><div class="sect1" id="setting_up_the_relationship">
+<h1>建立协作关系</h1>
+
+<p>服务并非孤立存在：SRE 团队要与构建服务的开发团队，以及决定服务 <a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-type="indexterm" id="ix_devSRE"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="setting up relationship with development team" data-type="indexterm" id="ix_SREengrel"/> 发展方向的产品团队协作。本节推荐了一些策略和具体做法，用于与这些团队建立并维持良好的工作关系。</p>
+
+<section data-pdf-bookmark="Communicating Business and Production Priorities" data-type="sect2"><div class="sect2" id="communicating_business_and_production_pri">
+<h2>沟通业务与生产优先级</h2>
+
+<p>要帮助别人，首先必须了解对方的需求。<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="communicating business and production priorities" data-type="indexterm" id="idm139660637623120"/> 因此，SRE 需要了解产品开发者希望通过 SRE 协作取得什么成果。 <a contenteditable="false" data-primary="priorities" data-secondary="business and production, understanding" data-type="indexterm" id="idm139660637623648"/><a contenteditable="false" data-primary="production" data-secondary="priorities, communication by SRE and developer teams" data-type="indexterm" id="idm139660637621264"/>与开发团队协作时，SRE 应深入理解产品目标和业务目标。 <a contenteditable="false" data-primary="business priorities, communicating between SRE and developer teams" data-type="indexterm" id="idm139660637624448"/>SRE 应能够清楚说明自己的角色，以及 SRE 协作如何帮助开发者朝这些目标推进。</p>
+
+<p>团队之间需要定期沟通业务和生产优先级。理想情况下，SRE 和开发团队的领导层应作为一个整体开展工作，定期会面，就技术挑战和优先级难题交换看法。有时，SRE 负责人也会加入产品开发领导团队。</p>
+</div></section>
+
+<section data-pdf-bookmark="Identifying Risks" data-type="sect2"><div class="sect2" id="identifying_risks">
+<h2>识别风险</h2>
+
+<p>SRE 团队专注于系统可靠性， <a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="identifying risks" data-type="indexterm" id="idm139660637614384"/>因此非常适合识别潜在风险。<a contenteditable="false" data-primary="risks, identifying by SRE team to developer team" data-type="indexterm" id="idm139660637614752"/> 尽可能准确地评估这些风险发生的概率和潜在影响非常重要，因为打断正常开发和功能交付，会给产品和工程师带来高昂成本。</p>
+</div></section>
+
+<section data-pdf-bookmark="Aligning Goals" data-type="sect2"><div class="sect2" id="aligning_goals">
+<h2>对齐目标</h2>
+
+<p>开发团队和 SRE 团队都关心可靠性、可用性、性能、可扩展性、效率，以及功能开发和发布速度。<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="aligning goals" data-type="indexterm" id="ix_devSREalign"/><a contenteditable="false" data-primary="goals, aligning between SRE and development teams" data-type="indexterm" id="ix_goalalgn"/> 不过，SRE 面对的激励机制不同，主要更看重服务的长期可持续性，而不是新功能发布。</p>
+
+<p class="pagebreak-after">根据我们的经验，开发团队和 SRE 团队既保持各自的关注重点，又明确支持对方的目标，就能取得恰当平衡。SRE 可以明确设定目标：支持开发团队的发布速度，并确保所有已获批准的发布成功完成。例如，SRE 可以承诺：“只要安全，我们就支持你们尽快发布。”这里的“安全”通常意味着不超出错误预算。开发者则应承诺投入合理比例的工程时间，修复和预防损害可靠性的问题：从设计和实现层面解决持续存在的服务问题、偿还技术债务，并让 SRE 尽早参与新功能开发，以便参加设计讨论。</p>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="shared_goals_sre_engagements_at_the_new_y">
+<h5>共同目标：《纽约时报》的 SRE 协作实践</h5>
+
+<p><em>作者：Surya Prashanth Sanagavarapu（《纽约时报》）</em></p>
+
+<p>在我们组织中，云迁移、生产环境扩容和应用容器化都会产生大量 SRE 资源需求。此外，SRE 团队还有自己的积压工作需要处理。在资源有限的情况下，如何处理这些相互竞争的优先事项，决定了 SRE 团队能否成功。招聘更多 SRE 显然可以缓解工时需求，但并非每支团队都具备这样做的条件、经验或时间。</p>
+
+<p>《 <em>纽约时报</em> 》SRE 职能的核心使命是利用工具和流程 <em>赋能产品开发团队</em> ，最大限度提高支撑新闻编辑部的应用的可靠性和韧性，从而向读者提供高质量的新闻内容。为了在减少自动化积压和参与其他团队工作之间取得平衡，我们采用了 <em>共同目标模式</em> 。</p>
+
+<p>开始与团队协作之前，我们会审查当前季度或年度的全部积压工作，并明确界定工作项及其类别。例如，积压事项可能包括：</p>
+
+<ul>
+	<li>
+	<p>增加自动化能力：通过访问应用的服务状态端点，配置基础监控和告警。</p>
+	</li>
+	<li>
+	<p>实现更可靠和/或更快速的构建流水线。</p>
+	</li>
+</ul>
+
+<p>其他团队向 SRE 求助时，我们确定请求优先级所考虑的因素之一，是联合协作能否帮助减少我们的积压工作。</p>
+
+<p><b>界定协作方式</b></p>
+
+<p>我们的 SRE 按两种不同模式与产品开发团队合作：</p>
+
+<ul>
+	<li>
+	<p>全职参与</p>
+	</li>
+	<li>
+	<p>以兼职方式参与范围较小、周期较短且边界明确的项目</p>
+	</li>
+</ul>
+
+<p>我们根据 SRE 团队的可用精力确定协作类型。对于全职协作，我们倾向于把一名 SRE 嵌入产品开发团队。这样能让 SRE 集中精力并投入足够时间，为产品工程团队分担一部分负担。开发者逐步掌握 SRE 技能和能力时，SRE 与产品团队也有充分时间相互了解。对于长期协作，我们优先选择最符合公司战略的应用。</p>
+
+<p>界定协作范围时，我们会尝试评估团队或应用在 SRE 实践方面的成熟度。我们发现，不同团队对 SRE 实践和原则的认识处于不同成熟阶段。我们正在着手采用一套应用成熟度模型来辅助评估。</p>
+
+<p><b>设定共同目标和预期</b></p>
+
+<p>设定恰当的预期，对按期完成任务至关重要。为此，我们遵循以下原则：</p>
+
+<ul>
+	<li>
+	<p>我们强调，直接负责修改应用的是应用所有者，而不是 SRE。</p>
+	</li>
+	<li>
+	<p>SRE 协作应让全公司受益。任何新增的自动化能力或工具，都应改进全公司通用的工具和自动化，避免开发一次性脚本。</p>
+	</li>
+	<li>
+	<p>SRE 应提前告知开发团队协作过程中可能引入的任何新流程，例如负载测试。</p>
+	</li>
+	<li>
+	<p>协作中可能 <a contenteditable="false" data-primary="Application Readiness Reviews (ARRs)" data-type="indexterm" id="idm139660637585440"/>包括应用就绪评审（Application Readiness Review，ARR）和生产 <a contenteditable="false" data-primary="Production Readiness Reviews (PRRs)" data-type="indexterm" id="idm139660637581568"/>就绪评审（PRR），具体参见 <a href="http://bit.ly/2Lc14wG">第 32 章</a>《<em>Site Reliability Engineering</em>》。ARR 和 PRR 提出的变更，必须由开发者与 SRE 共同确定优先级。</p>
+	</li>
+	<li>
+	<p>SRE 不是传统的运维工程师，不负责执行部署作业之类的手工工作。</p>
+	</li>
+</ul>
+
+<p>设定共同目标时，我们会与开发团队一起编写目标，并把目标拆分成里程碑。如果公司采用敏捷方法，也可以编写 <a href="http://bit.ly/2LOwI4u">史诗</a> 或用户故事。随后，SRE 团队可以把这些目标纳入自己的积压工作。</p>
+
+<p>我们通常按以下步骤设定目标：</p>
+
+<ol>
+	<li>
+	<p>界定协作范围。</p>
+
+	<ul>
+		<li>
+		<p><strong>示例 1：</strong> 下个季度，我希望团队所有成员都能处理 GKE/GAE 部署，熟悉生产环境，并有能力应对生产故障。</p>
+		</li>
+		<li>
+		<p><strong>示例 2：</strong> 下个季度，我希望 SRE 与开发团队合作，从扩缩容和监控方面稳定应用，并为故障处理编写运行手册和自动化工具。</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>明确最终成功时应呈现的结果，并把它清楚地写出来。</p>
+
+	<ul>
+		<li>
+		<p><strong>示例：</strong> 协作结束后，产品开发团队无需升级求助，就能自行处理 Google Kubernetes Engine 中的服务故障。</p>
+		</li>
+	</ul>
+	</li>
+</ol>
+
+<p><b>迭代与沟通</b></p>
+
+<p>每次与产品开发团队协作，都从启动会和规划会开始。启动前，SRE 团队会审查应用架构和共同目标，确认预期成果能否在给定时间内实现。联合召开规划会并创建史诗和用户故事，是启动协作的良好起点。</p>
+
+<p>这次协作的路线图可以如下：</p>
+
+<ol>
+	<li>
+	<p>审查应用架构。</p>
+	</li>
+	<li>
+	<p>定义共同目标。</p>
+	</li>
+	<li>
+	<p>召开启动会和规划会。</p>
+	</li>
+	<li>
+	<p>实施开发周期，逐步达成里程碑。</p>
+	</li>
+	<li>
+	<p>安排复盘，收集协作反馈。</p>
+	</li>
+	<li>
+	<p>开展生产就绪评审。</p>
+	</li>
+	<li>
+	<p>实施开发周期，逐步达成里程碑。</p>
+	</li>
+	<li>
+	<p>规划并执行发布。</p>
+	</li>
+</ol>
+
+<p>我们要求双方团队确定反馈方式并约定反馈频率。SRE 和开发团队都需要了解哪些做法有效、哪些无效。为了让协作成功，我们发现，除了敏捷迭代评审之外，再通过约定方式建立持续反馈循环很有帮助，例如每两周举行一次复盘，或由团队经理参加进度沟通。如果协作效果不佳，我们希望团队不要回避规划 <span class="keep-together">结束协作</span>。</p>
+
+<p><b>衡量影响</b></p>
+
+<p>衡量协作影响十分重要，这能确保 SRE 从事的是高价值工作。我们还会衡量每个合作团队的成熟度，使 SRE 能够确定与其合作的最有效方式。我们借鉴 Google 客户可靠性工程（Customer Reliability Engineering，CRE）团队的一种做法，是在协作开始前与产品工程团队负责人开展一次 <em>特定时点评估</em>。</p>
+
+<p>特定时点评估需要逐项检查成熟度矩阵，沿 SRE 关心的各个维度评估服务成熟度（具体参见 <a href="http://bit.ly/2Lc14wG">第 32 章</a>《<em>Site Reliability Engineering</em>》），并就可观测性、容量规划、变更管理和事件响应等职能领域的评分达成一致。了解团队的优势、弱点和盲区后，这项评估也有助于更有针对性地调整协作方式。</p>
+
+<p>协作结束、开发团队开始独立工作后，我们会再次评估，以衡量 SRE 创造的价值。如果已有成熟度模型，就根据模型衡量协作是否提升了成熟度。协作临近结束时，我们还会策划一场庆祝活动！<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-startref="ix_devSREalign" data-tertiary="aligning goals" data-type="indexterm" id="idm139660637558496"/><a contenteditable="false" data-primary="goals, aligning between SRE and development teams" data-startref="ix_goalalgn" data-type="indexterm" id="idm139660637555344"/></p>
+</div></aside>
+</div></section>
+
+<section data-pdf-bookmark="Setting Ground Rules" data-type="sect2"><div class="sect2" id="setting_ground_rules">
+<h2>制定基本规则</h2>
+
+<p>在 Google，每支 SRE 团队都有两个<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="setting ground rules" data-type="indexterm" id="idm139660637553184"/> 主要目标：</p>
+
+<dl>
+	<dt>短期</dt>
+	<dd>
+	<p>提供运维稳定、具备可用性且能随需求扩展的系统，同时兼顾可维护性，以满足产品的业务需求。<a contenteditable="false" data-primary="short term goals (SRE team)" data-type="indexterm" id="idm139660637546032"/></p>
+	</dd>
+	<dt>长期</dt>
+	<dd>
+	<p>优化服务运维，直至不再需要持续投入人工，<a contenteditable="false" data-primary="long term goals (SRE team)" data-type="indexterm" id="idm139660637541936"/> 让 SRE 团队能够转向下一项高价值 <span class="keep-together">协作</span>。</p>
+	</dd>
+</dl>
+
+<p>为此，团队应就一些合作原则达成一致，例如：</p>
+
+<ul>
+	<li>
+	<p>明确运维工作的定义，并为其设定硬性上限。</p>
+	</li>
+	<li>
+	<p>为服务制定一项双方认可且实际度量的 SLO，并用它确定开发团队和 SRE 团队工程工作的优先级。 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="by SRE and development teams for a service" data-type="indexterm" id="idm139660637538752"/>	即使尚未制定 SLO，也 <em>可以</em> 开始协作；但我们的经验表明，如果合作关系从一开始就没有建立这一共识，日后仍得回头补上这一步。如需了解缺少 SLO 时工程工作如何偏离理想状态，请参见 <a data-type="xref" href="ch21-zh.html#case_study_1_scaling_wazeem_dashfrom_ad_h">“案例研究 1：扩展 Waze——从临时变更走向计划变更”</a>。</p>
+	</li>
+	<li>
+	<p>约定季度错误预算，用它决定发布速度和其他安全参数，例如为应对意外的使用量增长而预留额外服务容量。<a contenteditable="false" data-primary="error budgets" data-secondary="agreed-upon by SRE and development teams for a service" data-type="indexterm" id="idm139660637534688"/></p>
+	</li>
+	<li>
+	<p>让开发者参与日常运维，确保他们能看到持续存在的问题，并优先修复问题的根本原因。<a contenteditable="false" data-primary="operations" data-secondary="developer involvement in" data-type="indexterm" id="idm139660637533392"/></p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Planning and Executing" data-type="sect2"><div class="sect2" id="planning_and_executing">
+<h2>规划与执行</h2>
+
+<p>主动规划和协调执行，可以确保 SRE 团队达到预期和产品目标，同时优化运维并降低运维成本。<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-tertiary="planning and executing" data-type="indexterm" id="idm139660637528160"/> 我们建议 <a contenteditable="false" data-primary="planning by SRE and development teams" data-type="indexterm" id="idm139660637526400"/>从两个相互关联的层面进行规划：</p>
+
+<ul>
+	<li>
+	<p>与开发领导层共同确定产品和服务的优先级，并发布年度路线图。</p>
+	</li>
+	<li>
+	<p>定期审查和更新路线图， <a contenteditable="false" data-primary="roadmaps" data-type="indexterm" id="idm139660637521568"/>再据此制定与路线图一致的季度目标或其他周期目标。</p>
+	</li>
+</ul>
+
+<p>路线图确保每支团队都能从长期视角开展明确且影响重大的工作。有时不制定路线图也有充分理由，例如开发组织变化太快。但在稳定环境中，没有路线图可能意味着 SRE 团队应与另一支团队合并，把服务管理工作交还开发团队，扩大职责范围，或直接解散。</p>
+
+<p>持续与开发领导层开展战略对话，有助于迅速发现关注重点的变化，讨论 SRE 为业务创造价值的新机会，或停止对产品而言成本效益不高的活动。</p>
+
+<p>路线图不必只关注产品改进，也可以说明如何应用和改进通用的 SRE 技术与流程，以降低运维成本。<a contenteditable="false" data-primary="development" data-secondary="setting up relationship between SRE and development team" data-startref="ix_devSRE" data-type="indexterm" id="idm139660637519936"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="setting up relationship with development team" data-startref="ix_SREengrel" data-type="indexterm" id="idm139660637515072"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Sustaining an Effective Ongoing Relationship" data-type="sect1"><div class="sect1" id="sustaining_an_effective_ongoing_relations">
+<h1>维持有效的长期协作关系</h1>
+
+<p>健康而有效的关系需要持续投入。<a contenteditable="false" data-primary="relationships, sustaining between SRE and other teams" data-type="indexterm" id="ix_relsus"/> 本节概述的策略在我们的实践中成效良好。<a contenteditable="false" data-primary="development" data-secondary="sustaining an effective ongoing relationship between SRE and development teams" data-type="indexterm" id="ix_devSREsus"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="sustaining an effective ongoing relationship" data-type="indexterm" id="ix_SREengrelsus"/></p>
+
+<section data-pdf-bookmark="Investing Time in Working Better Together" data-type="sect2"><div class="sect2" id="investing_time_in_working_better_together">
+<h2>投入时间，改善协作方式</h2>
+
+<p>仅仅花时间相互交流，就能帮助 SRE 和开发者更有效地协作。我们建议 SRE 定期与自己所运行服务的开发方同事会面。SRE 还应定期与其他相关 SRE 团队会面，例如运行上游流量来源服务的团队，或运行本服务所用公共基础设施的团队。由于团队彼此熟悉，而且已事先约定升级处理的发起和管理方式，发生故障或分歧时，SRE 团队就能更有把握、更迅速地升级处理。</p>
+</div></section>
+
+<section data-pdf-bookmark="Maintaining an Open Line of Communication" data-type="sect2"><div class="sect2" id="maintaining_an_open_line_of_communication">
+<h2>保持沟通渠道畅通</h2>
+
+<p>除了团队间的日常沟通，我们还发现，在整个协作期间，有几种较为正式的信息交换方式特别有帮助。<a contenteditable="false" data-primary="communication" data-secondary="maintaining open line between SRE and other teams" data-type="indexterm" id="idm139660637505264"/> </p>
+
+<p>SRE 可以每季度向产品开发领导层做一次“生产状态”汇报，帮助他们了解资源应投向何处，以及 SRE 具体如何帮助其产品或服务。同样，开发者也可以定期向 SRE 团队做“产品状态”汇报，或邀请 SRE 参与开发团队面向高管的演示。这既让 SRE 团队全面了解开发团队上季度完成的工作，也让 SRE 看见自己的工作如何促成这些成果；同时还会介绍产品未来几个季度的发展方向，以及产品负责人认为 SRE 应如何参与并推动这些目标实现。</p>
+</div></section>
+
+<section data-pdf-bookmark="Performing Regular Service Reviews" data-type="sect2"><div class="sect2" id="performing_regular_service_reviews">
+<h2>定期开展服务评审</h2>
+
+<p>负责服务的 SRE 和开发团队负责人掌握着服务未来的决策权，因此至少每年应面对面会晤一次。<a contenteditable="false" data-primary="service reviews (regular), performing" data-type="indexterm" id="idm139660637500384"/> 更频繁地会面可能有现实困难，例如需要跨洲出行。会上，我们通常会分享未来 12–18 个月的路线图，并讨论新项目和发布计划。</p>
+
+<p>SRE 团队有时会组织一项复盘活动，由负责人讨论团队希望 <em>停止做</em>、 <em>继续做</em>和 <em>开始做</em>的事情。同一事项可以出现在多个类别中，所有意见都应得到尊重。这些会议需要有人积极引导，因为全员参与才能取得最佳效果。它通常被评为服务会议中最有用的环节，因为会上获得的细节可以推动服务发生重大改变。</p>
+</div></section>
+
+<section data-pdf-bookmark="Reassessing When Ground Rules Start to Slip" data-type="sect2"><div class="sect2" id="reassessing_when_ground_rules_start_to_sl">
+<h2>基本规则松动时重新评估</h2>
+
+<p>如果任何一个已约定领域（参见 <a data-type="xref" href="#setting_ground_rules">“制定基本规则”</a>）的合作状况开始恶化，开发者和 SRE 双方都需要调整优先级，使服务恢复良好状态。根据紧迫程度，我们发现可以采取以下措施：</p>
+
+<ul>
+	<li>
+	<p>双方指定具体工程师，让他们暂停优先级较低的任务，集中扭转这种恶化趋势。<a contenteditable="false" data-primary="reliability" data-secondary="reliability hackathon for products at risk" data-type="indexterm" id="idm139660637491136"/></p>
+	</li>
+	<li>
+	<p>双方共同举办“可靠性黑客松”，但在黑客松活动日之外，团队仍按通常的优先级工作。</p>
+	</li>
+	<li>
+	<p>宣布冻结功能开发，双方团队的大部分成员集中解决这一退化问题。</p>
+	</li>
+	<li>
+	<p>技术领导层认定产品可靠性面临严重风险，双方团队启动“全员投入”响应。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Adjusting Priorities According to Your SLOs and Error Budget" data-type="sect2"><div class="sect2" id="adjusting_priorities_according_to_your_sl">
+<h2>根据 SLO 和错误预算调整优先级</h2>
+
+<p>精心制定定义明确的 SLO，有助于团队恰当地确定优先级。如果 <a contenteditable="false" data-primary="priorities" data-secondary="adjusting according to SLOs and error budget" data-type="indexterm" id="idm139660637482208"/>服务面临无法达到 SLO 的风险，或错误预算已经耗尽， <a contenteditable="false" data-primary="error budgets" data-secondary="adjusting priorities according to" data-type="indexterm" id="idm139660637481248"/>双方团队就可以把恢复服务安全状态作为高优先级工作。 <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="adjusting priorities according to" data-type="indexterm" id="idm139660637479648"/>他们既可以采取战术性措施，例如通过超额配置解决流量引起的性能退化；也可以实施更具战略意义的软件修复，例如优化、缓存和优雅降级。</p>
+
+<p>如果服务完全符合 SLO，且错误预算仍很充裕，我们建议利用剩余错误预算提高功能开发速度，而不是在服务改进上投入不成比例的精力。</p>
+</div></section>
+
+<section data-pdf-bookmark="Handling Mistakes Appropriately" data-type="sect2"><div class="sect2" id="handling_mistakes_appropriately">
+<h2>妥善应对错误</h2>
+
+<p>人难免会犯错。 <a contenteditable="false" data-primary="mistakes, handling appropriately" data-type="indexterm" id="idm139660637476896"/><a contenteditable="false" data-primary="failures" data-secondary="handling mistakes appropriately" data-type="indexterm" id="idm139660637476048"/>秉承我们的 <a href="http://bit.ly/2J2Po2W">事后复盘文化</a>，我们不责备个人，而是关注系统行为。具体效果可能因团队而异，但以下做法对我们很有效。</p>
+
+<section data-pdf-bookmark="Sleep on it" data-type="sect3"><div class="sect3" id="sleep_on_it">
+<h3>冷静一晚再谈</h3>
+
+<p>条件允许时，不要在疲惫或情绪激动时开展后续讨论。在高压情境下，人们很容易误解电子邮件等书面沟通中的语气。读者记住的往往是文字带来的感受，而不一定是文字本身。跨地点沟通时，通常值得安排视频会议；看到面部表情、听到说话语气，有助于消除文字的歧义。</p>
+</div></section>
+
+<section data-pdf-bookmark="Meet in person (or as close to it as possible) to resolve issues" data-type="sect3"><div class="sect3" id="meet_in_person_left_parenthesisor_as_clos">
+<h3>当面解决问题（或尽可能接近当面沟通）</h3>
+
+<p>如果只通过代码评审或文档交流，讨论很快就会变得冗长而令人沮丧。<a contenteditable="false" data-primary="meeting in person to resolve issues" data-type="indexterm" id="idm139660637469712"/> 如果另一支团队的行为或决定与我们的预期不符，我们会与他们沟通自己的假设，并询问是否缺少了某些背景信息。</p>
+</div></section>
+
+<section data-pdf-bookmark="Be positive" data-type="sect3"><div class="sect3" id="be_positive">
+<h3>积极肯定</h3>
+
+<p>感谢他人的积极行为。<a contenteditable="false" data-primary="positive behaviors" data-type="indexterm" id="idm139660637465552"/> 做法可以很简单。例如，在代码评审、设计评审和故障场景演练中，我们会请工程师指出做得好的地方并说明原因。你也可以肯定写得好的代码注释，或者在别人投入时间进行严格的设计评审时向其致谢。</p>
+</div></section>
+
+<section data-pdf-bookmark="Understand differences in communication" data-type="sect3"><div class="sect3" id="understand_differences_in_communication">
+<h3>理解沟通差异</h3>
+
+<p>不同团队对于信息如何在内部传播，有不同的<a contenteditable="false" data-primary="communication" data-secondary="between teams, understanding differences in" data-type="indexterm" id="idm139660637463728"/> 预期。<a contenteditable="false" data-primary="relationships, sustaining between SRE and other teams" data-startref="ix_relsus" data-type="indexterm" id="idm139660637460656"/> 理解这些 <a contenteditable="false" data-primary="development" data-secondary="sustaining an effective ongoing relationship between SRE and development teams" data-startref="ix_devSREsus" data-type="indexterm" id="idm139660637461808"/>差异，有助于巩固 <a contenteditable="false" data-primary="SRE engagement model" data-secondary="sustaining an effective ongoing relationship" data-startref="ix_SREengrelsus" data-type="indexterm" id="idm139660637456704"/>协作关系。</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Scaling SRE to Larger Environments" data-type="sect1"><div class="sect1" id="scaling_sre_to_larger_environments">
+<h1>将 SRE 扩展到更大的环境</h1>
+
+<p>到目前为止，我们讨论的场景都只涉及一支 SRE 团队、一支开发团队和一项服务。 <a contenteditable="false" data-primary="scaling" data-secondary="of SRE to larger environments" data-type="indexterm" id="ix_scaleSRE"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="scaling SRE to larger environments" data-type="indexterm" id="ix_SREengscale"/>规模较大的公司，甚至采用微服务模式的小公司，都可能需要扩大其中部分或全部数量。</p>
+
+<section data-pdf-bookmark="Supporting Multiple Services with a Single SRE Team" data-type="sect2"><div class="sect2" id="supporting_multiple_services_with_a_singl">
+<h2>由一支 SRE 团队支持多项服务</h2>
+
+<p>SRE 具备专业技能，又属于稀缺资源， <a contenteditable="false" data-primary="services" data-secondary="multiple, supporting with single SRE team" data-type="indexterm" id="idm139660637446160"/>因此 Google 通常把 SRE 与开发者的人数比例维持在 10% 以下。<a contenteditable="false" data-primary="SRE teams" data-secondary="single team supporting multiple services" data-type="indexterm" id="idm139660637444544"/> 所以，一支 SRE 团队通常会与所在产品领域（product area，PA）的多支开发团队合作。<a contenteditable="false" data-primary="development" data-secondary="SRE-to-developer ratio and support of multiple services by single SRE team" data-type="indexterm" id="idm139660637444880"/></p>
+
+<p>如果值得获得 SRE 支持的服务很多，而 SRE 相对稀缺，SRE 团队可以把精力集中在一项服务上，也可以支持少数几支开发团队的几项服务。</p>
+
+<p>根据我们的经验，如果服务具备以下特征，就能把有限的 SRE 资源扩展到多项服务：</p>
+
+<ul>
+	<li>
+	<p>这些服务属于同一产品。这样可以端到端承担用户体验的责任，并与用户需求保持一致。</p>
+	</li>
+	<li>
+	<p>这些服务基于相似的技术栈构建。这样既能降低认知负担，也能有效复用技术技能。</p>
+	</li>
+	<li>
+	<p>这些服务由同一支开发团队或少数几支相关开发团队构建。这样可以减少需要维护的协作关系，更容易对齐优先级。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Structuring a Multiple SRE Team Environment" data-type="sect2"><div class="sect2" id="structuring_a_multiple_sre_team_environme">
+<h2>构建多 SRE 团队环境</h2>
+
+<p>如果公司规模足以拥有多支 SRE 团队， <a contenteditable="false" data-primary="SRE teams" data-secondary="structuring multiple SRE team environment" data-type="indexterm" id="idm139660637434624"/>也可能拥有多项产品，就需要选择一种 SRE 与产品组之间的组织结构。</p>
+
+<p>Google 支持着一个复杂的开发组织。如 <a data-type="xref" href="#large_scale_dev_to_sre_team_relationships">图 18-2</a>所示，每个产品领域由多个产品组构成，每个产品组又包含多项产品。SRE 组织按层级与开发组织对应，在每一层共享优先级和最佳实践。当同一组内的所有团队或同一产品领域内的所有组具有相同或相似的具体业务目标，而且每个产品组都有产品负责人和 SRE 负责人时，这种模式很有效。</p>
+
+<figure><div class="figure" id="large_scale_dev_to_sre_team_relationships"><img alt="大规模开发团队与 SRE 团队的关系（按产品领域）" src="assets/tsrw_1802.png"/>
+<h6><span class="label">图 18-2　 </span>大规模开发团队与 SRE 团队的关系（按产品领域）</h6>
+</div></figure>
+
+<p>如果组织有多支 SRE 团队，就需要以某种方式对它们分组。我们见过效果良好的两种主要方法是：</p>
+
+<ul>
+	<li>
+	<p>按产品划分团队，避免它们必须与过多不同的开发团队协调。</p>
+	</li>
+	<li>
+	<p>按技术栈划分团队，例如“存储”或“网络”。</p>
+	</li>
+</ul>
+
+<p>为了防止开发组织重组导致 SRE 团队频繁变动，我们建议按技术组织 SRE 团队，而不是照搬开发产品领域的汇报结构。例如，许多支持存储系统的团队具有相似的组织方式和运作模式。即使这些存储系统来自开发组织的不同部分，把它们归入以技术为中心的产品组也可能更合理。</p>
+</div></section>
+
+<section data-pdf-bookmark="Adapting SRE Team Structures to Changing Circumstances" data-type="sect2"><div class="sect2" id="adapting_sre_team_structures_to_changing">
+<h2>根据环境变化调整 SRE 团队结构</h2>
+
+<p>如果需要调整 SRE 团队结构，以适应不断变化的 <a contenteditable="false" data-primary="SRE teams" data-secondary="adjusting structures to changing circumstances" data-type="indexterm" id="idm139660637423488"/>产品领域需求，我们建议根据服务需要、工程负载和运维负载，创建、拆分（分片）、合并或解散 SRE 团队。每支 SRE 团队都应有明确的职责章程，体现其服务、技术和运维范围。当一支 SRE 团队承担的服务过多时，与其从头组建新团队，我们更倾向于把现有团队拆分成多支团队，从而传承文化并培养已有的领导人才。这类变化难免干扰现有团队，因此建议只在必要时重组。</p>
+</div></section>
+
+<section data-pdf-bookmark="Running Cohesive Distributed SRE Teams" data-type="sect2"><div class="sect2" id="running_cohesive_distributed_sre_teams">
+<h2>运营团结一致的分布式 SRE 团队</h2>
+
+<p>如果需要保证 24/7 全天候覆盖和业务连续性，而且组织业务遍布全球，不妨尝试把 SRE 团队分布到世界各地，实现均衡覆盖。<a contenteditable="false" data-primary="SRE teams" data-secondary="cohesive distributed SRE teams, running" data-type="indexterm" id="idm139660637428432"/><a contenteditable="false" data-primary="distributed SRE teams, running" data-type="indexterm" id="idm139660637422080"/> 如果有多支分布在全球的团队，我们建议根据地点邻近程度，以及服务与共用技术的相似性来安排团队共址。我们发现，一个地点只有一支孤立团队时，通常效率较低，也更容易受到团队外部重组的影响；只有在明确的业务需求确实要求这样做，而且已经考虑过所有其他选择时，我们才会组建这种团队。</p>
+
+<p>很多公司没有资源实现全球完整覆盖。但即使团队只分布在不同办公楼，而非不同大洲，也应建立并维持两地协作安排。</p>
+
+<p>建立并维护组织标准同样重要。这些标准应推动规划和执行，并培育、维持共同的团队文化。为此，我们认为定期把全体成员聚到同一地点很有帮助，例如每 12–18 个月召开一次全组织峰会。</p>
+
+<p>有些职责并不适合由团队每个人共同承担，例如定期从备份执行测试恢复，或落实全公司范围的技术要求。在团队的不同地点之间分配这些职责时，请考虑以下策略：</p>
+
+<ul>
+	<li>
+	<p>把单项职责分配给一个地点，但定期轮换，例如每年一次。</p>
+	</li>
+	<li>
+	<p>每项职责都由多个地点共同承担，并主动平衡参与程度和工作量。</p>
+	</li>
+	<li>
+	<p>不要让一项职责连续多年固定在同一地点。我们发现，这种配置最终弊大于利。虽然该地点往往会非常擅长履行这些职责，但这样做会滋生“我们与他们”的对立心态，阻碍知识传播，并给业务连续性带来风险。</p>
+	</li>
+</ul>
+
+<p>所有 <a contenteditable="false" data-primary="scaling" data-secondary="of SRE to larger environments" data-startref="ix_scaleSRE" data-type="indexterm" id="idm139660637415696"/>这些策略都要求各地点保持战术和战略层面的 <a contenteditable="false" data-primary="SRE engagement model" data-secondary="scaling SRE to larger environments" data-startref="ix_SREengscale" data-type="indexterm" id="idm139660637408016"/>沟通。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Ending the Relationship" data-type="sect1"><div class="sect1" id="ending_the_relationship">
+<h1>结束协作关系</h1>
+
+<p>SRE 协作并不一定无限期持续。<a contenteditable="false" data-primary="SRE engagement model" data-secondary="ending the relationship" data-type="indexterm" id="ix_SREengend"/> SRE 通过开展影响重大的工程工作创造价值。<a contenteditable="false" data-primary="ending SRE engagements" data-type="indexterm" id="ix_endSRE"/> 如果工作不再具有显著影响，也就是说 SRE 协作的价值主张已经消失，或者大部分工作不再是工程工作而变成了运维工作，就可能需要重新审视这段 SRE 协作关系。一般而言，SRE 个人会离开琐事繁重的团队，转向拥有更多有趣工程工作的团队。</p>
+
+<p>从团队层面看，如果 SRE 创造的业务价值已不足以抵偿成本，就可以把服务交还出去。例如：</p>
+
+<ul>
+	<li>
+	<p>服务已经优化到不再需要 SRE 持续参与的程度</p>
+	</li>
+	<li>
+	<p>服务的重要性或相关性已经降低</p>
+	</li>
+	<li>
+	<p>服务即将终止</p>
+	</li>
+</ul>
+
+<p>下面的案例研究展示了 Google 的两种 SRE 协作模式如何结束。第一个案例的结果大体积极，另一个案例的结果则更为复杂。</p>
+
+<section data-pdf-bookmark="Case Study 1: Ares" data-type="sect2"><div class="sect2" id="case_study_1_ares">
+<h2>案例研究 1：Ares</h2>
+
+<p>Google 的滥用行为防护 SRE 团队与通用滥用行为防护工具（Common Abuse Tool，CAT）团队 <a contenteditable="false" data-primary="Abuse SRE and Common Abuse Tool (CAT) teams, Ares case study" data-type="indexterm" id="ix_AbuseSRECAT"/>为 Google 大多数产品提供反滥用保护，并与面向客户的产品团队合作，保障用户安全。<a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, Ares" data-type="indexterm" id="ix_endSREcs"/> 滥用行为防护 SRE 团队通过工程工作降低 CAT 的运维支持负担，使开发者能够直接参与支持用户。这里的用户是负责运营受 CAT 保护产品的 Googler，他们对 CAT 的防护效果，以及 CAT 响应问题或新威胁的速度都有很高期望。</p>
+
+<p>高效防范滥用行为，需要持续关注局势、迅速调整，并在面对新威胁和攻击时保持敏捷灵活。这些要求与 SRE 通常追求的可靠且有计划的功能开发相冲突。CAT 团队常常需要快速开发，并为遭受攻击的产品部署新的防护措施。滥用行为防护 SRE 却会质疑这些变更请求，要求更深入地分析每项新防护措施对整个生产系统的影响。团队间咨询和评审的时间限制又进一步加剧了这种紧张关系。</p>
+
+<p>为了改善局面，滥用行为防护 SRE 和 CAT 的领导层启动了一个持续多年的项目，在 CAT 内部组建专门的基础设施团队。新成立的“Ares”团队受命统一 Google 产品的反滥用基础设施。团队成员来自 CAT 工程师，他们既了解生产基础设施，也拥有构建和运行大型服务的经验。双方还启动了交流计划，把生产管理知识从滥用行为防护 SRE 转移给 CAT 基础设施团队成员。</p>
+
+<p>滥用行为防护 SRE 告诉 Ares 团队：当你已经在运行大型分布式服务时，要在生产环境中发布新服务，最简单的方法就是尽量减少该服务带来的额外认知负担。为此，各系统应尽可能同构。把一组生产服务放在一起部署和管理，它们就能共享相同的发布结构、容量规划、存储访问子服务等。Ares 采纳这一建议，重新设计了整个反滥用技术栈，运用模块化理念转向微服务模式。他们还构建了一个新的抽象层，使开发者不必操心监控、日志和存储等底层生产细节。</p>
+
+<p>此时，Ares 团队通过管理新的反滥用基础设施，开始更像是 CAT 的一支 SRE 团队。与此同时，滥用行为防护 SRE 专注于整个反滥用基础设施的生产部署和高效日常运行。</p>
+
+<p>Ares 工程师与滥用行为防护 SRE 的合作带来了以下改进：</p>
+
+<ul>
+	<li>
+	<p>CAT 团队现在有了既懂生产环境、又精通滥用行为防护的“内部”专家，滥用行为防护 SRE 因此不再需要审查新功能集成。这大幅缩短了新功能投入生产的时间。同时，新基础设施屏蔽了生产管理细节，也提高了 CAT 团队的开发速度。</p>
+	</li>
+	<li>
+	<p>现在，滥用行为防护 SRE 从 CAT 团队收到的新功能发布请求少了很多，因为大部分请求不需要修改基础设施。由于很少需要改动基础设施，评估新功能影响时需要掌握的背景知识也更少。确需修改基础设施时，滥用行为防护 SRE 只需说明变更对基础设施的影响，而不必深入具体功能。</p>
+	</li>
+	<li>
+	<p>需要接入反滥用基础设施的产品，周转时间变得更短、更可预测，因为产品接入所需的工作量现在与发布一项功能相当。</p>
+	</li>
+</ul>
+
+<p>项目结束时，滥用行为防护 SRE 不再直接支持 CAT，转而专注底层基础设施。这既没有损害 CAT 的可靠性，也没有让 CAT 团队承担过多额外运维工作，反而提高了 CAT 的整体开发速度。</p>
+
+<p>目前，Ares 保护着大量 Google 产品的用户。从团队成立之初，SRE 与产品开发团队就一直合作决定基础设施如何在生产环境中运行。Ares 项目营造出的命运共同体意识，是这种合作得以实现的基础。<a contenteditable="false" data-primary="Abuse SRE and Common Abuse Tool (CAT) teams, Ares case study" data-startref="ix_AbuseSRECAT" data-type="indexterm" id="idm139660637387120"/><a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, Ares" data-startref="ix_endSREcs" data-type="indexterm" id="idm139660637389744"/></p>
+</div></section>
+
+<section data-pdf-bookmark="Case Study 2: Data Analysis Pipeline" data-type="sect2"><div class="sect2" id="case_study_2_data_analysis_pipeline">
+<h2>案例研究 2：数据分析流水线</h2>
+
+<p>有时，维持 SRE 支持关系的成本，会高于 SRE 所创造的价值，无论这种价值是主观感受还是实际测量结果。<a contenteditable="false" data-primary="data analysis pipeline, case study" data-type="indexterm" id="ix_dataanal"/><a contenteditable="false" data-primary="ending SRE engagements" data-secondary="case study, data analysis pipeline" data-type="indexterm" id="idm139660637380096"/> 在这种情况下，解散 SRE 团队、结束协作关系是合理的选择。<sup><a data-type="noteref" href="ch18-zh.html#ch18fn1" id="ch18fn1-marker">1</a></sup></p>
+
+<p>当一段合作关系的价值随时间逐渐下降时，很难找出一个明确的时点，认定此时终止关系最为合理。Google 有两支团队共同支持一条对营收至关重要的数据分析流水线，它们就面临了这一挑战。尤其在已经合作十年之后，判断双方应当分道扬镳绝非易事。事后回顾，我们从团队互动中找出了几种模式；这些强烈信号表明，我们需要重新考虑 SRE 团队与产品团队之间的关系。</p>
+
+<section data-pdf-bookmark="The pivot" data-type="sect3"><div class="sect3" id="pivot">
+<h3>转折点</h3>
+
+<p>SRE 支持关系终止的三年前，各方都意识到主要数据分析流水线遇到了扩展瓶颈。当时，开发团队决定开始规划新系统，并安排少量工程师投入这项工作。随着新系统逐渐成形，合理的选择是降低现有系统上大型、复杂或高风险功能开发的优先级，把精力转向新系统。随着时间推移，这产生了两个重要影响：</p>
+
+<ul>
+	<li>
+	<p>新项目开始遵循一条非正式规则：如果项目本身很复杂，或者为了适配项目而修改现有系统的风险足够高，就最好把这笔投入用在新系统上。</p>
+	</li>
+	<li>
+	<p>随着资源转向新系统开发，即使对现有系统进行相对保守的变更也越来越困难。尽管如此，使用量仍以极高速度增长。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Communication breakdown" data-type="sect3"><div class="sect3" id="communication_breakdown">
+<h3>沟通破裂</h3>
+
+<p>在设计、构建和发布替代系统的同时维持现有系统运行，对任何工程团队都是挑战。专注新系统与旧系统的人员之间自然会积累压力，团队也必须做出艰难的优先级决策。如果团队在组织上彼此分离，困难还会加剧，例如由 SRE 团队负责维护和运行现有系统，而开发团队负责下一代系统。</p>
+
+<p>在整个周期中，定期、开放且合作式的沟通，对于维持良好的跨团队工作关系至关重要。在本例中，沟通脱节最终导致双方团队的工作关系破裂。</p>
+</div></section>
+
+<section data-pdf-bookmark="Decommission" data-type="sect3"><div class="sect3" id="decommission">
+<h3>退役</h3>
+
+<p>我们花了一段时间才意识到，SRE 与开发团队之间的疏离已经无法弥合。最终，最简单的解决办法是消除组织壁垒，让开发团队完全掌控新旧系统工作的优先级。预计两套系统会并行 18–24 个月，然后旧系统才会彻底淘汰。</p>
+
+<p>把 SRE 和产品开发职能合并到一支团队，使高层管理者能够最大限度地响应各自负责领域的需求；团队也可以自行决定如何平衡运维需求与开发速度。解散两支 SRE 团队的经历虽然并不愉快，却消除了工程投入方向上的长期矛盾。</p>
+
+<p>开发团队不可避免地会增加运维负载，但把旧系统的所有权重新交给更了解服务内部机制的人，也让运维问题能够更快得到处理。这支团队对故障的潜在原因也更有洞察力，通常能更有效地排查问题、更快地解决问题。不过，开发团队必须在短时间内掌握支持服务所需运维工作的各种细节，这期间难免产生一些负面影响。SRE 团队的最后一项任务，就是尽可能顺利地移交这些知识，让开发团队做好接手工作的准备。</p>
+
+<p>需要指出的是，如果双方的工作关系更健康，能够有效合作解决问题，SRE 原本只会把生产工作暂时交还开发团队。待系统恢复稳定，并针对预期增长完成加固后，SRE 通常会重新承担系统责任。SRE 和开发团队都需要愿意正面处理问题，找出关系中需要重新校准的矛盾点。SRE 的一项职责，是在业务需求变化时帮助维持卓越的生产水平；这往往意味着要与开发者协作，共同解决棘手问题。<a contenteditable="false" data-primary="data analysis pipeline, case study" data-startref="ix_dataanal" data-type="indexterm" id="idm139660637362672"/><a contenteditable="false" data-primary="ending SRE engagements" data-startref="ix_endSRE" data-type="indexterm" id="idm139660637367840"/><a contenteditable="false" data-primary="SRE engagement model" data-secondary="ending the relationship" data-startref="ix_SREengend" data-type="indexterm" id="idm139660637366624"/></p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00092">
+<h1>结语</h1>
+
+<p>SRE 团队的协作形式会随服务生命周期的不同阶段而变化。本章针对各阶段分别给出了建议。Google 和《<em>纽约时报</em>》SRE 团队的例子表明，有效管理协作关系与做出良好的技术设计决策同样重要。有时，SRE 协作应该自然结束。Ares 和数据分析流水线团队的案例展示了这种情况如何发生，以及怎样妥善结束协作。</p>
+
+<p>关于如何在 SRE 与产品开发团队之间建立有效关系，最佳实践的关键在于：形成共同的使命感和目标，并保持定期、开放的沟通。SRE 团队可以通过多种方式扩大影响，但这些关系管理原则始终适用。要维持协作的长期成功，投入精力对齐团队目标并理解 <a contenteditable="false" data-primary="SRE engagement model" data-startref="ix_SREeng" data-type="indexterm" id="idm139660637357888"/>彼此的目标，与捍卫 SLO 同样重要。 </p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch18fn1"><sup><a href="ch18-zh.html#ch18fn1-marker">1</a></sup> 发生这类转变时，Google 人力资源团队会帮助员工寻找新的机会。</p></div></div></section></body></html>
