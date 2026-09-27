@@ -1,0 +1,1073 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 团队生命周期</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 20. SRE Team Lifecycles" data-type="chapter" epub:type="chapter"><div class="chapter" id="sre_team_lifecycles">
+<h1><span class="label">第 20 </span>章　SRE 团队生命周期</h1>
+
+<p class="byline">作者：David Ferguson 和 Prashant Labhane<br/>
+Shylaja Nukala 参与撰写</p>
+
+<p>本书的<a data-type="xref" href="preface01.html#preface">序言</a><a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-type="indexterm" id="ix_SREteamlife"/>提出了一个目标：“消除一种误解，即 SRE 只能在‘Google 的规模’或‘Google 的文化’中实施。”本章给出一条 SRE 组织的成熟路线：从尚未配备人员、只有目标愿景的阶段，逐步发展为成熟、健壮，并且可能遍布全球的多支 SRE 团队。无论你的 SRE 组织走到了哪一步，本章都能帮助你找到下一阶段的演进策略。</p>
+
+<p>我们还会讨论这段历程中每个阶段都应落实哪些 SRE 原则。具体路径会因组织的规模、性质和地域分布而异，但这里介绍的 SRE 原则应用方式和实践落地方法，应当适用于许多不同类型的组织。</p>
+
+<section data-pdf-bookmark="SRE Practices Without SREs" data-type="sect1"><div class="sect1" id="sre_practices_without_sres">
+<h1>没有 SRE 也能实践 SRE</h1>
+
+<p>即使没有专职 SRE，也可以借助 SLO 采用 SRE <a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="practices without SREs" data-type="indexterm" id="idm139660637185920"/>实践。正如<a data-type="xref" href="ch02-zh.html#implementing_slos">第 2 章</a>所述，SLO <a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="using for SRE practices without SREs" data-type="indexterm" id="idm139660637190976"/>是 SRE 实践的基础，由此得到第一项 SRE 原则：</p>
+
+<div data-type="note" epub:type="note">
+  <h1>原则 #1</h1>
+  
+      <p>SRE 需要有实际约束力的 SLO。</p>
+  
+</div>
+
+<p>服务相对于 SLO 的实际表现，应当成为业务<span class="keep-together">决策的依据。</span></p>
+
+<p>我们认为，以下做法即使没有一名专职 SRE 也能完成，而且是落实 SRE 实践的关键步骤：</p>
+
+<ul>
+	<li>
+	<p>承认你并不需要 100% 的可靠性。</p>
+	</li>
+	<li>
+	<p>设定合理的 SLO 目标。此 SLO 应该衡量对用户最重要的可靠性。</p>
+	</li>
+	<li>
+	<p>就一项能够保护用户体验的错误预算政策达成一致。利用错误预算指导：</p>
+
+	<ul>
+		<li>
+		<p>缓解中断，或管理使系统恢复可靠状态的变更等短期措施</p>
+		</li>
+		<li>
+		<p>对工作进行长期排序，使系统更加可靠并减少错误预算消耗</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>衡量 SLO，并承诺遵守错误预算政策。这项承诺需要获得公司领导层的认同。</p>
+	</li>
+</ul>
+
+<p>即使组织没有专职 SRE，也值得为关键的客户应用设定 SLO 并实施错误预算政策。原因很简单：隐含的 100% SLO 会迫使团队始终被动应对问题。这项 SRE 原则让团队能够依据数据，决定应如何保障应用的可靠性。</p>
+</div></section>
+
+<section data-pdf-bookmark="Starting an SRE Role" data-type="sect1"><div class="sect1" id="starting_an_sre_role">
+<h1>设立 SRE 角色</h1>
+
+<section data-pdf-bookmark="Finding Your First SRE" data-type="sect2"><div class="sect2" id="finding_your_first_sre">
+<h2>寻找第一位 SRE</h2>
+
+<p>最早招聘的几名 <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-type="indexterm" id="ix_SREsstart"/>SRE <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="starting an SRE role" data-type="indexterm" id="ix_SREteamlifestart"/>未必有明确的 SRE 任职经历。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="finding your first SRE" data-type="indexterm" id="idm139660637165744"/>我们发现，以下领域与 SRE 工作密切相关，因此适合在面试中考察：</p>
+
+<dl>
+	<dt><dfn>运维</dfn></dt>
+	<dd><p>负责应用的生产运行，能够获得<a contenteditable="false" data-primary="operations" data-secondary="covering in interviews with SREs" data-type="indexterm" id="idm139660637161840"/>通过其他方式难以积累的宝贵洞见。</p></dd>
+	<dt><dfn>软件工程</dfn></dt>
+	<dd><p>SRE <a contenteditable="false" data-primary="software engineering" data-type="indexterm" id="idm139660637159120"/>需要理解自己所支持的软件，并有权改进它。</p></dd>
+	<dt><dfn>监控系统</dfn></dt>
+	<dd><p>SRE 原则要求 <a contenteditable="false" data-primary="monitoring" data-secondary="covering in interviews with SREs" data-type="indexterm" id="idm139660637156608"/>SLO 可衡量、可核算。</p></dd>
+	<dt><dfn>生产自动化</dfn></dt>
+	<dd><p>要扩大运维规模，离不开<a contenteditable="false" data-primary="production" data-secondary="automation, covering in interviews with SREs" data-type="indexterm" id="idm139660637153840"/>自动化。</p></dd>
+	<dt><dfn>系统架构</dfn></dt>
+	<dd><p>应用要实现规模扩展，<a contenteditable="false" data-primary="system architecture, covering in interviews with SREs" data-type="indexterm" id="idm139660637151152"/>必须有良好的架构。</p></dd>
+</dl>
+
+<p>第一位 SRE 很可能处在交付速度与可靠性目标之间一个棘手而职责模糊的位置。他们需要坚韧且灵活，在推动产品开发与保护客户体验之间取得恰当平衡。</p>
+</div></section>
+
+<section data-pdf-bookmark="Placing Your First SRE" data-type="sect2"><div class="sect2" id="placing_your_first_sre">
+<h2>安排第一位 SRE 的位置</h2>
+
+<p>聘用第一位 SRE 后，还要决定把这名工程师安排在组织的哪个位置。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="placing your first SRE" data-type="indexterm" id="idm139660637154240"/>主要有三种选择：</p>
+
+<ul>
+	<li>
+	<p>在产品<a contenteditable="false" data-primary="development" data-secondary="placing your first SRE in development team" data-type="indexterm" id="idm139660637144416"/>开发团队中</p>
+	</li>
+	<li>
+	<p>在<a contenteditable="false" data-primary="operations" data-secondary="placing your first SRE in operations team" data-type="indexterm" id="idm139660637141888"/>运维团队中</p>
+	</li>
+	<li>
+	<p>承担横向职责，为多个团队提供咨询</p>
+	</li>
+</ul>
+
+<p>建议读完本章后，再评估这三种选择各自的利弊，并综合考虑以下因素：</p>
+
+<dl>
+	<dt>你自己的角色和影响范围。</dt>
+	<dd>
+	<p>如果你能够有效影响产品开发团队，那么让 SRE 加入运维团队或承担横向工作，有助于尽早解决棘手的生产问题。</p>
+	</dd>
+	<dt>你面临的直接挑战。</dt>
+	<dd>
+	<p>如果眼前的挑战需要亲自动手缓解技术问题或业务风险，把 SRE 嵌入运维团队或产品团队会更有利。这样可以打破组织孤岛，促进团队成员顺畅沟通。</p>
+	</dd>
+	<dt>未来 12 个月预计会面临的挑战。</dt>
+	<dd>
+	<p>例如，如果重点是产品发布，可以把 SRE 嵌入产品开发团队；如果重点是基础设施变更，把 SRE 嵌入运维团队可能更合适。</p>
+	</dd>
+	<dt>你希望如何调整组织结构。</dt>
+	<dd>
+	<p>如果计划逐步建立集中式 SRE 组织，起初可能不宜把 SRE 嵌入产品开发团队，因为日后很难再将他们从这些团队中调出。</p>
+	</dd>
+	<dt>你选定的第一位 SRE。</dt>
+	<dd>
+	<p>根据此人的背景和技能，判断在哪个位置最能发挥作用。</p>
+	</dd>
+</dl>
+
+<p>在探索最适合自己的做法时，可以尝试不同模式。但从长期看，强烈建议坚持一种稳定、一致的模式；否则，组织上的反复变动会削弱 SRE 的成效。</p>
+</div></section>
+
+<section data-pdf-bookmark="Bootstrapping Your First SRE" data-type="sect2"><div class="sect2" id="bootstrapping_your_first_sre">
+<h2>帮助第一位 SRE 起步</h2>
+
+<p>第一位 SRE 的初始任务是尽快熟悉服务。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="bootstrapping your first SRE" data-type="indexterm" id="idm139660637126320"/>要产生积极影响，SRE 必须了解服务当前的问题、维持服务所需的运维琐事（参见<a data-type="xref" href="ch06-zh.html#eliminating_toil">第 6 章</a>），以及使系统持续满足 SLO 所需的工程工作。如果组织尚未按照原则 #1 建立 SLO 和错误预算，第一位 SRE 就需要完成设计和实施这些机制所需的工程工作。<a contenteditable="false" data-primary="service level objectives (SLOs)" data-secondary="design and implementation by your first SRE" data-type="indexterm" id="idm139660637126944"/>此时便要用到第二项 SRE 原则：</p>
+
+<div data-type="note" epub:type="note">
+  <h1>原则 #2</h1>
+  
+      <p>SRE 必须有时间使明天比今天更好。</p>
+  
+</div>
+
+<p>如果不遵循这项原则，随着服务用量增长、系统规模扩大且复杂度上升，运维琐事只会越来越多。运维职责与项目工作之间必须保持健康平衡；如果运维琐事负担过重，优秀工程师就会离开团队。关于 SRE 团队如何取得这种平衡，参见<a data-type="xref" href="ch17-zh.html#identifying_and_recovering_from_overload">第 17 章</a>。</p>
+
+<p>最初的项目工作可能集中在以下其中一项：</p>
+
+<ul>
+	<li>
+	<p>改进监控，以便在出现问题时可以更好地了解系统。</p>
+	</li>
+	<li>
+	<p>处理近期事后总结中确定的高优先级行动项（参见<a data-type="xref" href="ch10-zh.html#postmortem_culture_learning_from_failure">第 10 章</a>）。</p>
+	</li>
+	<li>
+	<p>实施自动化以减少运行服务所需的特定运维琐事。</p>
+	</li>
+</ul>
+
+<p><em>必须确保 SRE 承担独特的职责，并让其项目惠及整个团队。</em>以下迹象说明 SRE 工作开展得并不顺利：</p>
+
+<ul>
+	<li>
+	<p>他们承担的工作组合与其他工程师没有区别。</p>
+	</li>
+	<li>
+	<p>如果第一位 SRE 位于产品开发团队中，此人承担的运维工作远超合理份额，或者成了唯一负责修改服务配置的人。</p>
+	</li>
+	<li>
+	<p>SLO 并没有受到重视，SRE 在衡量和捍卫客户体验方面也没有取得进展。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Distributed SREs" data-type="sect2"><div class="sect2" id="distributed_sres">
+<h2>分布式 SRE</h2>
+
+<p>如果组织没有（或不准备建立）独立的 SRE 团队，就必须为分散在各团队中的 SRE 建立一个共同体。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-tertiary="distributed SREs" data-type="indexterm" id="idm139660637105056"/><a contenteditable="false" data-primary="distributed SREs" data-type="indexterm" id="idm139660637107136"/>这个共同体应当维护 SRE 角色的独特定位，并推动各团队以一致方式改进面向可靠性的技术和实践。缺少这样的组织纽带，单个 SRE 很容易感到孤立无援。<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="starting an SRE role" data-startref="ix_SREsstart" data-type="indexterm" id="idm139660637102352"/><a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifestart" data-tertiary="starting an SRE role" data-type="indexterm" id="idm139660637105696"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Your First SRE Team" data-type="sect1"><div class="sect1" id="your_first_sre_team">
+<h1>第一支 SRE 团队</h1>
+
+<p>组建第一支 SRE <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="your first SRE team" data-type="indexterm" id="ix_SREteamlifefirst"/>团队有多种方式。按复杂程度从低到高，我们在 Google 采用过以下做法：</p>
+
+<ul>
+	<li>
+	<p>为重大项目创建新团队</p>
+	</li>
+	<li>
+	<p>建立横向 SRE 团队</p>
+	</li>
+	<li>
+	<p>转换现有团队（例如，运维团队）</p>
+	</li>
+</ul>
+
+<p>哪种方式最适合你的组织，要视具体情况而定。团队必须有足够的 SRE 来承担服务运行所需的运维任务。如何控制这部分工作负载，引出了<a contenteditable="false" data-primary="workloads" data-secondary="SRE teams regulating" data-type="indexterm" id="idm139660637093584"/>第三项原则：</p>
+
+<div data-type="note" epub:type="note">
+  <h1>原则 #3</h1>
+  
+      <p>SRE 团队有能力调节其工作负载。</p>
+  
+</div>
+
+<p>在大型 SRE 组织之外，团队通常无法从第一天起就完全落实这项原则。它存在一定解释空间，在组织层面也不容易实践。这是三项原则中最微妙的一项，值得进一步展开。以下各节将借助塔克曼团队发展模型，按照<em>组建期</em>、<em>磨合期</em>、<em>规范期</em>和<span class="keep-together"><em>高效期</em></span>四个阶段说明如何建设团队。<sup><a data-type="noteref" href="ch20-zh.html#ch20fn1" id="ch20fn1-marker">1</a></sup></p>
+
+<section data-pdf-bookmark="Forming" data-type="sect2"><div class="sect2" id="forming">
+<h2>组建期</h2>
+
+<p>组建团队时，成员的经验与专业能力合在一起应覆盖<a contenteditable="false" data-primary="forming your first SRE team" data-type="indexterm" id="idm139660637081616"/>以下方面：</p>
+
+<ul>
+	<li>
+	<p>更改应用程序软件以提高可靠性和性能。</p>
+	</li>
+	<li>
+	<p>编写软件，以便：</p>
+
+	<ul>
+		<li>
+		<p>加快发现和缓解生产环境中的问题。</p>
+		</li>
+		<li>
+		<p>自动执行手动过程。</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>建立并采用完善的软件工程实践和标准，保障长期可维护性。</p>
+	</li>
+	<li>
+	<p>以系统、审慎的方式实施运维变更，并能说明某项做法为何可靠。</p>
+	</li>
+	<li>
+	<p>理解系统架构，包括分布式系统的设计与运行。</p>
+	</li>
+</ul>
+
+<p>理想情况下，团队应当准备好采用新的工作方式，成员技能彼此互补，并且已经与其他团队建立了良好的人际关系。如果条件允许，建议从内部调入骨干成员来组建团队，这能缩短团队进入正常运转状态所需的时间。</p>
+
+<section data-pdf-bookmark="Creating a new team as part of a major project" data-type="sect3"><div class="sect3" id="creating_a_new_team_as_part_of_a_major_pr">
+<h3>为重大项目创建新团队</h3>
+
+<p>有些重大项目规模足够大，值得为其新增人员，而且可靠性和运维能力已被识别为项目风险，此时可以新建一支 SRE 团队。例如，创建新服务或实施重大技术变更（如迁移到公有云）都可能符合这种情况。</p>
+</div></section>
+
+<section data-pdf-bookmark="Assembling a horizontal SRE team" data-type="sect3"><div class="sect3" id="assembling_a_horizontal_sre_team">
+<h3>组建横向 SRE 团队</h3>
+
+<p>采用这种做法时（第一本书<a href="http://bit.ly/2kGWVWf">第 27 章</a>有详细介绍），一支小型 SRE 团队会<a contenteditable="false" data-primary="horizontal SRE team" data-type="indexterm" id="idm139660637067264"/>为多个团队提供咨询，也可能为配置管理、监控和告警建立最佳实践与工具。</p>
+</div></section>
+
+<section data-pdf-bookmark="Converting a team in place" data-type="sect3"><div class="sect3" id="converting_a_team_in_place">
+<h3>原地转型现有团队</h3>
+
+<p>也可以把现有团队转型为 SRE <a contenteditable="false" data-primary="team, existing, converting to SRE team" data-type="indexterm" id="idm139660637063824"/>团队。这通常不是产品开发团队，典型候选包括运维团队，或负责管理组织广泛使用的热门开源组件的团队。切勿在尚未落实 SRE 实践和原则时，只把团队名称从“运维”改成“SRE”！如果这次改名失败，组织今后可能会对 SRE 这一整套理念产生抵触。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Storming" data-type="sect2"><div class="sect2" id="storming">
+<h2>磨合期</h2>
+
+<p>团队组建完成后，成员需要开始协同工作：既要彼此配合，也要与其他团队顺利合作。<a contenteditable="false" data-primary="storming (first SRE team)" data-type="indexterm" id="idm139660637062000"/></p>
+
+<p>可以采用多种方式增强这种凝聚力。在 Google，我们发现，定期组织活动来学习、讨论 SRE 实践并反思团队表现，效果很好。例如，可以举办定期的视频午餐会，观看 SREcon 演讲；也可以组织读书会，让大家预先阅读相关内容，再讨论如何将其用于实际工作。</p>
+
+<p>在这一阶段，应鼓励新团队主动突破舒适区。新 SRE 应当敢于指出哪些 SRE 实践不适合当前组织，并讨论是否值得调整组织，让这些实践能够适用。</p>
+
+<section data-pdf-bookmark="Risks and mitigations" data-type="sect3"><div class="sect3" id="risks_and_mitigations">
+<h3>风险与缓解措施</h3>
+
+<p>在 SRE 建设的初创阶段，团队可能以多种方式遭遇失败。下面按团队的组建方式，<a contenteditable="false" data-primary="risks and mitigations for first SRE team" data-type="indexterm" id="idm139660637057248"/>分别列出风险及可行的缓解策略。每项风险都可以结合采用一种或多种策略。</p>
+
+<section data-pdf-bookmark="New team as part of a major project" data-type="sect4"><div class="sect4" id="new_team_as_part_of_a_major_project">
+<h4 class="no_period">重大项目中的新团队</h4>
+
+<dl>
+	<dt><dfn>风险</dfn></dt>
+	<dd>
+	<p>团队：</p>
+
+	<ul>
+		<li>
+		<p>同时负责过多服务，导致精力过度分散。</p>
+
+		<ul>
+			<li>
+			<p>持续忙于救火的团队，没有时间从根本上消除风险。</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>过度沉浸于理解 SRE 原则及其实施方式，结果反而交付不足。</p>
+
+		<ul>
+			<li>
+			<p>例如，团队可能一心追求完美的 SLO 定义，却在此期间忽视服务的实际需要。</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>没有彻底审视自己的工作，结果服务管理退回到过去的做法。</p>
+
+		<ul>
+			<li>
+			<p>团队每天收到 100 次寻呼；由于这些告警并不表示需要立即干预，团队最终选择全部忽略。</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>为了赶上产品里程碑而放弃 SRE 原则与实践。</p>
+
+		<ul>
+			<li>
+			<p>为了维护 SLO 而需实施的可靠性改进（如架构变更），可能因为会拖延开发进度而永远得不到落实。</p>
+			</li>
+		</ul>
+		</li>
+		<li>
+		<p>与认为自身影响力或权力因新 SRE 团队而受损的现有团队发生冲突，因而分散精力。</p>
+		</li>
+		<li>
+		<p>技能覆盖面不足，只能完成一部分必要改进。</p>
+
+		<ul>
+			<li>
+			<p>例如，缺少编程能力时，SRE 可能无法为产品添加埋点来衡量可靠性。</p>
+			</li>
+		</ul>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>缓解措施</dfn></dt>
+	<dd>
+	<p>团队：</p>
+
+	<ul>
+		<li>
+		<p>初期只接手一项重要服务。</p>
+		</li>
+		<li>
+		<p>尽早参与项目，最好是在设计阶段。</p>
+		</li>
+		<li>
+		<p>参与设计，特别侧重于定义 SLO 和分析设计固有的可靠性风险。</p>
+		</li>
+		<li>
+		<p>与产品开发团队合作，致力于特定于可靠性的功能以及与现有运维平台的集成。</p>
+		</li>
+		<li>
+		<p>不必从第一天起承担运维责任；这项责任最初仍由产品开发团队或项目团队承担。这可能是一次重大的文化转变，需要管理层支持。</p>
+		</li>
+		<li>
+		<p>明确约定服务必须满足哪些条件，SRE 才会接管它（参见<a href="http://bit.ly/2Lc14wG">第 32 章</a>，出自 <em>Site Reliability Engineering</em>）。</p>
+		</li>
+	</ul>
+
+	<p>另外：</p>
+
+	<ul>
+		<li>
+		<p>如果项目涉及迁移，则团队应该对当前和将来的环境有深入的了解。如果你需要从外部招聘团队成员，请考虑具有软件工程和未来环境知识的候选人。</p>
+		</li>
+		<li>
+		<p>将新员工人数控制在团队总人数的三分之一以下，避免培训负担压垮现有成员。</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Horizontal SRE team" data-type="sect4"><div class="sect4" id="horizontal_sre_team">
+<h4 class="no_period">横向 SRE 团队</h4>
+
+<dl>
+	<dt><dfn>风险</dfn></dt>
+	<dd><p>团队被视为一个新的<a contenteditable="false" data-primary="horizontal SRE team" data-secondary="risks and mitigations for" data-type="indexterm" id="idm139660637021968"/>“把关”部门：既不做实事，也不创造实际价值。</p></dd>
+	<dt><dfn>缓解措施</dfn></dt>
+	<dd>
+	<p>团队：</p>
+
+	<ul>
+		<li>
+		<p>以备受尊重、具备相关领域专业知识的工<span class="keep-together">程师为骨干。</span></p>
+		</li>
+		<li>
+		<p>开展以交付工具为目标的项目，包括监控、告警、发布工具、最佳实践和检查清单。这些工具应在短期内至少惠及另外两支团队。</p>
+		</li>
+		<li>
+		<p>主动宣传成果与收益。SRE 团队若实现效率突破、通过自动化消除运维琐事，或永久清除某个系统不可靠根源，就应得到公开认可。</p>
+		</li>
+		<li>
+		<p>将自己视为推动者，而不是把关者。关注解决方案，而不仅仅是问题。</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="A team converted in place" data-type="sect4"><div class="sect4" id="team_converted_in_place">
+<h4 class="no_period">原地转型的团队</h4>
+
+<dl>
+	<dt><dfn>风险</dfn></dt>
+	<dd>
+	<p>团队：</p>
+
+	<ul>
+		<li>
+		<p>认为这次转型<a contenteditable="false" data-primary="team, existing, converting to SRE team" data-secondary="risks and mitigations for" data-type="indexterm" id="idm139660637008960"/>只是一个漫长裁员过程的开端，自动化最终会取代人工。</p>
+		</li>
+		<li>
+		<p>不支持转型为 SRE 团队。</p>
+		</li>
+		<li>
+		<p>没有可用于改变日常工作方式的余量。</p>
+		</li>
+		<li>
+		<p>几个月后，日常工作仍看不到任何改善。</p>
+		</li>
+		<li>
+		<p>负责的系统不支持脚本或自动化。</p>
+		</li>
+		<li>
+		<p>没有软件工程技能来自动化他们当前的工作<span class="keep-together">负载。</span></p>
+		</li>
+		<li>
+		<p>成员普遍缺少向 SRE 转型所需的技能，也无意学习这些技能。</p>
+		</li>
+	</ul>
+	</dd>
+	<dt><dfn>缓解措施</dfn></dt>
+	<dd>
+	<p>团队：</p>
+
+	<ul>
+		<li>
+		<p>获得高层领导对变更的支持。</p>
+		</li>
+		<li>
+		<p>重新协商职责范围，为推动转型腾出必要的时间和人力。</p>
+		</li>
+		<li>
+		<p>非常仔细地管理变更的沟通。</p>
+		</li>
+		<li>
+		<p>在整个过渡过程中都能获得强大的个人和技<span class="keep-together">术支持。</span></p>
+		</li>
+		<li>
+		<p>正面回应员工对失业的担忧。在许多环境中，自动化消除的是部分工作内容，而不是整个岗位。即使它可能被视为岗位缩减道路上的一步，也至少能释放时间，让工程师从事比未自动化的运维琐事更有价值、也更有助于未来职业发展的工作。</p>
+		</li>
+		<li>
+		<p>摆脱运维过载，创造更显著的影响。如果工程师将运维琐事削减到只需更小团队即可承担，他们积累的经验应能在组织其他岗位高度复用；即使内部没有适合的岗位，这些经验也会成为他们另谋职位时的优势。</p>
+		</li>
+		<li>
+		<p>通过培训获得 SRE 所需的技能。产品开发团队可以提供产品培训；SRE 入门培训则可利用本书和其他外部资源。</p>
+		</li>
+		<li>
+		<p>调整团队和个人的绩效评估指标：团队指标应与 SLO 及其他 SRE 实践的采用情况一致，个人指标则应体现 SRE 技能的实际证据。</p>
+		</li>
+		<li>
+		<p>将经验丰富的 SRE 或开发人员添加到团队中。</p>
+		</li>
+		<li>
+		<p>拥有必要的预算或时间，可以评估并引入新的开源或云端监控、告警系统，为自动化创造条件。尽早判断现有系统是否够用，应列为优先事项。</p>
+		</li>
+		<li>
+		<p>定期在团队内部以及与利益相关者共同审查进展。</p>
+		</li>
+	</ul>
+	</dd>
+</dl>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Norming" data-type="sect2"><div class="sect2" id="norming">
+<h2>规范期</h2>
+
+<p>进入规范期，意味着团队已经解决<a data-type="xref" href="#risks_and_mitigations">“风险与缓解措施”</a>中提出的问题，并就组织内 SRE 团队的最佳实践形成广泛共识。<a contenteditable="false" data-primary="norming (SRE teams)" data-type="indexterm" id="idm139660636982176"/>团队需要就可接受的运维琐事比例、合适的告警阈值，以及重要且适用的 SRE 实践达成一致。团队还要能够独立运转，主动识别服务即将面临的挑战，并制定改进服务的中长期目标。</p>
+
+<p>在规范期，团队应达到以下成熟水平：</p>
+
+<ul>
+	<li>
+	<p>已经建立 SLO 和错误预算，并在重大事件后实际执行错误预算政策；领导层关注 SLO 指标。</p>
+	</li>
+	<li>
+	<p>值班轮换已经建立并且可持续（参见<a data-type="xref" href="ch08-zh.html#on_call">第 8 章</a>）。值班工程师会因值班时间获得补偿。团队具备充分的工具、<a href="http://bit.ly/2LPgubz">文档</a><sup><a data-type="noteref" href="ch20-zh.html#ch20fn2" id="ch20fn2-marker">2</a></sup>和培训，确保任何成员都能应对重大事件。</p>
+	</li>
+	<li>
+	<p>运维琐事得到记录、设定上限并受到管理，因此 SRE 能够完成有影响力的项目，提高可靠性和效率。</p>
+	</li>
+	<li>
+	<p>事后总结文化已经牢固建立。（参见<a data-type="xref" href="ch10-zh.html#postmortem_culture_learning_from_failure">第 10 章</a>。）</p>
+	</li>
+	<li>
+	<p>团队已经具备<a data-type="xref" href="ch01-zh.html#sre_relates_devops">第 1 章</a>所列的大多数特征。</p>
+	</li>
+	<li>
+	<p>团队在解决<a data-type="xref" href="#storming">“磨合期”</a>列出的初期问题时，会记录经验并防止问题重演。团队定期开展“不幸之轮”或 DiRT（灾难恢复测试）等训练。（关于值班培训，参见<a href="http://bit.ly/2JgUBU7">第一本书第 11 章</a>和本书<a data-type="xref" href="ch18-zh.html#sre_engagement_model">第 18 章</a>。）</p>
+	</li>
+	<li>
+	<p>产品开发团队将从继续参与值班轮换中受益。</p>
+	</li>
+	<li>
+	<p>团队定期（如每季度）向利益相关者提交报告，涵盖本期亮点、不足和关键指标。</p>
+	</li>
+</ul>
+
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="transforming_an_existing_team_into_an_sre">
+<h5>将现有团队转型为 SRE 团队</h5>
+
+<p><em>Brian Balser，《纽约时报》</em></p>
+
+<p>《<em>纽约时报》</em>成立交付与网站可靠性工程部门时，我们从具备 SRE <a contenteditable="false" data-primary="team, existing, converting to SRE team" data-type="indexterm" id="idm139660636959840"/>相关技能（如构建工具、运行生产系统）的工程师中组建 SRE 团队。有些是从零组建的新团队，在人才、愿景和职责方面都按 SRE 模式设计；另一些团队已经存在多年，因为技能组合、个人兴趣和机缘等因素，逐渐承担起生产架构的运行工作。</p>
+
+<p><b>挑战</b></p>
+
+<p>有一支正在转型为 SRE 的现有团队，处境尤其艰难。多年来，这支团队一直负责管理全站架构中某个核心组件的配置、变更请求和日常运维，实际上已经成了服务所有产品开发团队的支持团队。工单和生产问题主导着他们的工作，使团队长期处于被动响应状态，根本无暇改进、创新或开展其他价值更高的战略工作。</p>
+
+<p>团队虽然有许多好想法，却被大量运维琐事和许多通常与产品发布相关的高优先级“阻塞性”服务请求压得喘不过气。这种模式不可持续：为了跟上支持负担，团队规模必须随产品数量线性增长。更糟的是，这支小团队多年积累了大量组织知识，需要这些信息的其他团队频繁打断他们，进一步加剧了过载，也使<a href="http://bit.ly/2LQFqiL">巴士因子</a>风险始终笼罩着团队。</p>
+
+<p><b>以第一原则为基础</b></p>
+
+<p>我们 SRE 组织的一项指导原则，是让自己退出关键路径，并通过自助式方案赋能产品开发团队。由此，目标变得十分明确：反转职责模型，让产品开发团队能够自行推送变更。这样既可以：</p>
+
+<ul>
+	<li>
+	<p>加快交付速度。</p>
+	</li>
+	<li>
+	<p>SRE 无需管理配置变更，从而可以对整个系统进行真正的改进。</p>
+	</li>
+</ul>
+
+<p><b>流程改进</b></p>
+
+<p>我们通过几个变更阶段改进了流程：</p>
+
+<ol>
+	<li>
+	<p>我们在开发团队中嵌入了 SRE，以帮助缓解压力。</p>
+	</li>
+	<li>
+	<p>为了让产品开发团队能够独立负责自己的服务配置，我们按团队把各项服务配置拆分到不同的代码仓库中。</p>
+	</li>
+	<li>
+	<p>我们把每项服务从旧有 CI 系统迁移到标准的 Drone CI/CD 流水线。这个对开发人员友好的工作流完全由 GitHu<span class="keep-together">b 事件</span>驱动。</p>
+	</li>
+	<li>
+	<p>我们逐一帮助产品团队接入新工具和工作流，使其无需再等待服务工单，就能自行提交变更请求。</p>
+	</li>
+</ol>
+
+<p>这些改进虽然向前迈出了一大步，却还没有达到理想的最终状态。审核拉取请求往往仍需要 SRE 的专业知识。为了更好地管理耗时审核带来的中断，我们每天安排固定的答疑时段。这样可以按批次、更可预测地集中处理问题和讨论，也为向正在完成接入的团队传授知识提供了场所。</p>
+
+<p><b>最终结果和后续步骤</b></p>
+
+<p>现在，SRE 团队已经实现最初的目标：项目工作占比超过 50%，高于支持类工作。团队仍掌握大量组织知识，但这些知识正在更广泛地传播，逐步降低巴士因子风险并减少工作中断。</p>
+
+<p>现在，团队已经为项目工作腾出了空间。下一步应着手增加更高级的能力，例如金丝雀发布、更完善的测试工具，以及可观测性和韧性功能。这样，产品开发团队就能更有信心地完全自主维护服务配置，而不必依赖 SRE 管理变更。</p>
+</div></aside>
+
+<p>与产品开发团队建立健康的合作关系，是上述许多缓解策略的基础。各团队应按照组织的规划周期共同安排工作。</p>
+
+<p>进入下一阶段前，不妨先停下来庆祝这次成功，并撰写一份回顾，总结迄今的历程。</p>
+</div></section>
+
+<section data-pdf-bookmark="Performing" data-type="sect2"><div class="sect2" id="performing">
+<h2>高效期</h2>
+
+<p>凭借此前积累的生产经验和工作成果，SRE 团队此时应已赢得整个组<a contenteditable="false" data-primary="performing (SRE team)" data-type="indexterm" id="idm139660636940400"/>织的尊重与重视，为下一步战略发展奠定基础。在塔克曼团队发展模型的最后阶段——高效期，团队应当做到：</p>
+
+<dl>
+	<dt>参与所有架构设计与变更。</dt>
+	<dd>
+	<p>从最初的设计阶段起，SRE 就应参与定义软件如何构建、如何组织，才能满足可靠性要求。</p>
+	</dd>
+	<dt>具有完整的工作负载自主权。</dt>
+	<dd>
+	<p>团队应从系统整体健康出发，<a contenteditable="false" data-primary="workloads" data-secondary="SRE teams having complete self-determination of" data-type="indexterm" id="idm139660636942768"/>始终贯彻原则 #3。</p>
+	</dd>
+</dl>
+
+<section data-pdf-bookmark="Partnering on architecture" data-type="sect3"><div class="sect3" id="partnering_on_architecture">
+<h3>协作开展架构工作</h3>
+
+<p>产品开发团队应开始主动就所有重大服务变更征询合作 SRE 团队的意见。<a contenteditable="false" data-primary="performing (SRE team)" data-secondary="partnering on architecture" data-type="indexterm" id="idm139660636932560"/>此时，SRE 团队迎来了发挥最大影响力的机会。<a contenteditable="false" data-primary="architecture and design, SRE team partnering on" data-type="indexterm" id="idm139660636929568"/></p>
+
+<p>例如，SRE 团队可以在新服务架构的设计初期提供意见，降低日后付出高昂成本重新设计的可能性。产品开发团队与 SRE 团队应正视双方在架构决策上的视角差异，并据此形成良好的设计流程。成功的合作可以带来：</p>
+
+<ul>
+	<li>
+	<p>更高的可靠性、可扩展性和可运维性</p>
+	</li>
+	<li>
+	<p>更充分地复用现有模式</p>
+	</li>
+	<li>
+	<p>更简单的迁移（如有需要）</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Self-regulating workload" data-type="sect3"><div class="sect3" id="self_regulating_workload">
+<h3>自主调节工作负载</h3>
+
+<p>架构层面的合作关系可以随着时间自然形成，但 SRE 团队必须向合作方明确坚持<a contenteditable="false" data-primary="self-regulating workload (SRE team)" data-type="indexterm" id="idm139660636922576"/><a contenteditable="false" data-primary="performing (SRE team)" data-secondary="self-regulating workload" data-type="indexterm" id="idm139660636921440"/>原则 #3。这需要有力的团队领导，也需要高级管理层事先作出清晰承诺。自主调节工作负载的能力，确保 SRE 团队能够作为真正的工程团队，负责组织中最重要的服务，与产品开发团队处于平等地位。</p>
+
+<p>在实践中，SRE 团队如何自主决定工作负载，取决于它所对接的团队。在 Google，SRE 团队最常与一支独立的产品开发团队合作。此时，双方关系具有以下特点：</p>
+
+<ul>
+	<li>
+	<p>SRE 团队自行决定是否以及何时接管一项服务（参见<a href="http://bit.ly/2Lc14wG">第 32 章</a>，出自 <em>Site Reliability Engineering</em>）。</p>
+	</li>
+	<li>
+	<p>出现运维过载时，团队可以通过以下方式减少运维琐事：</p>
+
+	<ul>
+		<li>
+		<p>降低 SLO 目标</p>
+		</li>
+		<li>
+		<p>将运维工作转移到另一个团队（例如，产品开发团队）</p>
+		</li>
+	</ul>
+	</li>
+	<li>
+	<p>如果在约定的运维琐事上限内已无法使服务达到 SLO，SRE 团队可以把服务交还给产品开发团队。</p>
+	</li>
+	<li>
+	<p>SRE 的介入并非永久安排；其使命是规模化解决问题、提高服务可靠性，最终让自身不再成为必需。如果 SRE 团队已经解决某项服务的所有此类问题，就需要：</p>
+
+	<ul>
+		<li>
+		<p>有意识地确定 SRE 团队接下来应解决哪些可靠性挑战。</p>
+		</li>
+		<li>
+		<p>明确决定把服务交还给产品开发团队。</p>
+		</li>
+	</ul>
+
+	<p>否则，SRE 会转向更有吸引力的机会，团队将面临持续流失。人员缓慢流失也可能危及生产环境。</p>
+	</li>
+</ul>
+
+<p>并非所有 SRE 团队都有对应的产<a contenteditable="false" data-primary="development" data-secondary="SRE teams having responsibility for" data-type="indexterm" id="idm139660636907280"/>品开发团队。有些 SRE 团队还负责开发自己运行的系统；有些则对第三方软件、硬件或服务（如开源软件包、网络设备或某种“即服务”产品）进行封装，将其转化为内部服务。此时无法把工作交回其他团队，应考虑以下策略：</p>
+
+<ul>
+	<li>
+	<p>如果服务未达到 SLO，就暂停功能类项目，优先开展可靠性项目。</p>
+	</li>
+	<li>
+	<p>如果在约定的运维琐事上限内已经不可能让服务达到 SLO，就应降低 SLO；除非管理层愿意提供更多资源（人员或基础设施）来解决问题。<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifefirst" data-tertiary="your first SRE team" data-type="indexterm" id="idm139660636901296"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Making More SRE Teams" data-type="sect1"><div class="sect1" id="making_more_sre_teams">
+<h1>组建更多 SRE 团队</h1>
+
+<p>第一支 SRE 团队进入稳定运转后，你可能会考虑再组建一支 SRE <a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="making more SRE teams" data-type="indexterm" id="ix_SREteamlifemore"/>团队，原因可能包括：</p>
+
+<dl>
+	<dt><dfn>服务复杂度</dfn></dt>
+	<dd><p>随着用户和功能增加，服务会越来越复杂，单支 SRE 团队难以有效支持。此时可以把团队拆分为分别专注于服务不同部分的子团队。</p></dd>
+	<dt><dfn>推广 SRE</dfn></dt>
+	<dd><p>如果第一支 SRE 团队取得成功并产生明显成效，组织可能希望把这种模式推广到更多服务。</p></dd>
+	<dt><dfn>按地域拆分</dfn></dt>
+	<dd><p>需要把团队拆分到两个不同时区，并改用 12 小时值班班次。</p></dd>
+</dl>
+
+<p>在创建新的 SRE 团队时，我们建议你执行以下操作：</p>
+
+<ul>
+	<li>
+	<p>阅读其他团队成立后撰写的回顾报告，找出并复用成功做法，同时修正效果不佳的做法、探索替代方案。</p>
+	</li>
+	<li>
+	<p>从现有团队调派一些最优秀、最具潜力且愿意接受挑战的 SRE，作为新团队的骨干。根据我们的经验，合格的 SRE 候选人很难找到，因此靠大量新员工迅速扩充团队通常并不现实。</p>
+	</li>
+	<li>
+	<p>将组建团队和接入服务的框架标准化（参见<a data-type="xref" href="ch18-zh.html#sre_engagement_model">第 18 章</a>）。</p>
+	</li>
+	<li>
+	<p>缓慢更改值班职责。例如：</p>
+
+	<ul>
+		<li>
+		<p>为避免熟练的值班工程师骤然流失，在过渡期内让成员继续为原团队的系统值班。</p>
+		</li>
+		<li>
+		<p>团队拆分后，等待三至六个月再拆分值班轮换。</p>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<section data-pdf-bookmark="Service Complexity" data-type="sect2"><div class="sect2" id="service_complexity">
+<h2>服务复杂度</h2>
+
+<section data-pdf-bookmark="Where to split" data-type="sect3"><div class="sect3" id="where_to_split">
+<h3>从何处拆分</h3>
+
+<p>如果一项服务复杂到单支团队已无法管理，可以采用多种方<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-type="indexterm" id="idm139660636882192"/>式拆分工作。<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-secondary="where to split the work" data-type="indexterm" id="idm139660636881328"/>可以考虑以下方案，降低团队成员的认知负担：</p>
+
+<dl>
+	<dt><dfn>按架构拆分</dfn></dt>
+	<dd><p>例如，按计算、存储和网络拆分；按前端和后端拆分；按前端和数据库拆分；按客户端和服务器拆分；或按前端和流水线拆分。</p></dd>
+	<dt><dfn>按编程语言拆分</dfn></dt>
+	<dd><p>SRE 原则不依赖特定编程语言。不过，如果 SRE 深度参与源代码开发，按语言拆分也可能有一定好处。</p></dd>
+	<dt><dfn>按地点拆分</dfn></dt>
+	<dd><p>如果组织的工程团队分布在多个站点，可以考虑让 SRE 团队的地点与应用开发团队保持一致。</p></dd>
+</dl>
+</div></section>
+
+<section data-pdf-bookmark="Pitfalls" data-type="sect3"><div class="sect3" id="pitfalls">
+<h3>常见陷阱</h3>
+
+<p>团队拆分后，有时原团队负责的某个组件会落入无人负责的空档。为降低这种风险，<a contenteditable="false" data-primary="service complexity and forming more SRE teams" data-secondary="pitfalls of team splits" data-type="indexterm" id="idm139660636874016"/>可以：</p>
+
+<ul>
+	<li>
+	<p>指定其中一支团队负责另一支团队职责范围未涵盖的一切事项。</p>
+	</li>
+	<li>
+	<p>任命一名资深 SRE，跨两支团队担任总技术负责人。</p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="SRE Rollout" data-type="sect2"><div class="sect2" id="sre_rollout">
+<h2>推广 SRE</h2>
+
+<p>如果最初的 SRE 团队取得成功，组织可能希望建立更多这样的团队。<a contenteditable="false" data-primary="services" data-secondary="SRE rollout for" data-type="indexterm" id="idm139660636865040"/>我们建议谨慎确定哪些服务应优先获得 <a contenteditable="false" data-primary="SRE (site reliability engineering)" data-secondary="rollout for services" data-type="indexterm" id="idm139660636866448"/>SRE 支持，并考虑以下几点：</p>
+
+<ul>
+	<li>
+	<p>优先考虑可靠性对财务或声誉有重大影响的服务。影响越大，优先级越高。</p>
+	</li>
+	<li>
+	<p>定义产品正常工作所必需的最小服务集合。优先保障这些服务，并确保其他服务能够优雅降级。</p>
+	</li>
+	<li>
+	<p>不能仅仅因为服务不可靠，就把它列为 SRE 的优先支持对象。SRE 应有针对性地投入到对业务最重要的地方；同时，也不能让开发人员在 SRE 介入之前一直忽视可靠性。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Geographical Splits" data-type="sect2"><div class="sect2" id="geographical_splits">
+<h2>按地域拆分</h2>
+
+<p>正如第一本书<a href="http://bit.ly/2JgUBU7">第 11 章</a>所述，Google 通常会在不同大洲配置互为伙伴的 SRE 团队。<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-type="indexterm" id="idm139660636856096"/>这样做有多方面原因：</p>
+
+<dl>
+	<dt><dfn>服务可靠性</dfn></dt>
+	<dd><p>如果重大事件（例如自然灾害）阻止一个团队运作，则另一个团队可以继续为服务提供支持。</p></dd>
+	<dt><dfn>值班压力</dfn></dt>
+	<dd><p>把值班轮换拆成 12 小时班次，使值班工程师能够得到充分休息。</p></dd>
+	<dt><dfn>招聘和留住人才</dfn></dt>
+	<dd><p>让值班时段与正常工作时间重叠，可以扩大愿意从事 SRE 的工程师人群，也能凸显这一岗位的工程属性。</p></dd>
+	<dt><dfn>生产运营成熟度</dfn></dt>
+	<dd><p>服务职责分布到两个站点后，文档、培训和标准化的重要性会显著提升，从而推动生产运营走向成熟。</p></dd>
+</dl>
+
+<p>如果组织已经在多个大洲设有工程团队，建议组建多站点 SRE 团队。SRE 团队可以与开发团队位于不同站点，但根据我们的经验，共址办公有助于形成健康、稳固的团队间沟通。否则，SRE 更难理解服务如何演进、技术基础设施如何使用；产品开发人员也更难对基础设施改进建立信心。</p>
+
+<section data-pdf-bookmark="Placement: How many time zones apart should the teams be?" data-type="sect3"><div class="sect3" id="placement_how_many_time_zones_apart_shoul">
+<h3>团队布局：两个团队应相隔多少个时区？</h3>
+
+<p>如果地点可以选择，两个团队之间的时差就是选址时的重要考量。<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="placement, time zones apart" data-type="indexterm" id="idm139660636845856"/>遗憾的是，以下两个目标相互冲突：</p>
+
+<ul>
+	<li>
+	<p>尽量减少值班人员在正常工作时间以外必须工作的时间</p>
+	</li>
+	<li>
+	<p>最大化两个团队在线时的重叠时间，以便他们可以定期相互交流</p>
+	</li>
+</ul>
+
+<p>夏令时使情况变得复杂。</p>
+
+<p>根据我们的经验，把团队设在相差六到八小时的时区效果较好，也能避免安排午夜 12 点至早上 6 点的值班。可以使用 <a href="https://www.timeanddate.com/worldclock/meeting.html"><em class="hyperlink">https://www.timeanddate.com/worldclock/meeting.html</em></a> 等在线工具，直观比较不同地点的工作时间重叠情况。</p>
+</div></section>
+
+<section data-pdf-bookmark="People and projects: Seeding the team" data-type="sect3"><div class="sect3" id="people_and_projects_seeding_the_team">
+<h3>人员与项目：为新团队配置骨干</h3>
+
+<p>按地域拆分团队时，新站点的第一支 SRE 团队将为今后的 <a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="people and projects, seeding the team" data-type="indexterm" id="idm139660636840320"/>SRE 团队树立规范。如果能找到一名或多名 SRE，愿意从原站点临时或长期调往新站点，负责建立 SRE 实践并招聘、培训新团队，成功概率会高得多。新团队还应承担一个高价值项目：既能促进团队内部协作，又需要与伙伴团队互动。</p>
+</div></section>
+
+<section data-pdf-bookmark="Parity: Distributing Work Between Offices and Avoiding a “Night Shift”" data-type="sect3"><div class="sect3" id="parity_distributing_work_between_offices">
+<h3>对等：在站点间分配工作，避免沦为“夜班”</h3>
+
+<p>两支互为伙伴的 SRE 团队中，通常有一支与产品开发团队共址，或至少处于同一时区（称为“站点 1”）。<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="parity, distributing work and avoiding a night shift" data-type="indexterm" id="idm139660636833232"/>此时必须保持警惕，避免另一支不共址的团队（“站点 2”）沦为“夜班”：与产品开发团队接触很少，承担超出合理份额的运维琐事，或者只能接手较无趣、影响较小的项目。</p>
+
+<p>两个站点的工<a contenteditable="false" data-primary="workloads" data-secondary="distributing between geographically split SRE teams" data-type="indexterm" id="idm139660636834912"/>作负载自然会存在一些差异：</p>
+
+<ul>
+	<li>
+	<p>服务通常存在每日流量高峰，而其中一个站点会在高峰时段值班，因此两地的值班体验会有所不同。</p>
+	</li>
+	<li>
+	<p>开发流程会按特定节奏发布新版本，因此其中一个站点可能承担更多发布和回滚<span class="keep-together">工作。</span></p>
+	</li>
+	<li>
+	<p>站点 1 在工作时间更容易被产品开发团队的问题打断。</p>
+	</li>
+	<li>
+	<p>站点 1 更适合开展与重大版本相关的项目；相对地，站点 2 更适合承担与近期产品目标关联较弱的项目。</p>
+	</li>
+</ul>
+
+<p>你可以通过以下做法帮助保持平衡：</p>
+
+<ul>
+	<li>
+	<p>平衡站点之间的值班负载。<a contenteditable="false" data-primary="on-call" data-secondary="balancing between geographically split SRE teams" data-type="indexterm" id="idm139660636822832"/>让接收寻呼较少的站点承担更高比例的工单。</p>
+	</li>
+	<li>
+	<p>把不同开发领域与特定站点的 SRE 团队对应起来。这种安排可以是短期的（如按项目），也可以是长期的（如按服务）。否则，产品开发团队很可能只依赖站点 1，无法与站点 2 的 SRE 有效合作。</p>
+	</li>
+	<li>
+	<p>把更多内部服务改进项目分配给站点 <span class="keep-together">2；</span>这类项目通常较少需要产品开发团队参与。</p>
+	</li>
+	<li>
+	<p>在两个站点之间公平分配最有趣、最具影响力的项目。</p>
+	</li>
+	<li>
+	<p>在两个站点之间保持相似的团队规模和资历组合。</p>
+	</li>
+	<li>
+	<p>有意识地把项目拆分到两个站点，促进两地 SRE 互动。由单一站点负责重大项目或许更高效，但跨站点开展项目既能传播知识，也能建立彼此信任。</p>
+	</li>
+	<li>
+	<p>允许工程师定期前往另一站点，增进彼此关系，从而更愿意为对方承担工作。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Placement: What about having three shifts?" data-type="sect3"><div class="sect3" id="placement_what_about_having_three_shiftsq">
+<h3>团队布局：三班轮值怎么样？</h3>
+
+<p>我们曾尝试把 SRE 团队分布到三个站点，<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="placement, and having three shifts" data-type="indexterm" id="idm139660636813808"/>结果出现了各种问题：</p>
+
+<ul>
+	<li>
+	<p>无法召开一场让所有 SRE 都参加的跨站点生产会议（参见<a href="http://bit.ly/2sqRwad">第一本书第 31 章</a>）。</p>
+	</li>
+	<li>
+	<p>很难确保三个站点在知识、能力和运维响应方面保持对等。</p>
+	</li>
+	<li>
+	<p>如果所有值班都只发生在工作时间，团队就缺少动力去自动化低层次的运维琐事和低价值告警。工作时间里充当解决简单问题的英雄或许颇有成就感；但如果这种问题会带来一定的个人代价，人们就会立刻产生强烈动力，确保它不再发生。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Timing: Should both halves of the team start at the same time?" data-type="sect3"><div class="sect3" id="timing_should_both_halves_of_the_team_sta">
+<h3>时机：两地团队是否应同时启动？</h3>
+
+<p>可以采用以下任一模式<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="should both halves of the team start at the same time" data-type="indexterm" id="idm139660636805568"/>组建两地伙伴团队：</p>
+
+<ul>
+	<li>
+	<p>两地团队同时启动。</p>
+	</li>
+	<li>
+	<p>先建立与产品开发团队共址的站点，使 SRE 能够更早介入产品生命周期。</p>
+	</li>
+	<li>
+	<p>先建立与产品开发团队<em>不</em>共址的站点；如果服务已运行一段时间，也可以让 SRE 团队与产品开发团队共同承担值班。</p>
+	</li>
+	<li>
+	<p>根据合适人选在合适时间所在的位置，逐步启动调整。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Finance: Travel budget" data-type="sect3"><div class="sect3" id="finance_travel_budget">
+<h3>经费：差旅预算</h3>
+
+<p>为两地团队创造高质量互动的机会至关重要。<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="finance, travel budget" data-type="indexterm" id="idm139660636797968"/>视频会议虽然足以支持日常沟通，但我们的经验表明，定期面对面交流更有助于建立健康的合作关系与信任。建议：</p>
+
+<ul>
+	<li>
+	<p>站点 1 的每位 SRE、产品开发经理和技术负责人每年至少访问站点 2 一次，反之亦然。</p>
+	</li>
+	<li>
+	<p>站点 1 中担任管理或技术领导职务的每位 SRE 每年至少访问站点 2 两次，反之亦然。</p>
+	</li>
+	<li>
+	<p>所有 SRE 每年至少面对面齐聚一次。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Leadership: Joint ownership of a service" data-type="sect3"><div class="sect3" id="leadership_joint_ownership_of_a_service">
+<h3>领导机制：共同负责服务</h3>
+
+<p>如果你有多个 SRE <a contenteditable="false" data-primary="leadership in geographically split SRE teams" data-type="indexterm" id="idm139660636788576"/>站点，<a contenteditable="false" data-primary="geographical splits (SRE teams)" data-secondary="leadership, joint ownership of a service" data-type="indexterm" id="idm139660636789776"/>则每个站点中可能都有决策者。<a contenteditable="false" data-primary="ownership" data-secondary="of a service in geographically split SRE team" data-type="indexterm" id="idm139660636786496"/>这些各方应定期面对面并通过视频会议开会。只有建立牢固的个人关系，他们才能：</p>
+
+<ul>
+	<li>
+	<p>讨论团队面临的挑战的解决方案。</p>
+	</li>
+	<li>
+	<p>解决意见分歧，并商定共同前进的道路。</p>
+	</li>
+	<li>
+	<p>彼此为对方团队发声，防止形成“我们对他们”的<span class="keep-together">对立心态。</span></p>
+	</li>
+	<li>
+	<p>共同维护对方团队的健康状态。<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifemore" data-tertiary="making more SRE teams" data-type="indexterm" id="idm139660636779312"/></p>
+	</li>
+</ul>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Suggested Practices for Running Many Teams" data-type="sect1"><div class="sect1" id="suggested_practices_for_running_many_team">
+<h1>管理多支团队的建议实践</h1>
+
+<p>随着组织拥有越来越多 SRE 和 SRE 团队，也会出现新的挑战。<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-tertiary="suggested practices for running many teams" data-type="indexterm" id="ix_SREteamlifemany"/>例如，必须：</p>
+
+<ul>
+	<li>
+	<p>确保为 SRE 提供他们所需的职业机会。</p>
+	</li>
+	<li>
+	<p>鼓励实践和工具的一致性。</p>
+	</li>
+	<li>
+	<p>妥善支持那些不值得 SRE 全面介入的服务。</p>
+	</li>
+</ul>
+
+<p>本节介绍 Google 为应对这些问题所采用的一系列做法。视组织的具体情况而定，其中一部分乃至大部分做法也可能适合你。</p>
+
+<section data-pdf-bookmark="Mission Control" data-type="sect2"><div class="sect2" id="mission_control">
+<h2>Mission Control 轮岗计划</h2>
+
+<p>Google 的 <a href="http://bit.ly/2Jn48sI">Mission Control</a> 计划让产品开发团队的工程师有机会在 SRE <a contenteditable="false" data-primary="Mission Control program (SRE teams)" data-type="indexterm" id="idm139660636767808"/>团队中轮岗六个月。通常，我们会把他们安排到与原专业领域明显不同的 SRE 团队。工程师会接受生产系统与实践培训，最终加入该服务的值班轮换。六个月后，有些人选择留在 SRE；另一些人回到原团队，但已对生产环境和 SRE 实践形成更深入的认识。SRE 团队则获得额外的工程资源，也能发现培训材料和文档中的缺漏与错误。</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Exchange" data-type="sect2"><div class="sect2" id="sre_exchange">
+<h2>SRE 交流计划</h2>
+
+<p>Google 的 SRE Exchange 计划允许一名 <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="exchange program at Google" data-type="indexterm" id="idm139660636763216"/>SRE 到另一支 SRE 团队并肩工作一周。来访者观察接待团队的工作方式，并分享自己原团队中可能对对方有用的实践。交流结束后，来访者会撰写报告，记录这一周的经历和观察，并分别向两支团队提出建议。由于 Google 的 SRE 团队专业分工很细，这项计划尤其有用。</p>
+</div></section>
+
+<section data-pdf-bookmark="Training" data-type="sect2"><div class="sect2" id="training">
+<h2>培训</h2>
+
+<p>培训对 SRE 安全运行系统的能力至关重要。<a contenteditable="false" data-primary="training" data-secondary="for SREs" data-type="indexterm" id="idm139660636760896"/>虽然<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="training for" data-type="indexterm" id="idm139660636761264"/>大部分培训由各团队内部完成（参见<a data-type="xref" href="ch08-zh.html#training_roadmap">“培训路线图”</a>及<a data-type="xref" href="ch08-zh.html#on_call">第 8 章</a>），但也应考虑为所有 SRE 建立标准课程。在 Google，所有新 SRE 都会参加为期一周的沉浸式培训 SRE EDU，学习几乎所有 SRE 都会接触的关键概念、工具和平台。这为新 SRE 建立统一的知识基线，也简化了团队和服务专属培训的目标。几个月后，SRE EDU 团队还会开设第二组课程，讲授管理重大事件所使用的通用工具和流程。我们的绩效管理流程会明确认可承担这些培训工作的 SRE。</p>
+</div></section>
+
+<section data-pdf-bookmark="Horizontal Projects" data-type="sect2"><div class="sect2" id="horizontal_projects">
+<h2>横向项目</h2>
+
+<p>SRE 团队通常与特定服务紧密协作，因此容易各自构建专用方案来解决监控、软件发布、配置管理等问题。<a contenteditable="false" data-primary="horizontal projects" data-type="indexterm" id="idm139660636749488"/>这会造成团队间大量重复劳动。允许多种方案在“市场”中竞争采用固然有价值，但发展到一定阶段后，应收敛到一种标准方案，使其：</p>
+
+<ul>
+	<li>
+	<p>符合大多数团队的要求</p>
+	</li>
+	<li>
+	<p>提供稳定且可扩展的平台，可在其上构建下一层创新</p>
+	</li>
+</ul>
+
+<p>Google 通过横向团队推进这类工作，这些团队通常由经验丰富的 SRE 组成。横向团队构建并运行标准解决方案，同时与其他 SRE 团队合作，确保方案顺利落地。（关于横向软件开发，参见<a data-type="xref" href="ch21.html#case_study_2_common_tooling_adoption_in_s">“案例研究 2：SRE 中的通用工具采用”</a>及<a data-type="xref" href="ch21.html#organizational_change_management_in_sre">第 21 章</a>。）</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Mobility" data-type="sect2"><div class="sect2" id="sre_mobility">
+<h2>SRE 流动机制</h2>
+
+<p>Google 尽力确保工程师是真心愿意留在各自团队中的。为此，<a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="mobility for" data-type="indexterm" id="idm139660636741200"/><a contenteditable="false" data-primary="mobility for SREs" data-type="indexterm" id="idm139660636741664"/>我们既允许 SRE 在团队之间调动，也确保他们知道自己拥有这一选择。只要不存在绩效问题，SRE 就可以自由转入仍有人员名额的其他 SRE 团队。达到软件工程师招聘标准的 SRE 也可以自由转入产品开发团队（参见 <a href="http://bit.ly/2xyQ4aD"><em class="hyperlink">http://bit.ly/2xyQ4aD</em></a>）。</p>
+
+<p>出于多种原因，这种流动机制对于个人和团队而言非常<span class="keep-together">健康：</span></p>
+
+<ul>
+	<li>
+	<p>工程师能够确定并占据感兴趣的角色。</p>
+	</li>
+	<li>
+	<p>如果个人情况发生变化并且值班职责变得不切实际，SRE 可以在要求更少的值班职责的团队中探索机会。他们可以通过与其他团队交谈并查看团队的值班统计信息来获取此信息。</p>
+	</li>
+	<li>
+	<p>跨团队流动的 SRE 会为新加入的团队带来更广泛的经验。</p>
+	</li>
+	<li>
+	<p>在站点之间移动的 SRE 帮助建立或保持不同站点之间的文化一致性。</p>
+	</li>
+	<li>
+	<p>SRE 不必被迫维护状况不佳的服务，也不必为不支持其个人发展的经理工作。</p>
+	</li>
+</ul>
+
+<p>这项政策还有一个附带好处：促使 SRE 经理始终关注如何打造健康的服务和满意的团队。</p>
+</div></section>
+
+<section data-pdf-bookmark="Travel" data-type="sect2"><div class="sect2" id="travel">
+<h2>差旅</h2>
+
+<p>除了为维持异地团队健康运转所需的差旅提供预算外（参见<a contenteditable="false" data-primary="travel for SRE teams" data-type="indexterm" id="idm139660636728800"/><a data-type="xref" href="#finance_travel_budget">“经费：差旅预算”</a>），还应考虑为以下活动提供经费：</p>
+
+<ul>
+	<li>
+	<p>建立由多个站点的 SRE 组成的公司内部兴趣社区。这些群体平时可以主要通过电子邮件和视频会议协作，但每年至少应面对面聚会一次。</p>
+	</li>
+	<li>
+	<p>参加行业 SRE 及相关会议，并在会上分享经验，以拓展知识、了解其他组织如何解决类似问题，也从中获得启发与动力。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="Launch Coordination Engineering Teams" data-type="sect2"><div class="sect2" id="launch_coordination_engineering_teams">
+<h2>发布协调工程团队</h2>
+
+<p>正如我们第一本书<a href="http://bit.ly/2kGWVWf">第 27 章</a>所述，<a contenteditable="false" data-primary="Launch Coordination Engineering (LCE) teams" data-type="indexterm" id="idm139660636723440"/>发布协调工程（LCE）团队可以把 SRE 原则带给范围更广的产品开发团队，包括那些所构建服务尚不需要 SRE 全面介入的团队。与其他 SRE 团队一样，LCE 团队也应积极实现日常运维自动化。例如，通过开发标准工具和框架，帮助产品开发团队在生产环境中设计、构建和发布服务。</p>
+</div></section>
+
+<section data-pdf-bookmark="Production Excellence" data-type="sect2"><div class="sect2" id="production_excellence">
+<h2>卓越生产运营</h2>
+
+<p>随着组织内 SRE 团队增多，会逐渐形成一批最佳实践。每支 <a contenteditable="false" data-primary="production" data-secondary="production excellence reviews" data-type="indexterm" id="idm139660636718512"/>SRE 团队的演进路径各不相同，因此需要熟悉多支团队的资深 SRE 才能恰当评估。</p>
+
+<p>在 Google，我们定期开展一项名为“卓越生产运营”的服务评审。资深 SRE 负责人会周期性审查每支 SRE 团队，并根据一组标准指标进行评估，例如告警负载、错误预算消耗、项目完成情况和缺陷关闭率。评审既会表彰优异表现，也会为表现欠佳的团队提出建议。</p>
+
+<p>经验丰富的 SRE 能够判断细微复杂的情形。例如，项目完成率下降究竟源于团队合并或拆分，还是确实存在绩效问题，往往不易区分。如果某支团队面临过载风险，评审者可以也应当利用自身在组织中的影响力，支持团队负责人扭转局面。</p>
+</div></section>
+
+<section data-pdf-bookmark="SRE Funding and Hiring" data-type="sect2"><div class="sect2" id="sre_funding_and_hiring">
+<h2>SRE 经费与招聘</h2>
+
+<p>在 Google，我们通过两种做<a contenteditable="false" data-primary="funding and hiring (SREs)" data-type="indexterm" id="idm139660636708960"/>法确保每位 <a contenteditable="false" data-primary="SREs (site reliability engineers)" data-secondary="funding and hiring" data-type="indexterm" id="idm139660636711200"/>SRE 都能创造显著价值：</p>
+
+<ul>
+	<li>
+	<p>SRE 的大部分经费与产品开发团队来自同一预算来源。可靠性与测试、安全一样，是产品开发的核心支柱，因此也应作为产品开发的一部分获得投入。</p>
+	</li>
+	<li>
+	<p>根据我们的经验，可用的 SRE 人数总是少于需求。这种供需关系促使我们定期复查并调整获得 SRE 支持的服务优先级。</p>
+	</li>
+</ul>
+
+<p>简而言之，SRE 人数应少于组织想要的人数，但又要足以完成这些专业岗位独有的工作。</p>
+
+<p>在 Google，SRE 与产品开发工程师的比例大约介于 1:5（如底层基础设施服务）到 1:50（如采用标准框架构建、包含大量微服务的面向消费者应用）之间。许多服务位于区间中部，比例约为 1:10。<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlifemany" data-tertiary="suggested practices for running many teams" data-type="indexterm" id="idm139660636705296"/></p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="Conclusion" data-type="sect1"><div class="sect1" id="conclusion-id00094">
+<h1>总结</h1>
+
+<p>我们认为，任何规模的组织都可以通过应用以下三个原则来实施 SRE 实践：</p>
+
+<ul>
+	<li>
+	<p>SRE 需要具有实际约束力的 SLO。</p>
+	</li>
+	<li>
+	<p>SRE 必须有时间使明天比今天更好。</p>
+	</li>
+	<li>
+	<p>SRE 团队有能力调节其工作负载。</p>
+	</li>
+</ul>
+
+<p>自 Google 开始公开介绍 SRE 以来，它已经从 Google 特有的生产实践，发展为许多公司采用的一门专业。这些原则一次次得到验证：既来自我们多年大规模实践的直接经验，也来自近年协助客户采用 SRE 实践的经历。既然这些做法在 Google 内外都行之有效，我们相信这些建议也会对不同类型、不同规模的组织有所帮助。<a contenteditable="false" data-primary="SRE teams" data-secondary="lifecycles" data-startref="ix_SREteamlife" data-type="indexterm" id="idm139660636699072"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch20fn1"><sup><a href="ch20-zh.html#ch20fn1-marker">1</a></sup> Bruce W. Tuckman，“Developmental Sequence in Small Groups”，<em>Psychological Bulletin</em> 63，第 6 期（1965）：<span class="keep-together">384–99</span>。</p><p data-type="footnote" id="ch20fn2"><sup><a href="ch20-zh.html#ch20fn2-marker">2</a></sup> Shylaja Nukala 和 Vivek Rau，“Why SRE Documents Matter”，<em>ACM Queue</em>（2018 年 5—6 月）：即将出版。</p></div></div></section></body></html>
