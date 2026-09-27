@@ -1,0 +1,289 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>简洁性</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:9348c4b0-9448-43f5-977b-f848ec50218d" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="第7章 简洁性" data-type="chapter" epub:type="chapter"><div class="chapter" id="simplicity">
+<h1><span class="label">第7章 </span>简洁性</h1>
+
+<p class="byline">John Lunney、Robert van Gent 和 Scott Ritchie 著<br/>Diane Bates 和 Niall Richard Murphy 协作</p>
+
+<blockquote data-type="epigraph" epub:type="epigraph">
+<p><em>凡是能够正常运作的复杂系统，无一例外都是从能够正常运作的简单系统演化而来的。</em></p>
+
+<p data-type="attribution"><a href="http://bit.ly/2syRTi5">盖尔定律（Gall’s Law）</a></p>
+</blockquote>
+
+<p>简洁性（simplicity）是 SRE 的一项重要目标，因为它与可靠性高度相关：简单的软件不容易出故障，即使发生故障，修复起来也更容易、更迅速。简单的系统更容易理解、维护和测试。</p>
+
+<p>对 SRE 而言，简洁性是一项端到端的目标：它不应局限于代码本身，还应贯穿系统架构，以及管理软件生命周期所用的工具和流程。本章将通过一些示例，说明 SRE 如何衡量、看待并促进简洁性。</p>
+
+<section data-pdf-bookmark="衡量复杂性" data-type="sect1"><div class="sect1" id="measuring_complexity">
+<h1>衡量复杂性</h1>
+
+<p>衡量软件系统的复杂性并不是一门精确科学。<a contenteditable="false" data-primary="complexity" data-secondary="measuring" data-type="indexterm" id="ix_compmea"/>衡量软件代码复杂性的方法有很多，而且大多相当客观。<sup><a data-type="noteref" href="ch07-zh.html#ch07fn1" id="ch07fn1-marker">1</a></sup>其中最著名、应用也最广泛的标准，或许是<a href="http://bit.ly/1nKIrVc">圈复杂度（cyclomatic code complexity）</a>，它衡量的是一组特定语句中彼此不同的代码路径数量。例如，一段既没有循环、也没有条件分支的代码，其圈复杂度数值（CCN）为 1。<a contenteditable="false" data-primary="CCN (cyclomatic complexity number)" data-type="indexterm" id="idm139660641925120"/><a contenteditable="false" data-primary="cyclomatic code complexity" data-type="indexterm" id="idm139660641918304"/><a contenteditable="false" data-primary="code" data-secondary="cyclomatic code complexity" data-type="indexterm" id="idm139660641917328"/>软件社区其实很擅长衡量代码复杂性，许多集成开发环境都有相应的测量工具，包括 Visual Studio、Eclipse 和 <span class="keep-together">IntelliJ</span>。但我们不太擅长判断测得的是必要的（本质）复杂性还是偶生复杂性，也难以理解一个方法的复杂性会如何影响更大的系统，以及哪种重构方式最合适。</p>
+
+<p>另一方面，用于衡量系统复杂性的正式方法并不多见。<sup><a data-type="noteref" href="ch07-zh.html#ch07fn2" id="ch07fn2-marker">2</a></sup>你可能会想借鉴 CCN，统计系统中不同实体（例如微服务）的数量，以及它们之间所有可能的通信路径。然而，对大多数具有一定规模的系统来说，这个数字很快就会大到失去实际意义。<a contenteditable="false" data-primary="systems" data-secondary="complexity of, measures for" data-type="indexterm" id="idm139660641912160"/></p>
+
+<p>衡量系统级复杂性时，可以采用以下一些更实用的替代指标：</p>
+
+<dl>
+	<dt><dfn>培训时间</dfn></dt>
+	<dd><p>一名新成员需要多长时间才能加入值班？文档质量差或缺少文档，可能是主观复杂性的重要来源。</p></dd>
+	<dt><dfn>讲解时间</dfn></dt>
+	<dd><p>向一名新成员全面讲清服务的高层视图需要多长时间？例如，在白板上画出系统架构，并说明每个组件的功能和依赖关系。</p></dd>
+	<dt><dfn>运维管理方式的多样性</dfn></dt>
+	<dd><p>系统不同部分中，相似设置有多少种配置方式？配置集中存放在一处，还是分散在多个位置？</p></dd>
+	<dt><dfn>已部署配置的多样性</dfn></dt>
+	<dd><p>生产环境中部署了多少种独特配置？这里包括二进制文件、二进制版本、标志和环境。</p></dd>
+	<dt><dfn>系统年龄</dfn></dt>
+	<dd><p>系统存在多久了？<a href="http://www.hyrumslaw.com/">海勒姆定律（Hyrum’s Law）</a>指出，随着时间推移，API 的用户会依赖其实现的方方面面，从而造成脆弱且不可预测的行为。<a contenteditable="false" data-primary="Hyrum’s Law" data-type="indexterm" id="idm139660641903904"/></p></dd>
+</dl>
+
+<p>衡量复杂性虽然有时值得一做，却并不容易。不过，下面两点似乎没有受到真正的质疑：</p>
+
+<ul>
+	<li>
+	<p>一般而言，只要软件系统仍在持续演进，复杂性就会不断增加，除非有人投入力量加以抵消。</p>
+	</li>
+	<li>
+	<p>投入这种力量是值得的。<a contenteditable="false" data-primary="complexity" data-secondary="measuring" data-startref="ix_compmea" data-type="indexterm" id="idm139660641900160"/></p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="简洁性贯穿端到端，而 SRE 正适合推动它" data-type="sect1"><div class="sect1" id="simplicity_is_end_to_endcomma_and_sres_ar">
+<h1>简洁性贯穿端到端，而 SRE 正适合推动它</h1>
+
+<p>生产系统通常不是以整体方式设计出来的，而是在使用中自然生长。<a contenteditable="false" data-primary="simplicity" data-type="indexterm" id="ix_simpl"/>随着团队添加新功能、推出新产品，系统会逐渐积累更多组件和连接。单次变更或许相对简单，但每次变更都会影响周围的组件，因此总体复杂性很快就可能变得难以驾驭。例如，在一个组件中加入重试机制，可能导致数据库过载，使整个系统陷入不稳定；也可能让人更难推断一条给定查询在系统中经过的路径。</p>
+
+<p>引入复杂性的个人、团队或职能，往往不会直接承担它的成本。用经济学术语来说，复杂性是一种外部性；真正受到影响的，是后来继续在复杂系统中及其周边工作的人。因此，需要有人专门倡导并维护端到端的系统简洁性。</p>
+
+<p>SRE 天然适合承担这一角色，因为其工作要求他们把系统视为一个整体。<sup><a data-type="noteref" href="ch07-zh.html#ch07fn3" id="ch07fn3-marker">3</a></sup>除了支持自己负责的服务，SRE 还必须了解与该服务交互的其他系统。Google 的产品开发团队往往无法全面看到整个生产环境中的问题，因此他们很重视向 SRE 咨询系统设计和运行方面的建议。</p>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p><strong>读者行动：</strong>在工程师第一次参加值班之前，鼓励他们绘制并反复重画系统图。在文档中维护一套权威的系统图：它既能帮助新工程师，也能帮助经验丰富的工程师跟上系统变化。</p>
+</div>
+
+<p>根据我们的经验，产品开发人员最终通常只会在某个范围较窄的子系统或组件中工作。<a contenteditable="false" data-primary="systems" data-secondary="keeping architectural drawings of" data-type="indexterm" id="idm139660641888160"/>因此，他们脑中没有整个系统的模型，所在团队也不会绘制系统级架构图。这些图非常有用，因为它们能帮助团队成员直观理解系统间的交互，并用共同的词汇描述问题。多数情况下，我们发现服务的系统级架构图都是由其 SRE 团队绘制的。</p>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p><strong>读者行动：</strong>确保所有重要设计文档都经过 SRE 评审，并要求团队在文档中说明新设计会如何影响系统架构。如果某项设计增加了复杂性，SRE 或许能提出让系统更简单的替代方案。</p>
+</div>
+
+<section data-pdf-bookmark="案例研究1：端到端的 API 简洁性" data-type="sect2"><div class="sect2" id="case_study_1_end_to_end_api_simplicity">
+<h2>案例研究1：端到端的 API 简洁性</h2>
+
+<section data-pdf-bookmark="背景" data-type="sect3"><div class="sect3" id="background-id00022">
+<h3>背景</h3>
+
+<p>本章一位作者曾在一家初创公司任职。该公司的核心库使用一种名为 <code>bag</code> 的键值数据结构。<a contenteditable="false" data-primary="APIs" data-secondary="case study, end-to-end API simplicity" data-type="indexterm" id="idm139660641879120"/><a contenteditable="false" data-primary="simplicity" data-secondary="case study, end-to-end API simplicity" data-type="indexterm" id="idm139660641882576"/>远程过程调用（RPC）接收一个 <code>bag</code>，再返回一个 <code>bag</code>；实际参数以键值对形式存储在 <code>bag</code> 中。核心库支持 <code>bag</code> 的序列化、加密和日志记录等常见操作。所有核心库和 API 都极其简单、灵活——这应该算成功了吧？</p>
+
+<p>遗憾的是，并非如此。核心 API 高度抽象，代价最终由库的客户端承担。每项服务需要哪些键和值，以及值应采用什么类型，都必须仔细记录，但实际往往没有文档。此外，随着参数不断增加、删除或变更，维持向后和向前兼容也变得十分困难。</p>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect3"><div class="sect3" id="lessons_learned-id00023">
+<h3>经验教训</h3>
+
+<p>诸如 <a href="http://bit.ly/1HhFC5L">Google Protocol Buffers</a> 或 <a href="https://thrift.apache.org/">Apache Thrift</a> 这样的结构化数据类型，看起来可能比抽象的通用替代方案更复杂。然而，它们会迫使设计者预先做出设计决策并编写文档，最终得到的端到端解决方案反而更加简单。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="案例研究2：项目生命周期的复杂性" data-type="sect2"><div class="sect2" id="case_study_2_project_lifecycle_complexity">
+<h2>案例研究2：项目生命周期的复杂性</h2>
+
+<p>面对现有系统盘根错节的“意大利面条式”结构，你可能很想把它全部替换掉，重新构建一个干净、简单、解决同一问题的新系统。<a contenteditable="false" data-primary="simplicity" data-secondary="case study, project lifecycle complexity" data-type="indexterm" id="idm139660641869632"/><a contenteditable="false" data-primary="complexity" data-secondary="case study, project lifecycle complexity" data-type="indexterm" id="idm139660641868064"/><a contenteditable="false" data-primary="project lifecycle complexity, case study" data-type="indexterm" id="idm139660641865968"/>遗憾的是，在维护当前系统的同时创建新系统，付出的成本可能得不偿失。</p>
+
+<section data-pdf-bookmark="背景" data-type="sect3"><div class="sect3" id="background-id00024">
+<h3>背景</h3>
+
+<p><a href="http://bit.ly/2LgqcTd">Borg</a> 是 Google 内部的容器管理系统。<a contenteditable="false" data-primary="Borg" data-type="indexterm" id="idm139660641860784"/>它运行着数量庞大的 Linux 容器，使用模式多种多样，例如批处理与生产任务、流水线与服务器等。多年来，随着硬件变化、功能增加和规模扩大，Borg 及其周边生态也不断演进。</p>
+
+<p><a href="http://bit.ly/2HdcFJo">Omega</a> 的目标是成为一个设计原则更明确、更简洁的 Borg 替代方案，并支持同样的用例。<a contenteditable="false" data-primary="Omega" data-type="indexterm" id="idm139660641857600"/>然而，从 Borg 切换到 Omega 的计划存在几个严重问题：</p>
+
+<ul class="pagebreak-before">
+	<li>
+	<p>在 Omega 开发期间，Borg 仍在持续演进，因此 Omega 始终在追赶一个不断移动的目标。</p>
+	</li>
+	<li>
+	<p>早期对改进 Borg 难度的估计过于悲观，对 Omega 的预期却过于乐观。实践中，别处的草未必更绿。</p>
+	</li>
+	<li>
+	<p>我们没有充分认识到从 Borg 迁移到 Omega 会有多困难。数千项服务和众多 SRE 团队共有数百万行配置代码，这意味着迁移将耗费极其可观的工程人力，并拖延很长的实际工期。迁移期很可能长达数年，在此期间，我们还必须同时支持和维护两个系统。</p>
+	</li>
+</ul>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect3"><div class="sect3" id="what_we_decided_to_do-id00025">
+<h3>我们的决定</h3>
+
+<p><a href="http://bit.ly/2Lf4FKm">最终</a>，我们把设计 Omega 时产生的一些想法反哺给了 Borg。我们还利用 Omega 的许多概念，快速启动了开源容器管理系统 <a href="https://kubernetes.io/">Kubernetes</a>。<a contenteditable="false" data-primary="Kubernetes" data-type="indexterm" id="idm139660641849488"/></p>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect3"><div class="sect3" id="lessons_learned-id00026">
+<h3>经验教训</h3>
+
+<p>考虑重写系统时，要审视完整的项目生命周期，包括针对不断变化的目标进行开发、制定完整的迁移计划，以及迁移期间可能产生的额外成本。覆盖面广、用户众多的 API 很难迁移。不要把预期成果与当前系统直接比较，而应把它与另一种情形比较：如果把同样多的精力用于改进当前系统，后者会变成什么样。有时重写确实是最佳出路，但务必权衡成本和收益，不要低估成本。</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="重获简洁性" data-type="sect1"><div class="sect1" id="regaining_simplicity">
+<h1>重获简洁性</h1>
+
+<p>大多数简化工作，都是从系统中删除元素。有时可以直接简化，例如删除对某项未使用数据的依赖，不再从远程系统获取它。有时则必须重新设计。例如，系统的两个部分可能都需要访问同一份远程数据。与其获取两次，更简单的系统可以只获取一次，再把结果转发出去。</p>
+
+<p>无论具体工作是什么，管理层都必须确保简化工作得到肯定，并被明确列为优先事项。简化本身就是效率提升：它节省的不是计算或网络资源，而是工程时间和认知负担。应当像对待有价值的功能发布一样对待成功的简化项目，并同等衡量和表彰代码的增加与删除。<sup><a data-type="noteref" href="ch07-zh.html#ch07fn4" id="ch07fn4-marker">4</a></sup>例如，Google 内网上会为大量删除代码的工程师显示“僵尸代码杀手”徽章。</p>
+
+<p>简化工作本身就应被视为一项功能需求。你需要确定简化项目的优先级，为其配备人员，并预留 SRE 开展这类工作的时间。如果产品开发人员和 SRE 认为简化项目对职业发展没有帮助，他们就不会主动承担。对于特别复杂的系统或负担过重的团队，可以考虑把简洁性明确设为目标，并专门划出时间开展这项工作。例如，预留工程项目时间的 10%，用于“简洁性”项目。<sup><a data-type="noteref" href="ch07-zh.html#ch07fn5" id="ch07fn5-marker">5</a></sup></p>
+
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p><strong>读者行动：</strong>让工程师集思广益，列出系统中已知的复杂之处，并讨论降低复杂性的方法。</p>
+</div>
+
+<p>随着系统日益复杂，人们很容易想到拆分 SRE 团队，让每个新团队专注于系统中更小的部分。有时确实必须这样做，但新团队的职责范围缩小后，推动大型简化项目的意愿或能力也可能减弱。可以考虑指定一个小型轮换小组，由其中的 SRE 保持对整个技术栈的实际了解，虽然了解的深度可能有限，但能够推动各部分遵循一致做法，并促进整个技术栈的简化。</p>
+
+<p>如前所述，绘制系统图能帮助你发现更深层的设计问题。这些问题会妨碍你理解系统，也让系统行为难以预测。绘图时，可以重点寻找以下现象：</p>
+
+<dl>
+	<dt><dfn>放大效应</dfn></dt>
+	<dd><p>一次调用返回错误或超时后，如果在多个层级上重试，RPC 总数就会成倍增加。</p></dd>
+	<dt><dfn>循环依赖</dfn></dt>
+	<dd><p>当一个组件依赖自身时——这种依赖往往是间接的——系统完整性可能受到严重破坏。尤其是，整个系统可能无法冷启动。</p></dd>
+</dl>
+
+<section data-pdf-bookmark="案例研究3：简化展示广告蜘蛛网" data-type="sect2"><div class="sect2" id="case_study_3_simplification_of_the_displa">
+<h2>案例研究3：简化展示广告蜘蛛网</h2>
+
+<section data-pdf-bookmark="背景" data-type="sect3"><div class="sect3" id="background-id00027">
+<h3>背景</h3>
+
+<p>Google 的展示广告业务包含许多相互关联的产品，其中一些源自收购，例如 DoubleClick、AdMob 和 Invite Media。<a contenteditable="false" data-primary="Display Ads Spiderweb, simplification of (case study)" data-type="indexterm" id="idm139660641840816"/><a contenteditable="false" data-primary="simplicity" data-secondary="regaining" data-tertiary="case study, simplifying Display Ads Spiderweb" data-type="indexterm" id="idm139660641827760"/>这些产品必须经过调整，才能与 Google 基础设施和现有产品协同工作。例如，我们希望使用 DoubleClick for Publishers 的网站能够展示由 Google AdSense 选择的广告；同样，也希望使用 DoubleClick Bid Manager 的竞价方能够参与 Google Ad Exchange 上进行的实时竞价。</p>
+
+<p>这些独立开发的产品形成了一套后端彼此连接的系统，很难推断其行为。流量经过各个组件时发生了什么，不容易观察；为每个部分配置适当容量，也既不方便又不精确。我们甚至一度加入测试，专门确认查询流中所有无限循环都已消除。</p>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect3"><div class="sect3" id="what_we_decided_to_do-id00028">
+<h3>我们的决定</h3>
+
+<p>广告服务 SRE 是推动标准化的天然人选：每个组件虽有各自的开发团队，但 SRE 要为整个技术栈值班。我们最先开展的一项工作，是起草统一标准，并与开发团队合作，逐步采用这些标准。具体包括：</p>
+
+<ul>
+	<li>
+	<p>确立复制大型数据集的唯一方式</p>
+	</li>
+	<li>
+	<p>确立查询外部数据的唯一方式</p>
+	</li>
+	<li>
+	<p>为监控、资源配置和系统配置提供通用模板</p>
+	</li>
+</ul>
+
+<p>在这项计划实施之前，<a contenteditable="false" data-primary="AdMob and AdSense systems" data-type="indexterm" id="idm139660641822384"/>每种产品都由不同程序提供前端和竞价功能。如<a data-type="xref" href="#previouslycomma_an_ad_request_might_hit_b">图7-1</a>所示，当一条广告请求可能经过两个定向系统时，我们会重写请求，使其符合第二个系统的预期。这不仅需要额外的代码和处理，还可能造成不希望出现的循环。</p>
+
+<figure><div class="figure" id="previouslycomma_an_ad_request_might_hit_b"><img alt="过去，一条广告请求可能同时经过 AdMob 和 AdSense 系统" src="assets/tsrw_0701.png"/>
+<h6><span class="label">图7-1. </span>过去，一条广告请求可能同时经过 AdMob 和 AdSense 系统</h6>
+</div></figure>
+
+<p>为了简化系统，我们在共享程序中加入了满足所有用例的逻辑，并用功能标志控制这些程序。随后，我们逐步移除这些标志，把功能合并到数量更少的服务器后端中。</p>
+
+<p>服务器统一后，竞价服务器便能直接与两个定向服务器通信。如<a data-type="xref" href="#unified_auction_server_now_performs_a_dat">图7-2</a>所示，当多个定向服务器需要查询数据时，只需在统一的竞价服务器中查询一次。</p>
+
+<figure><div class="figure" id="unified_auction_server_now_performs_a_dat"><img alt="统一的竞价服务器现在只需执行一次数据查询" src="assets/tsrw_0702.png"/>
+<h6><span class="label">图7-2. </span>统一的竞价服务器现在只需执行一次数据查询</h6>
+</div></figure>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect3"><div class="sect3" id="lessons_learned-id00029">
+<h3>经验教训</h3>
+
+<p>把一个已经运行的系统整合到自己的基础设施中，最好采用渐进方式。</p>
+
+<p>正如单个程序中出现极为相似的函数是一种“代码异味”，表明存在更深层的设计问题；同一请求中出现重复查询，也是一种“系统异味”。</p>
+
+<p>如果制定了定义清晰、得到 SRE 和开发人员共同认可的标准，就能为消除复杂性提供明确蓝图，也更容易获得管理者的支持和奖励。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="案例研究4：在共享平台上运行数百个微服务" data-type="sect2"><div class="sect2" id="case_study_4_running_hundreds_of_microser">
+<h2>案例研究4：在共享平台上运行数百个微服务</h2>
+
+<p><em>Mike Curtis 撰写</em></p>
+
+<section data-pdf-bookmark="背景" data-type="sect3"><div class="sect3" id="background-id00030">
+<h3>背景</h3>
+
+<p>过去 15 年里，Google 成功发展出多个垂直产品领域，例如搜索、广告和 Gmail，并持续不断地推出新系统和重构后的系统。<a contenteditable="false" data-primary="simplicity" data-secondary="regaining" data-tertiary="case study, running hundreds of microservices on shared platform" data-type="indexterm" id="idm139660641803904"/><a contenteditable="false" data-primary="microservices" data-secondary="running hundreds on a shared platform, case study" data-type="indexterm" id="idm139660641802128"/>其中许多系统都有专属 SRE 团队，以及针对特定领域的生产技术栈，包括定制的开发工作流、持续集成与持续交付（CI/CD）流程和监控体系。这些各不相同的生产技术栈，在维护、开发成本以及各自独立投入 SRE 等方面造成了大量额外开销。它们也让服务乃至工程师更难在团队之间转移，还增加了添加新服务的难度。</p>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect3"><div class="sect3" id="what_we_decided_to_do-id00031">
+<h3>我们的决定</h3>
+
+<p>社交网络领域的一组 SRE 团队着手把各项服务的生产技术栈统一到一个托管式微服务平台上，并由一个 SRE 小组集中管理。共享平台遵循最佳实践，还会捆绑并自动配置许多过去未得到充分利用的功能，以提高可靠性并方便调试。凡是处于该 SRE 团队职责范围内的新服务，无论获得了何种程度的 SRE 支持，都必须使用公共平台；旧服务则必须迁移到新平台，否则就要逐步淘汰。</p>
+
+<p>共享平台在社交网络领域取得成功后，Google 内部其他有 SRE 或没有 SRE 的团队也开始采用它。</p>
+</div></section>
+
+<section data-pdf-bookmark="设计" data-type="sect3"><div class="sect3" id="design">
+<h3>设计</h3>
+
+<p>我们采用微服务，是为了能够快速更新和部署功能；单体服务的演进速度较慢。这里的平台会<em>管理</em>服务（managed），而不只是<em>承载</em>服务（hosted）：我们不会收走各团队的控制权和责任，而是赋能他们自行有效地管理服务。我们提供工作流工具，供服务团队完成发布、监控等工作。</p>
+
+<p>我们提供的工具包括 UI、API 和命令行界面，SRE 和开发人员可以通过它们与自己的技术栈交互。即使底层涉及许多不同系统，这些工具仍能为开发人员提供统一的使用体验。</p>
+</div></section>
+
+<section data-pdf-bookmark="结果" data-type="sect3"><div class="sect3" id="outcomes">
+<h3>结果</h3>
+
+<p>平台的高质量和丰富功能带来了一项意外收益：即使没有 SRE 深度参与，开发团队也能运行数百项服务。</p>
+
+<p>公共平台还改变了 SRE 与开发人员之间的关系。因此，<em>分级式</em> SRE 支持在 Google 越来越普遍。<a contenteditable="false" data-primary="tiered SRE engagement" data-type="indexterm" id="idm139660641796592"/>分级式支持覆盖了不同程度的 SRE 参与：从轻量咨询和设计评审，到深度参与，例如由 SRE 共同承担值班工作。</p>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect3"><div class="sect3" id="lessons_learned-id00032">
+<h3>经验教训</h3>
+
+<p>从标准稀少或定义模糊的状态，转向高度标准化的平台，是一项长期投资。每一步看起来或许只是小幅改进，但这些步骤最终会降低额外开销，使大规模运行服务成为可能。</p>
+
+<p>让开发人员看到这种转变的价值十分重要。应争取在开发的每个阶段都逐步释放生产力收益。不要试图说服大家实施一项庞大的重构，却要等到最后才能获得回报。</p>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="案例研究5：pDNS 不再依赖自身" data-type="sect2"><div class="sect2" id="case_study_5_pdns_no_longer_depends_on_it">
+<h2>案例研究5：pDNS 不再依赖自身</h2>
+
+<section data-pdf-bookmark="背景" data-type="sect3"><div class="sect3" id="background-id00033">
+<h3>背景</h3>
+
+<p>Google 生产环境中的客户端要查询某项服务的 IP 地址时，通常会使用名为 Svelte 的查询服务。<a contenteditable="false" data-primary="pDNS (Production DNS), eliminating dependency on itself (case study)" data-type="indexterm" id="idm139660641780912"/><a contenteditable="false" data-primary="simplicity" data-secondary="regaining" data-tertiary="case study, eliminating pDNS dependency on itself" data-type="indexterm" id="idm139660641784048"/>过去，为了找到 Svelte 的 IP 地址，客户端会使用 Google 的命名服务 pDNS（Production DNS）。客户端通过负载均衡器访问 pDNS 服务，而负载均衡器要查询实际 pDNS 服务器的 IP 地址时……用的正是 Svelte。<a contenteditable="false" data-primary="dependencies" data-secondary="circular dependency, pDNS" data-type="indexterm" id="idm139660641777232"/></p>
+</div></section>
+
+<section data-pdf-bookmark="问题描述" data-type="sect3"><div class="sect3" id="problem_statement-id00034">
+<h3>问题描述</h3>
+
+<p>pDNS 对自身存在传递依赖。这项依赖不知何时被无意引入，直到后来才被发现是一项可靠性隐患。通常，查询不会遇到问题，因为 pDNS 服务有多个副本，而打破依赖循环所需的数据在 Google 生产环境中的某个地方总是存在。然而，系统将无法冷启动。用一位 SRE 的话说：“我们就像穴居人，只有从上一堆营火引燃火把、一路举着跑来，才能生起新的火。”</p>
+</div></section>
+
+<section data-pdf-bookmark="我们的决定" data-type="sect3"><div class="sect3" id="what_we_decided_to_do-id00035">
+<h3>我们的决定</h3>
+
+<p>我们修改了 Google 生产环境中的一个底层组件，让所有生产机器都在本地存储中维护一份附近 Svelte 服务器的当前 IP 地址列表。这项变更不仅打破了前面所述的循环依赖，还消除了 Google 大多数其他服务对 pDNS 的隐式依赖。</p>
+
+<p>为了避免类似问题，我们还引入了一套白名单机制，限定允许与 pDNS 通信的服务集合，并逐步缩小这个集合。于是，生产环境中的每次服务查询，现在都能沿着一条更简单、更可靠的路径通过系统。</p>
+</div></section>
+
+<section data-pdf-bookmark="经验教训" data-type="sect3"><div class="sect3" id="lessons_learned-id00036">
+<h3>经验教训</h3>
+
+<p>务必谨慎管理服务依赖：使用明确的白名单，防止意外增加依赖。同时还要留意循环依赖。</p>
+</div></section>
+</div></section>
+</div></section>
+
+<section data-pdf-bookmark="总结" data-type="sect1"><div class="sect1" id="conclusion-id00037">
+<h1>总结</h1>
+
+<p>简洁性自然应当成为 SRE 的目标，因为简单的系统往往更可靠，也更容易运行。对于分布式系统，我们很难定量衡量简洁性，或它的反面——复杂性。不过，仍有一些合理的替代指标，值得从中选取若干项并持续改进。</p>
+
+<p>SRE 对系统有端到端的理解，因此非常适合发现、预防和消除复杂性的来源，无论复杂性存在于软件设计、系统架构、配置、部署流程还是其他地方。SRE 应尽早参与设计讨论，从自身独特的视角分析不同方案的成本和收益，并尤其关注简洁性。SRE 还可以主动制定标准，提高生产环境的一致性。</p>
+
+<p>作为 SRE，推动简洁性是工作职责的重要组成部分。我们强烈建议 SRE 管理者授权 SRE 团队推动简化，并明确奖励这些努力。系统在演进过程中不可避免地会逐渐趋于复杂，因此争取简洁性需要持续的关注和投入——但这件事非常值得去做。<a contenteditable="false" data-primary="simplicity" data-startref="ix_simpl" data-type="indexterm" id="idm139660641767040"/></p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch07fn1"><sup><a href="ch07-zh.html#ch07fn1-marker">1</a></sup>如果想进一步了解，可以阅读这篇关于软件复杂性趋势的近期<a href="https://arxiv.org/abs/1608.01533">综述</a>，或阅读 Horst Zuse 的 <em>Software Complexity: Measures and Methods</em>（柏林：Walter de Gruyter，1991）。</p><p data-type="footnote" id="ch07fn2"><sup><a href="ch07-zh.html#ch07fn2-marker">2</a></sup>不过也有一些实例，例如<a href="http://bit.ly/2spRz6g">《对 AWS 系统进行自动化形式推理》</a>。</p><p data-type="footnote" id="ch07fn3"><sup><a href="ch07-zh.html#ch07fn3-marker">3</a></sup>因此，如果产品开发负责人希望通过治理复杂性来处理技术债务，却很难在现有团队的职责范围内证明这项工作的合理性，那么投入 SRE 或许会很有帮助。</p><p data-type="footnote" id="ch07fn4"><sup><a href="ch07-zh.html#ch07fn4-marker">4</a></sup>正如 Dijkstra <a href="http://bit.ly/2xwycxq">所说</a>：“如果一定要统计代码行数，就不应把它们看成‘产出的行数’，而应看成‘花掉的行数’。”</p><p data-type="footnote" id="ch07fn5"><sup><a href="ch07-zh.html#ch07fn5-marker">5</a></sup>为简洁性项目预留一部分时间，例如 10%，并不意味着团队可以在其余 90% 的时间里随意引入复杂性。它只是表示，你明确留出了一部分精力，专门用于简化系统。</p></div></div></section></body></html>
