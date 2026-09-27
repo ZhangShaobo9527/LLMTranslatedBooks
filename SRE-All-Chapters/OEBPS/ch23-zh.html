@@ -1,0 +1,105 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="zh-CN" xml:lang="zh-CN"><head><title>SRE 的未来</title><link href="epub.css" rel="stylesheet" type="text/css"/>
+<meta content="urn:uuid:8ae6b05c-e8d3-42e5-aa2d-dc60bc7622ab" name="Adept.expected.resource"/></head><body data-type="book"><section data-pdf-bookmark="Chapter 23. Future of SRE" data-type="chapter" epub:type="chapter"><div class="chapter" id="ch23">
+<h1><span class="label">第 23 章　</span>SRE 的未来</h1>
+
+
+<p class="byline">作者：Matt Zelesko</p>
+
+<p>本书探讨了许多转变。转变并不是什么新鲜事——尤其是 Google，乃至整个科技行业，都曾欣然接纳许多转变，并在转变中蓬勃发展。最终的结果往往与我们最初的设想大相径庭。有鉴于此，我们以谦逊的态度展望 SRE 的未来。未来究竟会发生什么，不可能完全预测；但对于 SRE 实践中哪些方面不太可能改变、哪些方面必然会改变，我们仍可以作出有根据的判断。</p>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Won’t Change" data-type="sect1"><div class="sect1" id="ch23_what_won_t_change">
+<h1>不会改变的方面</h1>
+
+<p>首先，可靠性<a data-primary="future of SRE" data-type="indexterm" id="id2953"/>仍然一如既往地重要。事实上，随着全世界日益依赖技术，可靠性正变得<em>愈发重要</em>。Google 和其他创新组织提供的产品与基础设施，正日益成为全球数十亿用户日常生活以及各类组织运转不可或缺的一部分。这意味着，我们的基础设施正在成为各国政府、非政府组织、企业和世界各地民众所依赖的<em>社会基础设施</em>。我们绝不会轻视这份责任：这份责任是我们文化的核心，而让“Google 就是好用”正是我们的目标。展望未来，可以合理地认为，全球对这些基础设施的依赖还会继续加深，甚至可能大幅加深，而人们对它们的期望仍会一如既往。随着复杂度增长，我们保障可靠性的方法会改变，但使命不会改变。</p>
+
+<p>其次，我们坚信，SRE 实践以及交付可靠系统和产品这项更广泛的工作，仍会有人类参与。随着 AI 能力迅速增强，我们认为生产系统的维护和治理将由人类与 AI 协作完成。目前，生产环境中的大多数变更仍由 SRE 工程师执行，通常会有 AI 助手协同工作。我们预计，人与 AI 之间的分工会随时间推移而改变，AI 将承担更多问题排查、事件检测、影响缓解和事件后响应工作。与此同时，我们遇到的最复杂问题往往前所未见，也不遵循过去已知的模式，仍最适合由人类解决。至少在可预见的未来，我们认为情况会继续如此。正如本书所展示的，SRE 的许多方面远远超出生产管理和事件响应的范畴；在这些工作中，人类判断同样不可或缺。</p>
+</div></section>
+
+
+
+
+
+
+<section data-pdf-bookmark="What Is Transforming" data-type="sect1"><div class="sect1" id="ch23_what_is_transforming">
+<h1>正在发生哪些转变</h1>
+
+<p>转变会带来多种形式的重塑，涉及流程、平台乃至文化。SRE 正走到一个重大的转折点：我们既要重新思考如何让生产系统扩展到更大规模，又要努力保持简单。从屏蔽复杂性到采用智能体工作流，我们始终致力于让可靠性成为团队轻松可行的默认选择。</p>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Shift Left Turns Into Shift Down" data-type="sect2"><div class="sect2" id="ch23_shift_left_turns_into_shift_down">
+<h2>从“左移”转向“下移”</h2>
+
+<p>将产品生命周期中的一些工作“左移”<a data-primary="shift left" data-type="indexterm" id="id2954"/>，这一主张引发了大量讨论，也带来了许多有价值的成果。左移确保质量、可靠性和安全等领域能在产品生命周期的更早阶段得到关注，此时解决问题速度更快、成本也更低。不过，左移也可能给软件开发团队增加可观的复杂度和认知负担：团队不仅必须精通软件开发，还得成为质量、可靠性与安全方面的专家。即使规模不大，这种要求也会迅速变得难以承受；到了大型软件公司的规模，问题只会更加突出。</p>
+
+<p>正因如此，我们投入建设平台，以便实现“下移”<a data-primary="shift down" data-type="indexterm" id="id2955"/>而非“左移”（参见<a data-type="xref" href="ch18-zh.html#ch18_platform_engineering">“平台工程”</a>以及 Richard Seroter 介绍<a href="https://oreil.ly/_vByy">下移</a>的博客文章）。下移的重点，是把这些基础设施与运维负担交给底层平台承担。组织不再要求开发者成为全栈专家，事无巨细地管理从 Kubernetes 配置到网络策略的一切；相反，组织应当构建或采用能够屏蔽这些复杂性的平台，让开发者主要专注于编写应用代码。</p>
+
+<p>这一策略的核心，是利用托管服务和具有明确设计主张的框架，将最佳实践内置为默认行为。将发布、可观测性和容量管理统一到通用运行时框架与平台上，意味着平台可以承担扩缩容、可用性和合规方面的繁重工作。我们把平台当作支持工程师的内部产品，而不是要求他们掌握的一套新概念。这样既能培育更可持续、更富创新力的工程文化，也能让遵循生产原则成为轻松自然的选择（参见<a data-type="xref" href="ch17-zh.html#ch17_google_s_principles_for_reliability_and_resilience">“Google 的可靠性与韧性原则”</a>）。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Risk as a Leading Indicator of Reliability" data-type="sect2"><div class="sect2" id="ch23_risk_as_a_leading_indicator_of_reliability">
+<h2>以风险作为可靠性的前导指标</h2>
+
+<p>传统上，SRE 将<a data-primary="risk management" data-secondary="identifying risks" data-type="indexterm" id="id2956"/>可用性视为一项关键可靠性指标，许多 SLI 和 SLO 都以此为基础。但这并不总是最佳方法，因为可用性是可靠性的滞后指标：先有问题发生、系统变得不可用，可用性才会受到影响。然而，系统的可用性其实是该系统及其依赖项内在风险的外在表现。如果能够识别这些风险，我们就可以开始理解可靠性的<em>前导</em>指标，而不再只依赖滞后指标。</p>
+
+<p>识别风险有多种途径。例如，本着 SRE 持续改进的文化，每一起事件乃至每一次险情都蕴含着经验教训，可以提醒我们系统中存在哪些风险。一份优秀的事后复盘，不应只是列出未来检测、缓解和预防类似事件所需的行动项，还应收录此次发现的风险，形成清单。</p>
+
+<p>我们也可以主动识别风险。<a data-type="xref" href="ch12-zh.html#ch12">第 12 章</a>介绍了如何使用 STPA 识别系统性风险；我们预计，未来这类方法及其他类似方法会得到更广泛的应用。AI 有望通过审查设计与架构文档以及源代码来识别风险，而这一方法的早期成果已经令人振奋。</p>
+
+<p>风险一旦识别出来，就需要分类编目并存储。为此，我们参考<a href="https://oreil.ly/5-86j">软件工程研究所（Software Engineering Institute）基于分类体系的风险识别方法</a>，创建了一套风险分类体系。有了统一的分类方案和风险存储库，我们就能着手系统地降低风险。这套分类体系在此处很有价值，因为它可以把影响重大的事件归入共同类别，从中揭示反复出现的模式和改进机会。例如，一次此类分析使我们得出结论：许多事件源于系统未能正确应对过载。这促使我们在核心 RPC 系统中内置过载保护。针对这一普遍存在的系统性风险采取措施后，Google 的所有系统都默认获得了更好的保护。</p>
+
+<p>如今，常见风险的识别与缓解主要仍靠人工完成；未来，AI 将大幅加快这两项工作。</p>
+</div></section>
+
+
+
+
+
+
+
+<section data-pdf-bookmark="Evolving the Practice of SRE with AI" data-type="sect2"><div class="sect2" id="ch23_evolving_the_practice_of_sre_with_ai">
+<h2>借助 AI 推动 SRE 实践演进</h2>
+
+<p>AI 已经给 SRE 实践带来的影响，再怎么强调都不为过。<a data-primary="AI (artificial intelligence)" data-secondary="SRE evolution" data-type="indexterm" id="ai_sreevolv"/><a data-type="xref" href="ch21-zh.html#ch21">第 21 章</a>介绍了我们如何运用 AI，在生产健康层级的各个层面提升实践水平。很可能没有哪项发展会比在生产环境中引入 AI 智能体、转向智能体化生产带来更大的影响。</p>
+
+<p>过去一年里，我们见证了与 LLM 的交互从对话式模式向智能体模式的深刻转变。智能体工作流已经重塑软件开发流程，也会以同样的速度重塑生产管理。我们的模式正在从以人为中心转向由人类监督。未来生成的代码量增加几个数量级，并非不可想象；由此带来的生产变更数量也会增加几个数量级。为了将工具和流程扩展到足以应对这一新现实，我们需要以智能体为中心，重新思考一切。</p>
+
+<p>所有这些变化共同标志着 SRE 已来到一个转折点。借用 Marshall Goldsmith 的说法：“让我们走到今天的方法，无法带我们走向明天。”<sup><a data-type="noteref" href="ch23-zh.html#id2957" id="id2957-marker">1</a></sup> 那么，什么方法可以？至少要从以下几方面着手：</p>
+<dl>
+<dt>应对发布规模与速度的新方案</dt>
+<dd>
+<p>面对代码产量的急剧增长，一个关键问题随之出现：怎样才能把所有这些代码投入生产？如果仍沿用当前的发布流程和速度，每次发布包含的变更数量就会激增，不仅提高单次发布的风险，也会让根因识别和回滚变得更加困难。我们必须设计全新且高度流水线化的发布方式，用来发布数量更多、粒度更小的变更；以 Google 的规模而言，这是一项艰巨挑战。</p>
+</dd>
+<dt>更庞大的服务生态</dt>
+<dd>
+<p>智能体化软件开发带来的不仅是代码量大幅增长，整个服务生态中的系统数量也会显著增加。系统越多，依赖管理就越复杂。AI 还使新工具的创建容易得多，这意味着许多团队都会针对自己的特定用例构建工具。由此造成的工具激增和潜在重复，将成为 SRE 实现标准化目标的一大障碍。要驾驭这种不断上升的复杂度，我们必须在依赖管理、工具追踪和标准化方面作出创新。</p>
+</dd>
+<dt>从专才转向通才</dt>
+<dd>
+<p>SRE 的一项超能力，是在解决问题或设计可靠性架构时，能够跨越产品与系统边界看清全局；尽管如此，SRE 工程师仍各自专精于某些领域。部分领域的规模和复杂度决定了这种专业化不可或缺，基础设施越靠底层尤其如此。随着我们转向智能体化生产，SRE 工程师对所部署系统的直接了解会减少，但凭借对可靠性原则更具普适性的理解，他们仍能引导智能体实现这些目标。</p>
+</dd>
+</dl>
+
+<p class="pagebreak-before less_space">长期以来，SRE 一直通过创新改变可靠性工程的实践方式。事实上，本书第一版已经明确指出，SRE 工程师的一项关键职责是“通过自动化让自己的岗位消失”——运用技术和自动化，消除工作中人工、重复的部分。在 AI 可能重塑众多行业就业格局的世界里，这句格言有了更广泛的含义。</p>
+
+<p>我们选择以“丰裕”为基础看待未来。Google DeepMind CEO Demis Hassabis 最近表示：“假设我们能够安全、负责任地引导 AGI 进入现实世界——我们也正在努力为此尽一份力——那么，我们应当会步入一个极度丰裕的时代。它将为社会带来难以置信的生产力和繁荣；或许，人类历史上将第一次不再以零和方式看待世间万物。”<sup><a data-type="noteref" href="ch23-zh.html#id2958" id="id2958-marker">2</a></sup></p>
+
+<p>因此，尽管认真考虑 AI 可能给 SRE 乃至整个社会带来的影响十分重要，我们仍选择主动拥抱一个丰裕的未来。我们相信，SRE 工程师不会通过自动化让自己的岗位消失，而会通过自动化为自己<em>创造</em>新的岗位。未来的 SRE 角色会有不同面貌，正如今天的角色与本书第一版问世时已经大不相同。不过，优秀 SRE 工程师的许多特质不会改变：强烈的好奇心、广博的技术专长和出色的判断力。未来的运维苦差和值班都会减少，自主权则会增加。但真正令人振奋的是，SRE 的未来将让我们把更多时间投入 SRE 最擅长的事：大规模开展可靠性<a data-primary="AI (artificial intelligence)" data-secondary="SRE evolution" data-startref="ai_sreevolv" data-type="indexterm" id="id2959"/>工程，让可靠性成为系统的默认能力，确保系统“就是好用”。</p>
+</div></section>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="id2957"><sup><a href="ch23-zh.html#id2957-marker">1</a></sup> Marshall Goldsmith 与 Mark Reiter，<em>What Got You Here Won’t Get You There: How Successful People Become Even More Successful</em>（Hachette Books，2007）。</p><p data-type="footnote" id="id2958"><sup><a href="ch23-zh.html#id2958-marker">2</a></sup> Steve Rose，<a href="https://oreil.ly/GvLpf">“Demis Hassabis 谈我们的 AI 未来：‘其影响将是工业革命的 10 倍，速度或许也是 10 倍’”</a>，<em>The Guardian</em>（2025）。</p></div></div></section></body></html>
