@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 2 章 可观测性与监控的调试实践有何不同"><div class="chapter" id="how_debugging_practices_differ_between">
+<h1><span class="label">第 2 章　</span>可观测性与监控的调试实践有何不同</h1>
+<p>上一章介绍了指标这种数据类型的起源，以及人们通常如何用它调试问题。本章将进一步审视传统监控工具对应的具体调试实践，并说明它们与可观测性工具所支持的调试方式有何不同。</p>
+<p>传统监控工具会将系统状况与已知阈值进行比较，据此判断过去已经认识的错误状况是否再次出现。这种方法从根本上说是被动响应式的，因为它只有在识别曾经遇到过的故障模式时才比较有效。</p>
+<p>相比之下，可观测性工具支持反复开展探索性调查，系统地查明性能问题可能发生在何处、又为何发生。借助可观测性，我们可以主动识别任何故障模式，无论它过去是否出现过。</p>
+<p>本章重点分析基于监控的故障排查方法有哪些局限。我们先说明在生产环境中排查软件性能问题时，人们如何使用监控工具；然后考察这些监控方法逐渐固化了哪些行为模式；最后说明可观测性实践如何帮助团队识别已知和未知的问题。</p>
+<section data-type="sect1" data-pdf-bookmark="如何使用监控数据调试问题"><div class="sect1" id="how_monitoring_data_is_used_for_debuggi">
+<h1>如何使用监控数据调试问题</h1>
+<p>《<em>牛津英语词典</em>》将<em>监控</em>定义为：在一段时间内观察和检查某事物的进展或<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与监控数据" id="degmon"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与调试" id="mondatdeg"/>质量，以便对其进行系统性审视。传统监控系统正是通过指标来做这件事：检查应用程序在一段时间内的性能，再报告这个时间区间内汇总后的性能度量。监控系统收集、聚合并分析指标，从中筛查已知模式，判断是否正在出现值得警惕的趋势。</p>
+<p>监控数据主要有两类使用者：机器和人。机器利用监控数据来判断<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与机器" id="idm45204355659312"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与人" id="idm45204355973184"/>检测到的状况是否应该触发告警，或者是否应该宣布系统已经恢复。<em>指标</em>是系统在某个特定记录时段内所处状态的<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="指标" id="idm45204355632432"/><a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="监控数据" id="idm45204355630400"/>数值表示。它很像实体仪表上的读数：看一眼某项指标，我们也许就能判断某种资源在特定时刻是使用过度还是使用不足。例如，此刻的 CPU 利用率可能是 90%。</p>
+<p>但这种表现正在如何变化？仪表上的读数是在上升还是下降？指标通常要汇总起来才更有用。观察指标值随时间变化的<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="趋势" id="idm45204355890880"/><a contenteditable="false" data-type="indexterm" data-primary="指标趋势" id="idm45204356137200"/>趋势，可以帮助我们理解哪些系统行为正在影响软件性能。监控系统收集、聚合并分析指标，从已知模式中筛查人们希望掌握的趋势。</p>
+<p>如果 CPU 利用率在接下来两分钟内一直<a contenteditable="false" data-type="indexterm" data-primary="CPU 利用率" id="idm45204355664112"/>高于 90%，可能有人已经把它定义成了需要告警的状况。这里需要说明的是，对机器而言，指标不过是一个数字。在<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="与系统状态" id="idm45204355662912"/><a contenteditable="false" data-type="indexterm" data-primary="系统状态与指标" id="idm45204355624432"/>指标的世界里，系统状态非常非黑即白：数值和持续时间低于某个界限，机器就不触发告警；超过某个界限，机器就触发告警。至于阈值究竟定在哪里，则由人来决定。</p>
+<p>监控系统检测到人们认定为重要的趋势时，就会发出告警。同理，如果 CPU 利用率在预先配置的一段时间内降到 90% 以下，监控系统便会认定触发告警的错误状况已经消失，从而宣布系统恢复。这个机制十分粗糙，但我们许多故障排查能力都建立在它之上。</p>
+<p>人们如何使用同一批数据调试问题，情况就稍微有趣一些。这些数值度量会被送入<a contenteditable="false" data-type="indexterm" data-primary="时序数据库（TSDB）" id="idm45204355730160"/>时序数据库（TSDB），图形界面再从数据库中取得数据，以图形方式呈现变化趋势。多个图表可以收集并组合起来，形成越来越复杂的视图，这就是<em>仪表板</em>。</p>
+<p>静态仪表板通常<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="与仪表板" id="idm45204356216960"/><a contenteditable="false" data-type="indexterm" data-primary="仪表板" data-secondary="与指标" id="idm45204355615760"/>按服务分别搭建。工程师要了解底层系统的某些方面时，它们是一个实用的起点。仪表板最初的目的正是如此：概览一组指标的变化情况，并突出值得注意的趋势。然而，要在调试过程中发现新问题，仪表板并不是一个好选择。</p>
+<p>仪表板刚出现时，需要关注的系统指标并不多，因此很容易做出一个仪表板，把任何人了解某项服务都需要掌握的关键数据放进去。如今，存储成本低廉，处理能力强大，我们能够收集的系统数据似乎没有上限。现代服务通常会收集多到无法全部塞进同一个仪表板的指标。可许多工程团队仍然执意要把它们统统装进一个视图——毕竟，这不正是仪表板许下的承诺吗？</p>
+<p>为了让所有内容都能放进仪表板，指标往往会被聚合和取平均值。这些聚合值或许能表达某种特定状况，例如整个集群的平均 CPU 利用率高于 90%。但它们已经无法让人真正看清对应的底层系统里正在发生什么，也不会告诉你究竟是哪些进程造成了这种状况。为了缓解这个问题，一些厂商在仪表板界面中加入了筛选和逐层下钻功能，让用户能够深入数据、缩小可视化范围，从而提高仪表板作为调试工具的实用性。</p>
+<p>然而，使用仪表板有效排查问题的<a contenteditable="false" data-type="indexterm" data-primary="仪表板" data-secondary="与故障排查" id="idm45204355817872"/><a contenteditable="false" data-type="indexterm" data-primary="故障排查" data-secondary="与仪表板" id="idm45204355712448"/>能力，受限于你能否预先声明那些描述潜在调查目标的条件。你必须提前指定，希望能够沿着哪一小组维度拆分数值。只有事先这样做，仪表板工具才能为相关列建立必要的索引，以支持你想进行的分析。而面对高基数数据组，这种索引方式也会受到严重阻碍。使用基于指标的工具时，不可能随意在多个图表中加载高基数数据。</p>
+<p>要求用户预见并定义所需条件，等于把发现数据的责任推给了用户。在调试过程中想发现新的系统线索，你能做到什么，取决于调查开始前是否已经预测到了相应条件。例如，调查途中你也许发现，按实例类型对 CPU 利用率分组很有帮助。但因为没有预先添加必要的标签，此时已经无法这样做。</p>
+<p>从这个意义上说，利用指标发现新的系统线索，本质上是一种被动响应式的方法。然而，尽管存在这些限制，整个软件行业似乎仍习惯于依靠仪表板调试问题。这种被动性其实很好理解：许多年来，指标一直是行业所能获得的最佳故障排查工具。我们已经把这种限制视为故障排查的默认方式，以至于它如何影响我们的排查行为，乍看之下可能并不明显。</p>
+<section data-type="sect2" data-pdf-bookmark="使用仪表板时的故障排查行为"><div class="sect2" id="troubleshooting_behaviors_when_using_da">
+<h2>使用仪表板时的故障排查行为</h2>
+<p>下面这个场景，对负责管理生产服务的工程师来说应该很熟悉。如果你正是<a contenteditable="false" data-type="indexterm" data-primary="仪表板" data-secondary="故障排查行为" id="idm45204355592256"/><a contenteditable="false" data-type="indexterm" data-primary="故障排查" data-secondary="行为、仪表板" id="idm45204355652528"/>这样的工程师，请设身处地代入其中，并从这个角度审视自己在工作环境里也会做出的种种假设。如果你平时并不负责管理生产服务，则可以从以下场景中寻找上一节描述的那些局限。</p>
+<p>新的一天开始了。你走到办公桌前，首先做的事情之一，就是扫一眼随时显示在那里的几组仪表板。仪表板系统希望成为“一块玻璃看全局”的统一窗口，让你能快速看到应用系统的方方面面、各个组件以及它们的健康状态。你还有几块仪表板负责提供高层汇总，展示重要的顶层业务指标。例如，你可以看到应用是否又创下了流量纪录、是否有应用在夜间被 App Store 下架，以及其他各种需要立即关注的关键状况。</p>
+<p>你扫视这些仪表板，是为了寻找熟悉的状况，让自己确信今天可以安心开工，不必先忙着扑灭生产事故。屏幕上摆着二三十张图，其中许多究竟展示什么，你其实并不清楚。但时间久了，你逐渐相信这些图具有某种预警能力。例如，只要屏幕底部那张图变红，就应该放下手头的一切，在情况恶化前立刻开始调查。</p>
+<p>你也许说不清所有图表实际测量的是什么，但对于自己熟悉的生产服务，它们往往确实能帮助你预测问题出现在哪里。当图表呈现某种走势时，你仿佛获得了预知问题的能力：如果顶部图表的左侧向下凹，而右下角的图表稳步上升，消息队列肯定出了问题；如果中间的方框每五分钟出现一次尖峰，背景颜色也比平时红上几分，那就是某条数据库查询不正常。</p>
+<p>就在查看这些图表时，你发现缓存层似乎出了问题。仪表板上没有任何地方明确写着“主缓存服务器正在过热”。但你已经非常了解自己的系统，只需解读屏幕上的模式，就能立刻采取数据本身根本没有明确指出的行动。你以前见过这类问题；过去吃过的亏告诉你，这种特定的指标组合代表缓存出了故障。</p>
+<p>看到这个模式后，你迅速打开系统缓存组件的仪表板，验证自己的判断。猜测得到确认，你马上着手修复。同样的方法还适用于不少其他模式。久而久之，你学会了从这项生产服务的种种迹象中揣摩问题来源，就像根据茶叶残渣占卜一样。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="凭直觉排查问题的局限"><div class="sect2" id="the_limitations_of_troubleshooting_by_i">
+<h2>凭直觉排查问题的局限</h2>
+<p>许多工程师都非常熟悉<a contenteditable="false" data-type="indexterm" data-primary="故障排查" data-secondary="依靠直觉" id="idm45204355588544"/><a contenteditable="false" data-type="indexterm" data-primary="凭直觉排查问题" id="idm45204355714208"/>这种排查方式。请问问自己：调查问题时，你在系统各个组件之间来回跳转，有多少判断依赖直觉？整个行业通常很看重这种直觉，多年来它确实也带来了不少帮助。但再问自己一个问题：如果仍把你放在同样的仪表板工具前，换成一个完全不同的应用——使用不同语言、采用不同架构——你还能揣摩出同样的答案吗？当左下角变成蓝色时，你会知道该做什么，甚至知道是否需要采取行动吗？</p>
+<p>答案显然是否定的。不同应用技术栈出现的各种系统问题，在仪表板上的表现相差很大。但从整个行业来看，这却是我们与系统交互的主要方式。一直以来，工程师依赖塞满数据的静态仪表板；这些数据与正确诊断故障真正需要的数据之间，往往还隔着一两层解释。遇到新问题时，这类仪表板的实用性局限就会显现出来。下面来看几个例子。</p>
+<section data-type="sect3" data-pdf-bookmark="示例 1：相关信息不足"><div class="sect3" id="example_one_insufficient_correlation">
+<h3>示例 1：相关信息不足</h3>
+<p>一位工程师添加了索引，想知道<a contenteditable="false" data-type="indexterm" data-primary="凭直觉排查问题" data-tertiary="与相关性" id="idm45204355628256"/><a contenteditable="false" data-type="indexterm" data-primary="凭直觉排查问题" data-secondary="与相关性" id="idm45204355647360"/>查询速度是否因此达到了预期，同时还想知道有没有产生其他意外影响。工程师可能会提出以下问题：</p>
+<ul>
+<li><p>某条已知存在性能问题的查询，扫描的行数是否比以前少了？</p></li>
+<li><p>查询规划器选择新索引的频率如何？哪些查询会选择它？</p></li>
+<li><p>整体写入延迟是否上升？平均值以及第 95、第 99 百分位值是否上升？</p></li>
+<li><p>与原来的查询计划相比，使用这个索引时查询更快还是更慢？</p></li>
+<li><p>假设使用了索引合并，还有哪些索引会与新索引一起使用？</p></li>
+<li><p>这个索引是否让其他索引变得多余，从而可以删除它们，释放一部分写入能力？</p></li>
+</ul>
+<p>这些只是少数示例，还可以提出更多问题。然而，工程师手里只有一个仪表板，以及 CPU 平均负载、<a contenteditable="false" data-type="indexterm" data-primary="CPU 平均负载" id="idm45204356107312"/>内存使用量、索引计数器和大量其他主机及数据库内部统计数据的图表。他们无法按用户、查询、目标 IP、源 IP 或类似维度切分和细查数据，只能用肉眼观察大致变化，主要依据时间戳做出一个看似有依据的猜测。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="示例 2：没有逐层下钻"><div class="sect3" id="example_two_not_drilling_down">
+<h3>示例 2：没有逐层下钻</h3>
+<p>一位工程师发现了一个会意外让数据过期的缺陷，想知道它影响的是<em>所有</em>用户，还是<a contenteditable="false" data-type="indexterm" data-primary="凭直觉排查问题" data-secondary="与逐层下钻" id="idm45204360568336"/><a contenteditable="false" data-type="indexterm" data-primary="故障排查" data-secondary="凭直觉" data-tertiary="与逐层下钻" id="idm45204355561536"/><a contenteditable="false" data-type="indexterm" data-primary="逐层下钻与凭直觉排查问题" id="idm45204355560416"/>只影响部分分片。可是仪表板只能显示某一个数据分片的磁盘空间正在以可疑的速度下降。工程师很快便认定问题仅限于这个分片，随后转去处理其他事情，却没有意识到另一个分片的磁盘空间之所以看起来保持稳定，是因为当时恰好还在执行导入操作。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="示例 3：在工具之间来回切换"><div class="sect3" id="example_three_tool_hopping">
+<h3>示例 3：在工具之间来回切换</h3>
+<p>一位工程师看到某个时刻的错误数突然上升，于是逐页翻看仪表板，寻找<a contenteditable="false" data-type="indexterm" data-primary="故障排查" data-secondary="凭直觉" data-tertiary="在工具间切换" id="idm45204355611552"/><a contenteditable="false" data-type="indexterm" data-primary="凭直觉排查问题" data-secondary="在工具间切换" id="idm45204355612704"/><a contenteditable="false" data-type="indexterm" data-primary="在工具间切换" id="idm45204355612448"/>同一时刻其他指标是否也有尖峰。他确实找到了几个，却无法判断哪些是错误的原因、哪些只是结果。于是他转到日志工具，开始用 grep 搜索错误。找到某个错误的请求 ID 后，他又打开追踪工具，把错误 ID 复制粘贴进去。（如果这个请求没有被追踪，就只能一遍遍重复上述过程，直到碰到一个有追踪记录的请求。）</p>
+<p>这些监控工具也可以<span class="keep-together">随着时间推移而</span>更准确地检测细粒度问题——前提是团队已经形成稳健的传统：每次事故后都进行复盘，并尽可能根据复盘结果添加自定义指标。通常的过程是，值班工程师查明问题，或者至少形成一个合理假设，同时确定究竟哪些指标能够回答这个问题。然后他们发布一项变更，创建并开始采集这些指标。当然，现在再想确认上一次变更是否产生了你所猜测的影响已经太迟了。除非能完整重放完全相同的场景，否则无法回到过去重新采集当时缺失的自定义指标。不过人们会说，如果问题再次出现，下次就能得到确定答案。</p>
+<p>前面几个示例中的工程师可能会回头添加各种自定义指标：每一类查询的指标、每个集合的数据过期率、每个分片的错误率，等等。（他们甚至可能一发不可收拾，为每一类查询的锁使用量、每个索引的命中次数、执行时间的各个区间等全部添加自定义指标——然后在下个账期发现，监控费用足足翻了一倍。）</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="传统监控从根本上是被动响应式的"><div class="sect2" id="traditional_monitoring_is_fundamentally">
+<h2>传统监控从根本上是被动响应式的</h2>
+<p>前面描述的方法完全是<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="被动响应的本质" id="monnat"/>被动响应式的，但许多团队接受了这种常态，认为故障排查本来就该这样做。往好里说，这就像拿关键遥测数据玩打地鼠：问题出现后永远只能追在后面补救。而且代价相当高昂，因为指标工具通常按自定义指标数量计价，费用会随数量线性增长。许多团队兴冲冲地全面采用自定义指标，看到费用账单时却当场傻眼，最后只能回头删掉其中的大部分。</p>
+<p>你的团队是否也是如此？在一周内维护生产服务的日常工作中，可以留意以下迹象来判断：</p>
+<ul>
+<li><p>生产环境出现问题时，你是沿着实际可见的系统信息线索，判断应该去哪里调查？还是凭直觉寻找问题？你是否又去了上一次找到答案的地方？</p></li>
+<li><p>你是否依赖自己对系统及其历史问题的深入了解？使用故障排查工具调查问题时，你是在探索性地寻找线索，还是在努力证实某个猜测？例如，如果各处延迟都变慢，而可能造成问题的数据库和队列有几十个，你能否利用数据确定延迟究竟来自哪里？还是照例猜测肯定是 MySQL 数据库出了问题，然后查看 MySQL 图表来证实自己的判断？</p>
+<p>你有多少次会凭直觉直接跳到一个解决方案，再寻找证据确认它正确并据此行动，最后却漏掉真正的问题——因为得到证实的假设其实只是一个症状，或只是结果而不是原因？</p></li>
+<li><p>故障排查工具是否会针对你的问题给出精确答案，并直接把你引向结论？还是必须依靠对系统的熟悉程度，自己解读和转换工具提供的信息，才能得到真正需要的答案？</p></li>
+<li><p>你有多少次在不同工具之间反复跳转，试图关联各处观察到的模式，并依靠自己在互不相连的数据源之间维持调查上下文？</p></li>
+<li><p>最重要的是，团队里最擅长调试的人是否总是任职时间最长的人？如果是，这几乎可以直接证明：你们对系统的大部分认识并非来自工具这类人人可用的方法，而仅仅来自个人亲手积累的经验。</p></li>
+</ul>
+<p>猜测远远不够。相关性不等于因果关系。你真正想问的具体问题，与现有仪表板能够提供的答案之间，往往隔着一道巨大鸿沟。你不应该只能靠信念上的一跃来连接原因与结果。</p>
+<p>再考虑确认偏误足以扭曲判断的巨大影响，情况就更加糟糕。使用这样的系统，你不可能找到自己根本不知道要寻找的东西，也无法提出那些很久以前未能预见、因而没有提前准备的问题。</p>
+<p>一直以来，工程师不得不把各种数据源提供的零散答案拼在一起，再结合自己对系统形成的直觉，才能诊断问题。整个行业已经接受了这种常态。但系统日益复杂，其众多活动部件已经超出任何个人或团队凭直觉理解的能力范围，因此我们显然必须摆脱这种被动响应而且<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与监控数据" data-startref="degmon" id="idm45204356163296"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与调试" data-startref="mondatdeg" id="idm45204355877712"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="被动响应的本质" data-startref="monnat" id="idm45204356134016"/>处处受限的方法。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性如何改善调试"><div class="sect1" id="how_observability_enables_better_debugg">
+<h1>可观测性如何改善调试</h1>
+<p>如上一节所述，监控是一种被动响应式方法，最适合检测已知<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="调试优势" id="obvdegad"/><a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="可观测性的优势" id="degobad"/>问题和已经识别出的模式；这种模型以告警和事故为中心。可观测性则不同：不需要预先预测问题会发生在哪里、以何种方式发生，你就能沿任意维度或多个维度的组合，明确找出任何问题的来源；这种模型以提问和理解为中心。</p>
+<p>下面从三个方面比较监控与可观测性的差异：是否依赖组织内部知识、能否发现隐藏问题，以及诊断生产问题时有多大把握。后续章节会用更深入的示例说明这些差异为何出现、又如何表现。这里先从较高层次进行比较。</p>
+<p><em>组织内部知识</em>是<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与组织内部知识" id="idm45204355693552"/><a contenteditable="false" data-type="indexterm" data-primary="组织内部知识" id="idm45204355591248"/>没有写下来的信息：组织中有些人知道，其他人却未必了解。采用监控方法的团队常常认为资历是掌握知识的关键。团队里任职最久的工程师往往最擅长调试，也是其他人走投无路时最后求助的对象。如果调试能力来自个人解读已知模式的经验，这种倾向并不令人意外。</p>
+<p>实践可观测性的团队则会走向截然不同的方向。使用可观测性工具时，团队中最优秀的调试者通常是好奇心最强的工程师。实践可观测性的工程师可以通过探索性提问来审视系统，并根据发现的答案继续提出开放式问题（参见<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>）。可观测性看重的不是对某个特定系统的深入了解和由此产生的调查直觉，而是能够迁移到不同系统上的熟练调查能力。</p>
+<p>在寻找深藏于复杂系统中的<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与隐藏问题" id="idm45204355762032"/><a contenteditable="false" data-type="indexterm" data-primary="隐藏问题与可观测性" id="idm45204355638752"/>问题时，这种转变的影响最为明显。依赖直觉和猜测的被动监控方法也容易受到确认偏误影响，从而掩盖问题的真正来源。检测到问题后，人们会根据其行为模式与已知问题有多相似来作出诊断。结果可能只是处理了症状，却始终没有触及真正的根源。工程师猜测发生了什么，急于证实猜测，然后缓解症状，却从未彻底查清问题为何发生。更糟的是，如果修复的是症状而不是原因，团队接下来要面对的就会从一个问题变成两个。</p>
+<p>可观测性不依赖专家的预先判断，而是允许工程师把每次调查都当成一个新问题。检测到异常后，即使触发条件看起来与过去的问题相似，工程师也应该能够像一步接一步向前走那样，沿着系统信息留下的线索继续调查。你可以让数据引导自己逐步得出正确答案——每一次都如此。这种有条理的方法意味着，任何工程师都能诊断任何问题，无须先对系统了如指掌，再凭直觉推断复杂得难以理解的系统应该如何处理。此外，这套方法带来的客观性，使工程师能够找到当前具体问题的根源，而不是再次处理过去相似问题表现出来的症状。</p>
+<p>转向客观且有条理的调查方式，也能增强整个团队诊断<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="诊断生产问题" id="idm45204364998576"/><a contenteditable="false" data-type="indexterm" data-primary="生产问题诊断" id="idm45204365027952"/><a contenteditable="false" data-type="indexterm" data-primary="诊断生产问题" id="idm45204355509168"/>生产问题的信心。在基于监控的系统中，数据已被预先聚合，无法支持灵活探索，因此只能由人负责在不同工具之间来回跳转，并关联各处观察结果。想要放大细节或提出新问题时，他们必须一边从仪表板切换到日志，一边在脑中保留上下文；从日志转到追踪时要再做一次，随后返回时还要继续。面对多个彼此不兼容、内容不一致的数据源和事实来源，这种上下文切换容易出错、让人疲惫，而且往往根本无法完成。例如，如果需要把 TCP/IP 数据包与应用遇到的 HTTP 错误关联起来，或者把资源耗尽错误与较高的内存淘汰率联系起来，调查过程内含的换算误差很可能已经大到与其费力分析，还不如随机猜一个答案。</p>
+<p>可观测性工具会把遥测数据中的高基数、<a contenteditable="false" data-type="indexterm" data-primary="基数" data-secondary="遥测数据" id="idm45204364910176"/><a contenteditable="false" data-type="indexterm" data-primary="维度" data-secondary="遥测数据" id="idm45204362477568"/><a contenteditable="false" data-type="indexterm" data-primary="遥测" data-secondary="高基数上下文" id="idm45204355494176"/><a contenteditable="false" data-type="indexterm" data-primary="遥测" data-secondary="高维度上下文" id="idm45204356110992"/>高维度上下文汇集到一个地方，调查人员可以轻松切分和细查数据，放大或缩小观察范围，或者沿线索找到确定答案。工程师应该能够稳定而自信地推进调查，不必因为不断切换上下文而分心。此外，由一个工具负责保留上下文后，那些过去只能依靠经验和组织内部知识拼凑出的隐性认识，就会变成有关系统的显式数据。可观测性使关键知识不再只存在于最资深工程师的头脑里，而是进入所有工程师都能按需探索的共享现实。在本书后续章节深入介绍可观测性工具的各项功能时，你会看到如何获得这些收益。<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="调试优势" data-startref="obvdegad" id="idm45204355485264"/><a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="可观测性的优势" data-startref="degobad" id="idm45204355813920"/></p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000002">
+<h1>结语</h1>
+<p>把指标和仪表板与专家知识结合起来，判断生产问题来源的基于监控的调试方法，在软件行业十分普遍。早期应用架构简单，能够收集的数据也有限；传统系统本身并不复杂，因此依靠人的经验和直觉发现系统问题，在当时合情合理。然而，现代应用底层系统的复杂度和规模迅速增长，这种方法很快变得难以为继。</p>
+<p>基于可观测性的调试方法提供了另一条路径。它让工程师能够调查任何系统，无论系统多么复杂，都不必依赖经验或对系统的深入了解来形成猜测。借助可观测性工具，工程师可以有条理、客观地调查任何问题。通过以开放方式审视系统，实践可观测性的工程师能够找出深藏问题的根源，并有把握地诊断生产问题，无论此前是否接触过相应系统。</p>
+<p>接下来，我们将回顾一个在缺少可观测性的情况下扩展应用的真实经历，用具体经验把这些概念串联起来。</p>
+</div></section>
+</div></section></div></body>
+</html>

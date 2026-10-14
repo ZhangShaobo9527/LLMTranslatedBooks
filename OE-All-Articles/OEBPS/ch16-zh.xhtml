@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 16 章 高效数据存储"><div class="chapter" id="efficient_data_storage">
+<h1><span class="label">第 16 章　</span>高效数据存储</h1>
+<p>本章将考察为了在最需要时高效存取可观测性数据，必须解决哪些挑战。速度是数据存取的常见关注点，但其他功能约束也会在数据层形成必须处理的关键难题。规模扩大后，可观测性固有的挑战会格外突出。我们先列出支持可观测性工作流所需的功能要求，再以 Honeycomb 专有 Retriever 数据存储的实现为参考，考察现实中的取舍和可能方案。</p>
+<p>你将了解为了确保可观测性数据的速度、可扩展性和持久性，存取层需要考虑哪些因素；还会了解列式数据存储为何特别适合可观测性数据、如何处理查询工作负载，以及怎样使数据存储既持久又高效。本章方案并不是应对各种取舍的唯一答案，而是构建可观测性方案时取得必要结果的真实案例。</p>
+<section data-type="sect1" data-pdf-bookmark="可观测性的功能要求"><div class="sect1" id="the_functional_requirements_for_observa">
+<h1>可观测性的功能要求</h1>
+<p>生产环境发生中断时，每一秒都很重要。查询可观测性数据必须尽快返回结果。提交查询后<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="功能要求" id="dsfunc"/>，如果还能去泡杯咖啡再等结果，说明使用的是不适合生产环境的工具，这场仗已经输了（参见<a data-type="xref" href="ch08-zh.xhtml#debugging_from_first_principles">“从第一性原理出发调试”</a>）。结果在数秒内返回，才能让可观测性成为有用的调查实践，使你快速迭代，直到找到有意义的结果。</p>
+<p>正如<a data-type="xref" href="part02.xhtml#fundamentals_of_observability">第二部分</a>所述，事件是可观测性的构件，追踪则是彼此相关的一组事件（或追踪跨度）。要在这些事件中找到有意义的模式<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="其中的模式" id="idm45204353507296"/>，必须能够分析高基数、高维度数据。任何事件或追踪跨度中的任何字段<a contenteditable="false" data-type="indexterm" data-primary="字段与查询" id="idm45204353564032"/><a contenteditable="false" data-type="indexterm" data-primary="高基数数据" id="idm45204353563392"/><a contenteditable="false" data-type="indexterm" data-primary="高维度数据" id="idm45204353564544"/>都必须可以查询。事件不能预先聚合，因为任何一次调查中，都无法提前知道哪些字段可能相关。无论多么复杂，所有遥测数据都必须能以聚合前的完整分辨率查询<a contenteditable="false" data-type="indexterm" data-primary="数据与预聚合" id="idm45204353625008"/>，否则调查可能走进死胡同。</p>
+<p>此外，由于不知道事件中的哪个维度可能相关，就不能让某个特定维度的数据检索性能优于其他维度，所有维度都必须同样快。因此，要么为所有可能需要的数据建立索引（通常贵得无法承受），要么在没有索引的情况下始终保持快速检索。</p>
+<p>可观测性工作流中的用户通常希望检索特定时间范围内的数据，所以时间是唯一可以获得特殊待遇的维度。查询必须返回特定时间区间内记录的所有数据，因此时间需要适当索引。TSDB 似乎是显而易见的选择，但本章稍后会看到，把它用于可观测性会遇到一组彼此不兼容的约束。</p>
+<p>可观测性数据用于调试生产问题，因此必须知道采取的具体措施是否解决了问题。陈旧数据可能让工程师在错误线索上浪费时间，或者对系统当前状态得出错误结论。高效可观测性系统不仅应包含历史数据，还应包含近实时反映当前状态的新鲜数据。从系统接收数据到数据可以查询，最多只能相隔几秒。</p>
+<p>最后，数据存储还必须持久、可靠。关键调查期间所需的可观测性数据不能丢失，也不能因为数据存储中的某个组件失败而耽误关键调查。任何数据检索机制都必须容错，设计上要能在底层工作节点失败时仍迅速返回查询结果。数据存储的持久性还必须承受自身基础设施故障，否则在调试受监控的生产服务为何不可用时，可观测性方案本身也可能无法使用。</p>
+<p>为了支持实时调试工作流，必须满足以上功能要求；传统数据存储方案通常不足以胜任可观测性。在较小规模下，较容易在这些参数范围内实现性能。本章将考察超出单节点存储方案后，这些问题如何显现。</p>
+<section data-type="sect2" data-pdf-bookmark="时序数据库不足以支持可观测性"><div class="sect2" id="time_series_databases_are_inadequate_fo">
+<h2>时序数据库不足以支持可观测性</h2>
+<p>从根本上说，可观测性数据由结构化事件组成<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="TSDB（时序数据库）" id="dattim"/><a contenteditable="false" data-type="indexterm" data-primary="时序数据库（TSDB）" id="idm45204354219184"/><a contenteditable="false" data-type="indexterm" data-primary="数据库" data-secondary="时序" id="datser"/>，表示程序执行信息。如<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>所示，结构化事件本质上是键值对集合。在追踪中，结构化事件可以彼此关联<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="结构化" id="idm45204353497040"/><a contenteditable="false" data-type="indexterm" data-primary="结构化事件" id="idm45204353694640"/><a contenteditable="false" data-type="indexterm" data-primary="键值对与结构化事件" id="idm45204353503424"/><a contenteditable="false" data-type="indexterm" data-primary="父子关系与结构化事件" id="idm45204353502352"/>，以可视化追踪跨度之间的父子关系。按照<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>的自动插桩用例，部分字段可能是“已知”或可预测的；但最有价值的数据由具体应用定制，往往临时产生，因此存储它的模式通常动态而灵活。</p>
+<p>正如<a data-type="xref" href="ch09-zh.xhtml#how_observability_and_monitoring_come_t">第 9 章</a>所述，时序数据（指标）把系统性能聚合成简单度量。指标将特定时间窗口内所有底层事件聚合为一个简单、可分解的数值，并附带一组标签。这样可以减少发送到遥测后端数据存储的数据量，提高查询性能，却限制了日后能从数据中获得的答案。某些指标数据结构，例如生成直方图的结构，可能稍复杂一些，但本质上仍把相近值范围放入同一分桶，并记录相近值事件的数量（参见<a data-type="xref" href="#a_prototypical_tsdb_showing_a_limited_a">图 16-1</a>）。</p>
+<figure class="width-70"><div id="a_prototypical_tsdb_showing_a_limited_a" class="figure">
+<img src="Images/oben_1601.png" width="1275" height="534"/>
+<h6><span class="label">图 16-1　</span>典型 TSDB 只能容纳有限基数和维度：HTTP 方法与状态码作为标签，按时间戳分桶</h6>
+</div></figure>
+<p>传统上，<em>时序数据库</em>（TSDB）用于存储聚合指标。时序存储机制通过确保新的聚合与标签组合很少出现，摊薄额外流量的成本。为每条独特时序创建记录或数据库行的开销很高，但向已有时序追加数值度量的成本很低。在查询端，TSDB 的主要资源成本是找出哪些时序匹配特定表达式；扫描结果集成本较低，因为数百万事件已经缩减为少量按时间窗口统计的数量。</p>
+<p class="pagebreak-before less_space">理想情况下，也许可以直接改用同一个 TSDB 记录结构化事件。然而，可观测性要求从高基数、高维度数据中揭示有意义的模式，这使 TSDB 的成本无法承受。可以把每个维度转换成标签名称、把每个值转换成标签值，但每种独特标签值组合都会创建一条新时序（参见<a data-type="xref" href="#the_explosion_of_that_same_tsdb_when_a">图 16-2</a>）。</p>
+<figure><div id="the_explosion_of_that_same_tsdb_when_a" class="figure">
+<img src="Images/oben_1602.png" width="1431" height="1396"/>
+<h6><span class="label">图 16-2　</span>加入高基数索引 <code>userid</code> 后，同一个 TSDB 发生爆炸式增长</h6>
+</div></figure>
+<p class="pagebreak-before less_space">只有频繁复用并递增相同标签时，新建时序的成本才能在多次度量中摊薄至零。但每个结构化事件往往都是<em>独一无二</em>的，创建行的开销会随接收事件数量线性增长。这种<em>基数爆炸</em>使 TSDB 不适合存储结构化事件<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="TSDB（时序数据库）" data-startref="dattim" id="idm45204353451808"/><a contenteditable="false" data-type="indexterm" data-primary="数据库" data-secondary="时序" data-startref="datser" id="idm45204353451040"/>，我们需要其他方案。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="其他可选数据存储"><div class="sect2" id="other_possible_data_stores">
+<h2>其他可选数据存储</h2>
+<p>乍看之下，存储结构化键值对集合，似乎类似 MongoDB 或 Snowflake 等通用 NoSQL 数据库能够处理的其他工作负载。然而，事件遥测数据的进入模式（事件摄取）确实很适合这些数据库，但由于可观测性的功能要求，数据的输出模式（事件查询）与传统工作负载截然不同。</p>
+<p><a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>介绍的迭代分析方法<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="迭代分析方法" id="idm45204353521040"/>要求同时理解多个维度，无论每个维度包含多少种可能值。换言之，必须能够查询任意维度和基数的数据。除非查询只使用已经建立索引的特定字段，否则 NoSQL 数据库执行这种任意查询很可能很慢。但预先索引无法支持任意切分数据；只能每次沿一个维度切分，而且仅限于事先记得建立索引或预聚合的维度。如果每个值都独一无二，它在索引中占用的空间将与原表相同；给每列建立索引后，索引集合甚至比原始数据更大。因此，调整 NoSQL 数据库来优化查询并不可行。与其设法让一部分查询变快，能否让<em>所有</em>查询都在合理时间内完成？</p>
+<p>Facebook 的 Scuba 系统<a contenteditable="false" data-type="indexterm" data-primary="Scuba" id="idm45204353442464"/>通过消耗大量 RAM、允许全表访问，有效解决了实时可观测性查询问题。<sup><a data-type="noteref" id="ch01fn12-marker" href="ch16-zh.xhtml#ch01fn12">1</a></sup>但它用系统内存存储数据，以换取更快查询。这项实现决策使 Scuba 在 Facebook 之外大规模采用时经济上不可行。本书写作时，1 TB RAM 约需 4,000 美元，1 TB SSD 则约 100 美元。把 Scuba 用作数据存储，组织只能查询 RAM 容纳的数据。对基础设施达到合理规模的大型组织而言，这会把可查询遥测数据的时间窗口限制在几分钟，而不是几小时或几天。</p>
+<p>也许可以考察其他存储类事件数据的系统，也就是追踪方案的遥测后端。本书写作时，已经有一些开源大规模存储引擎实现<a contenteditable="false" data-type="indexterm" data-primary="开源存储引擎" id="idm45204353492432"/><a contenteditable="false" data-type="indexterm" data-primary="存储引擎与开源" id="idm45204353888448"/>，大多能够<a href="https://www.jaegertracing.io/docs/1.17/features/#multiple-storage-backends">与 Jaeger 追踪前端互操作</a>，例如 Apache Cassandra、Elasticsearch/OpenSearch、ScyllaDB 和 InfluxDB。它们能使用模式摄取并持久存储追踪数据，却未必专门为追踪设计。Grafana Tempo 是专为追踪构建的较新实现，但正如本章将说明的，它不一定针对可观测性的功能查询要求设计。长期来看，最佳开源方案也许是采用 <a href="https://clickhouse.com">ClickHouse</a> 或 <a href="https://druid.apache.org">Apache Druid</a> 等列式存储，再像 <a href="https://signoz.io/docs/architecture">SigNoz</a> 一样扩展以优化追踪。本书写作时，Polar Signals 刚发布 <a href="https://www.polarsignals.com/blog/posts/2022/05/04/introducing-arcticdb">ArcticDB</a>，这是一种用于剖析数据<a contenteditable="false" data-type="indexterm" data-primary="剖析" id="idm45204353635440"/>和其他可观测性数据的开源列式存储。</p>
+<p>下一节将考察追踪数据存储和查询的技术要求，使其满足可观测性的功能要求。技术上任何事情都可能实现，但本章重点关注大规模使用时经济可行的实现，以便存储事件数据，并获得超越逐条检查单个追踪的洞见。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据存储策略"><div class="sect2" id="data_storage_strategies">
+<h2>数据存储策略</h2>
+<p>从概念上看，宽事件及其表示的追踪跨度可以视为一张由行和列组成的表。表有两种存储策略<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="行式" id="datrow"/><a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="列式" id="datcol"/><a contenteditable="false" data-type="indexterm" data-primary="行式存储" id="rowstor"/><a contenteditable="false" data-type="indexterm" data-primary="列式存储" id="colstor"/>：行式存储和列式存储。在可观测性领域，<em>行</em>对应单个遥测事件，<em>列</em>对应事件的字段或属性。</p>
+<p><em>行式存储</em>把每行数据放在一起（如<a data-type="xref" href="#a_row_storecomma_indicating_sharding_of">图 16-3</a>），假定整行会一次取出。<em>列式存储</em>则把同一列的数据放在一起，与所属行分离。两种方法各有取舍。为了说明这些取舍，我们使用久经考验的 <a href="https://oreil.ly/TtCUa">Dremel</a>、ColumnIO 和 Google <a href="https://oreil.ly/uILVW">Bigtable</a> 代表更广泛的计算与存储模型，而不聚焦目前实际使用的某个开源遥测存储。事实上，<a href="https://oreil.ly/cW1Px">Dapper 追踪系统</a>最初就建立在 Bigtable 数据存储之上。</p>
+<figure><div id="a_row_storecomma_indicating_sharding_of" class="figure">
+<img src="Images/oben_1603.png" width="1442" height="640"/>
+<h6><span class="label">图 16-3　</span>行式存储：连续行分片后作为单个单元（tablet）放在一起，供查找和检索</h6>
+</div></figure>
+<p>Bigtable 采用行式方法<a contenteditable="false" data-type="indexterm" data-primary="Bigtable" data-secondary="行式方法" id="idm45204353411664"/>。数据经过序列化，主键又建立了索引（例如按时间），因此检索单条追踪和跨度很快。为了取得一行或扫描少数连续行，Bigtable 服务器只需取回一组包含元数据的文件，也就是一个 <em>tablet</em>。要高效处理追踪，Bigtable 必须维护按追踪 ID 或时间等主行键排序的行列表。不按严格顺序到达的行键，需要服务器插入适当位置，导致写入时增加排序工作；非顺序读取工作负载本来不需要这些工作。</p>
+<p>Bigtable 是可变数据存储，支持更新、删除语义和动态重新分区。换言之，它用复杂性和性能换取数据处理灵活性。Bigtable 暂时使用内存中的变更日志，加上不断叠加的一组键值对文件来管理数据更新；上层文件会覆盖栈中较低位置设置的值。更新积累到一定程度后，必须定期把叠加文件“压实”回不可变基础层，按优先级顺序重写记录。压实过程会产生昂贵的磁盘 I/O。</p>
+<p>可观测性工作负载实际上是一次写入、多次读取，压实过程因此造成性能困境。新摄取的可观测性数据必须在数秒内可以查询；使用 Bigtable 时，要么持续运行压实，要么每次提交查询都读取层层叠加的所有不可变键值对。不读取该行 tablet 的所有列，就无法重建相关字段和值、分析任意字段；每次写入后都压实同样不现实。</p>
+<p>Bigtable 可以选择为列族中的一组列配置<a contenteditable="false" data-type="indexterm" data-primary="Bigtable" data-secondary="局部性组" id="idm45204353966304"/><em>局部性组</em>，与其他列族分开存储。但即使只查看局部性组中的一列，也仍会读取整个组，再丢弃绝大多数数据；这会拖慢查询，浪费 CPU 和 I/O。可以为选定列增加索引，或按预测的访问模式拆分局部性组，但这种变通与可观测性的任意访问要求相矛盾。组内列的稀疏数据在 Bigtable 中成本较低，因为列只存在于局部性组内；但整个局部性组不应为空，因为组本身也有开销。</p>
+<p>如果走到极端，为每列增加索引或把每列放入独立局部性组，成本会不断累积。<sup><a data-type="noteref" id="ch01fn13-marker" href="ch16-zh.xhtml#ch01fn13">2</a></sup>Google Dapper 后端论文指出，仅为 Dapper Depot 在 Bigtable 中给三个字段（服务、主机和时间戳）生成索引，索引数据大小就达到追踪数据本身的 76%。<sup><a data-type="noteref" id="ch01fn14-marker" href="ch16-zh.xhtml#ch01fn14">3</a></sup>因此，如果能彻底消除索引需求，就能以更务实的方式存储分布式追踪。</p>
+<p>不同于 Bigtable 等策略，列式方法能够迅速只检查所需数据子集。传入数据被分解为各列（如<a data-type="xref" href="#column_store_showing_data_broken_down_b">图 16-4</a>），并用合成的 <code>id</code> 列为每行提供主键。每个列文件分别存储主键到该列值的映射，因此可以独立查询和访问每列数据。</p>
+<p>然而，列式方法不保证某行数据按特定顺序存储。访问一行可能需要扫描任意数量的数据，最坏情况是全表。Dremel 和 ColumnIO 存储模型尝试用手工粗粒度分片解决问题，例如为 <code>tablename.20200820</code>、<code>tablename.20200821</code> 等建立独立表，再由用户在查询时确定并连接各表。数据量很大时，管理会极其痛苦：分片要么大到无法高效查询，要么拆成大量小分片（如 <code>tablename.20200820-000123</code>），让人难以用正确分片构造查询。</p>
+<figure><div id="column_store_showing_data_broken_down_b" class="figure">
+<img src="Images/oben_1604.png" width="1442" height="640"/>
+<h6><span class="label">图 16-4　</span>列式存储按列而不是按行拆分数据；各列可以独立访问，但扫描完整行需要取回每个列文件</h6>
+</div></figure>
+<p>行式和列式方法都无法完全满足可观测性的功能需求。为了处理两者的取舍，可以结合各自优势，采用混合方法满足可观测性所需的追踪工作负载。混合方法能够高效地对行和列进行部分扫描。请记住，对可观测性工作负载而言，查询结果迅速返回比结果绝对完美更重要。</p>
+<p>为了说明如何在实践中取得平衡，下面考察 Honeycomb 存储引擎的架构<a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="功能要求" data-startref="dsfunc" id="idm45204353593808"/><a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="行式" data-startref="datrow" id="idm45204353597840"/><a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="列式" data-startref="datcol" id="idm45204353596304"/><a contenteditable="false" data-type="indexterm" data-primary="行式存储" data-startref="rowstor" id="idm45204353383056"/><a contenteditable="false" data-type="indexterm" data-primary="列式存储" data-startref="colstor" id="idm45204353381840"/>；它代表了实现这些功能要求的一种方式。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="案例研究：Honeycomb Retriever 的实现"><div class="sect1" id="case_study_the_implementation_of_honeyc">
+<h1>案例研究：<span class="keep-together">Honeycomb Retriever</span> 的实现</h1>
+<p>本节介绍 Honeycomb 列式数据存储（又称 Retriever）的实现，说明如何用类似设计满足可观测性的功能要求<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" id="idm45204353378576"/><a contenteditable="false" data-type="indexterm" data-primary="Retriever" data-see="Honeycomb" id="idm45204353376880"/>。这套参考架构不是唯一方式；如前所述，也可以以 ClickHouse 或 Druid 为基础构建可观测性后端。不过，我们希望借此展示具体实现和运维取舍，这些内容在理论模型的抽象讨论中通常看不到。</p>
+<section data-type="sect2" data-pdf-bookmark="按时间划分数据"><div class="sect2" id="partitioning_data_by_time">
+<h2>按时间划分数据</h2>
+<p>前面讨论行式与列式存储的挑战时，我们提出一种混合方式<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="分段" id="hnpartdy"/>：按时间戳划分搜索空间，以缩小范围。然而，分布式系统中的时间永远不会完全一致；追踪跨度的时间戳可能是跨度<em>开始</em>而不是结束的时间，所以数据到达时可能比当前时间晚几秒甚至几分钟。为了在中间插入记录而回头修改已经保存到磁盘的字节并不合理，因为这会产生重写数据的成本。那么面对乱序到达的数据，究竟如何高效、可行地划分？</p>
+<p>一种优化是假定事件到达时间通常接近实际生成时间，并在读取时纠正乱序。这样仍可把存储传入数据的文件视为只追加文件，显著简化写入开销。</p>
+<p>Retriever 会把某租户新到达的追踪跨度，插入该租户当前活动的一组存储文件（即<em>分段</em>）末尾。为了读取时查询正确分段，Retriever 会追踪当前分段最早与最新的事件时间戳，形成可能与其他分段窗口重叠的窗口。分段最终必须结束并定稿，因此要选择适当阈值。例如经过一小时、写入超过 25 万条记录，或者写入超过 1 GB 后，Retriever 会把当前分段定稿为只读，并在元数据中记录其最终最早和最新时间戳。</p>
+<p>采用窗口化分段模式后，读取时可以利用各分段时间戳窗口的元数据，只取回包含查询相关时间戳和租户数据集的分段（如<a data-type="xref" href="#segments_selected_for_querying_are_thos">图 16-5</a>）。可观测性工作负载查询通常寻找特定时间范围的数据，例如“现在到两小时前”或“2021-08-20 00:01 UTC 到 2021-09-20 23:59 UTC”。其他时间范围与查询无关；采用这种实现，无须检查时间上与查询窗口不重叠的无关分段。</p>
+<figure><div id="segments_selected_for_querying_are_thos" class="figure">
+<img src="Images/oben_1605.png" width="1448" height="352"/>
+<h6><span class="label">图 16-5　</span>选中查询的分段至少有一部分与查询窗口重叠；开始和结束时间都早于或晚于查询窗口的分段不会参与分析</h6>
+</div></figure>
+<p>按时间分段有两项优势：</p>
+<ul>
+<li><p>只要把每个分段的开始和结束时间戳保存为元数据，而且事件以相对稳定的延迟到达，就无须按事件时间戳排序、把单个事件放入严格顺序。</p></li>
+<li><p>每个分段都是只追加制品，完成后可以原样冻结，无须构建成可变叠加层再定期压实。</p></li>
+</ul>
+<p>分段方法有一个潜在弱点：回填数据与当前数据混合时，例如批处理作业完成后报告几小时前或几天前的时间戳，每个写入分段的元数据都会表明它跨越很宽的时间窗口，不只是几分钟，而可能是几小时或几天。此时，只要查询落在这个宽窗口内就必须扫描分段，而不能只扫描两个更窄的窗口：当前时间，以及回填事件发生前后的时间。Retriever 工作负载至今尚未要求解决这个问题；如果它变得严重，可以叠加更复杂的分段机制<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="分段" data-startref="hnpartdy" id="idm45204353910608"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="在分段内按列存储数据"><div class="sect2" id="storing_data_by_column_within_segments">
+<h2>在分段内按列存储数据</h2>
+<p>与前面介绍的纯 Dremel 式列式方法一样，排除时间因素后，下一种合理的数据拆分方式<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="按列存储" id="honstoco"/>，是把事件分解为组成字段，再把多个事件中的同名字段内容存储在一起。由此形成的磁盘布局，是每个分段中每个字段各有一个只追加文件，另加一个特殊的时间戳索引字段，因为每个事件都必须有时间戳。事件到达时，可以针对它引用的列，在当前活动分段的对应文件中追加条目。</p>
+<p>按照上一节所述，根据分段时间戳完成筛选后，查询时只访问查询指定的相关列文件，就能限制访问的数据量。为了重建源行，每一行都会分配时间戳和分段内相对序号。每个列文件在磁盘上表现为数组，交替保存各行序号，以及按序号对应的该列值。</p>
+<p>例如，以下源行集合（假定按到达时间排序）可以转换成如下形式：</p>
+<pre data-type="programlisting">Row 0: { "timestamp": "2020-08-20 01:31:20.123456",
+ "trace.trace_id": "efb8d934-c099-426e-b160-1145a87147e2", "field1": null, ... }
+Row 1: { "timestamp": "2020-08-20 01:30:32.123456",
+ "trace.trace_id": "562eb967-9171-424f-9d89-046f019b4324", "field1": "foo", ... }
+Row 2: { "timestamp": "2020-08-20 01:31:21.456789",
+ "trace.trace_id": "178cdf06-dbc5-4c0d-b6b7-5383218e1f6d", "field1": "foo", ... }
+Row 3: { "timestamp": "2020-08-20 01:31:21.901234",
+ "trace.trace_id": "178cdf06-dbc5-4c0d-b6b7-5383218e1f6d", "field1": "bar", ... }
+
+Timestamp index file
+idx value
+0 "2020-08-20 01:31:20.123456"
+1 "2020-08-20 01:30:32.123456" (note: timestamps do not need to be chronological)
+2 "2020-08-20 01:31:21.456789"
+3 "2020-08-20 01:31:21.901234"
+[...]
+
+Raw segment column file for column `field1`
+(note there is neither a row index nor value for missing/null values of a column)
+idx value
+1 "foo"
+2 "foo"
+3 "bar"
+[...]</pre>
+<p>列往往为空，或者包含此前已经出现的重复值，因此可以使用字典压缩、稀疏编码和/或游程编码，在序列化整列时减少每个值占用的空间。<sup><a data-type="noteref" id="ch01fn15-marker" href="ch16-zh.xhtml#ch01fn15">4</a></sup>这样既能减少后端存储各层之间需要转移的数据量，也能缩短检索和扫描数据的时间：</p>
+<pre data-type="programlisting">compacted timestamp index file:
+["2020-08-20 01:31:20.123456",
+ "2020-08-20 01:30:32.123456",
+ "2020-08-20 01:31:21.456789",
+ "2020-08-20 01:31:21.901234",
+ ...]
+
+compacted segment column file, with dictionary, for column `example`
+dictionary: {
+  1: "foo",
+  2: "bar",
+  ...
+}
+
+presence:
+[Bitmask indicating which rows have non-null values]
+
+data from non-null row indices:
+[1, 1, 2, ...]</pre>
+<p>列压实以后，可以使用 LZ4 等标准算法压缩该列，或者压缩由一组列文件构成的整个分段，进一步减少归档占用空间。</p>
+<p>在列式存储中，创建和追踪一列的成本，会在写入该列的所有值之间摊薄；指标世界中的对应物，是成本在所有值之间摊薄的一行或一组标签。因此，如果某列偶尔会出现非空值，创建新列的性能成本可以接受；但如果某列只有一行出现一次非空值，之后再也不用，性能就很差。</p>
+<p>实践中，这意味着编写代码时无须担心手工向跨度或事件添加新属性/键名；但不要通过程序创建名为 <code>timestamp_2021061712345</code> 的列，只写一次 <code>true</code> 后永不再用。正确做法是使用 <code>timestamp</code> 作为列值<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="按列存储" data-startref="honstoco" id="idm45204354018096"/>，使用 <code>2021061712345</code> 作为键。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="执行查询工作负载"><div class="sect2" id="performing_query_workloads">
+<h2>执行查询工作负载</h2>
+<p>使用类似 Retriever 设计的列式存储执行查询包含六个步骤：</p>
+<ol>
+<li><p>利用查询的开始/结束时间，以及每个符合条件的分段的开始/结束时间，找出所有可能与查询时间范围重叠的分段<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="查询工作负载" id="honque"/>。</p></li>
+<li><p>针对每个匹配分段独立执行：扫描查询筛选条件（例如 <code>WHERE</code>）或输出（例如 <code>SELECT</code> 或 <code>GROUP</code>）所用列的相关列文件。扫描时追踪当前处理的偏移量，先检查当前偏移行的时间戳，确认它是否位于查询时间范围内；如果不在，就前进到下一个偏移量重试。</p></li>
+<li><p>对于位于时间边界内的行，扫描作为输入或输出的每列在该偏移量上的值；输入筛选条件匹配时，把输出值写入重建的行。行处理完后，把所有打开列文件的偏移量都递增到下一行。单行处理后即可丢弃，因此 RAM 只需保存单个值，而不是分段中该列全部值的整个文件。</p>
+<p>请注意，如果需要在原始时间范围内划分子窗口，例如报告过去两小时的 24 个五分钟窗口，就会隐式执行 <code>GROUP</code>，分组字段为 <code>timestamp</code>。</p></li>
+<li><p>在分段内聚合。针对每个 <code>GROUP</code>，合并第三步 <code>SELECT</code> 的值。例如，<code>COUNT</code> 只统计每个 <code>GROUP</code> 值匹配的行数；<code>SUM(example)</code> 则可能把 <code>example</code> 列全部已识别值按每个 <code>GROUP</code> 值相加。每个分段分析完成后，可以卸载其文件句柄。</p></li>
+<li><p>跨分段聚合：把每个 <code>GROUP</code> 的结果发送给单个工作节点。合并每个分段中各 <code>GROUP</code> 的聚合值，再将其聚合为该时间范围的单个值，或每个时间粒度分桶的一组值。</p></li>
+<li><p>对分组排序，选择排名前 <em>K</em> 的分组加入图表。除非用户明确要求，否则应使用默认 <em>K</em> 值，避免把数千个匹配分组作为完整结果集传输。</p></li>
+</ol>
+<p>下面用伪代码演示：保存累计和或迄今所见最大值，从而计算 <code>SUM</code>、<code>COUNT</code>、<code>AVG</code>、<code>MAX</code> 等。例如，对字段 <code>x</code> 的值按字段 <code>a</code> 和 <code>b</code> 分组，并要求 <code>y</code> 大于零：</p>
+<pre data-type="programlisting">groups := make(map[Key]Aggregation)
+for _, s := range segments {
+  for _, row := range fieldSubset(s, []string{"a", "b", "x", "y"}))
+    if row["y"] &gt; 0 {
+      continue
+    }
+    Key := Key{A: row["a"], B: row["b"]}
+    aggr := groups[Key]
+    aggr.Count++
+    aggr.Sum += row["x"]
+    if aggr.Max &lt; row["x"] {
+      aggr.Max = row["x"]
+    }
+    groups[Key] = aggr
+  }
+}
+for k := range groups {
+  groups[k].Avg = groups[k].Sum / groups[k].Count
+}</pre>
+<p>用于生产时，这段代码需要泛化，以支持任意数量的分组、任意筛选条件，以及跨多个值计算聚合；但它展示了如何以便于高效并行的方式计算聚合。计算复杂聚合需要使用 <a href="https://arxiv.org/abs/1902.04023"><em>t</em>-digest</a> 分位数估计算法和 <a href="https://hal.archives-ouvertes.fr/hal-00406166">HyperLogLog</a> 等算法，例如计算 p99（数值集合的第 99 百分位）和 <code>COUNT DISTINCT</code>（一列中的独特值数量）。可以参考学术文献进一步研究这些复杂算法。</p>
+<p>采用这种方式，可以高效解决高基数和高维度问题。除时间戳外，没有任何维度得到优于其他维度的特殊待遇。可以使用一个或多个字段任意复杂的组合进行筛选，因为读取时会针对所有相关数据临时处理筛选条件。筛选和处理步骤只读取相关列，也只从每列数据流中取出与匹配行 ID 对应的相关值作为输出。</p>
+<p>无须预聚合，也无须人为限制数据复杂性。任何追踪跨度上的任何字段都可查询。写入时摄取并把每条记录拆解为组成列会产生有限成本，读取的计算成本仍保持合理<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="查询工作负载" data-startref="honque" id="idm45204353461904"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="查询追踪"><div class="sect2" id="querying_for_traces">
+<h2>查询追踪</h2>
+<p>从这种列式存储中检索追踪，是一种特殊、退化的查询<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="查询追踪" id="idm45204353386176"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="追踪" id="idm45204353305584"/><a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="查询" id="idm45204353304368"/>。寻找根跨度时，查询 <code>WHERE trace.parent_id</code> 为 <code>null</code> 的跨度。寻找给定 <code>trace_id</code> 的全部跨度、组装追踪瀑布图时，则执行 <code>SELECT timestamp, duration, name, trace.parent_id, trace.span_id WHERE trace.trace_id = "guid"</code>。</p>
+<p>列式存储设计既能获得追踪洞见，也能把追踪分解为单独跨度，再跨多条追踪查询。Retriever 因而可以把某个跨度的持续时间与其他追踪中的类似跨度比较。</p>
+<p>其他基数受限的方案可能特殊处理 <code>trace.trace_id</code>，将其用作索引/查找键，并把给定追踪的所有跨度存储在一起。这样确实能提高单条追踪可视化性能，也通过特殊路径避免每个 <code>trace_id</code> 都独一无二导致的基数爆炸；但它缺乏灵活性，难以把追踪分解为组成跨度进行分析。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="实时查询数据"><div class="sect2" id="querying_data_in_real_time">
+<h2>实时查询数据</h2>
+<p>正如可观测性功能要求所述，数据必须实时可访问<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="实时查询" id="idm45204353334992"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="实时" id="idm45204353295984"/><a contenteditable="false" data-type="indexterm" data-primary="实时查询" id="idm45204353294768"/>。陈旧数据会让操作人员在错误线索上浪费时间，或对系统当前状态得出错误结论。良好的可观测性系统不仅应包含历史数据，还应混入刚刚生成的新鲜数据，因此不能等分段完成定稿、刷新和压缩以后才允许查询。</p>
+<p>Retriever 的实现确保打开的列文件始终可以查询；即使部分文件尚未定稿、压缩，查询过程也能强制刷新以便读取。其他实现也可以允许查询尚未定稿、压缩的分段文件在 RAM 中的数据结构。另一种方案是无论到达多少数据，都每隔几秒强制刷新，但开销显著更高，大规模使用时问题可能最严重。</p>
+<p>第一种方案可以分离摄取与查询过程的关注点。查询处理器完全通过磁盘文件工作；摄取过程只需专注于在磁盘上创建文件，无须维护共享状态。我们发现这是一种优雅且适合 Retriever 需求的方法。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="通过分层降低成本"><div class="sect2" id="making_it_affordable_with_tiering">
+<h2>通过分层降低成本</h2>
+<p>根据管理的数据量，使用不同数据存储层可以大幅节省成本<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="分层" id="idm45204353516928"/><a contenteditable="false" data-type="indexterm" data-primary="分层" id="idm45204353613616"/>。并非所有数据都以相同频率查询。可观测性工作流通常更常查询新数据，事故调查尤其如此。正如前面所述，数据必须在摄取后几秒内可以查询。</p>
+<p>最近几分钟的数据在序列化期间可能需要位于查询节点的本地 SSD 上，但较旧数据可以而且应该卸载到更经济、更有弹性的存储。Retriever 会把超过一定年龄、已经关闭的分段目录压实，例如用表示条目存在/缺失的位掩码重写和/或进行压缩，再上传到长期持久网络文件存储。Retriever 使用 Amazon S3<a contenteditable="false" data-type="indexterm" data-primary="Amazon S3 存储" id="idm45204353479376"/><a contenteditable="false" data-type="indexterm" data-primary="S3（简单存储服务）" id="idm45204353478432"/><a contenteditable="false" data-type="indexterm" data-primary="简单存储服务（S3）" id="idm45204353326800"/>，也可以换用 Google Cloud Storage。日后再次查询旧数据时，可从 S3 取回到执行计算的进程内存；如果它是一组稀疏文件，就在内存中解包，再扫描每个匹配列和分段。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="通过并行提高速度"><div class="sect2" id="making_it_fast_with_parallelism">
+<h2>通过并行提高速度</h2>
+<p>速度是可观测性工作流的另一项功能要求：查询结果必须在数秒内返回<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="并行" id="idm45204354176592"/><a contenteditable="false" data-type="indexterm" data-primary="并行" id="idm45204354177616"/>，才能推动迭代调查。无论查询检索 30 分钟还是整整一周的数据，都必须如此。用户经常需要把当前状态与历史基线比较，才能准确判断行为是否异常。</p>
+<p>实践发现，对云文件存储中的数据采用 MapReduce 式模式和无服务器计算执行查询，速度可能快于由单个查询引擎工作节点在本地 SSD 上串行执行同一查询。最终用户关心的是结果返回速度，而不是数据存在哪里。</p>
+<p>使用前面各节的方法，可以独立计算每个分段的查询结果。只要归约步骤能够接收每个分段的查询输出并合并结果，就无须串行处理分段。</p>
+<p>如果数据已经分层存储在持久网络文件系统中（Retriever 使用 S3），就不会争用某个唯一的、在磁盘上保存字节的查询工作节点。云提供商已经承担以分布式方式保存文件的工作，几乎不会存在单一拥塞点。</p>
+<p>因此，把<a href="https://oreil.ly/ivNPL">映射器—归约器式方法</a>与无服务器技术结合，Retriever 无须自行编写作业管理系统，就能获得分布式、并行且快速的查询结果。云提供商管理无服务器工作节点池，我们只需提供待映射的输入列表。每个 Lambda（或无服务器）函数都是一个映射器，独立处理一个或多个分段目录，再通过一系列中间合并，把结果送入中央归约工作节点，计算最终结果。</p>
+<p>但无服务器函数和云对象存储并非百分之百可靠。实践中，调用时长分布尾部的延迟可能比中位数高出几个数量级。最后 5% 到 10% 的结果可能要几十秒才能返回，甚至<em>永远</em>无法完成。Retriever 采用“没有耐心”的方式及时返回结果：处理分段的请求完成 90% 后，重新请求剩余 10%，但不取消仍在等待的原请求。并行尝试彼此竞速，最先返回者用于填充查询结果。始终重试最慢的 10% 子查询即使多花 10% 成本，对云后端发起另一次读取，也很可能比阻塞在 S3 的“卡死”查询更快；后者也可能受网络 I/O 阻塞，直到超时都无法完成。</p>
+<p>Retriever 通过这种方法缓解分布式性能阻塞，确保查询始终在数秒内返回。对于自己的<span class="keep-together">实现</span>，你需要试验其他方法，以满足可观测性工作负载的需求。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="处理高基数"><div class="sect2" id="dealing_with_high_cardinality">
+<h2>处理高基数</h2>
+<p>如果有人尝试按高基数字段对结果分组，会发生什么？怎样才能在不耗尽内存的情况下仍返回准确值<a contenteditable="false" data-type="indexterm" data-primary="高基数数据" id="idm45204353414608"/><a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="高基数" id="idm45204353341776"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="基数" id="idm45204353486528"/>？最简单的方案是扇出归约步骤，让各归约工作节点只处理所有可能分组中按比例划分的一部分。例如，可以仿照 <a href="https://doi.org/10.1145/964723.383071">Chord</a>：为分组创建哈希，再在覆盖整个键空间的环中查找哈希对应位置。</p>
+<p>但在最坏情况下，可能存在数十万个独特分组。此时需要根据全部归约器的可用内存总量限制返回分组数，估算哪些分组最可能满足用户提供的 <code>ORDER BY</code>/<code>LIMIT</code> 条件，或者直接中止返回分组过多的查询。毕竟，一张高 2,000 像素、挤着十万条独特曲线并糊成一片的图表毫无用处！</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="扩展与持久性策略"><div class="sect2" id="scaling_and_durability_strategies">
+<h2>扩展与持久性策略</h2>
+<p>数据量较小时，较容易跨任意长的时间窗口查询单条低吞吐数据流<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="可扩展性" id="honscal"/><a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="持久性" id="hondur"/><a contenteditable="false" data-type="indexterm" data-primary="扩展" data-secondary="Honeycomb Retriever" id="scah"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="可扩展性" id="qscal"/>。更大的数据集则需要水平扩展，并且必须持久存储，以防数据丢失或节点暂时不可用。任何单个工作节点无论多强，处理传入追踪跨度和宽事件的速度都有根本上限；系统还必须容忍单个节点因为硬件故障或维护等原因重启。</p>
+<p>Retriever 使用流式数据模式实现可扩展性和持久性<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="流式数据" id="idm45204353556272"/>。我们选择不重新发明轮子，在合理之处利用现有方案。Apache Kafka<a contenteditable="false" data-type="indexterm" data-primary="Apache Kafka" id="apkafka"/> 的流式方法让我们能够维护有序、持久的数据缓冲区；生产者、消费者或中间代理重启时，它仍能保持韧性。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>有关 Kafka 的更多信息，请参阅 Gwen Shapira 等人的 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/kafka-the-definitive/9781492043072"><em>Kafka: The Definitive Guide</em></a>（O’Reilly）。</p>
+</div>
+<p class="pagebreak-before less_space">例如，在给定主题和分区中，Kafka 索引 1234567 上存储的行永远位于索引 1234568 的行之前。因此，两个从索引 1234567 开始读取数据的消费者，始终会以相同顺序收到相同记录；两个生产者也永远不会争用同一索引，每个生产者提交的行都会按固定顺序写入。</p>
+<p>接收传入遥测时，应使用轻量、无状态的接收进程验证传入行，再把每行写入选定的 Kafka 主题和分区。有状态索引工作节点随后可以按顺序消费各 Kafka 分区的数据。把接收与序列化关注点分离后，可以随意重启接收或存储工作节点，而不会丢失或损坏数据。Kafka 集群只需把数据保留到灾难恢复场景中可能需要重放的最长时间，即数小时到数天，而非数周。</p>
+<p>为了确保可扩展性，应根据写入工作负载创建足够数量的 Kafka 分区。每个分区为每组数据生成自己的分段集合。查询时，无论匹配分段由哪个分区生成，都必须根据时间和数据集查询全部分段，因为任何传入追踪跨度都可能经过任一符合条件的分区。维护每个租户数据集可以去往哪些分区的列表，可以只查询相关工作节点；但对于每项查询，仍需在领导节点上执行最终结果合并，把查询不同分区的工作节点结果组合起来。</p>
+<p>为了确保冗余，同一个 Kafka 分区可以由多个摄取工作节点消费。Kafka 保证顺序一致，摄取过程又具有确定性，所以并行消费同一分区的工作节点必须产生完全相同的序列化分段文件和目录。因此，可以从每组消费者中选择一个摄取节点，把定稿分段上传到 S3，并抽查它与同组节点的输出是否相同。</p>
+<p>如果某个摄取工作进程需要重启，可以为当前 Kafka 分区索引创建检查点，重启后从该处继续序列化分段文件。如果整个摄取节点需要替换，可以使用较早健康节点的数据快照和 Kafka 偏移量启动，再从该点向前重放。</p>
+<p>Retriever 把数据摄取、序列化与数据查询的关注点分开。把可观测性数据工作负载拆成只共享文件系统的独立进程后，就不再需要维护 RAM 中的共享数据结构，容错性也更高。序列化过程出现问题时，只会延迟摄取，不会阻止查询旧数据；查询引擎的查询量激增，也不会拖慢数据摄取和序列化。</p>
+<p>采用这种方式，可以构建水平可扩展的列式存储系统，对任意基数和维度的数据进行快速、持久查询。截至 2021 年 11 月，Retriever 以多租户集群运行：接收工作节点约 1,000 个 vCPU，Kafka 代理 100 个 vCPU，Retriever 摄取和查询引擎工作节点 1,000 个 vCPU，并发 Lambda 执行峰值 30,000 次。集群查询大约 700 TB 列式数据，存放在 5 亿个压缩分段归档中，覆盖两个月历史数据。它每秒摄取超过 150 万个追踪跨度，最长只需几毫秒即可查询<a contenteditable="false" data-type="indexterm" data-primary="Apache Kafka" data-startref="apkafka" id="idm45204353912064"/><a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="可扩展性" data-startref="honscal" id="idm45204354363488"/><a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="Retriever" data-tertiary="持久性" data-startref="hondur" id="idm45204353360864"/><a contenteditable="false" data-type="indexterm" data-primary="扩展" data-secondary="Honeycomb Retriever" data-startref="scah" id="idm45204354357744"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="可扩展性" data-startref="qscal" id="idm45204353252448"/>；同时每秒处理数十个读取查询，中位延迟 50 毫秒，p99 为 5 秒。<sup><a data-type="noteref" id="idm45204353243888-marker" href="ch16-zh.xhtml#idm45204353243888">5</a></sup></p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="自行构建高效数据存储的说明"><div class="sect2" id="notes_on_building_your_own_efficient_da">
+<h2>自行构建高效数据存储的说明</h2>
+<p>可观测性工作负载需要一组独特的性能特征，以摄取遥测数据，并在调查任何具体问题的过程中以有用方式查询<a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="数据存储" id="idm45204353244672"/>。任何希望自建可观测性方案的组织，都必须建立适当的数据抽象，支持开放探索所需的迭代调查，进而识别任何潜在问题。只有满足可观测性的功能要求，才能用遥测数据解决难题。</p>
+<p>如果问题过于难解，很可能是采用了<a href="https://sandimetz.com/blog/2016/1/20/the-wrong-abstraction">错误的数据抽象</a>。建立在正确的数据抽象之上，才能为特定数据领域作出最佳取舍。对于可观测性和追踪，按时间分段的分布式混合列式存储，是同时满足速度、成本与可靠性关键要求的一种方式。上一代数据存储难以满足任意基数、任意维度和追踪的要求，而 Honeycomb Retriever 展示了一种可行解法。</p>
+<p>希望我们的经验能帮助你理解现代可观测性后端的底层架构；如果需要内部方案，也能帮助你解决自己的可观测性问题。我们还强烈建议，不要忍受维护 Elasticsearch 或 Cassandra 集群的痛苦；它们远不如专用列式存储适合这项任务。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000015">
+<h1>结语</h1>
+<p>以支持实时调试工作流的方式高效存储并高性能检索可观测性数据，面临许多挑战。可观测性的功能要求规定查询必须尽快返回结果；面对数十亿行超宽事件时，这绝非易事：每行包含数千个维度，全部必须可以搜索，许多还可能是高基数数据；同时这些字段都没有索引，也没有任何字段享有更优检索性能。结果必须在数秒内返回，传统存储系统根本无法胜任。除了高性能，数据存储还必须容错，达到生产级水平。</p>
+<p>希望 Honeycomb Retriever 实现案例能帮助你理解数据层必须作出的各种取舍，以及管理这些取舍的可能方案。Retriever 不是解决这些挑战的唯一实现，却提供了如何全面应对它们的实例。我们所知能够妥善处理可观测性工作负载的其他公开数据存储，包括 Google Cloud BigQuery、ClickHouse 和 Druid。不过，这些存储针对可观测性特定工作负载的运维验证较少，也许需要定制工作来支持所需的自动分片。规模扩大后，管理可观测性的固有挑战格外突出；对于较小的单节点存储方案，可能不太容易遇到本章所述的某些取舍。</p>
+<p>了解如何存取海量遥测数据后，下一章将考察如何通过遥测流水线管理海量遥测数据的网络传输。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn12"><sup><a href="ch16-zh.xhtml#ch01fn12-marker">1</a></sup> Lior Abraham 等，<a href="https://oreil.ly/j2OZy">“Scuba: Diving into Data at Facebook”</a>，Proceedings of the VLDB Endowment 6.11（2013）：1057–1067。</p><p data-type="footnote" id="ch01fn13"><sup><a href="ch16-zh.xhtml#ch01fn13-marker">2</a></sup> Google，<a href="https://oreil.ly/8cFn6">“Schema Design Best Practices”</a>，Google Cloud Bigtable 网站。</p><p data-type="footnote" id="ch01fn14"><sup><a href="ch16-zh.xhtml#ch01fn14-marker">3</a></sup> Benjamin H. Sigelman 等，“Dapper, a Large-Scale Distributed Systems Tracing Infrastructure”，Google Technical Report（2010 年 4 月）。</p><p data-type="footnote" id="ch01fn15"><sup><a href="ch16-zh.xhtml#ch01fn15-marker">4</a></sup> Terry Welch 等，“A Technique for High-Performance Data Compression”，<em>Computer</em> 17，第 6 期（1984）：8–19。</p><p data-type="footnote" id="idm45204353243888"><sup><a href="ch16-zh.xhtml#idm45204353243888-marker">5</a></sup> 这看起来也许没那么惊人，直到你意识到日常查询会扫描数亿条记录！</p></div></div></section></div></body>
+</html>

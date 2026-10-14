@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 21. An Observability Maturity Model"><div class="chapter" id="an_observability_maturity_model">
+<h1><span class="label">Chapter 21. </span>An Observability Maturity Model</h1>
+<p>Spreading a culture of observability is best achieved by having a plan that measures progress and prioritizes target areas of investment. In this chapter, we go beyond the benefits of observability and its tangible technical steps by introducing the Observability Maturity Model as a way to benchmark and measure progress. You will learn about the key capabilities an organization can measure and prioritize as a way of driving observability adoption.</p>
+<section data-type="sect1" data-pdf-bookmark="A Note About Maturity Models"><div class="sect1" id="a_note_about_maturity_models">
+<h1>A Note About Maturity Models</h1>
+<p>In the early 1990s, the Software Engineering Institute at Carnegie Mellon University popularized the <a href="https://oreil.ly/zc9DP">Capability Maturity Model</a> as a way to evaluate the ability of various vendors to deliver effectively against software development projects. The model defines progressive <a contenteditable="false" data-type="indexterm" data-primary="maturity models" id="idm45204352728832"/><a contenteditable="false" data-type="indexterm" data-primary="Capability Maturity Model" id="idm45204352672016"/><a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="Capability Maturity Model" id="idm45204352304432"/>stages of maturity and a classification system used to assign scores based on how well a particular vendor’s process matches each stage. Those scores are then used to influence purchasing decisions, engagement models, and other activities.</p>
+<p>Since then, maturity models have become somewhat of a darling for the software marketing industry. Going well beyond scoping purchasing decisions, maturity models are now used as a generic way to model organizational practices. To their credit, maturity models can be helpful for an organization to profile its capabilities against its peers or to target a set of desired practices. However, maturity models are not without their limitations.</p>
+<p>When it comes to measuring organizational practices, the performance level of a software engineering team has no upper bound. Practices, as opposed to procedures, are an evolving and continuously improving state of the art. They’re never done and perfect, as reaching the highest level of a maturity model seems to imply. Further, that end state is a static snapshot of an ideal future reflecting only what was known when the model was created, often with the biases of its authors baked into its many assumptions. Objectives shift, priorities change, better approaches are discovered, and—more to the point—each approach is unique to individual organizations and cannot be universally scored.</p>
+<p>When looking at a maturity model, it’s important to always remember that no one-size-fits-all model applies to every organization. Maturity models can, however, be useful as starting points against which you can critically and methodically weigh your own needs and desired outcomes to create an approach that’s right for you. Maturity models can help you identify and quantify tangible and measurable objectives that are useful in driving long-term initiatives. It is critical that you create hypotheses to test the assumptions of any maturity model within your own organization and evaluate which paths are and aren’t viable given your particular constraints. Those hypotheses, and the maturity model itself, should be continuously improved over time as more data becomes available.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Why Observability Needs a Maturity Model"><div class="sect1" id="why_observability_needs_a_maturity_mode">
+<h1>Why Observability Needs a Maturity Model</h1>
+<p>When it comes to developing and operating software, practices that drive engineering teams toward a highly <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="necessity" id="mmnec"/>productive state have rarely been formalized and documented. Instead, they are often passed along informally from senior engineers to junior engineers based on the peculiar history of individual company cultures. That institutional knowledge sharing has given rise to certain identifiable strains of engineering philosophy or collections of habits with monikers that tag their origin (e.g., “the Etsy way,” “the Google way,” etc.). Those philosophies are familiar to others with the same heritage and have become heretical to those without.</p>
+<p>Collectively, we authors have over six decades of experience watching engineering teams fail and succeed, and fail all over again. We’ve seen organizations of all shapes, sizes, and locations succeed in forming high-performing teams, given they adopt the right culture and focus on essential techniques. Software engineering success is not limited to those fortunate enough to live in Silicon Valley or those who have worked <a contenteditable="false" data-type="indexterm" data-primary="FAANG companies" id="idm45204352549200"/>at FAANG companies (Facebook, Amazon, Apple, Netflix, and Google). It shouldn’t matter where teams are located, or what companies their employees have worked at previously.</p>
+<p>As mentioned throughout this book, production software systems present sociotechnical challenges. While tooling for observability can address the technical challenges in software systems, we need to consider other factors beyond the technical. The Observability Maturity Model considers the context of engineering organizations, their constraints, and their goals. Technical and social features of observability contribute to each of the identified team characteristics and capabilities in the model.</p>
+<p>To make a maturity model broadly applicable, it must be agnostic to an organization’s pedigree or the tools it uses. Instead of mentioning any specific software solutions or technical implementation details, it must instead focus on the costliness and benefits of the journey in human terms: “How will you know if you are weak in this area?” “How will you know if you’re doing well in this area and should prioritize improvements elsewhere?”</p>
+<p>Based on our experiences watching teams adopt observability, we’d seen common qualitative trends like their increased confidence interacting with production and ability to spend more time working on new product features. To quantify those perceptions, we surveyed a spectrum of teams in various phases of observability adoption and teams that hadn’t yet started or were not adopting observability. We found that teams that adopt observability were three times as likely to feel confident in their ability to ensure software quality in production, compared to teams that had not adopted observability.<sup><a data-type="noteref" id="ch01fn18-marker" href="ch21.xhtml#ch01fn18">1</a></sup> Additionally, those teams that hadn’t adopted observability spent over half their time toiling away on work that did not result in releasing new product features.</p>
+<p>Those patterns are emergent properties of today’s modern and complex sociotechnical systems. Analyzing capabilities like ensuring software quality in production and time spent innovating on features exposes both the pathologies of group behavior and their solutions. Adopting a practice of observability can help teams find solutions to problems that can’t be solved by individuals “just writing better code,” or, “just doing a better job.” Creating a maturity model for observability ties together the various capabilities outlined throughout this book and can serve as a <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="necessity" data-startref="mmnec" id="idm45204352378800"/>starting point for teams to model their own outcome-oriented goals that guide adoption.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="About the Observability Maturity Model"><div class="sect1" id="about_the_observability_maturity_model">
+<h1>About the Observability Maturity Model</h1>
+<p>We originally developed the <em>Observability Maturity Model</em> (<em>OMM</em>) based on the following goals for <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="OMM (Observability Maturity Model)" id="mmomm"/><a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" id="OMM"/>an engineering organization:<sup><a data-type="noteref" id="ch01fn19-marker" href="ch21.xhtml#ch01fn19">2</a></sup></p>
+<dl>
+<dt>Sustainable systems and quality of life for engineers</dt>
+<dd>This goal may seem aspirational to some, but the reality is that engineer quality of life and the sustainability of systems are closely entwined. Systems that are observable are easier to own and maintain, improving the quality of life for an engineer who owns those systems. Engineers spending more than half of their time working on things that don’t deliver customer value (toil) report higher rates of burnout, apathy, and lower engineering team morale. Observable systems reduce toil and that, in turn, creates higher rates of employee retention and reduces the time and money teams need to spend on finding and training new engineers.</dd>
+<dt>Delivering against business needs by increasing customer satisfaction</dt>
+<dd>Observability enables engineering teams to better understand customers’ interactions with the services they develop. That understanding allows engineers to home in on customer needs and deliver the performance, stability, and functionality that will delight their customers. Ultimately, observability is about operating your business successfully.</dd>
+</dl>
+<p>The framework described here is a starting point. With it, organizations have the structure and tools to begin asking themselves questions, and the context to interpret and describe their own situation—both where they are now and what they should aim for.</p>
+<p>The quality of your observability practice depends on technical and social factors. Observability is not a property of the computer system alone or the people alone. Too often, discussions of observability are focused only on the technicalities of instrumentation, storage, and querying, and not on what they can enable a team to do. The OMM approaches improving software delivery and operations as a sociotechnical problem.</p>
+<p>If team members feel unsafe applying their tooling to solve problems, they won’t be able to achieve results. Tooling quality depends on factors such as the ease of adding instrumentation, the granularity of data ingested, and whether it can answer any arbitrary questions that humans pose. The same tooling need not be used to address each capability, nor does strength of tooling in addressing one capability <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="OMM (Observability Maturity Model)" data-startref="mmomm" id="idm45204352650064"/><a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-startref="OMM" id="idm45204352589264"/>necessarily translate to an aptitude in addressing all other suggested capabilities.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Capabilities Referenced in the OMM"><div class="sect1" id="capabilities_referenced_in_the_omm">
+<h1>Capabilities Referenced in the OMM</h1>
+<p>The capabilities detailed in this section are directly impacted by the quality of your observability <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="OMM (Observability Maturity Model)" data-tertiary="capabilities" id="mmomcap"/><a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" id="commcap"/>practice. The OMM list is not exhaustive but is intended to represent the breadth of potential business needs. The capabilities listed and their associated business outcomes overlap with many of the principles necessary to create production excellence.</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>For more on production excellence, we recommend the 2019 InfoQ blog post <a href="https://oreil.ly/fWiPD">“Sustainable Operations in Complex Systems with Production Excellence”</a> by Liz Fong-Jones.</p>
+</div>
+<p><em>There is no singular and correct order or prescriptive way of doing these things.</em> Instead, every organization faces an array of potential journeys. At each step, focus on what you’re hoping to achieve. Make sure you will get appropriate business impact from making progress in that area right now, as opposed to doing it later.</p>
+<p>It’s also important to understand that building up these capabilities is a pursuit that is never “done.” There’s always room for continuous improvement. Pragmatically speaking, however, once organizational muscle memory exists such that these capabilities are second nature, and they are systematically supported as part of your culture, that’s a good indication of having reached the upper levels of maturity. For example, prior to CI systems, code was often checked in without much thought paid to bundling in tests. Now, engineers in any modern organization practicing CI/CD would never think of checking in code without bundled tests. Similarly, observability <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-startref="commcap" id="idm45204352283072"/><a contenteditable="false" data-type="indexterm" data-primary="CI/CD (Continuous Integration/Continuous Delivery)" id="idm45204353837504"/><a contenteditable="false" data-type="indexterm" data-primary="Continuous Integration/Continuous Delivery (CI/CD)" id="idm45204353902368"/>practices must become second nature for development teams.</p>
+<section data-type="sect2" data-pdf-bookmark="Respond to System Failure with Resilience"><div class="sect2" id="respond_to_system_failure_with_resilien">
+<h2>Respond to System Failure with Resilience</h2>
+<p><em>Resilience</em> is the adaptive capacity of a team, together with the system it supports, that enables it to <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="resilience" id="omcpre"/>restore service and minimize impact to users. Resilience refers not only to the capabilities of an isolated operations team or to the robustness and fault tolerance in its software. Resilience must also measure both the technical outcomes and social outcomes of your emergency response process in order to measure its maturity.</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>For more on resilience engineering, we recommend John Allspaw’s 2019 talk <a href="https://oreil.ly/gDN3S">“Amplifying Sources of Resilience”</a>, delivered at QCon London.</p>
+</div>
+<p>Measuring technical outcomes can, at first approximation, take the form of examining the amount of time it takes to restore service and the number of people who become involved when the system experiences a failure. For example, the DORA 2018 <a href="https://oreil.ly/H0Pn5"><em>Accelerate State of DevOps</em> Report</a> defines elite performers as those whose MTTR is less than one hour, and low performers as those with a MTTR that is between one week and one month.</p>
+<p>Emergency response is a necessary part of running a scalable, reliable service. But emergency response may have different meanings to different teams. One team might consider a satisfactory emergency response to mean “power cycle the box,” while another might interpret that to mean “understand exactly how the auto-remediation that restores redundancy in data striped across multiple disks broke, and mitigate future risk.” There are three distinct areas to measure: the amount of time it takes to detect issues, to initially mitigate those issues, and to fully understand what happened and address those risks.</p>
+<p>But the more important dimension that team managers need to focus on is the people operating that service. Is the on-call rotation sustainable for your team so that staff remain attentive, engaged, and retained? Does a systematic plan exist for educating and involving everyone responsible for production in an orderly and safe manner, or is every response an all-hands-on-deck emergency, no matter the experience level? If your service requires many people to be on call or context switching to handle break/fix scenarios, that’s time and energy they are not spending generating business value by delivering new features. Over time, team morale will inevitably suffer if a majority of engineering time is devoted to toil, including break/fix work.</p>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing well"><div class="sect3" id="if_your_team_is_doing_wel">
+<h3>If your team is doing well</h3>
+<ul>
+<li><p>System uptime meets your business goals and is improving.</p></li>
+<li><p>On-call response to alerts is efficient, and alerts are not ignored.</p></li>
+<li><p>On-call duty is not excessively stressful, and engineers are not hesitant to take additional shifts as needed.</p></li>
+<li><p>Engineers can handle incident workload without working extra hours or feeling unduly stressed.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing poorly"><div class="sect3" id="if_your_team_is_doing_poorl">
+<h3>If your team is doing poorly</h3>
+<ul>
+<li><p>The organization is spending a lot of additional time and money staffing on-call rotations.</p></li>
+<li><p>Incidents are frequent and prolonged.</p></li>
+<li><p>Those on call suffer from alert fatigue or aren’t alerted about real failures.</p></li>
+<li><p>Incident responders cannot easily diagnose issues.</p></li>
+<li><p>Some team members are disproportionately pulled into emergencies.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="How observability is related"><div class="sect3" id="how_observability_is_relat">
+<h3>How observability is related</h3>
+<p>Alerts are relevant, focused, and actionable (thereby reducing alert fatigue). A clear relationship exists between the error budget and customer needs. When incident investigators respond, context-rich events make it possible to effectively troubleshoot incidents when they occur. The ability to drill into high-cardinality data and quickly aggregate results on the fly supports pinpointing error sources and faster incident resolution. Preparing incident responders with the tools they need to effectively debug complex systems reduces the stress and drudgery of being on call. Democratization of troubleshooting techniques by easily sharing past investigation paths helps distribute incident resolution skills across a team, so <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="resilience" data-startref="omcpre" id="idm45204352227408"/>anyone can effectively respond to incidents as they occur.</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="Deliver High-Quality Code"><div class="sect2" id="deliver_high_quality_code">
+<h2>Deliver High-Quality Code</h2>
+<p><em>High-quality code</em> is measured by more than how well it is understood and maintained, or how often bugs are <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="code quality" id="omcqy"/>discovered in a sterile lab environment (e.g., a CI test suite). While code readability and traditional validation techniques are useful, they do nothing to validate how that code actually behaves during the chaotic conditions inherent to running in production systems. The code must be adaptable to changing business needs, rather than brittle and fixed in features. Thus, code quality must be measured by validating its operation and extensibility as it matters to your customers and your business.</p>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing well"><div class="sect3" id="if_your_team_is_doing_we">
+<h3>If your team is doing well</h3>
+<ul>
+<li><p>Code is stable, fewer bugs are discovered in production, and fewer outages occur.</p></li>
+<li><p>After code is deployed to production, your team focuses on customer solutions rather than support.</p></li>
+<li><p>Engineers find it intuitive to debug problems at any stage, from writing code in development to troubleshooting incidents in production at full release scale.</p></li>
+<li><p>Isolated issues that occur can typically be fixed without triggering cascading failures.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing poorly"><div class="sect3" id="if_your_team_is_doing_poor">
+<h3>If your team is doing poorly</h3>
+<ul>
+<li><p>Customer support costs are high.</p></li>
+<li><p>A high percentage of engineering time is spent fixing bugs instead of working on new features.</p></li>
+<li><p>Team members are often reluctant to deploy new features because of perceived risk.</p></li>
+<li><p>It takes a long time to identify an issue, construct a way to reproduce the failure case, and repair it.</p></li>
+<li><p>Developers have low confidence in their code’s reliability after it has shipped.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="How observability is related"><div class="sect3" id="how_observability_is_related">
+<h3>How observability is related</h3>
+<p>Well-monitored and tracked code makes it easy to see when and how a process is failing, and easy to identify and fix vulnerable spots. High-quality observability allows using the same tooling to debug code on one machine as on 10,000. A high level of relevant, context-rich telemetry means engineers can watch code in action during deployments, be alerted rapidly, and repair issues before they become visible to users. When bugs <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="code quality" data-startref="omcqy" id="idm45204352206944"/>do appear, validating that they have been fixed is easy.</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="Manage Complexity and Technical Debt"><div class="sect2" id="manage_complexity_and_technical_debt">
+<h2>Manage Complexity and Technical Debt</h2>
+<p><em>Technical debt</em> is not necessarily a bad thing. Engineering organizations are constantly faced <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="complexity" id="idm45204353511840"/><a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="technical debt" id="idm45204352200096"/>with choices between short-term gain and longer-term outcomes. Sometimes the short-term win is the right decision if a specific plan exists to address the debt, or to otherwise mitigate the negative aspects of the choice. With that in mind, code with high technical debt prioritizes quick solutions over more architecturally stable options. When unmanaged, these choices lead to longer-term costs, as maintenance becomes expensive and future revisions become dependent on costs.</p>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing well"><div class="sect3" id="if_your_team_is_doing_w">
+<h3>If your team is doing well</h3>
+<ul>
+<li><p>Engineers spend the majority of their time making forward progress on core business goals.</p></li>
+<li><p>Bug fixing and other reactive work takes up a minority of the team’s time.</p></li>
+<li><p>Engineers spend very little time disoriented or trying to find where in the codebase they need to plumb through changes.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing poorly"><div class="sect3" id="if_your_team_is_doing_poo">
+<h3>If your team is doing poorly</h3>
+<ul>
+<li><p>Engineering time is wasted rebuilding things when their scaling limits are reached or edge cases are hit.</p></li>
+<li><p>Teams are distracted by fixing the wrong thing or picking the wrong way to fix something.</p></li>
+<li><p>Engineers frequently experience uncontrollable ripple effects from a localized change.</p></li>
+<li><p>People are afraid to make changes to the code, aka the “haunted graveyard” effect.<sup><a data-type="noteref" id="ch01fn20-marker" href="ch21.xhtml#ch01fn20">3</a></sup></p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="How observability is related"><div class="sect3" id="how_observability_is">
+<h3>How observability is related</h3>
+<p>Observability enables teams to understand the end-to-end performance of their systems and debug failures and slowness without wasting time. Troubleshooters can find the right breadcrumbs when exploring an unknown part of their system. Tracing behavior becomes easily possible. Engineers can identify the right part of the system to optimize rather than taking random guesses of where to look, and they can change code when attempting to find performance bottlenecks.</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="Release on a Predictable Cadence"><div class="sect2" id="release_on_a_predictable_cadence">
+<h2>Release on a Predictable Cadence</h2>
+<p>The value of software development reaches users only after new features and optimizations are released. The process <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="release cycle" id="omrcy"/>begins when a developer commits a change set to the repository, includes testing and validation and delivery, and ends when the release is deemed sufficiently stable and mature to move on. Many people think of continuous integration and deployment as the nirvana end-stage of releasing. But CI/CD tools and processes are just the basic building blocks needed to develop a robust release cycle. Every business needs a predictable, stable, frequent <em>release cadence</em> to meet customer demands and remain competitive in their market.<sup><a data-type="noteref" id="ch01fn21-marker" href="ch21.xhtml#ch01fn21">4</a></sup></p>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing well"><div class="sect3" id="if_your_team_is_doing_well">
+<h3>If your team is doing well</h3>
+<ul>
+<li><p>The release cadence matches business needs and customer expectations.</p></li>
+<li><p>Code gets into production shortly after being written. Engineers can trigger deployment of their own code after it’s been peer reviewed, satisfies controls, and is checked in.</p></li>
+<li><p>Code paths can be enabled or disabled instantly, without needing a deployment.</p></li>
+<li><p>Deployments and rollbacks are fast.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing poorly"><div class="sect3" id="if_your_team_is_doing_po">
+<h3>If your team is doing poorly</h3>
+<ul>
+<li><p>Releases are infrequent and require lots of human intervention.</p></li>
+<li><p>Lots of changes are shipped at once.</p></li>
+<li><p>Releases have to happen in a particular order.</p></li>
+<li><p>The sales team has to gate promises on a particular release train.</p></li>
+<li><p>Teams avoid deploying on certain days or times of year. They are hesitant because poorly managed release cycles have frequently interfered with quality of life during nonbusiness hours.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="How observability is related"><div class="sect3" id="how_observability_is_re">
+<h3>How observability is related</h3>
+<p>Observability is how you understand the build pipeline as well as production. It shows you any performance degradation in tests or errors during the build-and-release process. Instrumentation is how you know whether the build is good, whether the feature you added is doing what you expected it to, and whether anything else looks weird; instrumentation lets you gather the context you need to reproduce any error.</p>
+<p>Observability and instrumentation are also how you gain confidence in your release. If it’s properly instrumented, you should be able to break down by old and new build ID and examine them side by side. You can validate consistent and smooth production performance between deployments, or you can see whether your new code is having its intended impact and whether anything else looks suspicious. You can also drill down into specific events—for example, to see which dimensions or values a spike of <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="release cycle" data-startref="omrcy" id="idm45204352169840"/>errors all have in common.</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="Understand User Behavior"><div class="sect2" id="understand_user_behavior">
+<h2>Understand User Behavior</h2>
+<p>Product managers, product engineers, and systems engineers all need to understand the impact that their <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="user behavior" id="ombhv"/>software has on users. It’s how we reach product-market fit as well as how we feel purpose and impact as engineers. When users have a bad experience with a product, it’s important to understand what they were trying to do as well as the outcome.</p>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing well"><div class="sect3" id="if_your_team_is_doing">
+<h3>If your team is doing well</h3>
+<ul>
+<li><p>Instrumentation is easy to add and augment.</p></li>
+<li><p>Developers have easy access to key performance indicators (KPIs) for customer outcomes and system utilization/cost, and can visualize them side by side.</p></li>
+<li><p>Feature flagging or similar makes it possible to iterate rapidly with a small subset of users before fully launching.</p></li>
+<li><p>Product managers can get a useful view of customer feedback and behavior.</p></li>
+<li><p>Product-market fit is easier to achieve.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="If your team is doing poorly"><div class="sect3" id="if_your_team_is_doing_poorly">
+<h3>If your team is doing poorly</h3>
+<ul>
+<li><p>Product managers don’t have enough data to make good decisions about what to build next.</p></li>
+<li><p>Developers feel that their work doesn’t have impact.</p></li>
+<li><p>Product features grow to excessive scope, are designed by committee, or don’t receive customer feedback until late in the cycle.</p></li>
+<li><p>Product-market fit is not achieved.</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="How observability is related"><div class="sect3" id="how_observability_is_rela">
+<h3>How observability is related</h3>
+<p>Effective product management requires access to relevant data. Observability is about generating the necessary data, encouraging teams to ask open-ended questions, and enabling them to iterate. With the level of visibility offered by event-driven data analysis and the predictable cadence of releases both enabled by observability, product managers can investigate and iterate on feature direction with a true understanding of how <a contenteditable="false" data-type="indexterm" data-primary="maturity models" data-secondary="OMM (Observability Maturity Model)" data-tertiary="capabilities" data-startref="mmomcap" id="idm45204352143232"/><a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="capabilities" data-tertiary="user behavior" data-startref="ombhv" id="idm45204352204192"/>well their changes are meeting business goals.</p>
+</div></section>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Using the OMM for Your Organization"><div class="sect1" id="using_the_omm_for_your_organization">
+<h1>Using the OMM for Your Organization</h1>
+<p>The OMM can be a useful tool for reviewing your organization’s capabilities when it comes to utilizing observability effectively. The model provides a starting point for measuring where <a contenteditable="false" data-type="indexterm" data-primary="OMM (Observability Maturity Model)" data-secondary="organization capabilities" id="idm45204352307472"/>your team capabilities are lacking and where they excel. When creating a plan for your organization to adopt and spread a culture of observability, it is useful to prioritize capabilities that most directly impact the bottom line for your business and improve your performance.</p>
+<p>It’s important to remember that creating a mature observability practice is not a linear progression and that these capabilities do not exist in a vacuum. Observability is entwined in each capability, and improvements in one capability can sometimes contribute to results in others. The way that process unfolds is unique to the needs of each organization, and where to start depends on your current areas of expertise.</p>
+<p><em>Wardley mapping</em> is a technique that can help you figure out how these capabilities relate in priority and interdependency with respect to your current organizational abilities. Understanding which capabilities are most critical to your business can help prioritize and unblock the steps necessary to further your observability adoption journey.</p>
+<p>As you review and prioritize each capability, you should identify clear owners responsible for driving this change within your teams. Review those initiatives with those owners and ensure that you develop clear outcome-oriented measures relevant to the needs of your particular organization. It’s difficult to make progress unless you have clear ownership, accountability, and sponsorship in terms of financing and time. Without executive sponsorship, a team may be able to make small incremental improvements within its own silo. However, it is impossible to reach a mature high-performing state if the entire organization is unable to demonstrate these capabilities and instead relies on a few key individuals, no matter how advanced and talented those individuals may be.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Conclusion"><div class="sect1" id="conclusion-id000027">
+<h1>Conclusion</h1>
+<p>The Observability Maturity Model provides a starting point against which your organization can measure its desired outcomes and create its own customized adoption path. The key capabilities driving high-performing teams that have matured their observability practice are measured along these axes:</p>
+<ul>
+<li><p>How they respond to system failure with resilience</p></li>
+<li><p>How easily they can deliver high-quality code</p></li>
+<li><p>How well they manage complexity and technical debt</p></li>
+<li><p>How predictable their software release cadence is</p></li>
+<li><p>How well they can understand user behavior</p></li>
+</ul>
+<p>The OMM is a synthesis of qualitative trends we’ve noticed across organizations adopting observability paired with quantitative analysis from surveying software engineering professionals. The conclusions represented in this chapter reflect research studies conducted in 2020 and 2021. It’s important to remember that maturity models are static snapshots of an ideal future generalized well enough to be applicable across an entire industry. The maturity model itself will evolve as observability adoption continues to spread.</p>
+<p>Similarly, observability practices will also evolve, and the path toward maturity will be unique to your particular organization. However, this chapter provides the basis for your organization to create its own pragmatic approach. In the next chapter, we’ll conclude with a few additional tips on where to go from here.</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn18"><sup><a href="ch21.xhtml#ch01fn18-marker">1</a></sup> Honeycomb, “Observability Maturity Report,” <a href="https://hny.co/wp-content/uploads/2020/04/observability-maturity-report-4-2-2020-1-1-1.pdf">2020 edition</a> and <a href="https://hny.co/wp-content/uploads/2021/06/Observability_Maturity_Report.pdf">2021 edition</a>.</p><p data-type="footnote" id="ch01fn19"><sup><a href="ch21.xhtml#ch01fn19-marker">2</a></sup> Charity Majors and Liz Fong-Jones, <a href="https://hny.co/wp-content/uploads/2019/06/Framework-for-an-Observability-Maturity-Model.pdf">“Framework for an Observability Maturity Model”</a>, Honeycomb, June 2019.</p><p data-type="footnote" id="ch01fn20"><sup><a href="ch21.xhtml#ch01fn20-marker">3</a></sup> Betsy B. Beyer et al., <a href="https://oreil.ly/4bfLc">“Invent More, Toil Less”</a>, <em>;login:</em> 41, no. 3 (Fall 2016).</p><p data-type="footnote" id="ch01fn21"><sup><a href="ch21.xhtml#ch01fn21-marker">4</a></sup> Darragh Curran, <a href="https://oreil.ly/3PFX8">“Shipping Is Your Company’s Heartbeat”</a>, Intercom, last modified August 18, 2021.</p></div></div></section></div></body>
+</html>

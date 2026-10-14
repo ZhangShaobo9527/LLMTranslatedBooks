@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><div data-type="part" epub:type="part" data-pdf-bookmark="Part IV. Observability at Scale" id="observability_at_scale">
+<h1><span class="label">Part IV. </span>Observability at Scale</h1>
+<p>In <a data-type="xref" href="part03.xhtml#observability_for_teams">Part III</a>, we focused on overcoming barriers to getting started and new workflows that help change social and cultural practices in order to put some momentum behind your observability adoption initiatives. In this part, we examine considerations on the other end of the adoption spectrum: what happens when observability adoption is successful and practiced at scale?</p>
+<p>When it comes to observability, “at scale” is probably larger than most people think. As a rough ballpark measure, when measuring telemetry events generated per day in the high hundreds of millions or low billions, you might have a scale issue. The concepts explored in this chapter are most acutely felt when operating observability solutions at scale. However, these lessons are generally useful to anyone going down the path of observability.</p>
+<p><a data-type="xref" href="ch15.xhtml#build_versus_buy_and_return_on_investme">Chapter 15</a> explores the decision of whether to buy or build an observability solution. At a large enough scale, as the bill for commercial solutions grows, teams will start to consider whether they can save more by simply building an observability solution themselves. This chapter provides guidance on how best to approach that decision.</p>
+<p><a data-type="xref" href="ch16.xhtml#efficient_data_storage">Chapter 16</a> explores how a data store must be configured in order to serve the needs of an observability workload. To achieve the functional requirements of iterative and open-ended investigations, several technical criteria must be met. This chapter presents a case study of Honeycomb’s Retriever engine as a model for meeting these requirements.</p>
+<p><a data-type="xref" href="ch17.xhtml#cheap_and_accurate_enough_sampling">Chapter 17</a> looks at how to reduce the overhead of managing large volumes of telemetry data at scale. This chapter presents several techniques to ensure high-fidelity observability data, while reducing the overall number of events that must be captured and stored in your backend data store.</p>
+<p><a data-type="xref" href="ch18.xhtml#telemetry_management_with_pipelines">Chapter 18</a> takes a look at another technique for managing large volumes of telemetry data at scale, or management via pipelines. This is a guest chapter by Suman Karumuri, senior staff software engineer, and Ryan Katkov, director of engineering, at Slack. It presents an in-depth look at how Slack uses telemetry management pipelines to route observability data at scale.</p>
+<p>This part of the book focuses on observability concepts that are useful to understand at any scale but that become critical in large-scale use cases. In <a data-type="xref" href="part05.xhtml#spreading_observability_culture">Part V</a>, we’ll look at techniques for spreading observability culture at any scale.</p>
+
+
+
+
+</div></div></body>
+</html>

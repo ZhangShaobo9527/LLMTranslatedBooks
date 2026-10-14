@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 5 章 结构化事件是可观测性的基础构件"><div class="chapter" id="structured_events_are_the_building_bloc">
+<h1><span class="label">第 5 章　</span>结构化事件是<span class="keep-together">可观测性的基础构件</span></h1>
+<p>本章将考察可观测性的基础构件：结构化事件。可观测性衡量的是，无论系统进入的状态多么新奇或反常，你能在多大程度上理解并解释它。<a contenteditable="false" data-type="indexterm" data-primary="结构化事件" id="idm45204355256352"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-seealso="结构化事件" id="idm45204355289792"/>为此，你必须能够回答自己提出的任何问题，而不必事先预见或预测以后会需要这个答案。要做到这一点，首先必须满足若干技术前提。</p>
+<p>本书会介绍实现可观测性所需的众多技术前提。本章先从一种遥测数据讲起，它必须能帮助我们理解并解释系统可能处于的任何状态。要针对遥测细节的任意组合提出<em>任何</em>问题，就必须能够沿任意数量的<a contenteditable="false" data-type="indexterm" data-primary="遥测" id="idm45204355356512"/>维度随意切分和细查数据。遥测数据还必须以完整分辨率采集，深入到能够保留采集上下文的最低逻辑粒度。对于可观测性而言，这意味着按服务或按请求级别采集遥测数据。</p>
+<p>使用旧式指标时，如果想提出新问题并采集新的遥测数据来回答它，就必须预先定义自定义指标。在指标的世界里，要回答所有可能的问题，就得采集并存储所有可能的指标——这根本不可能做到；即使能够做到，成本也高得令人无法承受。此外，指标不会保留事件上下文，只会记录某个时刻发生之事的聚合度量。面对这种聚合视图，你无法向现有数据集提出新问题，也无法从中寻找新的离群值。</p>
+<p>借助可观测性，你可以随时向现有遥测数据提出新问题，无须事先预测将来可能要问什么。一个可观测系统必须支持反复探索系统的各个层面，从高层聚合性能一直深入到单个请求所使用的原始数据。</p>
+<p>要实现这种能力，首先必须采用可观测性所需的数据格式：字段可任意扩展的结构化事件。收集这类事件不是可有可无的选择，也不是无关紧要的实现细节，而是在如此宽广的视野中开展任何层次分析的必要条件。</p>
+<section data-type="sect1" data-pdf-bookmark="使用结构化事件调试"><div class="sect1" id="debugging_with_structured_events">
+<h1>使用结构化事件调试</h1>
+<p>首先定义什么是事件。为了理解生产服务受到的影响，<em>事件</em>是某一个<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与结构化事件" id="debsev"/><a contenteditable="false" data-type="indexterm" data-primary="结构化事件" data-secondary="用于调试" id="stevdeb"/>具体请求与服务交互期间所发生一切的记录。</p>
+<p>要创建这条记录，请求刚进入服务时就先初始化一个空映射。在请求的整个生命周期中，把发生的所有潜在有用细节不断追加到映射中，包括唯一 ID、变量值、请求头、请求传入的每个参数、执行时间、对远程服务的所有调用、这些远程调用的执行时间，以及日后调试时可能有价值的其他任何上下文。请求即将离开服务或发生错误时，再捕获整个映射，把它作为刚刚发生之事的一条丰富记录。写入映射的数据以键值对的形式进行组织和格式化，以便轻松搜索；换句话说，数据应该是结构化的。这就是一个<em>结构化事件</em>。</p>
+<p>调试服务问题时，你会相互比较结构化事件以寻找异常。如果某些事件的行为与其他事件存在显著差异，就要找出这些离群事件有哪些共同点。探索离群事件需要按照事件中可能与调查有关的不同维度，以及不同维度组合，筛选数据并进行分组。</p>
+<p>作为结构化事件送入可观测性系统的数据，必须采用正确的抽象层次，帮助观察者判断应用状态，无论状态多么反常或新奇。对调查人员有帮助的信息既可能包括不属于任何特定请求的运行时信息，例如容器或版本信息，也可能包括经过服务的每个请求的信息，例如购物车 ID、用户 ID 或会话令牌。这两类数据对于调试都有价值。</p>
+<p>调试请求时哪些数据有意义，会随情况而异。不过，可以把它与使用传统调试器时有用的数据相比较，从而理解这个问题。例如，在传统调试环境中，你也许希望知道请求执行期间各变量的值，以及函数调用何时发生。在分布式服务中，这些函数调用可能表现为对远程服务的多次调用。在这种情况下，请求执行期间有关变量值的所有数据，都可以视为请求的<em>上下文</em>。</p>
+<p>所有这些数据都应该可供调试，并存储在事件中。这类事件的<em>字段可以任意扩展</em>，因为所需的调试数据可能包含大量字段。能够附加到事件上的细节不应存在实际限制。后面会深入讨论结构化事件应该捕获哪些信息，不过先来比较一下：使用结构化事件捕获系统状态，与传统<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与结构化事件" data-startref="debsev" id="idm45204355228752"/><a contenteditable="false" data-type="indexterm" data-primary="结构化事件" data-secondary="用于调试" data-startref="stevdeb" id="idm45204355263840"/>调试方法有什么不同。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="以指标作为基础构件的局限"><div class="sect1" id="the_limitations_of_metrics_as_a_buildin">
+<h1>以指标作为基础构件的局限</h1>
+<p>首先定义什么是<em>指标</em>。遗憾的是，这个词需要消除歧义，因为人们经常把它当作“遥测”的宽泛同义词，例如“老板，我们的所有指标都一路向右上方增长！”为清楚起见，本书所说的指标，是为了表示系统状态而收集的<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="局限" id="metbblim"/>标量值，也可以选择附加标签，以便对这些数字分组和搜索。传统软件系统监控正是以指标为主要基础构建的（关于指标在这一含义下的起源，参见<a data-type="xref" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">第 1 章</a>的详细介绍）。</p>
+<p>然而，指标最根本的局限在于，它是一种预先聚合的度量。指标生成的数值，反映的是预定义时间段内系统状态的汇总报告。这个数字上报给监控系统后，预聚合度量就成了检查系统状态时所能达到的最低粒度。聚合过程会掩盖许多潜在问题。此外，一个请求在服务中执行期间，可能会在数百项指标里分别贡献一部分数据。这些指标都是彼此独立、互不相连的度量，缺少必要的联系和粒度，无法重建哪些指标究竟属于同一个请求。</p>
+<p>例如，<code>page_load_time</code> 指标可以计算过去五秒内所有活动页面的平均加载时间。另一个 <code>requests_per_second</code> 指标则可以计算某项服务在过去一秒内打开的 HTTP 连接数。指标用数值反映系统状态，这些数值来自对某项属性在给定时间段内的测量。这个时间段内所有活动请求的行为都会被聚合成一个数值。在本例中，如果调查某个具体请求流经系统的整个生命周期，就会沿途留下分别指向上述两项指标的线索。然而，继续深入调查所需的细粒度数据已经不存在了。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>深入介绍指标如何存储在时序数据库中，<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="存储" id="idm45204355252512"/>超出了本章范围，不过<a data-type="xref" href="ch16-zh.xhtml#efficient_data_storage">第 16 章</a>会涉及其中一部分。如需进一步了解指标和时序数据库为何与可观测性不相容，推荐阅读 Alex Vondrak 2021 年的博客文章 <a href="https://hny.co/blog/time-series-database">《时序数据库如何工作——以及它们在哪里失效》</a>。</p>
+</div>
+<p>采用基于事件的方法时，可以为 Web 服务器请求插桩，记录随请求提交的每个参数或维度，例如 <code>userid</code>；预期访问的子域名，例如 <code>www</code>、<code>docs</code>、<code>support</code>、<code>shop</code>、<code>cdn</code> 等；总耗时；所有依赖的子请求；完成这些子请求所涉及的各项服务，例如 <code>web</code>、<code>database</code>、<code>auth</code>、<code>billing</code>；每个子请求的耗时，以及更多信息。随后便可以跨任意时间窗口，沿不同维度任意切分和细查这些事件，呈现与当前调查有关的任何视图。</p>
+<p>与指标不同，事件是<a contenteditable="false" data-type="indexterm" data-primary="事件" id="idm45204355202832"/>某个特定时刻所发生之事的快照。在前面的例子中，同一个过去五秒的时间段内可能发生了 1000 个彼此独立的事件。如果每个事件都记录自己的 <code>page_load_time</code>，将它与同一五秒内的另外 999 个事件聚合起来，仍然可以显示与指标相同的平均值。除此以外，事件提供的<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="粒度" id="idm45204355265152"/>粒度还允许调查人员计算一秒时间段内的同一平均值，或者按用户 ID、主机名等字段细分查询，寻找它们与 <code>page_load_time</code> 的相关性。这些分析只依靠指标提供的聚合值根本无法完成。</p>
+<p>对上述分析的一种极端反驳是：只要指标足够多，也能获得在单个请求层面观察系统状态所需的粒度。即使暂且不谈这种方法极不切实际，也不考虑它永远无法完整表示并发情况，以及调查人员仍然必须把请求执行路径上生成的各项指标拼接起来，事实依然是：基于指标的监控系统根本不是为了扩展到捕获如此大量度量的规模而设计的。尽管如此，许多依赖指标进行调试的团队仍然陷入不断升级的军备竞赛，持续添加越来越多的指标，试图做到这一点。</p>
+<p>指标是预定义时间段内预定义关系的聚合数值表示，只能提供某项系统属性的一个狭窄视图。它的粒度过于粗糙，以其他视图呈现系统状态的能力又过于僵化，因此无法实现可观测性。指标限制太多，不能作为可观测性的基础<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="局限" data-startref="metbblim" id="idm45204355411840"/>构件。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="以传统日志作为基础构件的局限"><div class="sect1" id="the_limitations_of_traditional_logs_as">
+<h1>以传统日志作为基础构件的局限</h1>
+<p>如前所述，结构化数据定义清晰而且可以搜索。非结构化数据没有采用<a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="局限" id="loglim"/>便于搜索的方式组织，通常以原始格式存储。在生产软件系统调试中，最普遍的非结构化数据用途来自一种比指标历史更久的构造。下面来考察日志的使用。</p>
+<p>进入本节之前需要说明，现代日志实践已经采用结构化日志。不过，如果你还没有完成这种转变，我们先看看什么是非结构化日志，以及如何提高它的实用性。</p>
+<section data-type="sect2" data-pdf-bookmark="非结构化日志"><div class="sect2" id="unstructured_logs">
+<h2>非结构化日志</h2>
+<p><em>日志文件</em>本质上是<a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="非结构化" id="logunst"/><a contenteditable="false" data-type="indexterm" data-primary="非结构化日志" id="unslog"/>大块的非结构化文本，设计目标是让人容易阅读，而机器很难处理。这些文件由应用程序和各种底层基础设施系统生成，记录所有被某个配置文件定义为值得关注的已发生事件。数十年来，它们一直是任何环境中调试系统和应用不可或缺的组成部分。日志通常包含大量有用信息：对已发生事件的描述、相关时间戳、事件对应的严重性级别，以及用户 ID、IP 地址等其他各种相关元数据。</p>
+<p>传统日志之所以是<em>非结构化</em>的，是因为设计目标是便于人类阅读。遗憾的是，为了实现这种可读性，日志往往会把一个事件的具体细节拆散到多行文本中，例如：</p>
+<pre data-type="programlisting">6:01:00 accepted connection on port 80 from 10.0.0.3:63349
+6:01:03 basic authentication accepted for user foo
+6:01:15 processing request for /super/slow/server
+6:01:18 request succeeded, sent response code 200
+6:01:19 closed connection to 10.0.0.3:63349</pre>
+<p>刚开始在开发环境中了解一项服务的复杂细节时，这种叙事结构可能有帮助；但在生产环境中，它会生成海量嘈杂数据，使用起来缓慢又笨重。在生产环境中，这几行叙述往往散落在数以百万乃至千万计的其他文本行之间。通常，只有调查人员已经怀疑某个原因，准备深入日志寻找证据来验证假设时，它们才对调试有用。</p>
+<p>然而，现代系统早已不再以人能够轻松理解的规模运行。在传统单体系统中，人工操作人员只需要管理极少量服务，日志会写到应用运行主机的本地磁盘。到了现代，日志通常会以流的形式发送到集中式聚合器，再倾倒进容量巨大的后端存储。</p>
+<p>要搜索数百万行非结构化日志，可以使用某种日志文件解析器。<em>解析器</em>会把日志数据拆成信息片段，再尝试以有意义的方式分组。然而，解析非结构化数据十分复杂，因为不同类型的日志文件遵循不同的格式规则，有些甚至完全没有规则。日志工具采用了各种不同方法来解决<a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="非结构化" data-startref="logunst" id="idm45204356135216"/><a contenteditable="false" data-type="indexterm" data-primary="非结构化日志" data-startref="unslog" id="idm45204356170768"/>这个问题，在成功率、性能和易用性方面表现各异。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="结构化日志"><div class="sect2" id="structured_logs">
+<h2>结构化日志</h2>
+<p>解决办法是改为创建面向机器解析的<em>结构化</em>日志<a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="结构化" id="logstrct"/><a contenteditable="false" data-type="indexterm" data-primary="结构化日志" id="strlog"/>数据。前面的示例改成结构化形式后，可能如下所示：</p>
+<pre data-type="programlisting">time="6:01:00" msg="accepted connection" port="80" authority="10.0.0.3:63349"
+time="6:01:03" msg="basic authentication accepted" user="foo"
+time="6:01:15" msg="processing request" path="/super/slow/server"
+time="6:01:18" msg="sent response code" status="200"
+time="6:01:19" msg="closed connection" authority="10.0.0.3:63349"</pre>
+<p>无论日志是否结构化，许多日志都只记录事件的一部分。把可观测性方法与日志联系起来时，可以把事件理解为系统中的一个工作单元。一个<a contenteditable="false" data-type="indexterm" data-primary="结构化事件" id="idm45204355175456"/>结构化事件应该包含服务完成一个工作单元所经历的一切。<em>工作单元</em>是一个相对概念。例如，它可以是下载一个文件、解析文件并提取某些特定信息；有时也可以是从数十个文件中提取特定信息后，再处理所得答案。在服务语境中，一个工作单元可以是接受 HTTP 请求并完成返回响应所需的一切；但在另一些情况下，一个 HTTP 请求也可能在执行期间生成许多其他事件。</p>
+<p>理想情况下，结构化事件的范围应该涵盖完成这个工作单元所经历的一切。它应记录完成工作所需的输入、过程中收集的所有属性——无论这些属性是计算、解析还是发现得来——执行工作时的服务状况，以及工作结果的详细信息。</p>
+<p>通常可以看到少则几行、多则几十行日志，它们合在一起才表示一个工作单元。目前使用的示例正是如此：一个工作单元，也就是处理一条连接，被拆成了五条独立日志记录。这些消息没有被合理归并为一个事件，而是分散在多条消息中。有时，每条记录里可能都存在请求 ID 等公共字段，可以用来拼接彼此分离的记录；但通常并不存在这种字段。</p>
+<p class="pagebreak-before less_space">我们可以把示例中的多行日志汇总为一个事件。结果如下：</p>
+<pre data-type="programlisting">time="2019-08-22T11:56:11-07:00" level=info msg="Served HTTP request" 
+authority="10.0.0.3:63349" duration_ms=123 path="/super/slow/server" port=80 
+service_name="slowsvc" status=200 trace.trace_id=eafdf3123 user=foo</pre>
+<p>这种表示可以使用不同的格式，<a contenteditable="false" data-type="indexterm" data-primary="JSON（JavaScript Object Notation）" id="idm45204355416736"/>包括 JavaScript 对象表示法（JSON）。这类事件信息最常见的形式是 JSON 对象，例如：</p>
+<pre data-type="programlisting">{
+"authority":"10.0.0.3:63349",
+"duration_ms":123,
+"level":"info",
+"msg":"Served HTTP request",
+"path":"/super/slow/server",
+"port":80,
+"service_name":"slowsvc",
+"status":200,
+"time":"2019-08-22T11:57:03-07:00",
+"trace.trace_id":"eafdf3123",
+"user":"foo"
+}</pre>
+<p>可观测性的目标是让你能够以任意方式审视事件数据，从而理解系统的内部状态。为了实现这个目标，所使用的所有数据都必须能够由机器解析。非结构化数据根本无法承担这项任务。不过，如果把日志数据重新设计成类似结构化事件的形式，它就能服务于可观测性；毕竟结构化事件才是可观测性的基础<a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="局限" data-startref="loglim" id="idm45204355175952"/><a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="结构化" data-startref="logstrct" id="idm45204363266240"/><a contenteditable="false" data-type="indexterm" data-primary="结构化日志" data-startref="strlog" id="idm45204355156832"/>构件。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="有助于调试的事件属性"><div class="sect1" id="properties_of_events_that_are_useful_in">
+<h1>有助于调试的事件属性</h1>
+<p>本章前面把结构化事件定义为某一个<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="事件属性" id="debevpro"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="属性、与调试" id="evprodeb"/>具体请求与服务交互期间所发生一切的记录。调试现代分布式系统时，这大致是一个工作单元应有的范围。要建立一个让观察者能够理解系统任何状态的系统，无论状态多么新奇或复杂，事件都必须包含可能与调查有关的充足信息。</p>
+<p>可观测系统的后端数据存储必须允许事件拥有任意多的字段。使用结构化事件<a contenteditable="false" data-type="indexterm" data-primary="结构化事件" data-secondary="与服务行为" id="idm45204355150336"/><a contenteditable="false" data-type="indexterm" data-primary="服务行为、与结构化事件" id="idm45204355426816"/>理解服务行为时，请记住所采用的模型：初始化一块空数据，再记录日后调试可能用到的任何信息。这可以意味着在请求进入服务时，先用当时已知的数据填充它，例如请求参数、环境信息、运行时内部信息、主机或容器统计数据等。请求执行期间，还可能发现其他有价值的信息，例如用户 ID、购物车 ID、为呈现结果而需要调用的其他远程服务，以及将来帮助你寻找并识别这个请求的各种信息。请求离开服务或返回错误时，还会产生有关工作单元执行方式的多项数据，例如耗时、响应代码、错误消息等。成熟插桩生成的事件，每个事件通常包含 300 到 400 个维度。</p>
+<p>调试新问题，通常意味着通过搜索状况离群的事件，寻找模式或建立相关性，从而发现<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="新问题" id="idm45204360239184"/>过去未知的故障模式，也就是<em>未知的未知</em>。例如，错误数突然上升时，你可能需要沿不同事件维度切分数据，找出这些错误有什么共同点。要建立这种相关性，可观测性解决方案必须能够处理高基数字段。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p><em>基数</em>是指<a contenteditable="false" data-type="indexterm" data-primary="基数" data-secondary="与事件" id="idm45204355196448"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="与基数" id="idm45204355145792"/>一个集合中不重复元素的数量，正如<a data-type="xref" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">第 1 章</a>所述。事件中的某些维度基数很低，另一些则很高。包含唯一标识符的任何维度，都具有可能达到的最高基数。关于这个主题的更多内容，请回顾<a data-type="xref" href="ch01-zh.xhtml#the_role_of_cardinality">“基数的作用”</a>。</p>
+</div>
+<p>可观测性工具必须支持高基数查询，才能真正帮助调查人员。在现代系统中，许多最有助于调试新问题的维度都具有高基数。调查时还经常需要把多个高基数维度串联起来，也就是形成高维度分析，才能找出深藏的问题。调试常常像大海捞针；高基数和高维度能力，让你能在极其复杂的分布式系统草堆中找到极其细小的针。</p>
+<p>例如，要找到某个问题的根源，可能需要创建一条查询，寻找“所有位于加拿大、运行 iOS11 11.0.4 版、使用法语语言包、上周二安装应用、运行 1.4.101 版固件，并且把照片存储在 us-west-1 区域 shard3 上的用户”。其中每一项约束都是一个高基数维度。</p>
+<p>如前所述，要实现这种功能，事件的字段必须能够<em>任意扩展</em>：事件中的字段不能局限于已知或可以预测的字段。如果只能摄取包含已知字段的事件，这可能是某个分析工具所用后端存储系统人为施加的约束。例如，一些后端数据存储可能要求预先定义数据模式。预定义模式要求工具使用者能够提前预测将来可能需要捕获哪些维度。使用模式，或者对数据类型和形状施加其他严格限制，也与可观测性的目标背道而驰。<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="事件属性" data-startref="debevpro" id="idm45204355417120"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="属性、与调试" data-startref="evprodeb" id="idm45204355166240"/>相关内容参见<a data-type="xref" href="ch16-zh.xhtml#efficient_data_storage">第 16 章</a>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000006">
+<h1>结语</h1>
+<p>可观测性的基础构件，是字段可以任意扩展的结构化事件。在调试过程中反复深入时，要回答任何问题，就必须能够沿任意数量的维度切分和细查数据。结构化事件的字段必须可以任意扩展，因为它需要包含充足数据，让调查人员理解系统完成一个工作单元时所发生的一切。对于分布式服务，这通常意味着把事件范围定义为某一个服务请求整个生命周期内所发生一切的记录。</p>
+<p>指标会聚合预定义时间段内的系统状态，只能提供某项系统属性的一个狭窄视图。它的粒度过粗，以其他视图呈现系统状态的能力又过于僵化，无法把各项指标拼接起来，表示某个具体服务请求所完成的一个工作单元。指标限制太多，不能作为可观测性的基础构件。</p>
+<p>非结构化日志便于人阅读，却很难由计算机使用。结构化日志可以由机器解析；如果把它重新设计成类似结构化事件的形式，就能帮助实现可观测性的目标。</p>
+<p>目前，我们只关注遥测所需的数据类型。接下来几章会进一步考察分析高基数、高维度数据为何重要，也会继续定义工具要实现可观测性必须具备哪些能力。下一章先来看看，如何把结构化事件连接起来形成追踪。</p>
+</div></section>
+</div></section></div></body>
+</html>

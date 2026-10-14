@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 7 章 使用 OpenTelemetry 插桩"><div class="chapter" id="instrumentation_with_opentelemetry">
+<h1><span class="label">第 7 章　</span>使用 OpenTelemetry 插桩</h1>
+<p>前两章介绍了结构化事件和追踪的原理。事件与追踪是可观测性的基础构件，可以用来理解软件应用的行为。你可以在应用中加入插桩代码，让每次调用同时发出遥测数据，从而生成这些基础构件。随后，再把发出的遥测数据路由到后端数据存储，以便日后分析、了解应用健康状况并帮助调试问题。</p>
+<p>本章将展示如何为代码插桩，使其发出遥测数据。具体方法可能取决于可观测性后端支持哪些插桩方式。厂商通常会创建专有的 APM、指标或追踪库，为自家方案生成遥测数据。不过，本书力求保持厂商中立，因此将介绍如何使用开源标准实现插桩，使其能够配合多种后端遥测存储。</p>
+<p>本章首先介绍 OpenTelemetry 标准，以及它如何从应用中自动生成遥测数据。自动插桩产生的遥测数据是一个不错的起点，但可观测性真正的力量来自自定义属性：它们能够补充上下文，帮助你调试预期业务逻辑在实践中究竟如何运行。我们会展示如何使用自定义插桩，扩充 OpenTelemetry 开箱即用的插桩能力。读完本章，你将掌握一套端到端插桩策略，用于生成实用的遥测数据。本书后续部分还会介绍如何分析这些遥测数据，找到所需答案。</p>
+<section data-type="sect1" data-pdf-bookmark="插桩简介"><div class="sect1" id="a_brief_introduction_to_instrumentation">
+<h1>插桩简介</h1>
+<p>为应用插桩，把系统状态数据发送到集中式日志或监控方案，是软件行业早已确立的实践。<a contenteditable="false" data-type="indexterm" data-primary="插桩" id="idm45204355166608"/><a contenteditable="false" data-type="indexterm" data-primary="遥测" id="idm45204354982384"/>这类数据称为<em>遥测数据</em>，记录代码处理某组具体请求时执行了什么。多年来，软件开发者定义了多种彼此重叠的<a contenteditable="false" data-type="indexterm" data-primary="遥测数据" id="idm45204354982928"/>遥测数据类别，包括日志、指标，以及较晚出现的追踪和剖析数据。</p>
+<p>如<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>所述，字段可任意扩展的事件是可观测性的理想基础构件。但宽事件并不是新事物；它们只是一种<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="宽事件" id="idm45204354953072"/><a contenteditable="false" data-type="indexterm" data-primary="宽事件" id="idm45204354952304"/>特殊日志，由大量结构化数据字段组成，而不是少量含义模糊的大块文本。一条追踪（参见<a data-type="xref" href="ch06-zh.xhtml#stitching_events_into_trace">第 6 章</a>）则由<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="事件" data-tertiary="宽事件" id="idm45204354986384"/>多个宽事件组成，其中嵌入了连接不同事件所需的字段。</p>
+<p>然而，应用插桩过去通常采用专有方式。有时必须在服务中手工加入代码来生成遥测数据；有时也可以借助代理自动收集数据。除了 <code>printf()</code> 以外，每种监控方案都有自己的一套定制步骤，用于生成遥测数据并以适合该产品后端数据存储的格式传输。</p>
+<p>过去，你可能会在应用中安装<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="库" id="idm45204356158608"/><a contenteditable="false" data-type="indexterm" data-primary="库" data-secondary="插桩库" id="idm45204355597056"/>只适用于特定后端的插桩库或代理，再通过这些客户端库提供的函数添加自己的自定义插桩，捕获所有你认为有助于理解应用内部状态的数据。然而，这些插桩方式与特定产品绑定，也会造成厂商锁定。如果想把遥测数据发送到其他产品，就必须使用另一套库重做整个插桩过程，既重复代码，又使测量开销翻倍。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="开放插桩标准"><div class="sect1" id="open_instrumentation_standards">
+<h1>开放插桩标准</h1>
+<p>多年来，监控和可观测性社区创建了多个开源项目，试图解决厂商锁定问题。OpenTracing（隶属于云原生计算基金会）<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="开放标准" id="idm45204355828784"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="OpenCensus" id="idm45204355119056"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="OpenTracing" id="idm45204354995856"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTracing" id="idm45204354943568"/><a contenteditable="false" data-type="indexterm" data-primary="OpenCensus" id="idm45204354942592"/>和 OpenCensus（由 Google 赞助）分别于 2016 年和 2017 年出现。这两个相互竞争的开放标准为最流行的编程语言提供了一组库，允许实时收集<a contenteditable="false" data-type="indexterm" data-primary="库" data-secondary="遥测数据、开放标准" id="idm45204355607296"/><a contenteditable="false" data-type="indexterm" data-primary="遥测数据" data-secondary="库、开放标准" id="idm45204355833760"/>遥测数据，并传输到用户选择的后端。最终在 2019 年，双方合并力量，在 CNCF 旗下成立了 OpenTelemetry 项目。</p>
+<blockquote data-type="epigraph" epub:type="epigraph">
+<p>标准的好处就在于，可供选择的标准实在太多了。</p>
+<p data-type="attribution">Andrew S. Tanenbaum</p>
+</blockquote>
+<p><em>OpenTelemetry</em>（简称 <em>OTel</em>）代表 OpenTracing 和 OpenCensus 的下一个主要版本，既完整取代两者，也保留兼容性。OTel 可以捕获追踪、指标、日志和其他应用遥测数据，并把它们发送到你选择的后端。OTel 已成为可观测性方案中唯一的应用插桩开源标准。使用 OTel，只需为应用代码插桩一次，就能把遥测数据发送到任意选定的后端系统，无论它是开源方案还是专有产品。</p>
+<p>本章将展示如何借助 OTel 的灵活性和强大能力，迅速踏上可观测性之旅。你可以运用这些知识快速为应用插桩，并在各种可观测性方案中使用所得数据。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="使用代码示例介绍插桩"><div class="sect1" id="instrumentation_using_code_based_exampl">
+<h1>使用代码示例介绍插桩</h1>
+<p>本书出版时，OTel 支持为<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="语言" id="idm45204355009296"/>多种语言编写的代码插桩，包括 Go、Python、Java、Ruby、Erlang、PHP、JavaScript、.NET、Rust、C++ 和 Swift，同时还提供通用消息标准与收集器代理。</p>
+<p>为了提供实际插桩示例，而不是把讨论局限于抽象概念，我们需要选用 OTel 支持的一种具体语言。这些示例使用 Go 编程<a contenteditable="false" data-type="indexterm" data-primary="Go" id="idm45204354970544"/>语言，因为 Kubernetes 就是用 Go 编写的，而且 Go 已成为现代分布式微服务和云原生系统中的通用语言。不过，这些概念适用于任何语言，因为 OTel 会尽可能在支持的每种语言中采用统一术语和 API 设计。</p>
+<p>即使不是 Go 程序员，你也应该能够理解这些示例。我们还会详细解释下面每段代码的作用。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_crash_course_in_opentelemetry_concept">
+<h5>OpenTelemetry 概念速成</h5>
+<p>OpenTelemetry 提供库、代理、工具及其他组件，用于创建和管理服务生成的遥测数据。OTel 统一了不同遥测数据类型的 API，并管理它们共同需要的分布式上下文传播。它结合两个前身项目的概念与组件，在保留各自优势的同时，继续向后兼容已有插桩。</p>
+<p>为此，OTel 把功能拆分成多个组件，并配有一套明确术语。使用 OTel 时，需要记住以下概念：</p>
+<dl>
+<dt>API</dt>
+<dd>OTel 库中的规范部分，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="与 API" id="idm45204354990656"/><a contenteditable="false" data-type="indexterm" data-primary="API（应用程序编程接口）" data-secondary="与 OpenTelemetry" id="idm45204354989184"/>允许开发者为代码添加插桩，而无须关心底层实现。</dd>
+<dt>SDK</dt>
+<dd>OTel 的具体实现<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="与 SDK" id="idm45204354950384"/><a contenteditable="false" data-type="indexterm" data-primary="SDK（软件开发工具包）、与 OpenTelemetry" id="idm45204354917040"/><a contenteditable="false" data-type="indexterm" data-primary="软件开发工具包（SDK）、与 OpenTelemetry" id="idm45204354916064"/>组件，负责追踪状态，并把数据分批以供传输。</dd>
+<dt>追踪器</dt>
+<dd>SDK 中负责<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="追踪器" id="idm45204354914192"/><a contenteditable="false" data-type="indexterm" data-primary="追踪器、与 OpenTelemetry" id="idm45204354912976"/>追踪进程内当前活动跨度的组件。它还允许访问和修改当前跨度，例如添加属性和事件，或者在所追踪的工作完成后结束跨度。</dd>
+<dt>度量器</dt>
+<dd>SDK 中负责<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="度量器" id="idm45204354973536"/>追踪进程内有哪些指标可供报告的组件。它还允许访问和修改当前指标，例如添加数值，或者按固定周期取得这些数值。</dd>
+<dt>上下文传播</dt>
+<dd>SDK 不可或缺的一部分，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="上下文传播" id="idm45204354911248"/><a contenteditable="false" data-type="indexterm" data-primary="上下文传播、与 OpenTelemetry" id="idm45204354972288"/>负责从 W3C <code>TraceContext</code> 或 B3M 等请求头中反序列化当前入站请求的上下文，追踪进程内当前请求上下文，并将其序列化后传递给下游新服务。</dd>
+<dt>导出器</dt>
+<dd>SDK 的一种插件，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="导出器" id="idm45204354918784"/><a contenteditable="false" data-type="indexterm" data-primary="导出器、与 OpenTelemetry" id="idm45204354903216"/>负责把 OTel 内存对象转换成适当格式，再交付到指定目的地。目的地可以位于本地，例如日志文件或 <code>stdout</code>；也可以位于远程，后端既可以是 Jaeger 等开源方案，也可以是 Honeycomb、Lightstep 等专有商业方案。对于远程目的地，OTel 默认使用一种采用 OpenTelemetry 协议（OTLP）的导出器；<a contenteditable="false" data-type="indexterm" data-primary="OTLP（OpenTelemetry Protocol）" id="idm45204355218528"/>这种线路协议可以把数据发送到 OpenTelemetry 收集器。</dd>
+<dt>收集器</dt>
+<dd><p>一个独立的二进制进程，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="收集器" id="idm45204356164464"/><a contenteditable="false" data-type="indexterm" data-primary="收集器、OpenTelemetry" id="idm45204354896800"/>可以作为代理或边车运行，接收遥测数据（默认采用 OTLP 格式）、处理数据，再把数据复制并发送到一个或多个已配置的目的地。</p></dd>
+</dl>
+<p>深入探讨 OTel 组件超出了本书范围。如需进一步了解这些概念，请阅读 <a href="https://docs.opentelemetry.io">OpenTelemetry 文档</a>。</p>
+</div></aside>
+<section data-type="sect2" data-pdf-bookmark="从自动插桩开始"><div class="sect2" id="start_with_automatic_instrumentation">
+<h2>从自动插桩开始</h2>
+<p>采用分布式追踪时，最大的挑战之一，是取得足够多的实用数据，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="自动插桩" id="otautoinst"/>从而把数据与自己已经掌握的系统知识对应起来。怎样才能让可观测性系统认识现有的服务、端点和依赖关系，从而开始提供洞察？当然<em>可以</em>为每个请求手工开始和结束追踪跨度，但有一种更好的方法可以降低阻力，让你在几小时或几天内获得洞察，而不是等上几个月。</p>
+<p>为此，OTel 提供自动插桩，尽量缩短用户首次获得价值所需的时间。OTel 的使命是降低采用云原生生态系统和微服务的难度，因此它支持服务交互中最常用的框架。例如，OTel 会为经过插桩的服务自动生成跨度，覆盖入站与出站的 gRPC、HTTP 以及数据库和缓存调用。这样至少可以得到一副骨架，显示微服务与下游依赖组成的复杂网络中，究竟是谁调用了谁。</p>
+<p>为了自动记录请求属性和耗时，框架需要在处理每个请求前后调用 OTel。因此，常见框架<a contenteditable="false" data-type="indexterm" data-primary="包装器" id="idm45204355003568"/><a contenteditable="false" data-type="indexterm" data-primary="拦截器" id="idm45204354937152"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="包装器" id="idm45204354932304"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="拦截器" id="idm45204354930928"/>通常支持包装器、拦截器或中间件；OTel 可以挂接到这些机制上，自动读取上下文传播元数据，并为每个请求创建跨度。在 Go 中，由于语言要求显式类型安全和编译时配置，这项配置也必须显式完成；而在 Java、.NET 等语言中，可以在运行时附加独立的 OpenTelemetry 代理，由它推断正在运行哪些框架，并自动完成注册。</p>
+<p>以包装器模式为例，Go 中各种 Web 框架的共同基础是 <code>http.Request/http.Response HandlerFunc</code> 接口。可以使用 <code>otelhttp</code> 包包装已有 HTTP 处理函数，再把它传给 HTTP 服务器的默认请求路由器；这种路由器在 Go 中称为 <em>mux</em>：</p>
+<pre data-type="programlisting">import "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+mux.Handle("/route",
+otelhttp.NewHandler(otelhttp.WithRouteTag("/route",
+http.HandlerFunc(h)), "handler_span_name"))</pre>
+<p>相比之下，gRPC 提供了一个 <code>Interceptor</code> 接口，可以把它交给 OTel 来注册插桩：</p>
+<pre data-type="programlisting">import (
+  "go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+)
+
+s := grpc.NewServer(
+  grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+  grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+)</pre>
+<p>有了这些自动生成的数据，你就能发现未缓存的高频数据库调用，或者找出只在部分服务的部分端点上表现缓慢的下游依赖。不过，这只是你将获得的洞察的<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="自动插桩" data-startref="otautoinst" id="idm45204354878928"/>最初起点。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="添加自定义插桩"><div class="sect2" id="add_custom_instrumentation">
+<h2>添加自定义插桩</h2>
+<p>具备自动插桩后，<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="自定义插桩" id="optcuinst"/>你就有了坚实基础，可以继续投入与自身业务逻辑相关的自定义插桩。在代码内部，可以把客户端 ID、分片 ID、错误等字段和丰富数值附加到自动插桩生成的跨度上。这些注解会让你日后更容易理解每一层正在发生什么。</p>
+<p>对于进程内部耗时特别长或代价特别高的步骤，可以在<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="自定义" id="idm45204354872608"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="追踪跨度" data-tertiary="自定义" id="idm45204355067504"/>应用中添加自定义跨度。这样，你就不再局限于针对出站依赖调用自动生成的跨度，而能看清代码的所有区域。这类自定义插桩有助于实践可观测性驱动开发：编写新功能时同时创建插桩，从而在功能发布过程中实时验证它在生产环境中的运行是否符合预期（参见<a data-type="xref" href="ch11-zh.xhtml#observability_driven_development">第 11 章</a>）。为代码添加自定义插桩，可以主动让未来的问题更容易调试，因为它为某条具体代码执行路径提供了包括业务逻辑在内的完整上下文。</p>
+<section data-type="sect3" data-pdf-bookmark="开始和结束追踪跨度"><div class="sect3" id="starting_and_finishing_trace_spans">
+<h3>开始和结束追踪跨度</h3>
+<p>如<a data-type="xref" href="ch06-zh.xhtml#stitching_events_into_trace">第 6 章</a>详述，追踪跨度<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="追踪跨度" data-tertiary="开始/结束" id="idm45204355483280"/>应该覆盖每一个单独执行的工作单元。通常，这个工作单元是经过某项微服务的单个请求，可以在 HTTP 请求层或 RPC 层实例化。不过在某些情况下，你可能希望添加更多细节，以了解执行时间花在了哪里、记录正在进行的子处理信息，或者呈现其他各种细节。</p>
+<p>OTel 追踪器会<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="追踪器" id="idm45204355170304"/>在 <code>context.Context</code> 的一个键中保存进程内当前活动跨度的信息；不同语言也可能使用线程局部存储。谈到 OTel 中的上下文时，需要消除这个词的歧义。<em>上下文</em>既可能指逻辑含义，即服务中某个事件周围的状况，也可能指特定类型的上下文，例如追踪的跨度上下文。因此，要开始一个新跨度，必须从 OTel 获取适合当前组件的追踪器，并把需要更新的当前上下文传给它：</p>
+<pre data-type="programlisting">import "go.opentelemetry.io/otel"
+
+// Within each module, define a private tracer once for easy identification
+var tr = otel.Tracer("module_name")
+
+func funcName(ctx context.Context) {
+  sp := tr.Start(ctx, "span_name")
+  defer sp.End()
+  // do work here
+}</pre>
+<p>这段代码会把已有上下文中的跨度，例如 HTTP 或 gRPC 上下文中的跨度，作为父跨度来创建并命名一个子跨度；随后启动计时、计算跨度持续时间，并在函数调用结束时执行 <code>defer</code>，结束跨度以便把它传输到后端。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="向事件添加宽字段"><div class="sect3" id="adding_wide_fields_to_an_event">
+<h3>向事件添加宽字段</h3>
+<p>前面几章已经说明，要最好地实现可观测性，应该把每个函数执行过程中产生的数据汇集起来，<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="宽事件" id="idm45204354858032"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="宽事件" id="idm45204354857264"/><a contenteditable="false" data-type="indexterm" data-primary="宽事件" id="idm45204354876528"/>每个请求最终形成一个宽事件。这意味着，为了判断服务健康状况、确定受影响的用户范围，或者理解代码执行期间的状态，任何你认为有价值的自定义字段都可以而且应该添加进去。</p>
+<p>OTel 会在每个请求执行期间临时缓冲并汇集插桩所添加的各个字段，使向采集的遥测数据添加自定义字段变得非常容易。OTel 数据模型会保留开放的跨度，直到跨度被标记为结束。因此，可以把大量不同的元数据字段附加到遥测数据上，最终统一写入一个跨度。规模较小时，可以用代码中的常量非正式地管理模式；规模较大时，则应参阅<a data-type="xref" href="ch18-zh.xhtml#telemetry_management_with_pipelines">第 18 章</a>，了解如何使用遥测流水线规范化模式。</p>
+<p>只要进程或线程上下文中存在活动跨度，就可以调用 <code>sp := trace.SpanFromContext(ctx)</code>，从活动上下文对象中取得当前活动跨度。对于采用隐式线程局部上下文的语言，无须传入显式上下文参数。</p>
+<p>取得当前活动跨度后，就可以向它添加字段或事件。在 Go 中，为了获得最高性能并保证类型安全，必须显式指定类型：</p>
+<pre data-type="programlisting">import "go.opentelemetry.io/otel/attribute"
+sp.SetAttributes(attribute.Int("http.code", resp.ResponseCode))
+sp.SetAttributes(attribute.String("app.user", username))</pre>
+<p>这段代码设置了两个键值对属性。属性 <code>http.code</code> 包含一个整数值，即 HTTP 响应代码；<code>app.user</code> 包含一个字符串，即当前执行请求中的用户名。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="记录进程级指标"><div class="sect3" id="recording_process_wide_metrics">
+<h3>记录进程级指标</h3>
+<p>一般而言，度量值和计数器等大多数指标，都应该记录为与其相关的追踪跨度属性。<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="进程级指标" id="idm45204354845824"/><a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="OpenTelemetry" id="idm45204354845056"/>例如，“购物车中的商品价值”最好关联到处理该用户购物车的跨度，而不是先聚合，再由指标系统抓取。但如果确实需要按特定维度预聚合且未经采样的精确计数，或者需要定期抓取与请求无关的进程级数值，可以用一组标签更新度量值或计数器：</p>
+<pre data-type="programlisting">import "go.opentelemetry.io/otel"
+import "go.opentelemetry.io/otel/metric"
+
+// similar to instantiating a tracer, you will want a meter per package.
+var meter = otel.Meter("example_package")
+
+// predefine our keys so we can reuse them and avoid overhead
+var appKey = attribute.Key("app")
+var containerKey = attribute.Key("container")
+
+goroutines, _ := metric.Must(meter).NewInt64Measure("num_goroutines",
+  metric.WithKeys(appKey, containerKey),
+  metric.WithDescription("Amount of goroutines running."),
+)
+
+// Then, within a periodic ticker goroutine:
+meter.RecordBatch(ctx, []attribute.KeyValue{
+  appKey.String(os.Getenv("PROJECT_DOMAIN")),
+  containerKey.String(os.Getenv("HOSTNAME"))},
+  goroutines.Measurement(int64(runtime.NumGoroutine())),
+  // insert other measurements performed on a measure here.
+)</pre>
+<p>这段代码会定期记录正在运行的 goroutine 数量，并通过 OTel 导出数据。</p>
+<p>在走向可观测性的道路上，我们强烈建议不要把自己限制在大多数应用级指标提供的僵化度量方式中。第 <a data-type="xref" href="ch09-zh.xhtml#how_observability_and_monitoring_come_t">9 章</a>会进一步探讨这个主题。目前，如果确实必须记录某项指标的<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="自定义插桩" data-startref="optcuinst" id="idm45204355184576"/>数值，可以使用与前面类似的方法。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="把插桩数据发送到后端系统"><div class="sect2" id="send_instrumentation_data_to_a_backend">
+<h2>把插桩数据发送到后端系统</h2>
+<p>OTel 默认假设你会把数据发送到<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="遥测数据、导出到后端" id="inttsys"/><a contenteditable="false" data-type="indexterm" data-primary="遥测数据" data-secondary="导出、后端" id="tdbsys"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="遥测数据" data-tertiary="导出到后端" id="ottdbsys"/>在默认端口运行的本地边车。不过，你也可能希望在应用启动代码中明确指定如何路由数据。</p>
+<p>使用前述方法创建遥测数据后，需要把它发送到某个地方。OTel 支持两种主要方法，把数据从进程导出到分析后端：可以通过 OpenTelemetry 收集器代理数据（参见<a data-type="xref" href="ch18-zh.xhtml#telemetry_management_with_pipelines">第 18 章</a>），也可以直接从进程导出到后端。</p>
+<p>直接从进程导出，需要导入、依赖并实例化一个或多个导出器。<em>导出器</em>是一些库，负责把 OTel 的内存跨度对象和指标对象转换成各种遥测分析工具所需的格式。</p>
+<p>导出器通常在程序启动时、一般是在 main 函数中实例化<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="导出器" data-tertiary="实例化" id="idm45204355440336"/>一次。通常只需向某一个后端发出遥测数据。不过，OTel 允许任意实例化并配置多个导出器，使系统能够同时把同一份遥测数据发往多个遥测接收端。导出到多个接收端的一种用途，是在继续不间断使用当前生产可观测性工具的同时，用相同遥测数据测试另一款候选可观测性工具的能力。</p>
+<p>OTLP 已经广泛普及，因此最合理的默认做法，是始终把 OTLP gRPC 导出器配置为指向厂商后端或 OpenTelemetry 收集器（参见<a data-type="xref" href="ch18-zh.xhtml#telemetry_management_with_pipelines">第 18 章</a>），而不是使用厂商定制代码：</p>
+<pre data-type="programlisting">driver := otlpgrpc.NewClient(
+  otlpgrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, "")),
+  otlpgrpc.WithEndpoint("my.backend.com:443"),
+)
+otExporter, err := otlp.New(ctx, driver)
+tp := sdktrace.NewTracerProvider(
+  sdktrace.WithSampler(sdktrace.AlwaysSample()),
+  sdktrace.WithResource(resource.NewWithAttributes(
+    semconv.SchemaURL, semconv.ServiceNameKey.String(serviceName))),
+  sdktrace.WithBatcher(otExporter))</pre>
+<p>但如果必须为既不是 OpenTelemetry 收集器、也不支持通用 OTLP 标准的后端配置多个自定义导出器，下面的示例会在应用启动代码中实例化两个导出器：</p>
+<pre data-type="programlisting">import (
+  x "github.com/my/backend/exporter"
+  y "github.com/some/backend/exporter"
+  "go.opentelemetry.io/otel"
+  sdktrace "go.opentelemetry.io/otel/sdk/trace"
+)
+
+func main() {
+  exporterX = x.NewExporter(...)
+  exporterY = y.NewExporter(...)
+  tp, err := sdktrace.NewTracerProvider(
+    sdktrace.WithSampler(sdktrace.AlwaysSample()),
+    sdktrace.WithSyncer(exporterX),
+    sdktrace.WithBatcher(exporterY),
+  )
+  otel.SetTracerProvider(tp)</pre>
+<p>这段示例代码同时导入 <em>my/backend/exporter</em> 和 <em>some/backend/exporter</em>，将它们配置为以同步或分批方式接收追踪器提供程序发出的追踪跨度，再把这个提供程序设为默认追踪器提供程序。这套机制会使后续所有 <code>otel.Tracer()</code> 调用都取得一个<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="遥测数据、导出到后端" data-startref="inttsys" id="idm45204354899408"/><a contenteditable="false" data-type="indexterm" data-primary="遥测数据" data-secondary="导出、后端" data-startref="tdbsys" id="idm45204354822208"/><a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="遥测数据" data-tertiary="导出到后端" data-startref="ottdbsys" id="idm45204354820752"/>配置正确的追踪器。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000080">
+<h1>结语</h1>
+<p>为应用插桩以实现可观测性有多种方法，OTel 则是一项开源标准，使你能够把遥测数据发送到任意数量、自行选择的后端数据存储。OTel 正在成为一种新的厂商中立方案，确保无论选择哪种可观测性系统，都能为应用插桩并发出遥测数据。</p>
+<p>本章代码示例使用 Go 编写，但相同术语和概念适用于 OTel 当前支持的所有语言。示例代码的扩展版可以编译运行，可在<a href="https://oreil.ly/7IcWz">网上</a>获取。你可以遵循同样的步骤，利用自动插桩的能力、向事件添加自定义字段、开始和结束追踪跨度，以及实例化导出器。如有必要，甚至可以把指标添加到追踪中。</p>
+<p>不过，这也引出了一个问题：谈到指标时，为什么要加上“如有必要”这个限制条件？指标这种数据类型存在固有局限。接下来两章将分别探讨事件和指标的使用，进一步说明这个问题。</p>
+</div></section>
+</div></section></div></body>
+</html>

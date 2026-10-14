@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+<head>
+<meta content="ID:ISBN:9781492076445" name="dtb:uid"/>
+<meta content="3" name="dtb:depth"/>
+<meta content="0" name="dtb:totalPageCount"/>
+<meta content="0" name="dtb:maxPageNumber"/>
+</head>
+<docTitle><text>Observability Engineering</text></docTitle>
+<docAuthor><text>Charity Majors, Liz Fong-Jones, George Miranda</text></docAuthor>
+<navMap><navPoint id="foreword" playOrder="1"><navLabel><text>Foreword</text></navLabel><content src="foreword01.xhtml#foreword"/></navPoint>
+<navPoint id="preface" playOrder="2"><navLabel><text>Preface</text></navLabel><content src="preface01.xhtml#preface"/><navPoint id="who_this_book_is_for" playOrder="3"><navLabel><text>Who This Book Is For</text></navLabel><content src="preface01.xhtml#who_this_book_is_for"/></navPoint>
+<navPoint id="why_we_wrote_this_book" playOrder="4"><navLabel><text>Why We Wrote This Book</text></navLabel><content src="preface01.xhtml#why_we_wrote_this_book"/></navPoint>
+<navPoint id="what_you_will_learn" playOrder="5"><navLabel><text>What You Will Learn</text></navLabel><content src="preface01.xhtml#what_you_will_learn"/></navPoint>
+<navPoint id="_conventions_used_in_this_book" playOrder="6"><navLabel><text>Conventions Used in This Book</text></navLabel><content src="preface01.xhtml#_conventions_used_in_this_book"/></navPoint>
+<navPoint id="_using_code_examples" playOrder="7"><navLabel><text>Using Code Examples</text></navLabel><content src="preface01.xhtml#_using_code_examples"/></navPoint>
+<navPoint id="_safari_books_online" playOrder="8"><navLabel><text>O’Reilly Online Learning</text></navLabel><content src="preface01.xhtml#_safari_books_online"/></navPoint>
+<navPoint id="_how_to_contact_us" playOrder="9"><navLabel><text>How to Contact Us</text></navLabel><content src="preface01.xhtml#_how_to_contact_us"/></navPoint>
+<navPoint id="acknowledgments" playOrder="10"><navLabel><text>Acknowledgments</text></navLabel><content src="preface01.xhtml#acknowledgments"/></navPoint>
+</navPoint>
+<navPoint id="the_path_to_observability" playOrder="11"><navLabel><text>I. The Path to Observability</text></navLabel><content src="part01.xhtml#the_path_to_observability"/></navPoint>
+<navPoint id="what_is_observabilityquestion_mark" playOrder="12"><navLabel><text>1. What Is Observability?</text></navLabel><content src="ch01.xhtml#what_is_observabilityquestion_mark"/><navPoint id="the_mathematical_definition_of_observab" playOrder="13"><navLabel><text>The Mathematical Definition of Observability</text></navLabel><content src="ch01.xhtml#the_mathematical_definition_of_observab"/></navPoint>
+<navPoint id="applying_observability_to_software_syst" playOrder="14"><navLabel><text>Applying Observability to Software Systems</text></navLabel><content src="ch01.xhtml#applying_observability_to_software_syst"/></navPoint>
+<navPoint id="mischaracterizations_about_observabilit" playOrder="15"><navLabel><text>Mischaracterizations About Observability for Software</text></navLabel><content src="ch01.xhtml#mischaracterizations_about_observabilit"/></navPoint>
+<navPoint id="why_observability_matters_now" playOrder="16"><navLabel><text>Why Observability Matters Now</text></navLabel><content src="ch01.xhtml#why_observability_matters_now"/><navPoint id="is_this_really_the_best_wayquestion_mar" playOrder="17"><navLabel><text>Is This Really the Best Way?</text></navLabel><content src="ch01.xhtml#is_this_really_the_best_wayquestion_mar"/></navPoint>
+<navPoint id="why_are_metrics_and_monitoring_not_enou" playOrder="18"><navLabel><text>Why Are Metrics and Monitoring Not Enough?</text></navLabel><content src="ch01.xhtml#why_are_metrics_and_monitoring_not_enou"/></navPoint>
+</navPoint>
+<navPoint id="debugging_with_metrics_versus_observabi" playOrder="19"><navLabel><text>Debugging with Metrics Versus Observability</text></navLabel><content src="ch01.xhtml#debugging_with_metrics_versus_observabi"/><navPoint id="the_role_of_cardinality" playOrder="20"><navLabel><text>The Role of Cardinality</text></navLabel><content src="ch01.xhtml#the_role_of_cardinality"/></navPoint>
+<navPoint id="the_role_of_dimensionality" playOrder="21"><navLabel><text>The Role of Dimensionality</text></navLabel><content src="ch01.xhtml#the_role_of_dimensionality"/></navPoint>
+</navPoint>
+<navPoint id="debugging_with_observability" playOrder="22"><navLabel><text>Debugging with Observability</text></navLabel><content src="ch01.xhtml#debugging_with_observability"/></navPoint>
+<navPoint id="observability_is_for_modern_systems" playOrder="23"><navLabel><text>Observability Is for Modern Systems</text></navLabel><content src="ch01.xhtml#observability_is_for_modern_systems"/></navPoint>
+<navPoint id="conclusion-id000001" playOrder="24"><navLabel><text>Conclusion</text></navLabel><content src="ch01.xhtml#conclusion-id000001"/></navPoint>
+</navPoint>
+<navPoint id="how_debugging_practices_differ_between" playOrder="25"><navLabel><text>2. How Debugging Practices Differ Between Observability and Monitoring</text></navLabel><content src="ch02.xhtml#how_debugging_practices_differ_between"/><navPoint id="how_monitoring_data_is_used_for_debuggi" playOrder="26"><navLabel><text>How Monitoring Data Is Used for Debugging</text></navLabel><content src="ch02.xhtml#how_monitoring_data_is_used_for_debuggi"/><navPoint id="troubleshooting_behaviors_when_using_da" playOrder="27"><navLabel><text>Troubleshooting Behaviors When Using Dashboards</text></navLabel><content src="ch02.xhtml#troubleshooting_behaviors_when_using_da"/></navPoint>
+<navPoint id="the_limitations_of_troubleshooting_by_i" playOrder="28"><navLabel><text>The Limitations of Troubleshooting by Intuition</text></navLabel><content src="ch02.xhtml#the_limitations_of_troubleshooting_by_i"/></navPoint>
+<navPoint id="traditional_monitoring_is_fundamentally" playOrder="29"><navLabel><text>Traditional Monitoring Is Fundamentally Reactive</text></navLabel><content src="ch02.xhtml#traditional_monitoring_is_fundamentally"/></navPoint>
+</navPoint>
+<navPoint id="how_observability_enables_better_debugg" playOrder="30"><navLabel><text>How Observability Enables Better Debugging</text></navLabel><content src="ch02.xhtml#how_observability_enables_better_debugg"/></navPoint>
+<navPoint id="conclusion-id000002" playOrder="31"><navLabel><text>Conclusion</text></navLabel><content src="ch02.xhtml#conclusion-id000002"/></navPoint>
+</navPoint>
+<navPoint id="lessons_from_scaling_without_observabil" playOrder="32"><navLabel><text>3. Lessons from Scaling Without Observability</text></navLabel><content src="ch03.xhtml#lessons_from_scaling_without_observabil"/><navPoint id="an_introduction_to_parse" playOrder="33"><navLabel><text>An Introduction to Parse</text></navLabel><content src="ch03.xhtml#an_introduction_to_parse"/></navPoint>
+<navPoint id="scaling_at_parse" playOrder="34"><navLabel><text>Scaling at Parse</text></navLabel><content src="ch03.xhtml#scaling_at_parse"/></navPoint>
+<navPoint id="the_evolution_toward_modern_systems" playOrder="35"><navLabel><text>The Evolution Toward Modern Systems</text></navLabel><content src="ch03.xhtml#the_evolution_toward_modern_systems"/></navPoint>
+<navPoint id="the_evolution_toward_modern_practices" playOrder="36"><navLabel><text>The Evolution Toward Modern Practices</text></navLabel><content src="ch03.xhtml#the_evolution_toward_modern_practices"/></navPoint>
+<navPoint id="shifting_practices_at_parse" playOrder="37"><navLabel><text>Shifting Practices at Parse</text></navLabel><content src="ch03.xhtml#shifting_practices_at_parse"/></navPoint>
+<navPoint id="conclusion-id000004" playOrder="38"><navLabel><text>Conclusion</text></navLabel><content src="ch03.xhtml#conclusion-id000004"/></navPoint>
+</navPoint>
+<navPoint id="how_observability_relates_to_devopscomm" playOrder="39"><navLabel><text>4. How Observability Relates to DevOps, SRE, and Cloud Native</text></navLabel><content src="ch04.xhtml#how_observability_relates_to_devopscomm"/><navPoint id="cloud_nativecomma_devopscomma_and_sre_i" playOrder="40"><navLabel><text>Cloud Native, DevOps, and SRE in a Nutshell</text></navLabel><content src="ch04.xhtml#cloud_nativecomma_devopscomma_and_sre_i"/></navPoint>
+<navPoint id="observability_debugging_then_versus_now" playOrder="41"><navLabel><text>Observability: Debugging Then Versus Now</text></navLabel><content src="ch04.xhtml#observability_debugging_then_versus_now"/></navPoint>
+<navPoint id="observability_empowers_devops_and_sre_p" playOrder="42"><navLabel><text>Observability Empowers DevOps and SRE Practices</text></navLabel><content src="ch04.xhtml#observability_empowers_devops_and_sre_p"/></navPoint>
+<navPoint id="conclusion-id000005" playOrder="43"><navLabel><text>Conclusion</text></navLabel><content src="ch04.xhtml#conclusion-id000005"/></navPoint>
+</navPoint>
+<navPoint id="fundamentals_of_observability" playOrder="44"><navLabel><text>II. Fundamentals of Observability</text></navLabel><content src="part02.xhtml#fundamentals_of_observability"/></navPoint>
+<navPoint id="structured_events_are_the_building_bloc" playOrder="45"><navLabel><text>5. Structured Events Are the Building Blocks of Observability</text></navLabel><content src="ch05.xhtml#structured_events_are_the_building_bloc"/><navPoint id="debugging_with_structured_events" playOrder="46"><navLabel><text>Debugging with Structured Events</text></navLabel><content src="ch05.xhtml#debugging_with_structured_events"/></navPoint>
+<navPoint id="the_limitations_of_metrics_as_a_buildin" playOrder="47"><navLabel><text>The Limitations of Metrics as a Building Block</text></navLabel><content src="ch05.xhtml#the_limitations_of_metrics_as_a_buildin"/></navPoint>
+<navPoint id="the_limitations_of_traditional_logs_as" playOrder="48"><navLabel><text>The Limitations of Traditional Logs as a Building Block</text></navLabel><content src="ch05.xhtml#the_limitations_of_traditional_logs_as"/><navPoint id="unstructured_logs" playOrder="49"><navLabel><text>Unstructured Logs</text></navLabel><content src="ch05.xhtml#unstructured_logs"/></navPoint>
+<navPoint id="structured_logs" playOrder="50"><navLabel><text>Structured Logs</text></navLabel><content src="ch05.xhtml#structured_logs"/></navPoint>
+</navPoint>
+<navPoint id="properties_of_events_that_are_useful_in" playOrder="51"><navLabel><text>Properties of Events That Are Useful in Debugging</text></navLabel><content src="ch05.xhtml#properties_of_events_that_are_useful_in"/></navPoint>
+<navPoint id="conclusion-id000006" playOrder="52"><navLabel><text>Conclusion</text></navLabel><content src="ch05.xhtml#conclusion-id000006"/></navPoint>
+</navPoint>
+<navPoint id="stitching_events_into_trace" playOrder="53"><navLabel><text>6. Stitching Events into Traces</text></navLabel><content src="ch06.xhtml#stitching_events_into_trace"/><navPoint id="distributed_tracing_and_why_it_matters" playOrder="54"><navLabel><text>Distributed Tracing and Why It Matters Now</text></navLabel><content src="ch06.xhtml#distributed_tracing_and_why_it_matters"/></navPoint>
+<navPoint id="the_components_of_tracing" playOrder="55"><navLabel><text>The Components of Tracing</text></navLabel><content src="ch06.xhtml#the_components_of_tracing"/></navPoint>
+<navPoint id="instrumenting_a_trace_the_hard_way" playOrder="56"><navLabel><text>Instrumenting a Trace the Hard Way</text></navLabel><content src="ch06.xhtml#instrumenting_a_trace_the_hard_way"/></navPoint>
+<navPoint id="adding_custom_fields_into_trace_spans" playOrder="57"><navLabel><text>Adding Custom Fields into Trace Spans</text></navLabel><content src="ch06.xhtml#adding_custom_fields_into_trace_spans"/></navPoint>
+<navPoint id="stitching_events_into_trac" playOrder="58"><navLabel><text>Stitching Events into Traces</text></navLabel><content src="ch06.xhtml#stitching_events_into_trac"/></navPoint>
+<navPoint id="conclusion-id000007" playOrder="59"><navLabel><text>Conclusion</text></navLabel><content src="ch06.xhtml#conclusion-id000007"/></navPoint>
+</navPoint>
+<navPoint id="instrumentation_with_opentelemetry" playOrder="60"><navLabel><text>7. Instrumentation with OpenTelemetry</text></navLabel><content src="ch07.xhtml#instrumentation_with_opentelemetry"/><navPoint id="a_brief_introduction_to_instrumentation" playOrder="61"><navLabel><text>A Brief Introduction to Instrumentation</text></navLabel><content src="ch07.xhtml#a_brief_introduction_to_instrumentation"/></navPoint>
+<navPoint id="open_instrumentation_standards" playOrder="62"><navLabel><text>Open Instrumentation Standards</text></navLabel><content src="ch07.xhtml#open_instrumentation_standards"/></navPoint>
+<navPoint id="instrumentation_using_code_based_exampl" playOrder="63"><navLabel><text>Instrumentation Using Code-Based Examples</text></navLabel><content src="ch07.xhtml#instrumentation_using_code_based_exampl"/><navPoint id="start_with_automatic_instrumentation" playOrder="64"><navLabel><text>Start with Automatic Instrumentation</text></navLabel><content src="ch07.xhtml#start_with_automatic_instrumentation"/></navPoint>
+<navPoint id="add_custom_instrumentation" playOrder="65"><navLabel><text>Add Custom Instrumentation</text></navLabel><content src="ch07.xhtml#add_custom_instrumentation"/></navPoint>
+<navPoint id="send_instrumentation_data_to_a_backend" playOrder="66"><navLabel><text>Send Instrumentation Data to a Backend System</text></navLabel><content src="ch07.xhtml#send_instrumentation_data_to_a_backend"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000080" playOrder="67"><navLabel><text>Conclusion</text></navLabel><content src="ch07.xhtml#conclusion-id000080"/></navPoint>
+</navPoint>
+<navPoint id="analyzing_events_to_achieve_observabili" playOrder="68"><navLabel><text>8. Analyzing Events to Achieve Observability</text></navLabel><content src="ch08.xhtml#analyzing_events_to_achieve_observabili"/><navPoint id="debugging_from_known_conditions" playOrder="69"><navLabel><text>Debugging from Known Conditions</text></navLabel><content src="ch08.xhtml#debugging_from_known_conditions"/></navPoint>
+<navPoint id="debugging_from_first_principles" playOrder="70"><navLabel><text>Debugging from First Principles</text></navLabel><content src="ch08.xhtml#debugging_from_first_principles"/><navPoint id="using_the_core_analysis_loop" playOrder="71"><navLabel><text>Using the Core Analysis Loop</text></navLabel><content src="ch08.xhtml#using_the_core_analysis_loop"/></navPoint>
+<navPoint id="automating_the_brute_force_portion_of_t" playOrder="72"><navLabel><text>Automating the Brute-Force Portion of the Core Analysis Loop</text></navLabel><content src="ch08.xhtml#automating_the_brute_force_portion_of_t"/></navPoint>
+</navPoint>
+<navPoint id="this_misleading_promise_of_aiops" playOrder="73"><navLabel><text>This Misleading Promise of AIOps</text></navLabel><content src="ch08.xhtml#this_misleading_promise_of_aiops"/></navPoint>
+<navPoint id="conclusion-id000091" playOrder="74"><navLabel><text>Conclusion</text></navLabel><content src="ch08.xhtml#conclusion-id000091"/></navPoint>
+</navPoint>
+<navPoint id="how_observability_and_monitoring_come_t" playOrder="75"><navLabel><text>9. How Observability and Monitoring Come Together</text></navLabel><content src="ch09.xhtml#how_observability_and_monitoring_come_t"/><navPoint id="where_monitoring_fits" playOrder="76"><navLabel><text>Where Monitoring Fits</text></navLabel><content src="ch09.xhtml#where_monitoring_fits"/></navPoint>
+<navPoint id="where_observability_fits" playOrder="77"><navLabel><text>Where Observability Fits</text></navLabel><content src="ch09.xhtml#where_observability_fits"/></navPoint>
+<navPoint id="system_versus_software_considerations" playOrder="78"><navLabel><text>System Versus Software Considerations</text></navLabel><content src="ch09.xhtml#system_versus_software_considerations"/></navPoint>
+<navPoint id="assessing_your_organizational_needs" playOrder="79"><navLabel><text>Assessing Your Organizational Needs</text></navLabel><content src="ch09.xhtml#assessing_your_organizational_needs"/><navPoint id="exceptions_infrastructure_monitoring_th" playOrder="80"><navLabel><text>Exceptions: Infrastructure Monitoring That Can’t Be Ignored</text></navLabel><content src="ch09.xhtml#exceptions_infrastructure_monitoring_th"/></navPoint>
+<navPoint id="real_world_examples" playOrder="81"><navLabel><text>Real-World Examples</text></navLabel><content src="ch09.xhtml#real_world_examples"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000008" playOrder="82"><navLabel><text>Conclusion</text></navLabel><content src="ch09.xhtml#conclusion-id000008"/></navPoint>
+</navPoint>
+<navPoint id="observability_for_teams" playOrder="83"><navLabel><text>III. Observability for Teams</text></navLabel><content src="part03.xhtml#observability_for_teams"/></navPoint>
+<navPoint id="applying_observability_practices_in_you" playOrder="84"><navLabel><text>10. Applying Observability Practices in Your Team</text></navLabel><content src="ch10.xhtml#applying_observability_practices_in_you"/><navPoint id="join_a_community_group" playOrder="85"><navLabel><text>Join a Community Group</text></navLabel><content src="ch10.xhtml#join_a_community_group"/></navPoint>
+<navPoint id="start_with_the_biggest_pain_points" playOrder="86"><navLabel><text>Start with the Biggest Pain Points</text></navLabel><content src="ch10.xhtml#start_with_the_biggest_pain_points"/></navPoint>
+<navPoint id="buy_instead_of_build" playOrder="87"><navLabel><text>Buy Instead of Build</text></navLabel><content src="ch10.xhtml#buy_instead_of_build"/></navPoint>
+<navPoint id="flesh_out_your_instrumentation_iterativ" playOrder="88"><navLabel><text>Flesh Out Your Instrumentation Iteratively</text></navLabel><content src="ch10.xhtml#flesh_out_your_instrumentation_iterativ"/></navPoint>
+<navPoint id="look_for_opportunities_to_leverage_exis" playOrder="89"><navLabel><text>Look for Opportunities to Leverage Existing Efforts</text></navLabel><content src="ch10.xhtml#look_for_opportunities_to_leverage_exis"/></navPoint>
+<navPoint id="prepare_for_the_hardest_last_push" playOrder="90"><navLabel><text>Prepare for the Hardest Last Push</text></navLabel><content src="ch10.xhtml#prepare_for_the_hardest_last_push"/></navPoint>
+<navPoint id="conclusion-id000009" playOrder="91"><navLabel><text>Conclusion</text></navLabel><content src="ch10.xhtml#conclusion-id000009"/></navPoint>
+</navPoint>
+<navPoint id="observability_driven_development" playOrder="92"><navLabel><text>11. Observability-Driven Development</text></navLabel><content src="ch11.xhtml#observability_driven_development"/><navPoint id="test_driven_development" playOrder="93"><navLabel><text>Test-Driven Development</text></navLabel><content src="ch11.xhtml#test_driven_development"/></navPoint>
+<navPoint id="observability_in_the_development_cycle" playOrder="94"><navLabel><text>Observability in the Development Cycle</text></navLabel><content src="ch11.xhtml#observability_in_the_development_cycle"/></navPoint>
+<navPoint id="determining_where_to_debug" playOrder="95"><navLabel><text>Determining Where to Debug</text></navLabel><content src="ch11.xhtml#determining_where_to_debug"/></navPoint>
+<navPoint id="debugging_in_the_time_of_microservices" playOrder="96"><navLabel><text>Debugging in the Time of Microservices</text></navLabel><content src="ch11.xhtml#debugging_in_the_time_of_microservices"/></navPoint>
+<navPoint id="how_instrumentation_drives_observabilit" playOrder="97"><navLabel><text>How Instrumentation Drives Observability</text></navLabel><content src="ch11.xhtml#how_instrumentation_drives_observabilit"/></navPoint>
+<navPoint id="shifting_observability_left" playOrder="98"><navLabel><text>Shifting Observability Left</text></navLabel><content src="ch11.xhtml#shifting_observability_left"/></navPoint>
+<navPoint id="using_observability_to_speed_up_softwar" playOrder="99"><navLabel><text>Using Observability to Speed Up Software Delivery</text></navLabel><content src="ch11.xhtml#using_observability_to_speed_up_softwar"/></navPoint>
+<navPoint id="conclusion-id000010" playOrder="100"><navLabel><text>Conclusion</text></navLabel><content src="ch11.xhtml#conclusion-id000010"/></navPoint>
+</navPoint>
+<navPoint id="using_service_level_objectives_for_reli" playOrder="101"><navLabel><text>12. Using Service-Level Objectives for Reliability</text></navLabel><content src="ch12.xhtml#using_service_level_objectives_for_reli"/><navPoint id="traditional_monitoring_approaches_creat" playOrder="102"><navLabel><text>Traditional Monitoring Approaches Create Dangerous Alert Fatigue</text></navLabel><content src="ch12.xhtml#traditional_monitoring_approaches_creat"/></navPoint>
+<navPoint id="threshold_alerting_is_for_known_unknown" playOrder="103"><navLabel><text>Threshold Alerting Is for Known-Unknowns Only</text></navLabel><content src="ch12.xhtml#threshold_alerting_is_for_known_unknown"/></navPoint>
+<navPoint id="user_experience_is_a_north_star" playOrder="104"><navLabel><text>User Experience Is a North Star</text></navLabel><content src="ch12.xhtml#user_experience_is_a_north_star"/></navPoint>
+<navPoint id="what_is_a_service_level_objectivequesti" playOrder="105"><navLabel><text>What Is a Service-Level Objective?</text></navLabel><content src="ch12.xhtml#what_is_a_service_level_objectivequesti"/><navPoint id="reliable_alerting_with_slos" playOrder="106"><navLabel><text>Reliable Alerting with SLOs</text></navLabel><content src="ch12.xhtml#reliable_alerting_with_slos"/></navPoint>
+<navPoint id="changing_culture_toward_slo_based_alert" playOrder="107"><navLabel><text>Changing Culture Toward SLO-Based Alerts: A Case Study</text></navLabel><content src="ch12.xhtml#changing_culture_toward_slo_based_alert"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000011" playOrder="108"><navLabel><text>Conclusion</text></navLabel><content src="ch12.xhtml#conclusion-id000011"/></navPoint>
+</navPoint>
+<navPoint id="acting_on_and_debugging_slo_based_alert" playOrder="109"><navLabel><text>13. Acting on and Debugging SLO-Based Alerts</text></navLabel><content src="ch13.xhtml#acting_on_and_debugging_slo_based_alert"/><navPoint id="alerting_before_your_error_budget_is_em" playOrder="110"><navLabel><text>Alerting Before Your Error Budget Is Empty</text></navLabel><content src="ch13.xhtml#alerting_before_your_error_budget_is_em"/></navPoint>
+<navPoint id="framing_time_as_a_sliding_window" playOrder="111"><navLabel><text>Framing Time as a Sliding Window</text></navLabel><content src="ch13.xhtml#framing_time_as_a_sliding_window"/></navPoint>
+<navPoint id="forecasting_to_create_a_predictive_burn" playOrder="112"><navLabel><text>Forecasting to Create a Predictive Burn Alert</text></navLabel><content src="ch13.xhtml#forecasting_to_create_a_predictive_burn"/><navPoint id="the_lookahead_window" playOrder="113"><navLabel><text>The Lookahead Window</text></navLabel><content src="ch13.xhtml#the_lookahead_window"/></navPoint>
+<navPoint id="the_baseline_window" playOrder="114"><navLabel><text>The Baseline Window</text></navLabel><content src="ch13.xhtml#the_baseline_window"/></navPoint>
+<navPoint id="acting_on_slo_burn_alerts" playOrder="115"><navLabel><text>Acting on SLO Burn Alerts</text></navLabel><content src="ch13.xhtml#acting_on_slo_burn_alerts"/></navPoint>
+</navPoint>
+<navPoint id="using_observability_data_for_slos_versu" playOrder="116"><navLabel><text>Using Observability Data for SLOs Versus Time-Series Data</text></navLabel><content src="ch13.xhtml#using_observability_data_for_slos_versu"/></navPoint>
+<navPoint id="conclusion-id000012" playOrder="117"><navLabel><text>Conclusion</text></navLabel><content src="ch13.xhtml#conclusion-id000012"/></navPoint>
+</navPoint>
+<navPoint id="observability_and_the_software_supply_c" playOrder="118"><navLabel><text>14. Observability and the Software Supply Chain</text></navLabel><content src="ch14.xhtml#observability_and_the_software_supply_c"/><navPoint id="why_slack_needed_observability" playOrder="119"><navLabel><text>Why Slack Needed Observability</text></navLabel><content src="ch14.xhtml#why_slack_needed_observability"/></navPoint>
+<navPoint id="instrumentation_shared_client_libraries" playOrder="120"><navLabel><text>Instrumentation: Shared Client Libraries and Dimensions</text></navLabel><content src="ch14.xhtml#instrumentation_shared_client_libraries"/></navPoint>
+<navPoint id="case_studies_operationalizing_the_suppl" playOrder="121"><navLabel><text>Case Studies: Operationalizing the Supply Chain</text></navLabel><content src="ch14.xhtml#case_studies_operationalizing_the_suppl"/><navPoint id="understanding_context_through_tooling" playOrder="122"><navLabel><text>Understanding Context Through Tooling</text></navLabel><content src="ch14.xhtml#understanding_context_through_tooling"/></navPoint>
+<navPoint id="embedding_actionable_alerting" playOrder="123"><navLabel><text>Embedding Actionable Alerting</text></navLabel><content src="ch14.xhtml#embedding_actionable_alerting"/></navPoint>
+<navPoint id="understanding_what_changed" playOrder="124"><navLabel><text>Understanding What Changed</text></navLabel><content src="ch14.xhtml#understanding_what_changed"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000013" playOrder="125"><navLabel><text>Conclusion</text></navLabel><content src="ch14.xhtml#conclusion-id000013"/></navPoint>
+</navPoint>
+<navPoint id="observability_at_scale" playOrder="126"><navLabel><text>IV. Observability at Scale</text></navLabel><content src="part04.xhtml#observability_at_scale"/></navPoint>
+<navPoint id="build_versus_buy_and_return_on_investme" playOrder="127"><navLabel><text>15. Build Versus Buy and Return on Investment</text></navLabel><content src="ch15.xhtml#build_versus_buy_and_return_on_investme"/><navPoint id="how_to_analyze_the_roi_of_observability" playOrder="128"><navLabel><text>How to Analyze the ROI of Observability</text></navLabel><content src="ch15.xhtml#how_to_analyze_the_roi_of_observability"/></navPoint>
+<navPoint id="the_real_costs_of_building_your_own" playOrder="129"><navLabel><text>The Real Costs of Building Your Own</text></navLabel><content src="ch15.xhtml#the_real_costs_of_building_your_own"/><navPoint id="the_hidden_costs_of_using_quotation_mar" playOrder="130"><navLabel><text>The Hidden Costs of Using “Free” Software</text></navLabel><content src="ch15.xhtml#the_hidden_costs_of_using_quotation_mar"/></navPoint>
+<navPoint id="the_benefits_of_building_your_own" playOrder="131"><navLabel><text>The Benefits of Building Your Own</text></navLabel><content src="ch15.xhtml#the_benefits_of_building_your_own"/></navPoint>
+<navPoint id="the_risks_of_building_your_own" playOrder="132"><navLabel><text>The Risks of Building Your Own</text></navLabel><content src="ch15.xhtml#the_risks_of_building_your_own"/></navPoint>
+</navPoint>
+<navPoint id="the_real_costs_of_buying_software" playOrder="133"><navLabel><text>The Real Costs of Buying Software</text></navLabel><content src="ch15.xhtml#the_real_costs_of_buying_software"/><navPoint id="the_hidden_financial_costs_of_commercia" playOrder="134"><navLabel><text>The Hidden Financial Costs of Commercial Software</text></navLabel><content src="ch15.xhtml#the_hidden_financial_costs_of_commercia"/></navPoint>
+<navPoint id="the_hidden_nonfinancial_costs_of_commer" playOrder="135"><navLabel><text>The Hidden Nonfinancial Costs of Commercial Software</text></navLabel><content src="ch15.xhtml#the_hidden_nonfinancial_costs_of_commer"/></navPoint>
+<navPoint id="the_benefits_of_buying_commercial_softw" playOrder="136"><navLabel><text>The Benefits of Buying Commercial Software</text></navLabel><content src="ch15.xhtml#the_benefits_of_buying_commercial_softw"/></navPoint>
+<navPoint id="the_risks_of_buying_commercial_software" playOrder="137"><navLabel><text>The Risks of Buying Commercial Software</text></navLabel><content src="ch15.xhtml#the_risks_of_buying_commercial_software"/></navPoint>
+</navPoint>
+<navPoint id="buy_versus_build_is_not_a_binary_choice" playOrder="138"><navLabel><text>Buy Versus Build Is Not a Binary Choice</text></navLabel><content src="ch15.xhtml#buy_versus_build_is_not_a_binary_choice"/></navPoint>
+<navPoint id="conclusion-id000014" playOrder="139"><navLabel><text>Conclusion</text></navLabel><content src="ch15.xhtml#conclusion-id000014"/></navPoint>
+</navPoint>
+<navPoint id="efficient_data_storage" playOrder="140"><navLabel><text>16. Efficient Data Storage</text></navLabel><content src="ch16.xhtml#efficient_data_storage"/><navPoint id="the_functional_requirements_for_observa" playOrder="141"><navLabel><text>The Functional Requirements for Observability</text></navLabel><content src="ch16.xhtml#the_functional_requirements_for_observa"/><navPoint id="time_series_databases_are_inadequate_fo" playOrder="142"><navLabel><text>Time-Series Databases Are Inadequate for Observability</text></navLabel><content src="ch16.xhtml#time_series_databases_are_inadequate_fo"/></navPoint>
+<navPoint id="other_possible_data_stores" playOrder="143"><navLabel><text>Other Possible Data Stores</text></navLabel><content src="ch16.xhtml#other_possible_data_stores"/></navPoint>
+<navPoint id="data_storage_strategies" playOrder="144"><navLabel><text>Data Storage Strategies</text></navLabel><content src="ch16.xhtml#data_storage_strategies"/></navPoint>
+</navPoint>
+<navPoint id="case_study_the_implementation_of_honeyc" playOrder="145"><navLabel><text>Case Study: The Implementation of Honeycomb’s Retriever</text></navLabel><content src="ch16.xhtml#case_study_the_implementation_of_honeyc"/><navPoint id="partitioning_data_by_time" playOrder="146"><navLabel><text>Partitioning Data by Time</text></navLabel><content src="ch16.xhtml#partitioning_data_by_time"/></navPoint>
+<navPoint id="storing_data_by_column_within_segments" playOrder="147"><navLabel><text>Storing Data by Column Within Segments</text></navLabel><content src="ch16.xhtml#storing_data_by_column_within_segments"/></navPoint>
+<navPoint id="performing_query_workloads" playOrder="148"><navLabel><text>Performing Query Workloads</text></navLabel><content src="ch16.xhtml#performing_query_workloads"/></navPoint>
+<navPoint id="querying_for_traces" playOrder="149"><navLabel><text>Querying for Traces</text></navLabel><content src="ch16.xhtml#querying_for_traces"/></navPoint>
+<navPoint id="querying_data_in_real_time" playOrder="150"><navLabel><text>Querying Data in Real Time</text></navLabel><content src="ch16.xhtml#querying_data_in_real_time"/></navPoint>
+<navPoint id="making_it_affordable_with_tiering" playOrder="151"><navLabel><text>Making It Affordable with Tiering</text></navLabel><content src="ch16.xhtml#making_it_affordable_with_tiering"/></navPoint>
+<navPoint id="making_it_fast_with_parallelism" playOrder="152"><navLabel><text>Making It Fast with Parallelism</text></navLabel><content src="ch16.xhtml#making_it_fast_with_parallelism"/></navPoint>
+<navPoint id="dealing_with_high_cardinality" playOrder="153"><navLabel><text>Dealing with High Cardinality</text></navLabel><content src="ch16.xhtml#dealing_with_high_cardinality"/></navPoint>
+<navPoint id="scaling_and_durability_strategies" playOrder="154"><navLabel><text>Scaling and Durability Strategies</text></navLabel><content src="ch16.xhtml#scaling_and_durability_strategies"/></navPoint>
+<navPoint id="notes_on_building_your_own_efficient_da" playOrder="155"><navLabel><text>Notes on Building Your Own Efficient Data Store</text></navLabel><content src="ch16.xhtml#notes_on_building_your_own_efficient_da"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000015" playOrder="156"><navLabel><text>Conclusion</text></navLabel><content src="ch16.xhtml#conclusion-id000015"/></navPoint>
+</navPoint>
+<navPoint id="cheap_and_accurate_enough_sampling" playOrder="157"><navLabel><text>17. Cheap and Accurate Enough: Sampling</text></navLabel><content src="ch17.xhtml#cheap_and_accurate_enough_sampling"/><navPoint id="sampling_to_refine_your_data_collection" playOrder="158"><navLabel><text>Sampling to Refine Your Data Collection</text></navLabel><content src="ch17.xhtml#sampling_to_refine_your_data_collection"/></navPoint>
+<navPoint id="using_different_approaches_to_sampling" playOrder="159"><navLabel><text>Using Different Approaches to Sampling</text></navLabel><content src="ch17.xhtml#using_different_approaches_to_sampling"/><navPoint id="constant_probability_sampling" playOrder="160"><navLabel><text>Constant-Probability Sampling</text></navLabel><content src="ch17.xhtml#constant_probability_sampling"/></navPoint>
+<navPoint id="sampling_on_recent_traffic_volume" playOrder="161"><navLabel><text>Sampling on Recent Traffic Volume</text></navLabel><content src="ch17.xhtml#sampling_on_recent_traffic_volume"/></navPoint>
+<navPoint id="sampling_based_on_event_content_left_pa" playOrder="162"><navLabel><text>Sampling Based on Event Content (Keys)</text></navLabel><content src="ch17.xhtml#sampling_based_on_event_content_left_pa"/></navPoint>
+<navPoint id="combining_per_key_and_historical_method" playOrder="163"><navLabel><text>Combining per Key and Historical Methods</text></navLabel><content src="ch17.xhtml#combining_per_key_and_historical_method"/></navPoint>
+<navPoint id="choosing_dynamic_sampling_options" playOrder="164"><navLabel><text>Choosing Dynamic Sampling Options</text></navLabel><content src="ch17.xhtml#choosing_dynamic_sampling_options"/></navPoint>
+<navPoint id="when_to_make_a_sampling_decision_for_tr" playOrder="165"><navLabel><text>When to Make a Sampling Decision for Traces</text></navLabel><content src="ch17.xhtml#when_to_make_a_sampling_decision_for_tr"/></navPoint>
+</navPoint>
+<navPoint id="translating_sampling_strategies_into_co" playOrder="166"><navLabel><text>Translating Sampling Strategies into Code</text></navLabel><content src="ch17.xhtml#translating_sampling_strategies_into_co"/><navPoint id="the_base_case" playOrder="167"><navLabel><text>The Base Case</text></navLabel><content src="ch17.xhtml#the_base_case"/></navPoint>
+<navPoint id="fixed_rate_sampling" playOrder="168"><navLabel><text>Fixed-Rate Sampling</text></navLabel><content src="ch17.xhtml#fixed_rate_sampling"/></navPoint>
+<navPoint id="recording_the_sample_rate" playOrder="169"><navLabel><text>Recording the Sample Rate</text></navLabel><content src="ch17.xhtml#recording_the_sample_rate"/></navPoint>
+<navPoint id="consistent_sampling" playOrder="170"><navLabel><text>Consistent Sampling</text></navLabel><content src="ch17.xhtml#consistent_sampling"/></navPoint>
+<navPoint id="target_rate_sampling" playOrder="171"><navLabel><text>Target Rate Sampling</text></navLabel><content src="ch17.xhtml#target_rate_sampling"/></navPoint>
+<navPoint id="having_more_than_one_static_sample_rate" playOrder="172"><navLabel><text>Having More Than One Static Sample Rate</text></navLabel><content src="ch17.xhtml#having_more_than_one_static_sample_rate"/></navPoint>
+<navPoint id="sampling_by_key_and_target_rate" playOrder="173"><navLabel><text>Sampling by Key and Target Rate</text></navLabel><content src="ch17.xhtml#sampling_by_key_and_target_rate"/></navPoint>
+<navPoint id="sampling_with_dynamic_rates_on_arbitrar" playOrder="174"><navLabel><text>Sampling with Dynamic Rates on Arbitrarily Many Keys</text></navLabel><content src="ch17.xhtml#sampling_with_dynamic_rates_on_arbitrar"/></navPoint>
+<navPoint id="putting_it_all_together_head_and_tail_p" playOrder="175"><navLabel><text>Putting It All Together: Head and Tail per Key Target Rate Sampling</text></navLabel><content src="ch17.xhtml#putting_it_all_together_head_and_tail_p"/></navPoint>
+</navPoint>
+<navPoint id="conclusion-id000018" playOrder="176"><navLabel><text>Conclusion</text></navLabel><content src="ch17.xhtml#conclusion-id000018"/></navPoint>
+</navPoint>
+<navPoint id="telemetry_management_with_pipelines" playOrder="177"><navLabel><text>18. Telemetry Management with Pipelines</text></navLabel><content src="ch18.xhtml#telemetry_management_with_pipelines"/><navPoint id="attributes_of_telemetry_pipelines" playOrder="178"><navLabel><text>Attributes of Telemetry Pipelines</text></navLabel><content src="ch18.xhtml#attributes_of_telemetry_pipelines"/><navPoint id="routing" playOrder="179"><navLabel><text>Routing</text></navLabel><content src="ch18.xhtml#routing"/></navPoint>
+<navPoint id="security_and_compliance" playOrder="180"><navLabel><text>Security and Compliance</text></navLabel><content src="ch18.xhtml#security_and_compliance"/></navPoint>
+<navPoint id="workload_isolation" playOrder="181"><navLabel><text>Workload Isolation</text></navLabel><content src="ch18.xhtml#workload_isolation"/></navPoint>
+<navPoint id="data_buffering" playOrder="182"><navLabel><text>Data Buffering</text></navLabel><content src="ch18.xhtml#data_buffering"/></navPoint>
+<navPoint id="capacity_management" playOrder="183"><navLabel><text>Capacity Management</text></navLabel><content src="ch18.xhtml#capacity_management"/></navPoint>
+<navPoint id="data_filtering_and_augmentation" playOrder="184"><navLabel><text>Data Filtering and Augmentation</text></navLabel><content src="ch18.xhtml#data_filtering_and_augmentation"/></navPoint>
+<navPoint id="data_transformation" playOrder="185"><navLabel><text>Data Transformation</text></navLabel><content src="ch18.xhtml#data_transformation"/></navPoint>
+<navPoint id="ensuring_data_quality_and_consistency" playOrder="186"><navLabel><text>Ensuring Data Quality and Consistency</text></navLabel><content src="ch18.xhtml#ensuring_data_quality_and_consistency"/></navPoint>
+</navPoint>
+<navPoint id="managing_a_telemetry_pipeline_anatomy" playOrder="187"><navLabel><text>Managing a Telemetry Pipeline: Anatomy</text></navLabel><content src="ch18.xhtml#managing_a_telemetry_pipeline_anatomy"/></navPoint>
+<navPoint id="challenges_when_managing_a_telemetry_pi" playOrder="188"><navLabel><text>Challenges When Managing a Telemetry Pipeline</text></navLabel><content src="ch18.xhtml#challenges_when_managing_a_telemetry_pi"/><navPoint id="performance" playOrder="189"><navLabel><text>Performance</text></navLabel><content src="ch18.xhtml#performance"/></navPoint>
+<navPoint id="correctness" playOrder="190"><navLabel><text>Correctness</text></navLabel><content src="ch18.xhtml#correctness"/></navPoint>
+<navPoint id="availability" playOrder="191"><navLabel><text>Availability</text></navLabel><content src="ch18.xhtml#availability"/></navPoint>
+<navPoint id="reliability" playOrder="192"><navLabel><text>Reliability</text></navLabel><content src="ch18.xhtml#reliability"/></navPoint>
+<navPoint id="isolation" playOrder="193"><navLabel><text>Isolation</text></navLabel><content src="ch18.xhtml#isolation"/></navPoint>
+<navPoint id="data_freshness" playOrder="194"><navLabel><text>Data Freshness</text></navLabel><content src="ch18.xhtml#data_freshness"/></navPoint>
+</navPoint>
+<navPoint id="use_case_telemetry_management_at_slack" playOrder="195"><navLabel><text>Use Case: Telemetry Management at Slack</text></navLabel><content src="ch18.xhtml#use_case_telemetry_management_at_slack"/><navPoint id="metrics_aggregation" playOrder="196"><navLabel><text>Metrics Aggregation</text></navLabel><content src="ch18.xhtml#metrics_aggregation"/></navPoint>
+<navPoint id="logs_and_trace_events" playOrder="197"><navLabel><text>Logs and Trace Events</text></navLabel><content src="ch18.xhtml#logs_and_trace_events"/></navPoint>
+</navPoint>
+<navPoint id="open_source_alternatives_for_managing_a" playOrder="198"><navLabel><text>Open Source Alternatives</text></navLabel><content src="ch18.xhtml#open_source_alternatives_for_managing_a"/></navPoint>
+<navPoint id="managing_a_telemetry_pipeline_the_build" playOrder="199"><navLabel><text>Managing a Telemetry Pipeline: Build Versus Buy</text></navLabel><content src="ch18.xhtml#managing_a_telemetry_pipeline_the_build"/></navPoint>
+<navPoint id="conclusion-id000019" playOrder="200"><navLabel><text>Conclusion</text></navLabel><content src="ch18.xhtml#conclusion-id000019"/></navPoint>
+</navPoint>
+<navPoint id="spreading_observability_culture" playOrder="201"><navLabel><text>V. Spreading Observability Culture</text></navLabel><content src="part05.xhtml#spreading_observability_culture"/></navPoint>
+<navPoint id="the_business_case_for_observability" playOrder="202"><navLabel><text>19. The Business Case for Observability</text></navLabel><content src="ch19.xhtml#the_business_case_for_observability"/><navPoint id="the_reactive_approach_to_introducing_ch" playOrder="203"><navLabel><text>The Reactive Approach to Introducing Change</text></navLabel><content src="ch19.xhtml#the_reactive_approach_to_introducing_ch"/></navPoint>
+<navPoint id="the_return_on_investment_of_observabili" playOrder="204"><navLabel><text>The Return on Investment of Observability</text></navLabel><content src="ch19.xhtml#the_return_on_investment_of_observabili"/></navPoint>
+<navPoint id="the_proactive_approach_to_introducing_c" playOrder="205"><navLabel><text>The Proactive Approach to Introducing Change</text></navLabel><content src="ch19.xhtml#the_proactive_approach_to_introducing_c"/></navPoint>
+<navPoint id="introducing_observability_as_a_practice" playOrder="206"><navLabel><text>Introducing Observability as a Practice</text></navLabel><content src="ch19.xhtml#introducing_observability_as_a_practice"/></navPoint>
+<navPoint id="using_the_appropriate_tools" playOrder="207"><navLabel><text>Using the Appropriate Tools</text></navLabel><content src="ch19.xhtml#using_the_appropriate_tools"/><navPoint id="instrumentation" playOrder="208"><navLabel><text>Instrumentation</text></navLabel><content src="ch19.xhtml#instrumentation"/></navPoint>
+<navPoint id="data_storage_and_analytics" playOrder="209"><navLabel><text>Data Storage and Analytics</text></navLabel><content src="ch19.xhtml#data_storage_and_analytics"/></navPoint>
+<navPoint id="rolling_out_tools_to_your_teams" playOrder="210"><navLabel><text>Rolling Out Tools to Your Teams</text></navLabel><content src="ch19.xhtml#rolling_out_tools_to_your_teams"/></navPoint>
+</navPoint>
+<navPoint id="knowing_when_you_have_enough_observabil" playOrder="211"><navLabel><text>Knowing When You Have Enough Observability</text></navLabel><content src="ch19.xhtml#knowing_when_you_have_enough_observabil"/></navPoint>
+<navPoint id="conclusion-id000020" playOrder="212"><navLabel><text>Conclusion</text></navLabel><content src="ch19.xhtml#conclusion-id000020"/></navPoint>
+</navPoint>
+<navPoint id="observabilityapostrophes_stakeholders_a" playOrder="213"><navLabel><text>20. Observability’s Stakeholders and Allies</text></navLabel><content src="ch20.xhtml#observabilityapostrophes_stakeholders_a"/><navPoint id="recognizing_nonengineering_observabilit" playOrder="214"><navLabel><text>Recognizing Nonengineering Observability Needs</text></navLabel><content src="ch20.xhtml#recognizing_nonengineering_observabilit"/></navPoint>
+<navPoint id="creating_observability_allies_in_practi" playOrder="215"><navLabel><text>Creating Observability Allies in Practice</text></navLabel><content src="ch20.xhtml#creating_observability_allies_in_practi"/><navPoint id="customer_support_teams" playOrder="216"><navLabel><text>Customer Support Teams</text></navLabel><content src="ch20.xhtml#customer_support_teams"/></navPoint>
+<navPoint id="customer_success_and_product_teams" playOrder="217"><navLabel><text>Customer Success and Product Teams</text></navLabel><content src="ch20.xhtml#customer_success_and_product_teams"/></navPoint>
+<navPoint id="sales_and_executive_teams" playOrder="218"><navLabel><text>Sales and Executive Teams</text></navLabel><content src="ch20.xhtml#sales_and_executive_teams"/></navPoint>
+</navPoint>
+<navPoint id="using_observability_versus_business_int" playOrder="219"><navLabel><text>Using Observability Versus Business Intelligence Tools</text></navLabel><content src="ch20.xhtml#using_observability_versus_business_int"/><navPoint id="query_execution_time" playOrder="220"><navLabel><text>Query Execution Time</text></navLabel><content src="ch20.xhtml#query_execution_time"/></navPoint>
+<navPoint id="accuracy" playOrder="221"><navLabel><text>Accuracy</text></navLabel><content src="ch20.xhtml#accuracy"/></navPoint>
+<navPoint id="recency" playOrder="222"><navLabel><text>Recency</text></navLabel><content src="ch20.xhtml#recency"/></navPoint>
+<navPoint id="structure" playOrder="223"><navLabel><text>Structure</text></navLabel><content src="ch20.xhtml#structure"/></navPoint>
+<navPoint id="time_windows" playOrder="224"><navLabel><text>Time Windows</text></navLabel><content src="ch20.xhtml#time_windows"/></navPoint>
+<navPoint id="ephemerality" playOrder="225"><navLabel><text>Ephemerality</text></navLabel><content src="ch20.xhtml#ephemerality"/></navPoint>
+</navPoint>
+<navPoint id="using_observability_and_bi_tools_togeth" playOrder="226"><navLabel><text>Using Observability and BI Tools Together in Practice</text></navLabel><content src="ch20.xhtml#using_observability_and_bi_tools_togeth"/></navPoint>
+<navPoint id="conclusion-id000026" playOrder="227"><navLabel><text>Conclusion</text></navLabel><content src="ch20.xhtml#conclusion-id000026"/></navPoint>
+</navPoint>
+<navPoint id="an_observability_maturity_model" playOrder="228"><navLabel><text>21. An Observability Maturity Model</text></navLabel><content src="ch21.xhtml#an_observability_maturity_model"/><navPoint id="a_note_about_maturity_models" playOrder="229"><navLabel><text>A Note About Maturity Models</text></navLabel><content src="ch21.xhtml#a_note_about_maturity_models"/></navPoint>
+<navPoint id="why_observability_needs_a_maturity_mode" playOrder="230"><navLabel><text>Why Observability Needs a Maturity Model</text></navLabel><content src="ch21.xhtml#why_observability_needs_a_maturity_mode"/></navPoint>
+<navPoint id="about_the_observability_maturity_model" playOrder="231"><navLabel><text>About the Observability Maturity Model</text></navLabel><content src="ch21.xhtml#about_the_observability_maturity_model"/></navPoint>
+<navPoint id="capabilities_referenced_in_the_omm" playOrder="232"><navLabel><text>Capabilities Referenced in the OMM</text></navLabel><content src="ch21.xhtml#capabilities_referenced_in_the_omm"/><navPoint id="respond_to_system_failure_with_resilien" playOrder="233"><navLabel><text>Respond to System Failure with Resilience</text></navLabel><content src="ch21.xhtml#respond_to_system_failure_with_resilien"/></navPoint>
+<navPoint id="deliver_high_quality_code" playOrder="234"><navLabel><text>Deliver High-Quality Code</text></navLabel><content src="ch21.xhtml#deliver_high_quality_code"/></navPoint>
+<navPoint id="manage_complexity_and_technical_debt" playOrder="235"><navLabel><text>Manage Complexity and Technical Debt</text></navLabel><content src="ch21.xhtml#manage_complexity_and_technical_debt"/></navPoint>
+<navPoint id="release_on_a_predictable_cadence" playOrder="236"><navLabel><text>Release on a Predictable Cadence</text></navLabel><content src="ch21.xhtml#release_on_a_predictable_cadence"/></navPoint>
+<navPoint id="understand_user_behavior" playOrder="237"><navLabel><text>Understand User Behavior</text></navLabel><content src="ch21.xhtml#understand_user_behavior"/></navPoint>
+</navPoint>
+<navPoint id="using_the_omm_for_your_organization" playOrder="238"><navLabel><text>Using the OMM for Your Organization</text></navLabel><content src="ch21.xhtml#using_the_omm_for_your_organization"/></navPoint>
+<navPoint id="conclusion-id000027" playOrder="239"><navLabel><text>Conclusion</text></navLabel><content src="ch21.xhtml#conclusion-id000027"/></navPoint>
+</navPoint>
+<navPoint id="where_to_go_from_here" playOrder="240"><navLabel><text>22. Where to Go from Here</text></navLabel><content src="ch22.xhtml#where_to_go_from_here"/><navPoint id="observabilitycomma_then_versus_now" playOrder="241"><navLabel><text>Observability, Then Versus Now</text></navLabel><content src="ch22.xhtml#observabilitycomma_then_versus_now"/></navPoint>
+<navPoint id="additional_resources" playOrder="242"><navLabel><text>Additional Resources</text></navLabel><content src="ch22.xhtml#additional_resources"/></navPoint>
+<navPoint id="predictions_for_where_observability_is" playOrder="243"><navLabel><text>Predictions for Where Observability Is Going</text></navLabel><content src="ch22.xhtml#predictions_for_where_observability_is"/></navPoint>
+</navPoint>
+<navPoint id="idm45204352374064" playOrder="244"><navLabel><text>Index</text></navLabel><content src="ix01.xhtml#idm45204352374064"/></navPoint>
+<navPoint id="idm45204352086064" playOrder="245"><navLabel><text>About the Authors</text></navLabel><content src="colophon01.xhtml#idm45204352086064"/></navPoint>
+</navMap>
+</ncx>

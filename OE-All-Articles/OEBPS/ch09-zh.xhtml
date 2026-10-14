@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 9 章 可观测性与监控如何结合"><div class="chapter" id="how_observability_and_monitoring_come_t">
+<h1><span class="label">第 9 章　</span>可观测性与<span class="keep-together">监控如何结合</span></h1>
+<p>到目前为止，本书已经考察了可观测系统有哪些独特能力、实现可观测性需要哪些技术组件，以及可观测性在技术版图中处于什么位置。可观测性与监控有着根本区别，两者服务于不同目的。本章将考察它们如何配合，以及如何判断两者应以什么方式在组织中共存。</p>
+<p>许多组织围绕生产软件系统，积累了数年甚至数十年的指标数据和监控经验。前面几章已经说明，传统监控方法足以应对传统系统。但管理现代系统时，是否意味着应该扔掉这一切，改用可观测性工具从头开始？这样做既鲁莽又轻率。对大多数组织而言，两种方法应该如何共存，取决于组织实际承担了哪些责任。</p>
+<p>本章将通过考察可观测性和监控各自的优势、最适用的领域，以及相互补充的方式，说明两者如何结合。每个组织都不相同，不存在一张普遍适用的配方来规定可观测性与监控如何共存。不过，有一条实用准则：可观测性最适合理解应用层问题，监控最适合理解系统层问题。结合自身工作负载加以考虑，就能找出最适合自己的结合方式。</p>
+<section data-type="sect1" data-pdf-bookmark="监控适用于哪里"><div class="sect1" id="where_monitoring_fits">
+<h1>监控适用于哪里</h1>
+<p><a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>重点区分了可观测性与监控，<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与可观测性" id="monobs"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与监控" id="obsmon"/>主要讨论监控系统的不足，以及可观测性如何填补缺口。但监控系统仍然能够提供有价值的洞察。我们先看看在哪些场景中，传统监控系统依然是正确的工具。</p>
+<p>使用传统监控方法理解系统状态，是一项成熟且发展充分的流程。经过数十年反复改进，监控工具早已超越<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="工具演化" id="idm45204354799344"/>最初简单指标和<a contenteditable="false" data-type="indexterm" data-primary="RRD（循环数据库）" id="idm45204354746160"/><a contenteditable="false" data-type="indexterm" data-primary="数据库" data-secondary="循环数据库" id="idm45204354850368"/>循环数据库（RRD）的朴素形态，发展到时序数据库和复杂的标签系统。市场上也有大量成熟选择提供这类服务，从开源软件方案、初创公司到上市公司一应俱全。</p>
+<p>监控实践广为人知，也被广泛理解，并不局限于围绕某种特定工具形成的专家群体。整个软件行业中，存在许多任何运营过生产软件的人大概都会认同的监控最佳实践。</p>
+<p>例如，监控中一条广泛接受的核心原则是：不需要让人整天坐在那里盯着图表；出现异常时，系统应该主动通知用户。从这个意义上说，监控系统是被动响应式的：它们针对已知故障状态作出反应，向人发出问题正在发生的告警。</p>
+<p>监控系统和指标已经不断演化，针对这项工作进行了优化。它们会自动报告已知故障状况是否正在发生或即将发生。它们针对已知故障模式中的未知状况进行了优化，<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="已知的未知" id="idm45204355801840"/><a contenteditable="false" data-type="indexterm" data-primary="已知的未知" id="idm45204354745056"/>换句话说，它们用于检测<em>已知的未知</em>。</p>
+<p>监控系统针对寻找已知的未知进行了优化，因此最适合理解系统状态。与应用代码相比，系统变化频率低得多，变化方式也更可预测。这里的<em>系统</em>是指基础设施、运行时，或者帮助你发现即将撞上某项运行约束的计数器。</p>
+<p>如<a data-type="xref" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">第 1 章</a>所述，指标和监控最初用于检查硬件层性能。随着时间推移，它们逐渐扩展到涵盖更广泛的基础设施和系统层问题。本书大多数读者供职于科技公司，应该明白底层系统本身并不是业务真正关心的东西。归根结底，业务关心的是自己编写的应用交到客户手中后表现如何。企业之所以关心底层系统，只是因为它们可能对应用性能产生负面影响。</p>
+<p>例如，你希望知道某个存在“吵闹邻居”的虚拟实例是否已经把 CPU 利用率推到极限，因为这能说明当前延迟并非代码内部的问题。或者，如果整个服务器群的物理内存都接近耗尽，这会告诉你即将到来的灾难很可能源自代码。把系统约束与应用性能关联起来很重要，但系统性能的主要作用，是充当预警信号，或者帮助排除代码层问题。</p>
+<p>随着时间推移，指标也被逐渐扩展，<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="与监控" id="idm45204355669440"/>侵入了应用层问题的监控。但如<a data-type="xref" href="part01.xhtml#the_path_to_observability">第一部分</a>反复说明，这类聚合度量过于粗糙，无法分解并显示服务中单个请求的性能。作为预警信号，指标等聚合度量表现良好；但指标不是、也从来不是说明所编写代码在单个用户手中如何运行的好方法。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性适用于哪里"><div class="sect1" id="where_observability_fits">
+<h1>可观测性适用于哪里</h1>
+<p>与监控相比，可观测性遵循不同原则，也适用于不同场景。如<a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>所述，可观测性更加主动。它要求工程师始终观察代码部署时的表现，并且每天花时间探索生产环境中的代码，观察用户如何使用，寻找离群值和值得顺藤摸瓜的奇特线索。</p>
+<p>如<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>所述，核心分析循环让我们能够从第一性原理出发调试，专门用于发现过去未知的故障模式；换句话说，它用于检测<em>未知的未知</em>。可观测性针对寻找未知的未知进行了优化，因此最适合理解所编写代码的状态。与系统相比，代码变化频繁得多，通常每天都在变化，而且变化方式远不那么可预测。</p>
+<p>监控工具与可观测性工具遵循不同的最佳实践，采用不同实现，并服务于不同目的。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="系统与软件的考量"><div class="sect1" id="system_versus_software_considerations">
+<h1>系统与软件的考量</h1>
+<p>在更传统的环境中，系统与软件之间界限清晰：裸机基础设施<a contenteditable="false" data-type="indexterm" data-primary="系统与软件" id="sysvsof"/>是系统，运行在系统内部的一切则是软件。现代系统及其众多高阶抽象，使这种区别变得不那么清楚。先来定义几个概念。</p>
+<p>在本章语境中，<em>软件</em>是你正在积极开发的代码，它运行生产服务，为客户交付价值。软件是企业为解决市场问题而<em>希望</em>运行的东西。</p>
+<p><em>系统</em>则是一个总括性术语，指运行服务所必需的底层基础设施和运行时中的其他一切。系统是企业为了支持它<em>希望运行</em>的软件，而<em>必须运行</em>的东西。按照这个定义，系统与基础设施在这里可以互换使用，包括数据库（例如 MySQL 或 MongoDB）、计算和存储（例如容器或虚拟机），以及部署并运行软件之前必须预配和设置的其他所有内容。</p>
+<p>云计算世界使<a contenteditable="false" data-type="indexterm" data-primary="云计算、系统与软件" id="idm45204355318496"/>这些定义不太容易明确下来，因此再进一步分析。假设为了运行软件，需要运行 <a contenteditable="false" data-type="indexterm" data-primary="Apache Kafka" id="idm45204354729712"/>Apache Kafka、Postfix、HAProxy、Memcached，甚至 Jira 等底层组件。如果购买的是这些组件的服务访问权，那么按照本章定义，它们不算你的基础设施；本质上，你付钱让别人替你运行。但如果团队负责安装、配置、偶尔升级这些组件，并排查其性能问题，它们就是你必须操心的基础设施。</p>
+<p>与软件相比，系统层的一切都是低频变化的通用商品，面向不同的用户群体，提供不同的价值。软件，也就是为客户编写并供其使用的代码，是企业的核心差异化因素：它正是公司如今得以存在的根本原因。因此，软件在管理方式上需要一套不同的考量。<a data-type="xref" href="#factors_that_vary_bet">表 9-1</a>给出了比较。</p>
+<table class="border" id="factors_that_vary_bet">
+<caption><span class="label">表 9-1　</span>系统与软件之间存在差异的因素</caption>
+<thead>
+<tr>
+<th>因素</th>
+<th>你的系统</th>
+<th>你的软件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>变化频率</td>
+<td>软件包更新（每月）</td>
+<td>代码仓库提交（每天）</td>
+</tr>
+<tr>
+<td>可预测性</td>
+<td>高（稳定）</td>
+<td>低（大量新功能）</td>
+</tr>
+<tr>
+<td>对业务的价值</td>
+<td>低（成本中心）</td>
+<td>高（收入来源）</td>
+</tr>
+<tr>
+<td>用户数量</td>
+<td>少（内部团队）</td>
+<td>多（客户）</td>
+</tr>
+<tr>
+<td>核心关注点</td>
+<td>系统或服务是否健康？</td>
+<td>每个请求能否及时、可靠地取得端到端执行所需的资源？</td>
+</tr>
+<tr>
+<td>评估视角</td>
+<td>系统</td>
+<td>客户</td>
+</tr>
+<tr>
+<td>评估标准</td>
+<td>底层内核与硬件设备驱动程序</td>
+<td>变量与 API 端点</td>
+</tr>
+<tr>
+<td>职能责任</td>
+<td>基础设施运维</td>
+<td>软件开发</td>
+</tr>
+<tr>
+<td>理解方法</td>
+<td>监控</td>
+<td>可观测性</td>
+</tr>
+</tbody>
+</table>
+<p>对于基础设施，真正重要的只有一个视角：负责管理它的团队的视角。关于基础设施需要提出的重要问题，是它提供的服务是否基本健康。<a contenteditable="false" data-type="indexterm" data-primary="基础设施" data-secondary="健康状态" id="idm45204355800448"/>如果不健康，团队必须迅速采取行动，使基础设施恢复健康。系统可能即将耗尽容量，也可能发生了底层故障；应该向人发出告警，由人响应并采取行动。</p>
+<p>影响基础设施健康的状况变化不频繁，也相对容易预测。事实上，业界已经有成熟实践来预测这类问题，例如容量规划，也有成熟实践来自动修复，例如自动扩缩容。由于基础设施相对可预测且变化缓慢，使用聚合指标监控系统层问题并发出告警完全可以接受。</p>
+<p>对于应用代码，最重要的视角是客户的视角。底层系统也许基本健康，但用户请求仍可能由于各种原因失败。前面几章已经说明，分布式系统使这类问题更难检测和理解。此时，使用用户 ID、购物车 ID 等高基数字段观察某个具体客户体验的能力突然变得至关重要。尤其是在持续交付的现代环境中，新版代码不断部署，软件问题始终在移动和变化。可观测性让你能够实时提出适当问题，应对这些变化。</p>
+<p>这两种方法并不相互排斥。每个组织都会遇到更偏向其中某一类别的考量。下面看看根据组织需求，两种方法可以如何共存。<a contenteditable="false" data-type="indexterm" data-primary="系统与软件" data-startref="sysvsof" id="idm45204355803504"/></p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="评估组织需求"><div class="sect1" id="assessing_your_organizational_needs">
+<h1>评估组织需求</h1>
+<p>系统与软件相互补充，用于理解它们各自行为的方法也是如此。监控最能<a contenteditable="false" data-type="indexterm" data-primary="组织需求评估" id="orgass"/>帮助工程师理解系统层问题，可观测性最能帮助工程师理解应用层问题。评估自身组织需求，就是理解哪些问题对业务最为关键。</p>
+<p>可观测性帮助你深入理解自己开发并发布的软件在服务客户时表现如何。为可观测性妥善插桩的代码，允许你回答有关用户性能的复杂问题，看清软件在生产环境中的内部工作方式，并识别和迅速修复那些只看聚合性能时很容易漏掉的问题。</p>
+<p>如果公司的核心业务战略包含编写和发布软件，就需要可观测性方案。如果业务战略不仅要求总体聚合性能达到可接受水平，还依赖为一小部分重要客户提供卓越服务，那么对可观测性的需求尤其突出。</p>
+<p class="pagebreak-before less_space">监控帮助你理解为了支持软件而运行的系统，是否妥善完成了自身工作。基于指标的监控工具及相关告警，可以帮助发现底层系统何时接近容量限制或进入已知错误状况。</p>
+<p>如果公司核心业务战略的一部分是向客户提供基础设施，例如基础设施即服务（IaaS）提供商，就需要<a contenteditable="false" data-type="indexterm" data-primary="IaaS（基础设施即服务）" id="idm45204354657552"/><a contenteditable="false" data-type="indexterm" data-primary="基础设施即服务（IaaS）" id="idm45204355090288"/>大量监控，包括底层域名系统（DNS）计数器、磁盘统计等。底层系统对这类组织的业务至关重要，因此它们必须精通向客户公开的底层系统。但如果提供基础设施并不是业务的核心差异化因素，监控的重要性就会下降。在大多数情况下，也许只需监控高层服务并进行端到端检查。业务究竟可以减少多少监控，还要考虑多个因素。</p>
+<p>自行运行大量基础设施的公司需要更多监控。系统究竟运行在本地还是云提供商处并不重要，重要的是运维责任由谁承担。无论是在云中预配虚拟机，还是在本地管理自己的数据库，关键因素都是团队是否承担了确保基础设施可用性和性能的责任。</p>
+<p>负责运行自有裸机系统的组织，需要检查底层硬件性能的监控。它们需要监控以太网端口计数器、硬盘性能统计和系统固件版本。把硬件层运维外包给 IaaS 提供商的组织，则不需要在这个层次工作的指标和聚合数据。</p>
+<p>沿着技术栈继续向上，同样如此。越来越多的<a contenteditable="false" data-type="indexterm" data-primary="运维责任、第三方" id="idm45204354711792"/>运维责任转移给第三方时，基础设施监控方面的顾虑也会随之转移。</p>
+<p>把大部分基础设施外包给更高层平台即服务（PaaS）<a contenteditable="false" data-type="indexterm" data-primary="PaaS（平台即服务）" id="idm45204355511504"/><a contenteditable="false" data-type="indexterm" data-primary="平台即服务（PaaS）" id="idm45204355510704"/>提供商的公司，很可能只需要少量传统监控方案，甚至完全不需要。Heroku、AWS Lambda 等服务，本质上允许你付费请它们负责确保企业<em>必须运行</em>的基础设施具备可用性和性能，从而让企业集中精力开发自己<em>希望运行</em>的软件。</p>
+<p>就目前而言，实际体验会因云提供商的可靠程度而异。理论上，这些抽象应该足够干净、层次足够高，使摆脱基础设施监控依赖的过程不至于过分令人沮丧。不过，所有提供商大概都在朝着能够支持这种转变的模式前进。</p>
+<section data-type="sect2" data-pdf-bookmark="例外：不能忽视的基础设施监控"><div class="sect2" id="exceptions_infrastructure_monitoring_th">
+<h2>例外：不能忽视的基础设施监控</h2>
+<p>“使用监控理解系统、使用可观测性理解软件”这条清晰分界线存在几个例外。<a contenteditable="false" data-type="indexterm" data-primary="基础设施" data-secondary="监控" id="idm45204355186688"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="基础设施" id="idm45204354590608"/>如前所述，判断软件表现如何时，评估视角是客户体验。软件运行缓慢，客户体验就会变差。因此，评估客户体验的一项主要任务，是理解所有可能造成性能瓶颈的因素。这条分界线的例外，就是那些能够直接说明软件如何与底层<span class="keep-together">基础设施</span>交互的指标。</p>
+<p>从软件视角来看，每种常见监控工具从 <em>/proc</em> 文件系统中发现的变量生成成千上万张图，其中几乎没有任何价值。电源管理和内核驱动程序指标可能有助于理解底层基础设施细节，但软件开发者通常会愉快地忽略它们，而且本来就应该如此，因为这些指标几乎无法说明软件性能受到什么影响。</p>
+<p>然而，CPU 使用率、内存消耗和磁盘活动等高层基础设施<a contenteditable="false" data-type="indexterm" data-primary="基础设施" data-secondary="指标" id="idm45204354956800"/><a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="基础设施" id="idm45204354966832"/><a contenteditable="false" data-type="indexterm" data-primary="CPU 指标" id="idm45204354963632"/>指标，能够反映物理性能限制。作为软件工程师，应该密切关注这些指标，因为它们可能是代码触发问题的早期预警信号。例如，你会希望知道刚推送的部署是否使常驻内存用量在几分钟内增至三倍。新功能推出后，如果能够看到 CPU 消耗突然翻倍、磁盘写入活动出现尖峰等突变，就能迅速警觉代码变更可能存在问题。</p>
+<p>能否取得高层基础设施指标，取决于底层基础设施已经被抽象到什么程度。但只要能够取得，就应该把它们纳入可观测性方法。</p>
+<p>这里，监控与可观测性的连接点是相关性。出现性能问题时，可以利用监控迅速排除或确认系统层问题。因此，把系统层指标数据与应用层可观测性数据并排查看很有帮助。一些可观测性工具，例如 Honeycomb 和 Lightstep，会在共享上下文中呈现这些数据；其他工具则可能要求使用不同工具或视图来建立相关性。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="真实案例"><div class="sect2" id="real_world_examples">
+<h2>真实案例</h2>
+<p>尽管可观测性仍是一个新兴类别，监控与可观测性共存已经逐渐形成几种模式。本节引用的案例代表我们在客户或更广泛的可观测性社区中经常看到的模式，但绝不是穷尽性的，也不是最终定论。列出这些方法，是为了说明本章概念在现实中如何应用。</p>
+<p>第一个示例客户拥有一套<a contenteditable="false" data-type="indexterm" data-primary="转向可观测性方法" id="idm45204354649632"/>丰富的工具生态系统，用于理解生产系统行为。转向可观测性之前，团队同时使用 Prometheus 进行传统监控、使用 Jaeger 进行分布式追踪，并使用一款传统 APM 工具。他们希望简化现有的多工具方法，从而缩短事故响应时间；原有方法要求把三个彼此分离的系统所捕获的数据关联起来。</p>
+<p>转向基于可观测性的方法后，他们能够整合需求，把工具范围缩减为一套监控系统和一套可观测性系统，两者共同存在。该组织的软件工程团队表示，他们主要使用可观测性理解和调试生产软件。中央运维团队仍然使用 Prometheus 监控基础设施。不过，软件工程师在对代码的资源使用影响存在疑问时，仍然可以查阅 Prometheus。他们也表示，这种需要并不频繁，排查应用瓶颈时很少需要使用 Prometheus。</p>
+<p>第二个示例客户是一家相对较新的公司，得以从零构建一套<a contenteditable="false" data-type="indexterm" data-primary="全新应用" id="idm45204354572816"/>全新应用技术栈。它的生产服务主要利用无服务器函数和 SaaS 平台驱动应用，几乎不自行运行基础设施。由于一开始就没有真正的自有基础设施，它从未走上尝试让监控方案适应自身环境的道路，而是依赖应用插桩和可观测性来理解和调试生产软件。它还会导出部分数据，用于长期聚合和数据仓储。</p>
+<p>最后，第三个示例客户是一家正在推进数字化转型计划的成熟金融服务公司。公司拥有大量异构的遗留基础设施<a contenteditable="false" data-type="indexterm" data-primary="基础设施" data-secondary="遗留" id="idm45204354558176"/>和应用，也拥有全新应用，由多个业务部门和工程团队分别管理。许多旧应用仍在运行，但最初构建和维护它们的团队早已解散，或者重组到公司其他部门。许多应用使用基于指标的监控与仪表板功能相结合的方式管理，这些功能由一家一体化商业厂商提供，同时还使用各种日志工具搜索非结构化日志。</p>
+<p>对于稳定且运行良好的服务，拆除、重新设计并替换原本有效的监控方法，并不能给企业带来多少价值，甚至毫无价值。因此，全新应用不再沿用监控、仪表板和日志混合使用的旧方法，而是面向可观测性进行开发。新应用使用公司基础设施时，软件工程团队也能访问基础设施指标，监控资源使用影响。不过，一些软件工程团队开始在事件中捕获基础设施指标，从而减少使用另一套系统的需要，不必再跨系统关联<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="与可观测性" data-startref="monobs" id="idm45204354808384"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与监控" data-startref="obsmon" id="idm45204354695376"/><a contenteditable="false" data-type="indexterm" data-primary="组织需求评估" data-startref="orgass" id="idm45204355496560"/>资源使用情况与应用问题。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000008">
+<h1>结语</h1>
+<p>决定可观测性与监控如何在组织中共存的指导原则，应该取决于组织内部承担了哪些软件和基础设施责任。监控最适合评估系统健康，可观测性最适合评估软件健康。任何组织究竟需要多少监控和多少可观测性，取决于底层基础设施的管理有多少已经外包给第三方，也就是云服务提供商。</p>
+<p>这条清晰分界线最显著的例外，是 CPU、内存和磁盘等直接影响软件性能的物理设备高层基础设施指标。表示物理基础设施约束消耗程度的指标，对于理解底层基础设施施加的边界至关重要。如果云基础设施提供商能够提供这些指标，就应该把它们纳入可观测性方法。</p>
+<p>通过几个以互补方式平衡监控和可观测性的常见方案，可以看到不同团队如何在现实中落实本章列出的考量。至此，我们已经深入介绍了可观测性的基础知识。本书下一部分将超越技术层考量，继续探讨成功采用可观测性实践，并在多个团队中推动普及时所需的文化变革。</p>
+</div></section>
+</div></section></div></body>
+</html>

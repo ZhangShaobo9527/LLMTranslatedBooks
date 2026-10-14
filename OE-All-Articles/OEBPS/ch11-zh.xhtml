@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 11 章 可观测性驱动开发"><div class="chapter" id="observability_driven_development">
+<h1><span class="label">第 11 章　</span>可观测性驱动开发</h1>
+<p>作为一项实践，可观测性从根本上帮助工程师理解自己编写的代码被最终用户如何体验，通常是在生产环境中。但这并不意味着可观测性只适用于软件发布到生产环境之后。可观测性可以而且应该在软件开发生命周期的早期就发挥作用。本章将介绍可观测性驱动开发。</p>
+<p>我们先探讨测试驱动开发、它在开发周期中的用法及其不足，再看如何以类似测试驱动开发的方法使用可观测性。我们会考察这样做产生的影响、调试代码的不同方式，以及插桩如何帮助可观测性的细微之处。最后，我们将了解可观测性驱动开发如何把可观测性<a href="https://w.wiki/56wf">左移</a>，并加快软件交付到生产环境的速度。</p>
+<section data-type="sect1" data-pdf-bookmark="测试驱动开发"><div class="sect1" id="test_driven_development">
+<h1>测试驱动开发</h1>
+<p>如今，软件发布到生产环境前进行测试的黄金标准<a contenteditable="false" data-type="indexterm" data-primary="开发" data-seealso="TDD（测试驱动开发）" id="idm45204354372816"/><a contenteditable="false" data-type="indexterm" data-primary="测试" data-seealso="TDD（测试驱动开发）" id="idm45204354377184"/><a contenteditable="false" data-type="indexterm" data-primary="TDD（测试驱动开发）" id="tddev"/>是<a href="https://w.wiki/Lnw">测试驱动开发</a>（TDD）。TDD 可以说是过去二十年在软件开发行业中落地最成功的实践之一。它为测试左移提供了实用框架，能够在潜在问题抵达生产环境前很久就发现并预防它们。TDD 已被软件行业广泛采用，应当承认它提升了生产服务中运行代码的质量。</p>
+<p>TDD 是一项强大的实践，为工程师思考软件可运维性提供了清晰方式。应用由一套确定、可重复、每天能够运行数百次的测试来定义。如果这些测试通过，<span class="keep-together">应用</span>就应当按预期运行。对应用的变更在产生之前，先表现为一组新测试，用来验证变更能否按预期工作。随后，开发者开始编写新代码，让测试通过。</p>
+<p>TDD 格外强大，是因为测试每次都以相同方式运行。数据通常不会在测试运行之间保留，而是在每次运行时丢弃、清除并从头创建。底层或远程系统的响应则用桩或模拟对象替代。TDD 要求开发者创建一份规范，精确定义应用在受控状态下的预期行为。测试的作用是识别偏离受控状态的任何意外情况，让工程师立即处理。由此，TDD 消除了猜测并提供一致性。</p>
+<p>但正是这种一致性和<a contenteditable="false" data-type="indexterm" data-primary="隔离" data-secondary="TDD（测试驱动开发）" id="idm45204354362416"/>隔离，也限制了 TDD 揭示软件在生产环境中实际情况的能力。运行隔离测试无法说明客户是否从服务中获得良好体验；测试通过也不意味着错误或回归能够在代码重新发布到生产环境前被迅速、直接地隔离和修复。</p>
+<p>任何有一定经验、负责管理生产软件的工程师都会告诉你，生产环境绝不一致。生产环境充满代码在现实中可能遇到的有趣偏差；这些情况因为不可重复、不完全符合规范或不按计划发生，而被测试排除。TDD 的一致性和隔离性让代码变得易于处理，却没有让代码为那些值得发现、观察、施压和测试的有趣异常做好准备；而真实用户开始<span class="keep-together">与软件交互</span>后，最终塑造软件行为的正是这些异常。</p>
+<p>可观测性甚至能在代码进入源代码管理之前，就帮助你编写并发布更好的代码，因为它属于一套让工程师迅速发现代码缺陷的<a contenteditable="false" data-type="indexterm" data-primary="TDD（测试驱动开发）" data-startref="tddev" id="idm45204354450432"/>工具、流程和文化。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="开发周期中的可观测性"><div class="sect1" id="observability_in_the_development_cycle">
+<h1>开发周期中的可观测性</h1>
+<p>干净地捕获缺陷、迅速解决，并防止它们积压成拖累开发过程的技术债务，<a contenteditable="false" data-type="indexterm" data-primary="开发" data-secondary="与可观测性" id="idm45204354805872"/>取决于团队能否快速找到缺陷。然而，软件开发团队常常由于各种原因妨碍自己做到这一点。</p>
+<p>例如，在一些组织中，软件工程师并不负责运营自己在生产环境中的软件。他们把代码合并到主分支，祈祷变更不会破坏生产环境，然后基本上只是等待问题发生时收到告警。有时部署后很快就会收到告警，随后回滚部署，检查触发问题的变更。但更常见的是，问题在代码合并数小时、数天、数周甚至数月后才被发现。此时，识别缺陷来源、回忆上下文，或者理解当初为何编写和发布这段代码的原始意图，都会变得极其困难。</p>
+<p>迅速解决缺陷，关键在于<em>趁原始作者仍清楚记得最初意图时检查问题</em>。问题永远不会比刚刚编写和发布时更容易调试，此后只会越来越难；速度至关重要。（在旧式部署模型中，你也许先合并变更，等待发布工程师在未知时间发布，再等待一线运维工程师通知软件工程师来修复，而且收到通知的很可能还不是最初编写代码的人。）从缺陷被意外发布到有人检查包含缺陷的代码，间隔越长，许多人浪费的总时间就会成数量级增长。</p>
+<p>乍看之下，可观测性与编写更好软件之间的联系也许并不明显，但迅速调试的需求把两者深深交织在一起。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="确定在哪里调试"><div class="sect1" id="determining_where_to_debug">
+<h1>确定在哪里调试</h1>
+<p>刚接触可观测性的人常误以为它是调试代码的一种方式，<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="问题位置" id="idm45204354350336"/>类似使用极其详细的日志。可观测性工具确实可以辅助调试代码，但这不是它的首要目的。可观测性工作在<em>系统</em>尺度，而不是<em>函数</em>尺度。要在代码行级别发出足够细节以可靠调试，会产生极其庞大的输出，以惊人的存储量和规模淹没大多数可观测性系统。为能够做到这一点的系统付费并不现实，因为成本可能达到系统本身的一到十倍。</p>
+<p>可观测性不是用来调试代码逻辑的。<em>可观测性用于查明应该到系统中的哪里寻找需要调试的代码。</em>可观测性工具帮助你迅速缩小问题可能发生的范围：错误来自哪个组件？延迟在哪里引入？某段数据在哪里被弄坏？哪一次跳转占用了最多处理时间？等待时间是否均匀分布到所有用户，还是只有一部分用户经历？可观测性帮助问题调查锁定可能来源。</p>
+<p>可观测性通常还会让你大致了解受影响组件内部或周围可能发生什么，指出缺陷可能是什么，甚至提示缺陷位于自己的代码、平台代码还是更高层架构对象中。</p>
+<p>识别缺陷位置及其出现方式的部分特征后，可观测性的工作就完成了。接下来，如果想深入代码本身，需要使用传统调试器，例如 GNU 调试器 GDB，或者新一代剖析器。怀疑如何重现问题后，可以启动代码的本地实例，从服务中复制完整上下文，再继续调查。可观测性工具与调试器虽然相关，区别却在尺度层级；它们就像望远镜和显微镜，也许有少量重叠用途，但主要为不同任务设计。</p>
+<p>下面是使用调试器与使用<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与可观测性比较" id="idm45204355801120"/><span class="keep-together">可观测性</span>时可能采取的不同路径：</p>
+<ul>
+<li><p>你看到延迟尖峰，从系统边缘开始，按端点分组，计算平均值、第 90 和第 99 百分位延迟，识别一组慢请求，再追踪其中一个。追踪显示超时从 <code>service3</code> 开始。你把被追踪请求的上下文复制到本地 <code>service3</code> 二进制文件，尝试用调试器或剖析器重现问题。</p></li>
+<li><p>你看到延迟尖峰，从系统边缘开始，按端点分组，计算平均值、第 90 和第 99 百分位延迟，并注意到只有写入端点突然变慢。按数据库目标主机分组后，你发现慢查询只分布在部分数据库主库上，而不是全部。受影响主库又只属于某种实例类型或某个特定可用区。由此得出结论：问题不在代码，而在基础设施。</p></li>
+</ul>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="微服务时代的调试"><div class="sect1" id="debugging_in_the_time_of_microservices">
+<h1>微服务时代的调试</h1>
+<p>从这个角度看，就很容易理解为什么微服务兴起与<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与微服务" id="debmicro"/><a contenteditable="false" data-type="indexterm" data-primary="微服务" data-secondary="与调试" id="microbug"/>可观测性兴起紧密相连。过去的软件系统组件更少，更容易推理。工程师只用低基数标签就能在脑中走遍所有可能的问题区域，再始终使用调试器或 IDE 理解代码逻辑。但单体应用被拆成许多分布式微服务后，调试器无法跨越网络，因而不再那么有效。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>补充一点历史背景：在“可观测性”一词被改造用于满足生产软件系统自省需求之前，<a contenteditable="false" data-type="indexterm" data-primary="微服务的 strace" id="idm45204354368400"/><a contenteditable="false" data-type="indexterm" data-primary="微服务" data-secondary="微服务的 strace" id="idm45204354367168"/>“微服务的 <code>strace</code>”曾是描述这种理解系统内部状态的新方式的早期说法。</p>
+</div>
+<p>服务请求开始跨越网络以完成自身功能后，各种额外的运维、架构、基础设施及其他类别的复杂性，就与我们无意发布、给自己造成的逻辑缺陷不可逆转地交织在一起。</p>
+<p>在单体系统中，如果修改某个函数的代码发布后，该函数立刻变慢，调试器会清楚显示。如今，同一变更可能以多种方式表现：某项服务变慢，一组依赖服务变慢，超时突然增多，或者唯一表现只是用户投诉。谁知道呢。</p>
+<p>而且无论如何表现，监控工具可能仍完全无法说明变慢由以下哪种因素造成：</p>
+<ul>
+<li><p>代码中的缺陷</p></li>
+<li><p>某个用户改变使用模式</p></li>
+<li><p>数据库超出容量</p></li>
+<li><p>网络连接限制</p></li>
+<li><p>负载均衡器配置错误</p></li>
+<li><p>服务注册或服务发现问题</p></li>
+<li><p>上述因素的某种组合</p></li>
+</ul>
+<p>没有可观测性时，你看到的<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与微服务" data-startref="debmicro" id="idm45204354323584"/><a contenteditable="false" data-type="indexterm" data-primary="微服务" data-secondary="与调试" data-startref="microbug" id="idm45204354322464"/>可能只是所有性能图表同时出现尖峰或下跌。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="插桩如何推动可观测性"><div class="sect1" id="how_instrumentation_drives_observabilit">
+<h1>插桩如何推动可观测性</h1>
+<p>可观测性帮助锁定问题来源、常见离群状况，以及错误发生时必须同时成立的六个甚至更多条件。<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="推动可观测性" id="insobsv"/>它也非常适合迅速识别问题是否仅限于某个构建 ID、一组主机、实例类型、容器版本、内核补丁版本、数据库从库或其他架构细节。</p>
+<p>然而，可观测性的必要组成部分是创建有用的插桩。<em>良好的插桩推动可观测性。</em>理解插桩价值的一种方式，是把它放在拉取请求的语境中思考。提交或接受拉取请求<a contenteditable="false" data-type="indexterm" data-primary="PR（拉取请求）" id="idm45204354346048"/>之前，始终应该先问自己：“我如何知道这项变更是否按预期工作？”</p>
+<p class="pagebreak-before less_space">开发插桩时，一个有用目标是创建强化机制并<a contenteditable="false" data-type="indexterm" data-primary="反馈循环" id="idm45204354311904"/>缩短反馈循环。换句话说，缩短代码发布与感受到错误后果之间的距离。这也称为<em>让软件工程师值班</em>。</p>
+<p>一种实现方式，是自动通知刚刚合并待发布代码的人。在短暂的一段时间内，也许 30 分钟到 1 小时，只要生产环境触发告警，就把告警路由给这个人。工程师亲自体验自己的代码在生产环境中的表现时，为代码插桩以便更快隔离和解决问题的能力与动力都会自然增强。</p>
+<p>这种反馈循环不是惩罚，而是代码所有权的<em>必要</em>组成部分。如果与自己的错误反馈隔离，就无法培养发布高质量代码所需的直觉与实践。每位工程师都应该为代码插桩，使代码部署后立即能够回答以下问题：</p>
+<ul>
+<li><p>代码是否在做预期的事情？</p></li>
+<li><p>与上一个版本相比表现如何？</p></li>
+<li><p>用户是否正在积极使用代码？</p></li>
+<li><p>是否正在出现异常状况？</p></li>
+</ul>
+<p>一种更先进的方法，是让工程师使用一小部分生产流量测试代码。只要插桩足够充分，理解候选变更在生产环境中如何工作的最佳方式，就是把它部署到生产环境并实际测量。可以通过多种受控方式完成。例如，把新功能部署在功能标志之后，只向部分用户开放；也可以把功能直接部署到生产环境，但只把特定用户的部分请求路由到新功能。这些方法把反馈循环缩短到几秒或几分钟，而不是通常等待发布所需的长时间。</p>
+<p>如果在请求上下文中捕获了足够详细的插桩信息，就能系统地从任何问题的边缘开始，每一次都沿路径找到正确答案，无须猜测、直觉或预备知识。这是可观测性相对于监控系统的一项革命性进步，使运维工程重新回到科学领域，而不是魔法和<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="推动可观测性" data-startref="insobsv" id="idm45204354617072"/>直觉。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="让可观测性左移"><div class="sect1" id="shifting_observability_left">
+<h1>让可观测性左移</h1>
+<p>TDD 确保开发的软件遵守一份隔离规范，而<em>可观测性驱动开发</em>确保软件能够在混乱的生产现实中工作。软件散布在复杂基础设施上，任何时刻都承受波动的工作负载，还有一些用户做着无法预测的事情。</p>
+<p>在开发生命周期早期把插桩构建进软件，让工程师更容易考虑、也更快看到微小变更在生产环境中的真实影响。如果只关注遵守隔离规范，团队会无意间制造出阻挡视线的条件，使自己看不到软件与混乱、不可预测的人类问题接触的真实游乐场。前面几章已经说明，传统监控方法只会显示聚合度量视图，而这些度量是为了针对已知问题触发告警而开发的。传统工具几乎无法准确推理复杂现代软件系统中发生了什么。</p>
+<p>由于无法准确推理生产环境如何运行，团队常把生产环境当作玻璃城堡：它是集体长期设计出的美丽纪念碑，却没人敢扰动，因为任何意外动作都可能让整个结构破碎。通过培养编写、部署和使用良好遥测数据与可观测性的工程能力，团队能够推理生产环境中真正发生的事情。于是，他们可以进一步深入开发生命周期，考虑如何检测那些可能在城堡中不被察觉地游荡的意外异常。</p>
+<p>可观测性驱动开发让工程团队能够把玻璃城堡变成交互式游乐场。生产环境并非不可改变，而是充满活动；工程师应该有信心进入任何游戏并赢得胜利。但只有当可观测性不再被视为 SRE、基础设施工程师或运维团队的专属领域时，这才可能发生。软件工程师必须采用可观测性并把它融入开发实践，才能打破因害怕修改生产环境而形成的恐惧循环。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="使用可观测性加快软件交付"><div class="sect1" id="using_observability_to_speed_up_softwar">
+<h1>使用可观测性加快软件交付</h1>
+<p>软件工程师把遥测数据<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与软件交付速度" id="idm45204354764912"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="交付速度" id="idm45204355870672"/>与即将进入生产环境的新功能一起交付时，可以缩短从提交代码到向最终用户发布功能的时间。功能标志和渐进式交付等把部署与发布解耦的模式（参见<a data-type="xref" href="ch04-zh.xhtml#how_observability_relates_to_devopscomm">第 4 章</a>），让工程师能够在新功能逐步发布到生产环境时观察并理解其性能。</p>
+<p>软件行业常认为速度与质量之间必然存在取舍：软件可以发布得快，也可以质量高，但无法兼得。<em>Accelerate: Building and Scaling High Performing Technology Organizations</em> 的一项重要发现是，这种反向关系只是神话。<sup><a data-type="noteref" id="ch01fn8-marker" href="ch11-zh.xhtml#ch01fn8">1</a></sup>对于顶尖团队，速度与质量会同步提高并相互强化。速度越快，故障规模越小、发生越少，而且发生后越容易恢复。相反，行动缓慢的团队往往故障更频繁，恢复时间也长得多。</p>
+<p>工程师把生产环境视为不敢踏足的玻璃城堡时，只要看到一点潜在问题迹象，就会本能而熟练地回滚部署。他们缺少进行小幅修改、调整设置、优雅降级服务，或者针对已经深入理解的问题渐进部署变更的控制能力，因此会松开油门，停止所有后续部署和变更，同时回滚自己并未充分理解的当前变更。这与当时最有帮助的反应恰好相反。</p>
+<p>衡量工程团队健康程度和有效性的关键，可以浓缩为一个指标：从代码写成到进入生产环境所经历的时间。每个团队都应该追踪并努力改善这个指标。</p>
+<p>可观测性驱动开发与功能标志、渐进式交付模式结合，可以为工程团队提供所需工具，使其不再本能回滚部署，而是在新功能发布期间出现问题时深入调查真正发生了什么。</p>
+<p>不过，这一切都取决于团队能否以相对较快的节奏向生产环境发布代码。如果团队目前不是这样运作，可以通过以下方式加快代码交付：</p>
+<ul>
+<li><p>每次只发布一组连贯变更，即一位工程师的一次合并。部署破坏“某些东西”、需要数小时或数天拆解和回滚的最大原因，是把许多人多天积累的多项变更批量发布。</p></li>
+<li><p>在部署流程和代码上投入真正的工程精力，让有经验的工程师负责，而不是实习生。确保所有人都能理解部署流水线，并觉得自己有权持续改进。不要让流水线成为某一位工程师或某一个团队的专属领域，而要争取所有人的使用、认同和贡献。关于让所有人都能理解流水线的更多建议，参见<a data-type="xref" href="ch14-zh.xhtml#observability_and_the_software_supply_c">第 14 章</a>。</p></li>
+</ul>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000010">
+<h1>结语</h1>
+<p>可观测性可以而且应该在软件开发生命周期早期使用。测试驱动开发适合检查代码如何按照既定规范运行，可观测性驱动开发则适合检查代码如何在混乱动荡的生产世界中表现。</p>
+<p>软件工程师过去无法理解生产环境真正如何运行，因此形成了把生产环境视为玻璃城堡的思维方式。妥善观察新功能发布到生产环境时的行为，可以改变这种心态，使生产环境变成交互式游乐场，让你与最终用户如何体验自己编写的软件建立联系。</p>
+<p>可观测性驱动开发是打造高绩效软件工程团队的必要条件。所有软件工程师都应该把可观测性视为实践中不可或缺的一部分，而不是假定它只属于 SRE、基础设施工程师和运维团队。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn8"><sup><a href="ch11-zh.xhtml#ch01fn8-marker">1</a></sup> Nicole Forsgren 等，<a href="https://oreil.ly/vgne4"><em>Accelerate: Building and Scaling High Performing Technology Organizations</em></a>（俄勒冈州波特兰：IT Revolution Press，2018）。</p></div></div></section></div></body>
+</html>

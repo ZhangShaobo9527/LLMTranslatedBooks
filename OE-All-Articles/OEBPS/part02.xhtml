@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><div data-type="part" epub:type="part" data-pdf-bookmark="Part II. Fundamentals of Observability" id="fundamentals_of_observability">
+<h1><span class="label">Part II. </span>Fundamentals of Observability</h1>
+<p>In the first part of this book, we examined the definition of “observability,” its necessity in modern systems, its evolution from traditional practices, and the way it is currently being used in practice. This second section delves deeper into technical aspects and details why particular requirements are necessary in observable systems.</p>
+<p><a data-type="xref" href="ch05.xhtml#structured_events_are_the_building_bloc">Chapter 5</a> introduces the basic data type necessary to build an observable system—the arbitrarily wide structured event. It is this fundamental data type for telemetry that makes the analysis described later in this part possible.</p>
+<p><a data-type="xref" href="ch06.xhtml#stitching_events_into_trace">Chapter 6</a> introduces distributed tracing concepts. It breaks down how tracing systems work in order to illustrate that trace data is simply a series of interrelated arbitrarily wide structured events. This chapter walks you through manually creating a minimal trace with code examples.</p>
+<p><a data-type="xref" href="ch07.xhtml#instrumentation_with_opentelemetry">Chapter 7</a> introduces the OpenTelemetry project. While the manual code examples in <a data-type="xref" href="ch06.xhtml#stitching_events_into_trace">Chapter 6</a> help illustrate the concept, you would more than likely start with an instrumentation library. Rather than choosing a proprietary library or agent that locks you into one vendor’s particular solution, we recommend starting with an open source and vendor-neutral instrumentation framework that allows you to easily switch between observability tools of your choice.</p>
+<p><a data-type="xref" href="ch08.xhtml#analyzing_events_to_achieve_observabili">Chapter 8</a> introduces the core analysis loop. Generating and collecting telemetry data is only a first step. Analyzing that data is what helps you achieve observability. This chapter introduces the workflow required to sift through your telemetry data in order to surface relevant patterns and quickly locate the source of issues. It also covers approaches for automating the core analysis loop.</p>
+<p><a data-type="xref" href="ch09.xhtml#how_observability_and_monitoring_come_t">Chapter 9</a> reintroduces the role of metrics as a data type, and where and when to best use metrics-based traditional monitoring approaches. This chapter also shows how traditional monitoring practices can coexist with observability practices.</p>
+<p>This part focuses on technical requirements in relation to the workflow necessary to shift toward observability-based debugging practices. In <a data-type="xref" href="part03.xhtml#observability_for_teams">Part III</a>, we’ll examine how those individual practices impact team dynamics and how to tackle adoption challenges.</p>
+
+
+
+
+
+</div></div></body>
+</html>

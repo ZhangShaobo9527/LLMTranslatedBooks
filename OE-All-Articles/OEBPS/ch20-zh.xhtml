@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 20 章 可观测性的利益相关方与盟友"><div class="chapter" id="observabilityapostrophes_stakeholders_a">
+<h1><span class="label">第 20 章　</span>可观测性的利益相关方与盟友</h1>
+<p>本书大部分内容都在讨论如何把可观测性实践引入软件工程团队。但要在整个组织范围内采用可观测性，工程团队既不能、也不应独自前进。为信息丰富的宽事件完成插桩后，遥测数据集中便蕴藏着大量信息，反映服务在真实市场中的行为。</p>
+<p>可观测性能够迅速回答任意问题，因此也能填补组织内各种非工程利益相关方的知识空缺。传播可观测性文化的一项有效策略，是帮助工程相邻团队解决这些空缺，从而把它们发展为盟友。本章将介绍可观测性在工程相邻领域的使用场景、哪些团队可能成为采用可观测性的盟友，以及帮助这些团队如何积累推动力，使可观测性成为组织实践的核心组成部分。</p>
+<section data-type="sect1" data-pdf-bookmark="识别非工程团队的可观测性需求"><div class="sect1" id="recognizing_nonengineering_observabilit">
+<h1>识别非工程团队的可观测性需求</h1>
+<p>工程团队拥有一整套工具、实践、习惯、目标、愿景、责任和要求<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="非工程需求" id="obsnone"/>，这些要素相互配合，为客户创造价值。有些工程团队更关注软件开发，另一些则更侧重运维。不同团队固然各有专长，但为使用公司软件的人创造卓越客户体验，绝不是“别人的工作”，而是每个人共同承担的责任。</p>
+<p>可观测性也可以这样理解。正如本书所述，可观测性就像一枚透镜，能够迅速揭示软件行为之间的差异：你<em>认为</em>软件应当如何运行，或者通过代码、文档、知识库、博客文章等<em>声明</em>它应当如何运行，与它在真实用户手中<em>实际</em>如何运行。借助可观测性，可以随时理解客户在现实世界中使用软件的体验。理解并改善这种体验，是每个人的工作。</p>
+<p>工程团队会出于各种原因认识到可观测性的必要性。功能空缺可能存在很久才被发现，随后某个催化事件——通常是严重中断——推动变革；也可能更主动地发现需求，例如意识到追查难以捉摸的缺陷所带来的持续救火，正在扼杀开发团队的创新能力。无论哪种情况，都会形成相应商业论证，推动可观测性采用计划。</p>
+<p>同样，要让非工程团队采用可观测性，也必须思考它能支持哪些商业场景。随时理解客户在现实世界中使用软件的体验，可以支持哪些商业目标？组织中哪些人需要理解并改善客户体验？</p>
+<p>需要明确的是，并非每个团队都会专攻可观测性。即使在专注可观测性的工程团队中，有些团队完成的编码和插桩工作也会远多于其他团队。但公司里几乎每个人都与生产环境当前状态息息相关，都有理由查询可观测性数据并分析其细节。</p>
+<p>可观测性允许沿各种维度任意切分数据，因此可以用来理解单个用户、一组用户或整个系统的行为。可以比较、对照并进一步挖掘这些视图，回答对组织内非工程业务部门极为重要的各种问题组合。</p>
+<p>可观测性支持的商业使用场景可能包括：</p>
+<ul>
+<li><p>理解新功能的采用情况。哪些客户正在使用新发布的功能？他们是否与曾表示兴趣的客户名单一致？持续使用功能的活跃用户，与尝试后放弃的用户相比，使用模式有何不同？</p></li>
+<li><p>发现新客户成功使用产品的趋势。销售团队是否了解哪些功能组合能够打动最终成为客户的潜在用户？未能激活产品的用户在使用方式上有哪些共同点？这些共同点是否揭示了需要消除的阻力？</p></li>
+<li><p>通过及时更新的服务状态页面，向客户和内部支持团队准确传达服务可用性信息。能否提供模板化查询，让支持团队在用户报告中断时自助调查？</p></li>
+<li><p>理解短期和长期可靠性趋势。软件对用户而言是否变得更加可靠？可靠性曲线的形态是否与客户投诉等其他数据源一致？中断次数在减少还是增加？恢复速度是否变慢？</p></li>
+<li><p>主动解决问题。能否在大量客户通过支持工单报告之前，就发现并解决影响客户的问题？团队是在主动解决，还是依赖客户替自己发现问题？</p></li>
+<li><p>更快、更可靠地向客户交付功能。生产部署是否受到密切观察，以便发现并修复性能异常？能否将部署与发布解耦，降低新功能交付引发大范围中断的可能性？</p></li>
+</ul>
+<p>在公司中，理解并改善客户体验应是每个人的工作。只要思考谁关心应用可用性、向客户交付的新功能、产品使用趋势，以及客户使用数字服务的体验，就能识别哪些非工程团队需要可观测性。</p>
+<p>推进全组织可观测性采用计划的最佳方式，是联系能够从这些知识中受益的相邻团队。借助可观测性，无论技术能力如何，组织内每个人都可以自如地使用这些数据、讨论这些数据，并据此作出明智决策，构建更好的客户体验。</p>
+<p>换言之，应当让可观测性数据民主化。让每个人都能看到正在发生什么，以及软件在真实用户手中如何运行。与引入任何其他团队一样，最初可能需要提供指导和培训，教他们如何获得问题答案。但很快你就会发现，每个相邻团队都会带来独特的视角和问题。</p>
+<p>与相邻团队的利益相关方合作，确保他们的问题能够得到回答。如果今天无法回答，明天是否可以通过增加自定义插桩来回答？与相邻利益相关方共同迭代插桩，也会帮助工程团队更好理解企业其他部门关心的问题。这种程度的协作能够创造学习机会，逐渐消除沟通孤岛。</p>
+<p>与安全性和可测试性类似，可观测性必须作为持续实践来对待。践行可观测性的团队必须养成习惯，确保任何代码变更都附带适当插桩，就像附带测试一样。代码审查应当确保新代码的插桩达到适当的可观测性标准，正如它也要满足安全<span class="keep-together">标准</span>。向代码库添加支持业务职能的插桩时，审查还应确保非工程业务部门的需求得到满足。</p>
+<p>可观测性需要持续照料和维护；通过观察本章所述的文化行为和关键结果，就能判断是否已经达到足够的可观测性水平<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="非工程需求" data-startref="obsnone" id="idm45204352608288"/>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="在实践中建立可观测性盟友"><div class="sect1" id="creating_observability_allies_in_practi">
+<h1>在实践中建立可观测性盟友</h1>
+<p>现在已经了解如何识别可观测性能够帮助解决业务问题的知识空缺，下一步就是与各种利益相关方合作，向他们展示如何做到这一点<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" id="idm45204352515056"/>。出于共同责任和工作流的关系，可观测性采用工作很可能从工程部门开始，再扩展到支持等相邻团队。采用工作顺利展开后，只需投入相对少量的工作，就可以联系财务、销售、市场、产品开发、客户成功、高管团队等其他利益相关方，向他们展示能够从真实世界的应用使用情况中理解什么。</p>
+<p>向这些团队展示如何利用可观测性数据推进自身业务目标，就能把被动的利益相关方转变为积极关心采用项目的盟友。盟友会主动帮助强化项目需求并提高其优先级，而不再只是旁观或被动了解最新进展。</p>
+<p>具体做法不存在放之四海而皆准的方案，取决于企业自身的独特挑战。本节将通过几个例子，说明如何让其他团队在日常工作中应用可观测性原则，从而成为支持采用计划的组织盟友。</p>
+<section data-type="sect2" data-pdf-bookmark="客户支持团队"><div class="sect2" id="customer_support_teams">
+<h2>客户支持团队</h2>
+<p>本书大部分内容都在介绍调试生产应用的工程实践<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户支持团队" id="obvcst"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户支持团队" id="allcst"/><a contenteditable="false" data-type="indexterm" data-primary="客户支持团队" id="csts"/>。即使采用 DevOps/SRE 模式，规模足够大的组织通常仍会设立至少一个独立团队，处理一线客户支持问题，包括常规故障排查、维护和技术问题协助。</p>
+<p><em>客户支持团队</em>通常需要在工程／运维团队准备好对外分享信息之前，就了解系统问题。问题刚发生时，客户首先会察觉。通常，他们会先刷新浏览器或重试交易，很久以后才会联系支持。在这段缓冲时间内，自动补救措施很有用。理想情况下，客户只会感受到短暂波动；但如果问题持续存在，就必须通知值班工程师并组织响应。与此同时，一些客户感受到的可能已经不只是短暂波动。</p>
+<p>采用传统监控时，从检测到问题、值班工程师响应并分诊、宣布事故，到更新支持团队看到的仪表板以反映应用已知问题，可能需要几分钟。在此期间，支持团队可能通过多种表现形式收到客户问题，只能盲目堆积工单，之后再逐一筛选、手动解决。</p>
+<p>借助可观测性，支持团队有几种选择。最简单的方式是查看 SLO 仪表板，确认是否检测到影响客户的问题（参见<a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">第 12 章</a>）。这比传统监控粒度更细，也能更早提供有用反馈，但仍远非完美。现代系统具有模块化、韧性和自愈能力，因此中断很少是非黑即白的整站正常或宕机，而更像是“欧洲 Android 用户有 50% 的购物车结账失败”，或“只有启用了新 ACL 功能的客户遇到部分故障”。</p>
+<p>让支持团队成员借助可观测性调试客户报告的问题<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="客户支持团队" id="idm45204352515184"/>，可以帮助他们采取更主动的方法。客户 ID 为 5678901 的这位客户目前交易情况如何？他是否正在欧洲使用 Android 设备上的购物车功能？是否启用了访问控制列表（ACL）？支持团队可以迅速确认传入的支持请求是否与已知问题有关，并作出适当分诊。如果团队对可观测性工具足够熟悉并接受了充分培训，还能帮助识别自动检测未必会发现的新问题，例如某个 SLI 的参数不足<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户支持团队" data-startref="obvcst" id="idm45204352565872"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户支持团队" data-startref="allcst" id="idm45204352603568"/><a contenteditable="false" data-type="indexterm" data-primary="客户支持团队" data-startref="csts" id="idm45204353575456"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="客户成功与产品团队"><div class="sect2" id="customer_success_and_product_teams">
+<h2>客户成功与产品团队</h2>
+<p>在产品驱动型组织中，客户成功团队越来越常见。支持团队以被动方式帮助客户解决问题<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户成功团队" id="obvcss"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户成功团队" id="allcss"/><a contenteditable="false" data-type="indexterm" data-primary="客户成功团队" id="csss"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户产品团队" id="obvcpt"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户产品团队" id="allcspt"/><a contenteditable="false" data-type="indexterm" data-primary="产品团队" id="cspt"/>；<em>客户成功团队</em>则采取更主动的方式，帮助客户有效使用产品、避免问题。该团队通常负责客户引导、规划、培训、升级协助等工作。</p>
+<p>客户支持和客户成功团队在日常工作中都会听到最直接的客户反馈，知道应用哪些部分最常受到抱怨。但声音最大的“吱吱作响的轮子”，真的是决定整个客户旅程成功与否的部分吗？</p>
+<p>例如，最近发布的新功能可能没有得到多少客户采用。为什么？用户只是把它当作现场演示，随便试一试，还是把它真正纳入产品工作流？该功能何时、以何种方式、使用哪些参数被调用？它处于怎样的事件序列中？</p>
+<p>可观测性方案捕获的事件数据有助于理解产品使用方式，对产品团队极具价值。产品团队和客户成功团队都切实关心公司软件在真实客户操作下的行为。能够沿任意相关维度切分可观测性数据、寻找有趣模式，意味着其用途远不止支持生产环境的可用性与韧性。</p>
+<p>此外，当某些产品功能被弃用并设定下线日期时，拥有可观测性的成功团队可以看到哪些用户仍在积极使用即将退役的功能。他们还可以判断新功能是否得到采用，并主动帮助可能受退役时间表影响、但在每月沟通中优先处理了其他问题的客户。</p>
+<p>成功团队还可以分析当前使用模式，了解哪些特征可能标志着客户已激活新产品功能。就像能在数据中发现性能离群值一样，也能借助可观测性发现采用情况的离群值。沿任意维度切分数据，可以比较某类请求次数超过特定阈值的用户与未达到阈值的用户。是什么区分了他们？</p>
+<p>例如，可能发现采用新分析功能的用户有一个主要区别：他们创建自定义报告的概率高出 10 倍。如果目标是提高分析功能的采用率，成功团队可以制作培训材料，说明客户为什么以及如何使用分析功能，并深入演示自定义报告的创建过程。还可以在研讨会前后衡量培训效果，判断是否产生了预期影响<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户成功团队" data-startref="obvcss" id="idm45204352632528"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户成功团队" data-startref="allcss" id="idm45204352628496"/><a contenteditable="false" data-type="indexterm" data-primary="客户成功团队" data-startref="csss" id="idm45204352667936"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="客户产品团队" data-startref="obvcpt" id="idm45204352636672"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="客户产品团队" data-startref="allcspt" id="idm45204353671824"/><a contenteditable="false" data-type="indexterm" data-primary="产品团队" data-startref="cspt" id="idm45204352430112"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="销售与高管团队"><div class="sect2" id="sales_and_executive_teams">
+<h2>销售与高管团队</h2>
+<p><em>销售团队</em>也是推动采用可观测性的有力盟友。根据公司组织结构<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="销售团队" id="obvslst"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="销售团队" id="allcsst"/><a contenteditable="false" data-type="indexterm" data-primary="销售团队" id="exst"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="高管团队" id="obvexec"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="高管团队" id="allexec"/><a contenteditable="false" data-type="indexterm" data-primary="高管团队" id="csexec"/>，工程和销售团队日常工作中也许并不经常互动。但销售团队是推动可观测性采用时最强大的盟友之一，他们切实关心哪些产品功能能够促成销售，并希望理解、支持这些功能。</p>
+<p>销售团队通常会转述推介或演示期间收到的反应，共同理解产品哪些部分真正打动客户。定性认识有助于发现趋势，并形成如何推进销售目标的假设；从可观测性数据中获得的定量分析，则可以为销售执行策略提供依据并验证策略。</p>
+<p>例如，哪些客户使用哪些功能，使用频率如何？哪些功能使用最频繁，因此需要最高的可用性目标？战略客户最依赖哪些功能，在何时以及工作流的哪些环节依赖？销售演示最常使用哪些功能，因此必须始终可用？潜在客户对哪些功能最感兴趣、最感惊艳，因此这些功能必须始终拥有最快性能？</p>
+<p>这些问题以及更多问题，都可以通过可观测性数据回答。答案不仅有助于销售，也是决定应当在哪里进行战略投资的核心依据。</p>
+<p><em>高管利益相关方</em>希望明确理解如何产生最大的业务影响，可观测性数据能够提供帮助。数字业务今年最重要的任务是什么？例如，哪些工程投资会推动销售成果？</p>
+<p>传统自上而下的命令控制方式，可能用模糊目标表达对工程部门的业务战略要求，例如“尽可能接近 100% 可用性”，却经常没有说明如何做到、为何要做。利用可观测性数据把这些环节串联起来后，就能用技术术语表达目标，并逐层深入到用户体验、架构、产品功能及其使用团队。使用贯穿各领域的共同语言清晰定义目标，才能真正让组织内团队协调一致。投资究竟投在哪里？会影响谁？为了实现可用性和可靠性目标，工程投入是否适当<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="销售团队" data-startref="obvslst" id="idm45204352456448"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="销售团队" data-startref="allcsst" id="idm45204352400032"/><a contenteditable="false" data-type="indexterm" data-primary="销售团队" data-startref="exst" id="idm45204352685712"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="盟友" data-tertiary="高管团队" data-startref="obvexec" id="idm45204352436272"/><a contenteditable="false" data-type="indexterm" data-primary="盟友" data-secondary="高管团队" data-startref="allexec" id="idm45204352599680"/><a contenteditable="false" data-type="indexterm" data-primary="高管团队" data-startref="csexec" id="idm45204352598032"/>？</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="使用可观测性工具还是商业智能工具"><div class="sect1" id="using_observability_versus_business_int">
+<h1>使用可观测性工具还是商业智能工具</h1>
+<p>有些读者看过前面的内容后可能会问，商业智能（BI）工具能否完成同样的工作<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" id="idm45204352391760"/>。的确，我们所描述的对公司各个动态组成部分的理解，有些类似 BI 使用场景。为什么不直接使用 BI 工具？</p>
+<p>很难笼统概括 BI 工具<a contenteditable="false" data-type="indexterm" data-primary="OLAP（联机分析处理）" id="idm45204352409152"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="与 OLAP" id="idm45204352407952"/><a contenteditable="false" data-type="indexterm" data-primary="商业智能（BI）" data-see="BI（商业智能）" id="idm45204352497424"/>，因为它们包括联机分析处理（OLAP）、移动 BI、实时 BI、运营 BI、位置智能、数据可视化与图表映射、仪表板构建工具、计费系统、临时分析和查询、企业报告等。无论哪种数据，总有某种工具针对其分析进行了优化。也很难概括支撑这些工具的数据仓库，不过至少可以说，它们具有非易失性和随时间变化的特点，并包含原始数据、元数据和汇总数据。</p>
+<p>BI 工具非常通用，而可观测性工具则高度专用于特定场景：理解代码、基础设施、用户与时间的交汇。下面看看可观测性工具作出的几项取舍。</p>
+<section data-type="sect2" data-pdf-bookmark="查询执行时间"><div class="sect2" id="query_execution_time">
+<h2>查询执行时间</h2>
+<p>可观测性工具必须很快<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="查询执行时间" id="idm45204353027696"/><a contenteditable="false" data-type="indexterm" data-primary="查询" data-secondary="可观测性与 BI 工具对比" id="idm45204352478320"/>，查询耗时应从不到一秒到几秒。可探索性是可观测性的核心原则，因为你并不总是知道自己在寻找什么。调查时，很少一遍遍执行相同查询，更多是在沿着线索前进。如果必须坐等一分钟甚至更久才能得到结果，调查流程被打断，可能会完全失去思路。</p>
+<p>相比之下，BI 工具通常针对运行报告，或构建将反复使用的复杂查询而优化。执行时间较长也没关系，因为这些数据不是用于实时响应，而是输入其他工具或系统。企业方向决策通常以数周、数月或数年衡量，而不是几分钟或几秒。如果每隔几秒就要作出业务战略决策，一定出了严重问题。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="准确性"><div class="sect2" id="accuracy">
+<h2>准确性</h2>
+<p>对于可观测性工作负载，如果必须取舍<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="准确性" id="idm45204352382976"/><a contenteditable="false" data-type="indexterm" data-primary="准确性、可观测性与 BI 工具对比" id="idm45204352426432"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="工具" data-tertiary="准确性" id="idm45204352425360"/>，快速但接近正确的结果优于缓慢而完美的结果。迭代调查时，几乎总会选择一秒内扫描 99.5% 事件的结果，而不是一分钟扫描 100% 的结果。这是在不完美、不稳定网络上运行的大规模并行分布式系统中必须作出的真实而常见的取舍（参见<a data-type="xref" href="ch16-zh.xhtml#efficient_data_storage">第 16 章</a>）。</p>
+<p>此外，正如<a data-type="xref" href="ch17-zh.xhtml#cheap_and_accurate_enough_sampling">第 17 章</a>所述，大规模实现可观测性时通常会采用某种动态采样。两种方法都是牺牲少许准确性，换取巨大的性能提升。对于 BI 工具和业务数据仓库，采样和“近似正确”通常都是禁忌。例如计费时，无论耗时多久，都必须得到准确结果。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="新鲜度"><div class="sect2" id="recency">
+<h2>新鲜度</h2>
+<p>可观测性工具回答的问题高度偏重近期数据<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="新鲜度" id="idm45204352634304"/><a contenteditable="false" data-type="indexterm" data-primary="新鲜度、可观测性与 BI 工具对比" id="idm45204352632720"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="工具" data-tertiary="新鲜度" id="idm45204352362832"/>，最重要的数据通常也是最新的。从生产事件发生到能够查询结果，如果延迟超过几秒就不可接受，处理事故时尤其如此。</p>
+<p>数据过去数月后，人们往往更关心历史事件的聚合结果和趋势，而不是单个请求的细节。即使需要查找特定请求，多花一点时间也可以接受。但数据刚刚产生时，查询结果必须原始、丰富，并且更新到当前这一秒。</p>
+<p>BI 工具通常位于光谱的另一端，处理数据花费更长时间一般没有问题。可以缓存较新的结果，或预处理、索引、聚合旧数据来提高性能。但 BI 工具通常需要近乎永久地保留数据的完整保真度。使用可观测性工具时，几乎不会搜索五年前、甚至两年前发生的事件；现代 BI 数据仓库则被设计成永久存储数据并无限增长。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="结构"><div class="sect2" id="structure">
+<h2>结构</h2>
+<p>可观测性数据由字段可任意扩展的结构化数据块组成<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="结构" id="idm45204352461152"/><a contenteditable="false" data-type="indexterm" data-primary="结构、可观测性与 BI 工具对比" id="idm45204352467184"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="工具" data-tertiary="结构" id="idm45204352466112"/>：每项服务的每个请求产生一个事件，长时间运行的批处理进程则每个轮询间隔产生一个事件。为满足可观测性需求——随时回答正在发生什么的任意问题——需要尽可能附加事件细节，提供充足上下文，让调查人员能够发现将来可能相关的线索。随着团队了解哪些数据可能有用，这些细节经常迅速变化和演进；预先定义数据模式反而会违背这一目的。</p>
+<p>因此，可观测性工作负载必须事后推断模式，或即时修改模式，例如随时开始发送新维度或停止发送某个维度。索引同样没有多大帮助（参见<a data-type="xref" href="ch16-zh.xhtml#efficient_data_storage">第 16 章</a>）。</p>
+<p>相比之下，BI 工具通常收集并处理大量非结构化数据，将其转化为结构化、可查询的形式。没有结构和预定义模式，BI 数据仓库会变成无法治理的混乱。要随时间执行任何有用分析，都需要一致模式。BI 工作负载还倾向于以可重复方式提出相似问题，为仪表板等功能提供支持。可以使用索引、复合索引、汇总等方式优化 BI 数据。</p>
+<p>BI 数据仓库被设计为永久增长，因此必须具备预定义模式，并以可预测速率增长。可观测性数据则为快速反馈循环和灵活性而设计；它通常在压力时期最重要，而在这种时候，即时性远比可预测性重要。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="时间窗口"><div class="sect2" id="time_windows">
+<h2>时间窗口</h2>
+<p>可观测性和 BI 工具都有会话或追踪概念，但可观测性通常局限于以秒计、最多以分钟计的时间跨度<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="时间窗口" id="idm45204353582624"/><a contenteditable="false" data-type="indexterm" data-primary="时间窗口、可观测性与 BI 工具对比" id="idm45204352345280"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="工具" data-tertiary="时间窗口" id="idm45204352344304"/>。BI 工具可以处理长期旅程，或需要数天、数周才能完成的追踪。可观测性工具通常不支持寿命如此长的追踪；对于导入／导出作业或队列等长时间运行的进程，通常使用轮询过程，而不是单条追踪。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="短暂性"><div class="sect2" id="ephemerality">
+<h2>短暂性</h2>
+<p>总结以上各点，调试数据本质上比业务数据更加短暂<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-tertiary="短暂性" id="idm45204352745984"/><a contenteditable="false" data-type="indexterm" data-primary="短暂性、可观测性与 BI 工具对比" id="idm45204352747136"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="工具" data-tertiary="短暂性" id="idm45204352746752"/>。例如，可能需要以完全精确的方式取回两年前某一笔交易或计费记录；相比之下，几乎不会需要知道两年前某个用户请求在服务 A 与服务 B 之间的延迟是否很高。</p>
+<p>不过，可能希望知道过去一两年里服务 A 与服务 B 之间的延迟是否上升，或者第 95 百分位延迟是否增加。这类问题很常见，但最适合回答它的既不是 BI 工具／数据仓库，也不是可观测性工具。聚合的历史性能数据最适合交给我们的老朋友——监控<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具对比" data-startref="obvbitl" id="idm45204352974048"/>（参见<a data-type="xref" href="ch09-zh.xhtml#how_observability_and_monitoring_come_t">第 9 章</a>）。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="在实践中结合使用可观测性与 BI 工具"><div class="sect1" id="using_observability_and_bi_tools_togeth">
+<h1>在实践中结合使用可观测性与 BI 工具</h1>
+<p>BI 工具有多种形式<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 BI（商业智能）工具结合" data-secondary-sortas="BI" id="idm45204352330128"/><a contenteditable="false" data-type="indexterm" data-primary="BI（商业智能）" data-secondary="与可观测性结合" id="idm45204352328672"/>，通常用于分析来自财务、客户关系管理（CRM）<a contenteditable="false" data-type="indexterm" data-primary="CRM（客户关系管理）" id="idm45204352326352"/>、企业资源规划（ERP）<a contenteditable="false" data-type="indexterm" data-primary="ERP（企业资源规划）" id="idm45204352325376"/>、营销漏斗或供应链系统的各种业务指标。许多工程师把这些指标制作成仪表板和报告。但特别是在应用服务体验至关重要的技术驱动型公司中，往往还需要深入到 BI 系统原本并非为之设计的细节层次。</p>
+<p>BI 工具的数据粒度可以非常大，往往按月或按周报告指标。BI 工具可以说明二月份使用最多的是哪项功能；可观测性工具则能提供细到单个请求的粒度。正如可观测性与监控可以结合，商业智能与可观测性也可以结合：始终保留微观层面的数据，用它构建宏观世界视图。</p>
+<p>BI 工具依赖聚合指标，往往只能让人看到业务世界极其宏观的整体表示。这些视图有助于呈现总体业务趋势，但在回答本章前面介绍的产品使用或用户行为问题时，作用没有那么大。</p>
+<p>跨部门共享可观测性工具，是推广统一领域语言的好方法。可观测性在服务和 API 这一抽象层次捕获数据，从运维工程师到高管都能理解。共享这些工具后，工程师会受到鼓励，使用业务语言描述领域模型；业务人员则能看到用户群中广泛而真实的多样化使用场景，而不只看到通常使用的少数抽象复合用户画像。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000026">
+<h1>结语</h1>
+<p>借助可观测性，可以理解客户在真实世界中使用软件的体验。企业内多个团队都切实关心理解客户体验，并希望改善体验或从中创造价值，因此可以利用可观测性帮助组织内各种团队更好地实现目标。</p>
+<p>除了工程团队，产品、支持和客户成功等相邻技术团队都能成为强有力的盟友，推动全组织可观测性采用计划。销售和高管等技术性较低的团队，只要得到一些额外支持，也能成为盟友。本章列举的团队绝非完整清单。希望本章能作为入门指南，帮助你思考哪些业务团队可以利用正在捕获的可观测性数据获得更充分的信息，更好地实现预期结果。帮助更多业务团队实现目标，会创造出利益相关方与盟友；反过来，他们能够帮助提高可观测性采用工作的优先级。</p>
+<p>下一章将介绍如何衡量组织在可观测性采用成熟度曲线上的总体进展。</p>
+</div></section>
+</div></section></div></body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 8 章 分析事件以实现可观测性"><div class="chapter" id="analyzing_events_to_achieve_observabili">
+<h1><span class="label">第 8 章　</span>分析事件以实现可观测性</h1>
+<p>本部分前两章介绍了遥测数据的基础知识，它们是创建一套能够用可观测性工具妥善调试的数据集所必需的。拥有正确的数据虽然是根本要求，但可观测性衡量的是你能从这些数据中了解到多少系统信息。本章将探讨如何把调试技术应用于可观测性数据，以及这些技术与传统生产系统调试方法有何不同。</p>
+<p>我们首先仔细考察使用传统监控和应用性能监控工具调试问题的常见技术。前面几章已经指出，传统方法假定调试者相当熟悉过去已知的故障模式。本章会进一步拆解这种方法，再将它与另一类调试方式作比较：后者不要求调试者同样深入地熟悉系统，也能识别问题。</p>
+<p>随后，我们会考察如何自动化基于可观测性的调试技术，并思考人和计算机在构建有效调试工作流中分别扮演什么角色。把这些因素结合起来，你就能理解可观测性工具如何帮助分析遥测数据，识别传统工具根本无法检测的问题。</p>
+<p>这种假设驱动的调试方式，会先形成假设，再探索数据来证实或否定假设。它不仅比依赖直觉和模式匹配更加科学，也让更多人能够参与调试。传统调试技术偏爱最熟悉系统、经验最丰富的人，因为他们能迅速找到答案；使用可观测性调试时，最好奇或最勤于检查代码在生产环境中表现的人反而更有优势。借助可观测性，即使对系统知之甚少，也应该能够直接参与并调试问题。</p>
+<section data-type="sect1" data-pdf-bookmark="从已知状况出发调试"><div class="sect1" id="debugging_from_known_conditions">
+<h1>从已知状况出发调试</h1>
+<p>在可观测性出现之前，系统和应用调试主要建立在你对<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="已知状况" id="debkno"/>系统的已有认识之上。观察工程团队中资历最深的成员如何排查问题，就能看到这种方式。他们知道应该问哪些问题，还能凭本能找到正确的检查位置，看起来简直像魔法。这种魔法源自对应用和系统的深入熟悉。</p>
+<p>为了捕获这种魔法，管理者会督促资深工程师编写详细的运行手册，<a contenteditable="false" data-type="indexterm" data-primary="运行手册" id="idm45204355120896"/>试图识别并解决实际环境中可能遇到的每一种“根本原因”。<a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>介绍过一种不断升级的仪表板军备竞赛：每遇到一种新问题，人们就努力创建一幅恰到好处的视图来识别它。但花在编写运行手册和制作仪表板上的时间大多被浪费了，因为现代系统很少以完全相同的方式故障两次。即使同一故障再次发生，如今也越来越常见的做法是配置自动修复措施，在有人能够妥善调查之前先纠正故障。</p>
+<p>任何编写或使用过运行手册的人，都能讲出它们多么严重不足的故事。它们也许适合暂时处理技术债务：某个问题反复出现，运行手册告诉其他工程师如何缓解，等到即将到来的迭代再彻底解决。但更常见的情况，尤其是在分布式系统中，是分布在长尾中的低频问题——这些问题<em>几乎从不发生</em>，却会在生产环境中引发级联故障。也可能是五种看似不可能同时出现的状况恰好对齐，以数年才发生一次的方式造成大规模服务故障。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="on_the_topic_of_runbooks">
+<h5>关于运行手册</h5>
+<p>说编写运行手册所花的时间大多被浪费了，乍听可能有些苛刻。需要说明的是，帮助团队迅速了解某项服务的需求及调查起点的文档，确实有其位置。例如，每项服务都应该有一份文档，包含以下基础信息：哪个团队拥有并维护服务；如何联系值班工程师；升级求助点；该服务依赖哪些其他服务，以及哪些服务反过来依赖它；还有能够了解服务运行状况的优秀查询或仪表板链接。</p>
+<p>然而，维护一份试图囊括所有可能系统错误及其解决方法、并且不断更新的文档，是一场徒劳而危险的游戏。这类文档很快就会过时，而<em>错误的文档</em>可能比<em>没有文档</em>更加危险。在快速变化的系统中，插桩本身往往是最好的文档，因为它把设计意图——工程师命名并决定采集哪些维度——与生产环境实时且最新的运行状态结合在一起。</p>
+</div></aside>
+<p>但工程师通常会接受这种状态，认为故障排查本来就该如此，因为几十年来调试一直是这样进行的。首先，必须通过亲身接触与经验、文档或运行手册，深入理解系统的所有部分。然后查看仪表板，接着……凭直觉得出答案？或者先猜测根本原因，再在仪表板中寻找证据来证实猜测。</p>
+<p>即使应用经过插桩、已经发出可观测性数据，你仍然可能从已知状况出发调试。例如，可以把字段可任意扩展的事件流通过管道传给 <code>tail -f</code>，再用 <code>grep</code> 搜索已知字符串，就像今天排查非结构化日志一样。也可以把查询结果持续输送到无穷无尽的仪表板中，就像今天使用指标排查问题一样。你在一块仪表板上看到尖峰，随后开始翻看另外几十块仪表板，用肉眼进行模式匹配，寻找其他相似形状。</p>
+<p>使你能够调试未知状况的，不只是现在开始收集事件数据，还包括你对待插桩和调试的方式。</p>
+<p>在 Honeycomb，即使已经构建出自己的可观测性工具，我们也花了很长时间才弄明白这一点。作为工程师，我们的自然倾向是直接使用自己已经掌握的系统知识。在 Honeycomb 早期，还没有学会摆脱从已知状况出发的调试方式时，可观测性只是帮助我们迅速跳到正确的高基数问题。</p>
+<p>如果刚发布一项新前端功能并担心性能，我们会问：“它让 CSS 和 JS 资源大小改变了多少？”因为插桩正是自己编写的，所以我们知道可以计算 <code>css_asset_size</code> 和 <code>js_asset_size</code> 的最大值，再按 <code>build_id</code> 拆分性能数据来回答。如果担心某个刚开始使用服务的新客户，我们会问：“他们的查询快吗？”然后自然知道要按 <code>team_id</code> 筛选，并计算响应时间的 <code>p95</code>。</p>
+<p>但是，如果你不知道哪里出了问题，也不知道该从何处开始查看，甚至对可能发生了什么毫无头绪，又该怎么办？当调试状况对你完全未知时，<em>这时</em>就<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="已知状况" data-startref="debkno" id="idm45204354822656"/>必须改为从第一性原理出发调试。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="从第一性原理出发调试"><div class="sect1" id="debugging_from_first_principles">
+<h1>从第一性原理出发调试</h1>
+<p>前两章已经说明，以事件形式收集遥测数据只是第一步。要实现可观测性，<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与第一性原理" id="debfpr"/><a contenteditable="false" data-type="indexterm" data-primary="第一性原理、从其出发调试" id="fprdeg"/>还必须以强大、客观的方式分析数据，从而打开一扇全新的系统理解之门。可观测性使你能够从第一性原理出发调试应用。</p>
+<p><a href="https://w.wiki/56we">第一性原理</a>是关于系统的一项基本假设，它并非从其他假设推导而来。在哲学中，第一性原理被定义为认识某一事物的最初基础。所谓<em>从第一性原理出发调试</em>，基本上是一套以科学方式理解系统的方法论。严谨的科学要求不预设任何结论。你必须先质疑哪些内容已被证明、哪些事实绝对确定，再以这些原理为基础形成假设，并根据对系统的观察来验证或否定假设。</p>
+<p>从第一性原理出发调试，是可观测性的一项核心能力。凭直觉直接跳到答案当然很美妙，但随着复杂度上升、可能答案数量暴增，这种做法会越来越不切实际。（而且它<em>绝对</em>无法扩展……不是每个人都能成为、也不应该被要求成为系统巫师，才能调试自己的代码。）</p>
+<p>在第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch02-zh.xhtml#how_debugging_practices_differ_between">2</a> 章和第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch03-zh.xhtml#lessons_from_scaling_without_observabil">3</a> 章中，你已经看到一些极难诊断的隐蔽问题。如果你对系统架构并不了如指掌，会怎样？如果甚至不知道系统收集了哪些数据，又会怎样？如果问题存在多个原因，你问哪里出了错，而答案是“13 件不同的事情”，又该怎么办？</p>
+<p>可观测性真正强大的地方，在于调试问题前不应该需要预先掌握如此多的信息。即使不熟悉或不太熟悉系统，你也应该能够系统、科学地一步接一步前进，沿着线索有条理地找到答案。过去，人们依赖未说出口的信号、以往吃过的亏，或者熟悉系统后灵光一现，仿佛施展魔法般立即跳到正确结论；现在，这些都被有条理、可重复、可验证的流程所取代。</p>
+<p>核心分析循环展示了如何把这种方法付诸实践。</p>
+<section data-type="sect2" data-pdf-bookmark="使用核心分析循环"><div class="sect2" id="using_the_core_analysis_loop">
+<h2>使用核心分析循环</h2>
+<p>当你得知某处出现异常时，从第一性原理出发的调试就开始了。<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="核心分析循环" id="deganlp"/><a contenteditable="false" data-type="indexterm" data-primary="核心分析循环、与调试" id="lpdeg"/>我们将在<a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">第 12 章</a>介绍与可观测性兼容的告警方法。你也许收到了告警，也可能只是收到一条客户投诉：你知道某些地方变慢了，却不知道问题是什么。<a data-type="xref" href="#the_core_analysis_loop">图 8-1</a>展示了<em>核心分析循环</em>的四个阶段。这套流程利用遥测数据形成假设，再用数据验证或否定假设，从而系统地找到复杂问题的答案。</p>
+<figure><div id="the_core_analysis_loop" class="figure">
+<img src="Images/oben_0801.png" width="1268" height="737"/>
+<h6><span class="label">图 8-1　</span>核心分析循环</h6>
+</div></figure>
+<p>核心分析循环按以下方式工作：</p>
+<ol>
+<li><p>从触发调查的整体情况开始：客户或告警告诉了你什么？</p></li>
+<li><p>验证目前掌握的信息是否属实：系统中某处是否确实出现了显著的性能变化？数据可视化可以帮助识别行为变化，它通常表现为图中某条曲线发生改变。</p></li>
+<li><p>寻找可能推动性能变化的维度。可以采用以下方法：</p>
+<ol type="a">
+<li><p>检查显示变化的区域中的样本行：各列中是否存在可能提供线索的离群值？</p></li>
+<li><p>沿不同维度切分这些行以寻找模式：是否有某个视图突出显示了一个或多个维度上的独特行为？尝试进行实验性的 <code>group by</code>，例如把它应用于 <code>status_code</code> 等常用字段。</p></li>
+<li><p>按照这些行中的特定维度或数值进行筛选，以便更清楚地暴露潜在离群值。</p></li>
+</ol></li>
+<li><p>现在是否已经充分了解可能发生了什么？如果是，调查完成。如果不是，就筛选当前视图，把这片性能区域隔离出来，作为下一轮调查的起点，然后返回第 3 步。</p></li>
+</ol>
+<p>这就是从第一性原理出发调试的基础。可以把这个循环当作一种暴力方法，遍历所有可用维度，识别哪些维度能够解释所关注图形中的离群表现，或者与之相关；整个过程不需要预先掌握任何系统知识或经验。</p>
+<p>当然，这种暴力方法可能耗费极长时间，如果完全交给人工操作人员，做法就会变得不切实际。可观测性工具应该尽可能替你自动完成<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="核心分析循环" data-startref="deganlp" id="idm45204355413088"/><a contenteditable="false" data-type="indexterm" data-primary="核心分析循环、与调试" data-startref="lpdeg" id="idm45204355364816"/>其中的暴力分析。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="自动执行核心分析循环中的暴力部分"><div class="sect2" id="automating_the_brute_force_portion_of_t">
+<h2>自动执行核心分析循环中的暴力部分</h2>
+<p>核心分析循环是一种<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="核心分析循环" data-tertiary="自动化暴力分析" id="deglpbrt"/><a contenteditable="false" data-type="indexterm" data-primary="核心分析循环、与调试" data-secondary="自动化暴力分析" id="lpdebfrc"/>客观寻找信号的方法，从大量原本正常的系统噪声中找出重要内容。要迅速查明问题根源，就必须利用机器的计算能力。</p>
+<p>调试系统性能缓慢时，核心分析循环会让你隔离出自己关心的一片系统性能区域。自动化方法不再要求人工在行和列之间搜索、费力引出模式，而是分别取得隔离区域内（异常）和区域外（系统基线）所有维度的值，计算两者差异，再按差异大小排序。这样很快就能得到一份清单，显示调查所关注的区域与其余所有数据相比，究竟有哪些不同。</p>
+<p>例如，你可以隔离一处请求延迟尖峰；自动执行核心分析循环后，会得到一份按顺序排列的维度清单，以及它们在该区域中的出现频率。可能看到以下结果：</p>
+<ul>
+<li><p><code>request.endpoint</code> 的值为 <code>batch</code>，出现在隔离区域的 100% 请求中，但在基线区域中只占 20%。</p></li>
+<li><p><code>handler_route</code> 的值为 <code>/1/markers/</code>，出现在隔离区域的 100% 请求中，但在基线区域中只占 10%。</p></li>
+<li><p><code>request.header.user_agent</code> 在隔离区域的 97% 请求中有值，而在基线区域中为 100%。</p></li>
+</ul>
+<p>扫一眼这些结果，你就能看到自己关心的这片具体性能区域中的事件，与系统其他部分存在哪些不同，无论差异只有一个还是多达几十个。下面使用 Honeycomb 的 BubbleUp 功能，看一个更加具体的核心分析循环示例。</p>
+<p>在 Honeycomb 中，首先通过热图<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="BubbleUp" id="idm45204354854064"/><a contenteditable="false" data-type="indexterm" data-primary="BubbleUp（Honeycomb）" id="idm45204354782496"/>可视化，隔离出自己关心的性能区域。Honeycomb 使用 BubbleUp 功能自动执行核心分析循环：在图中点击令你担忧的尖峰或异常形状，并在周围画一个方框。BubbleUp 会计算方框内（你关心并希望解释的异常）和方框外（基线）的<em>所有</em>维度值，比较两者，再按差异百分比对结果视图排序，如<a data-type="xref" href="#a_honeycomb_heatmap_of_event_performanc">图 8-2</a>所示。</p>
+<figure><div id="a_honeycomb_heatmap_of_event_performanc" class="figure">
+<img src="Images/oben_0802.png" width="1909" height="1515"/>
+<h6><span class="label">图 8-2　</span>一次真实事故期间事件性能的 Honeycomb 热图。<span class="keep-together">BubbleUp</span> 显示了 63 个值得关注的维度，并按百分比差异从大到小排列结果。</h6>
+</div></figure>
+<p>在这个示例中，应用采用了高维度插桩，BubbleUp 可以对这些数据进行计算和比较。计算结果以直方图显示，使用两种主色：蓝色代表基线维度，橙色代表所选异常区域中的维度；在印刷图像中，蓝色显示为深灰，橙色显示为浅灰。在左上角，也就是排序结果的首位，可以看到一个名为 <code>global.availability_zone</code> 的字段。它的值 <code>us-east-1a</code> 只出现在 17% 的基线事件中，却出现在所选区域 98% 的异常事件中（参见<a data-type="xref" href="#in_this_close_up_of_the_results_from_th">图 8-3</a>）。</p>
+<figure><div id="in_this_close_up_of_the_results_from_th" class="figure">
+<img src="Images/oben_0803.png" width="1236" height="561"/>
+<h6><span class="label">图 8-3　</span>这张<a data-type="xref" href="#a_honeycomb_heatmap_of_event_performanc">图 8-2</a>结果的局部放大图显示：橙色条（印刷图像中的浅灰色）表明，在所选区域 98% 的事件中，<code>global.availability_zone</code> 的值为 <code>us-east-1a</code>；蓝色条（深灰色）则表明，基线事件中只有 17% 符合这一情况。</h6>
+</div></figure>
+<p>从这个示例中可以迅速看出，性能缓慢的事件大多源自云基础设施提供商的某一个可用区（AZ）。<a contenteditable="false" data-type="indexterm" data-primary="AZ（可用区）" id="idm45204354882096"/>自动显示的其他信息还指出，有一种特定虚拟机实例类型似乎比其他类型受影响更严重。工具也显示了其他维度，但在本例中差异通常没那么鲜明，说明它们与调查的关系可能较小。</p>
+<p>这些信息非常有帮助：现在我们知道了哪些条件似乎会触发性能缓慢。某一个可用区中的某一种实例，比我们关心的其他基础设施更容易出现严重性能下降。在这个案例中，显眼的差异最终指向云提供商整个可用区底层的一项网络问题。</p>
+<p>并非所有问题都像这个底层基础设施故障一样一目了然。通常还需要检查工具显示的其他线索，才能对代码相关问题作出初步判断。核心分析循环保持不变；你可能需要沿不同维度切分和细查数据，直到出现一个清晰信号，就像前面的示例一样。在这个案例中，我们联系了云提供商；当客户也报告同一可用区出现相似问题时，我们还独立证实了这项未公开的可用性故障。如果问题与代码有关，也许会决定联系那些用户，或者查清他们通过用户界面的哪条路径遇到错误，再修复界面或底层系统。</p>
+<p>需要注意，只有使用可观测性的基础构件，也就是<a contenteditable="false" data-type="indexterm" data-primary="宽事件" data-secondary="与核心分析循环" id="idm45204354716912"/>字段可任意扩展的结构化事件，才能实现核心分析循环。指标缺少宽广上下文，无法让你切分、细查数据，也无法深入或缩小观察范围，因此不能做到这一点。日志同样无法做到，除非已经正确附加所有请求 ID、追踪 ID 及其他请求头，又进行了大量后处理把它们重建成事件，并进一步加入读取时聚合和执行复杂自定义查询的能力。</p>
+<p>换句话说，没错，可观测性工具应该替你自动完成大量数字运算，但如果没有可观测性的基础构件，就连手工执行核心分析循环也不可能。手工核心分析循环可以发现值得关注的维度，但在计算资源低廉的现代，可观测性工具理应替你自动执行这种调查。从第一性原理出发调试不要求预先熟悉系统，因此自动化可以简单而有条理地完成，无须预先植入有关被调试应用的所谓“智能”。</p>
+<p>这就引出了一个问题：应该为这些数字运算应用多少<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与人工智能" id="idm45204355004848"/><a contenteditable="false" data-type="indexterm" data-primary="人工智能（AI）、与调试" id="idm45204354774064"/>智能？人工智能和<a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="与第一性原理" data-startref="debfpr" id="idm45204354699728"/><a contenteditable="false" data-type="indexterm" data-primary="第一性原理、从其出发调试" data-startref="fprdeg" id="idm45204354695152"/><a contenteditable="false" data-type="indexterm" data-primary="调试" data-secondary="核心分析循环" data-tertiary="自动化暴力分析" data-startref="deglpbrt" id="idm45204354694256"/><a contenteditable="false" data-type="indexterm" data-primary="核心分析循环、与调试" data-secondary="自动化暴力分析" data-startref="lpdebfrc" id="idm45204354689936"/>机器学习，是否注定会成为所有调试问题的解决方案？</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="AIOps 令人误解的承诺"><div class="sect1" id="this_misleading_promise_of_aiops">
+<h1>AIOps 令人误解的承诺</h1>
+<p>自 Gartner 在 2017 年创造这个术语以来，<em>智能运维</em>（<em>AIOps</em>）就<a contenteditable="false" data-type="indexterm" data-primary="AIOps（智能运维）" id="aiops"/><a contenteditable="false" data-type="indexterm" data-primary="智能运维（AIOps）" id="arop"/>引起了许多公司的兴趣，它们希望以某种方式自动执行常见运维任务。深入探讨<a href="https://thenewstack.io/observability-and-the-misleading-promise-of-aiops"> AIOps 令人误解的承诺</a>超出了本书范围。不过，AIOps 与可观测性在减少告警噪声和异常检测两个方面存在交集。</p>
+<p><a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">第 12 章</a>将分析一种更简单的告警方法，使通过算法减少告警噪声的需求不再成立。第二个交集是异常检测，也是本章重点，下面将进一步分析。</p>
+<p>如本章前面所述，使用算法检测异常的<a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="基线" id="idm45204354683280"/>基本思想，是选择一组“正常”事件作为基线，再与基线窗口之外的“异常”事件进行比较。自动化算法要选择在哪个时间窗口中进行比较，可能极其困难。</p>
+<p>就像使用 BubbleUp 在自己关心的区域周围画方框一样，AI 也必须决定自己的方框画在哪里。如果系统行为长期保持一致，异常就是令人担忧而且不同寻常的情况，很容易检测。但在不断创新、系统行为频繁变化的环境中，AI 更可能画出大小错误的方框。方框可能太小，把大量完全正常的行为识别成异常；也可能太大，把异常错误归为正常行为。实践中，两类错误都会发生，检测结果不是噪声太多，就是安静得过分。</p>
+<p>本书讨论的是：使用现代实践，在现代架构上管理生产软件运行所需的工程原则。当今任何具备合理竞争力的公司，其工程团队都会频繁向生产环境部署变更。部署新功能会引入过去不存在的性能变化——这是异常。修复损坏的构建——也是异常。在生产环境中引入服务优化、改变性能曲线——同样是异常。</p>
+<p>AI 技术不是魔法。只有存在清晰可辨的模式，而且能够训练 AI 使用不断变化的基线来建立预测模型时，AI 才能提供帮助；而到目前为止，AIOps 领域还没有形成这种训练模式。</p>
+<p>与此同时，<em>确实存在</em>一种智能，能够把实时上下文应用到新问题集上，可靠地调整自身模式识别以适应不断变化的基线：人类智能。当 AIOps 技术力有不逮时，人类智能和对待解决问题的上下文认识可以填补空白。同样，这种适应性强、理解上下文的人类智能，也不具备用算法处理数十亿行数据所达到的速度。</p>
+<p>正是在可观测性以及核心分析循环的自动化中，<em>人类智能与机器智能相互融合</em>，从两者身上取得最大收益。让计算机做它最擅长的事：处理庞大数据集，找出可能值得关注的模式。让人做人最擅长的事：为这些潜在的有趣模式补充认知上下文，可靠地从无关噪声中筛出重要信号。</p>
+<p>可以这样理解：任何计算机都能计算数字并检测尖峰，但只有人能够赋予尖峰意义。它是好是坏？是有意为之还是意外发生？以当前技术水平，AIOps 无法可靠地替你作出这些价值判断。</p>
+<p>仅靠人类无法解决当今最复杂的软件性能问题，但仅靠计算机，或者把 AIOps 宣传成魔法银弹的厂商，也同样做不到。把人和机器的优势结合起来，是当今世界最好、最务实的解决方案。自动执行<a contenteditable="false" data-type="indexterm" data-primary="AIOps（智能运维）" data-startref="aiops" id="idm45204355444816"/><a contenteditable="false" data-type="indexterm" data-primary="智能运维（AIOps）" data-startref="arop" id="idm45204354782192"/>核心分析循环，就是这种结合方式的绝佳示例。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000091">
+<h1>结语</h1>
+<p>收集正确的遥测数据，只是走向可观测性的第一步。必须按照第一性原理分析数据，才能在复杂环境中客观、正确地识别应用问题。核心分析循环是一项快速定位故障的有效技术。但随着系统日益复杂，人要有条理地完成这项工作可能十分耗时。</p>
+<p>寻找异常来源时，可以利用计算资源迅速筛查极其庞大的数据集，识别值得关注的模式。把这些模式呈现给人工操作人员，由人把它们放入必要的上下文，再进一步引导调查，可以形成一种有效平衡，充分发挥机器和人的优势，迅速推进系统调试。可观测性系统正是为了把这种分析模式应用到前面几章介绍的事件数据而构建的。</p>
+<p>现在，你已经理解实现可观测性需要哪些数据，也了解了如何分析这些数据以迅速取得答案。下一章将回过头来考察可观测性实践与监控实践如何共存。</p>
+</div></section>
+</div></section></div></body>
+</html>

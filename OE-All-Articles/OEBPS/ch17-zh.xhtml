@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 17 章 既便宜又足够准确：采样"><div class="chapter" id="cheap_and_accurate_enough_sampling">
+<h1><span class="label">第 17 章　</span>既便宜又足够准确：采样</h1>
+<p>上一章介绍了如何配置数据存储，以高效存取海量可观测性数据。本章讨论如何减少需要存储的可观测性数据量。规模足够大时，保留并处理每一个事件所需的资源会变得昂贵到难以承受，也不切实际。对事件进行采样，可以缓解资源消耗与数据保真度之间的矛盾。</p>
+<p>本章将考察采样为何有用（即使规模较小时也是如此）、常见的数据采样策略，以及这些策略之间的取舍。我们通过代码示例说明这些策略的实现方式，并在前面示例的基础上逐步引入新概念。首先从应用于单个事件的简单采样方案讲起，借此理解如何在采样时用统计样本表示数据；随后转向更复杂的策略，把它们应用于一系列相关事件（追踪跨度），并传播采样后重建数据所需的信息。</p>
+<section data-type="sect1" data-pdf-bookmark="通过采样精炼数据集"><div class="sect1" id="sampling_to_refine_your_data_collection">
+<h1>通过采样精炼数据集</h1>
+<p>超过一定规模后，收集、处理和保存系统生成的每一条日志、每一个事件和每一条追踪的成本，会远远超过它们带来的收益<a contenteditable="false" data-type="indexterm" data-primary="采样" id="samp"/>。规模足够大时，根本不可能运行一套与生产基础设施同等庞大的可观测性基础设施。当可观测性事件迅速汇成数据洪流，问题便转化为一项取舍：减少保留的数据量，同时又可能丢失工程团队排查故障、理解系统生产行为所需的关键信息。</p>
+<p>大多数应用的实际情况是，许多事件几乎完全相同，而且都执行成功。调试的核心任务，是寻找新出现的模式，或在故障期间检查失败事件。从这个角度看，把全部事件都传输到可观测性数据后端是一种浪费。可以选择某些事件作为已发生情况的代表样本，同时随样本事件传输必要的元数据，让可观测性后端重建未被采样事件所反映的实际情况。</p>
+<p>要有效调试，需要选取一组具有代表性的成功事件，也就是“良好”事件，作为比较“异常”事件的基准。用代表性事件重建可观测性数据，既能减少逐一传输所有事件的开销，又能如实恢复原始数据的形态。事件采样能以一小部分资源成本实现可观测性目标，是在大规模环境中精炼可观测性流程的一种方式。</p>
+<p>过去，软件行业在资源受限却需要报告高吞吐系统状态时，从噪声中提取信号的标准做法，是生成只包含少量标签的聚合指标。正如<a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>所述，无法分解的系统状态聚合视图过于粗糙，不足以排查现代分布式系统的问题。在数据抵达调试工具前进行预聚合，意味着无法突破聚合值的粒度继续深入调查。</p>
+<p>借助可观测性，可以使用本章介绍的策略对事件采样，同时仍然细致地观察系统状态。采样让你能够决定哪些事件值得传输，哪些不值得。预聚合指标会把一段时间内的所有事件压缩为系统状态的一种粗略表示；与之不同，采样允许你判断哪些事件有助于揭示异常行为，同时优化资源使用。样本事件与聚合指标的差别在于，代表性事件包含的每个维度都保留了完整基数。</p>
+<p>在大规模环境中，为优化资源成本而精炼数据集至关重要。即使规模较小、节省资源不那么紧迫，精炼决定保留的数据仍能显著节约成本。下面先介绍判断哪些数据值得采样的策略，再讨论处理追踪事件时应当何时以及如何作出采样决策<a contenteditable="false" data-type="indexterm" data-primary="采样" data-startref="samp" id="idm45204353399792"/>。</p>
+</div></section>
+<section data-type="sect1" class="pagebreak-before" data-pdf-bookmark="采用不同的采样方法"><div class="sect1" id="using_different_approaches_to_sampling">
+<h1 class="less_space">采用不同的采样方法</h1>
+<p>采样是解决资源限制的常用方法。遗憾的是，<em>采样</em>一词经常被笼统地当作万能标签，涵盖许多不同的实现方法。采样有多种概念和实现，其中一些对可观测性的效果不如另一些。我们需要消除这个词的歧义，分别命名适用于可观测性的采样技术，并说明它们彼此之间的异同。</p>
+<section data-type="sect2" data-pdf-bookmark="恒定概率采样"><div class="sect2" id="constant_probability_sampling">
+<h2>恒定概率采样</h2>
+<p><em>恒定概率采样</em>易于理解和实现，因此大多数人提到采样时想到的就是这种方式<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="恒定概率" id="idm45204353390912"/><a contenteditable="false" data-type="indexterm" data-primary="恒定概率采样" id="idm45204353389920"/>：按固定百分比保留数据，而不是将其丢弃，例如每 10 个请求保留 1 个。</p>
+<p>分析采样数据时，需要转换数据以重建原始请求分布。假设服务同时插桩生成事件和指标，并收到了 100,000 个请求。如果每个收到的事件代表大约 1,000 个相似事件，而遥测系统却报告只收到 100 个事件，就会产生误导。指标等其他遥测系统会为服务收到的 100,000 个请求逐一递增计数器。由于其中只有一小部分请求被采样，系统必须调整事件聚合，才能返回近似正确的数据。对于固定采样率系统，可以把每个事件乘以当时采用的采样率，估算请求总数及延迟总和。p99 和中位数等标量分布特征无须针对恒定概率采样调整，因为采样过程不会使其失真。</p>
+<p>恒定采样的基本思想是：只要流量足够大，任何出现过的错误都会再次发生；如果某种错误频繁到值得关注，你就会看到它。然而，数据量处于中等水平时，恒定采样无法维持足够的统计概率，确保仍能看到需要观察的事件。恒定采样不适用于以下情况：</p>
+<ul>
+<li><p>你非常关注错误情况，却不太关注成功情况。</p></li>
+<li><p>某些客户产生的流量比其他客户高出几个数量级，而你希望所有客户都有良好体验。</p></li>
+<li><p>你希望确保服务器流量大幅增长时不会压垮分析后端。</p></li>
+</ul>
+<p>对于可观测系统，需要使用更精细的方法，确保捕获并保留足够的遥测数据，从而随时看清任何服务的真实状态。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="根据近期流量采样"><div class="sect2" id="sampling_on_recent_traffic_volume">
+<h2>根据近期流量采样</h2>
+<p>除了采用固定概率，还可以动态调整系统对事件的采样率。如果近期收到的总流量较少，可以提高采样概率<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="近期流量" id="idm45204353242464"/><a contenteditable="false" data-type="indexterm" data-primary="流量与采样" id="idm45204353427376"/>；如果流量激增可能压垮可观测性工具的后端，则可以降低采样概率。不过，这种方法增加了一层复杂性：采样率不再恒定后，重建数据分布时就不能再把每个事件乘以一个固定系数。</p>
+<p>遥测系统必须改用加权算法，把收集事件时采用的采样概率考虑在内。如果一个事件代表 1,000 个相似事件，就不能与另一个只代表 100 个相似事件的事件直接求平均值。因此，计算总数时，系统必须把事件所<em>代表</em>的数量相加，而不能只计算实际收集到的事件数。聚合中位数或 p99 等分布特征时，系统必须把每个事件按其代表数量展开，再计算事件总数和百分位数所在的位置。</p>
+<p>例如，假设有以下“值—采样率”对：<code>[{1,5}, {3,2}, {7,9}]</code>。如果不考虑采样率而直接取值的中位数，会简单地得到 3，因为它位于 <code>[1,3,7]</code> 的中间。但必须把采样率纳入计算。可以把完整值集合展开，直观展示如何利用采样率重建数据：<code>[1,1,1,1,1,3,3,7,7,7,7,7,7,7,7,7]</code>。这样便能清楚看出，考虑采样之后，中位数是 7。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="根据事件内容（键）采样"><div class="sect2" id="sampling_based_on_event_content_left_pa">
+<h2>根据事件内容（键）采样</h2>
+<p>这种动态采样方法会根据事件载荷调整采样率。概括来说，就是从事件集合中选择一个或多个字段<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="事件载荷" id="idm45204353188864"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="按内容采样" id="idm45204353188096"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="键" id="idm45204353203520"/><a contenteditable="false" data-type="indexterm" data-primary="键与采样" id="idm45204353186656"/>，并在看到特定值组合时指定采样率。例如，可以根据 HTTP 响应码划分事件，再为每种响应码分配采样率。这样就能指定以下采样条件：</p>
+<ul>
+<li><p>包含<em>错误</em>的事件比<em>成功</em>事件更重要。</p></li>
+<li><p><em>新下订单</em>事件比检查<em>订单状态</em>的事件更重要。</p></li>
+<li><p>影响<em>付费客户</em>的事件比影响<em>免费套餐</em>客户的事件更值得保留。</p></li>
+</ul>
+<p class="pagebreak-before less_space">采用这种方法时，键可以按需设计得很简单，例如只使用 HTTP 方法；也可以很复杂，例如把 HTTP 方法、请求大小和用户代理拼接起来，以选出最有助于观察服务流量的样本。</p>
+<p>如果键空间较小，例如 HTTP 方法只有有限的 <code>GET</code>、<code>POST</code>、<code>HEAD</code> 等值，<em>并且</em>各个键的相对出现率保持稳定，例如可以假定错误少于成功，那么只根据事件内容按固定百分比采样会很有效。需要注意的是，这种假设有时并不成立，糟糕情况下甚至会完全反转。因此，应当验证这些假设，并准备好在假定条件反转时应对事件流量激增。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="结合按键采样与历史方法"><div class="sect2" id="combining_per_key_and_historical_method">
+<h2>结合按键采样与历史方法</h2>
+<p>如果流量内容<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="历史方法" id="idm45204353373648"/>更难预测，可以继续为每个传入事件确定一个键或键组合，<em>同时</em>根据近期看到该键的流量动态调整其采样率。例如，可以根据过去 30 秒内某个键组合（如［客户 ID、数据集 ID、错误码］）出现的次数确定采样率。某个组合在这段时间内出现得越多，就比不常见的组合更缺乏调查价值。这样的配置会按比例减少原样传播的事件，直到该类流量的速率发生变化，再次调整采样率。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="选择动态采样方案"><div class="sect2" id="choosing_dynamic_sampling_options">
+<h2>选择动态采样方案</h2>
+<p>决定采用哪种采样策略时，应当观察流经服务的流量，以及命中该服务的查询种类<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="动态" id="idm45204353309248"/><a contenteditable="false" data-type="indexterm" data-primary="动态采样" id="idm45204353308480"/>。面对的是主页应用，其中 90% 的请求几乎没有区别吗？这种情况的需求，与数据库前端代理大不相同；后者会重复出现许多查询模式。</p>
+<p>位于直读式缓存之后的后端又有不同需求，因为它收到的请求大多独一无二——缓存已经滤掉了所有平淡无奇的请求。每种情况都适合略有不同的采样策略，针对自身需求进行优化。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="何时为追踪作出采样决策"><div class="sect2" id="when_to_make_a_sampling_decision_for_tr">
+<h2>何时为追踪作出采样决策</h2>
+<p>到目前为止，前面的策略考虑的都是选择样本时应采用<em>什么</em>标准<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="采样决策" id="trsp"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="何时用于追踪" id="spwh"/>。对于只涉及单个服务的事件，决策完全取决于这些标准；对于追踪事件，<em>何时</em>作出采样决策也同样重要。</p>
+<p>追踪跨度跨多个服务收集，每个服务都可能采用自己独特的采样策略和采样率。完成一条追踪所需的每个跨度，恰好都被各自服务选中采样的概率很低。要确保捕获追踪中的每个跨度，就必须根据决定是否采样的时机采取特别措施。</p>
+<p>如前所述，一种策略是根据事件本身的属性——返回状态、延迟、端点，或者客户 ID 等高基数字段——判断事件是否值得采样。端点或客户 ID 等属性是静态的，在事件开始时便已知。采用<em>头部采样</em>（也称<em>预先采样</em>）时，追踪事件启动之际就会作出采样决策。随后把该决策继续向下游传播，例如插入“必须采样”标头位，以确保完成追踪所需的每个跨度都被采样。</p>
+<p>返回状态或延迟等字段，只有在事件执行完成后回头看时才知道。如果采样决策依赖动态字段，等到这些字段确定时，各个底层服务早已各自决定是否采样其他跨度事件。最好的结果也只是保留了被视为异常离群值的下游跨度，却没有任何其他上下文。要根据请求结束时才知道的值正确作出决策，就需要<em>尾部采样</em>。</p>
+<p>采用尾部采样收集完整追踪时，必须先把所有跨度收集到缓冲区，再回过头作出采样决策。这种缓冲采样的计算成本很高，完全在插桩代码内部实现并不可行，通常需要收集器一侧的外部逻辑。</p>
+<p>决定采样的<em>内容</em>与<em>时机</em>还有更多细微之处。到这里，最好通过代码示例解释这些问题<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="采样决策" data-startref="trsp" id="idm45204353834032"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="何时用于追踪" data-startref="spwh" id="idm45204353176064"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="把采样策略转化为代码"><div class="sect1" id="translating_sampling_strategies_into_co">
+<h1>把采样策略转化为代码</h1>
+<p>到目前为止，我们从概念层面介绍了采样策略。下面看看如何用代码实现这些策略<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="代码" id="spcod"/>。这个教学示例使用 Go 说明实现细节，不过这些示例很容易移植到任何支持哈希表、字典或映射、伪随机数生成以及并发和计时器的语言。</p>
+<section data-type="sect2" data-pdf-bookmark="基础情况"><div class="sect2" id="the_base_case">
+<h2>基础情况</h2>
+<p>假设要为一个高吞吐量处理程序插桩：它调用下游服务，执行一些内部工作<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="插桩方法" id="idm45204353153360"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="采样" id="idm45204353152592"/>，然后返回结果，并无条件地向插桩数据接收端记录一个事件：</p>
+<pre data-type="programlisting">func handler(resp http.ResponseWriter, req *http.Request) {
+    start := time.Now()
+    i, err := callAnotherService()
+    resp.Write(i)
+    RecordEvent(req, start, err)
+}</pre>
+<p>规模扩大后，这种插桩方法会产生大量不必要的噪声，导致资源消耗飙升。下面看看对该处理程序发送的事件进行采样的其他方式。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="固定采样率"><div class="sect2" id="fixed_rate_sampling">
+<h2>固定采样率</h2>
+<p>一种简单粗糙的方法，是采用固定概率进行采样<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="固定采样率" id="idm45204353191296"/><a contenteditable="false" data-type="indexterm" data-primary="固定采样率" id="idm45204353267488"/>，随机选择每 1,000 个事件发送 1 个：</p>
+<pre data-type="programlisting">var sampleRate = flag.Int("sampleRate", 1000, "Static sample rate")
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    start := time.Now()
+    i, err := callAnotherService()
+    resp.Write(i)
+
+    r := rand.Float64()
+    if r &lt; 1.0 / *sampleRate {
+          RecordEvent(req, start, err)
+    }
+}</pre>
+<p>无论事件是否具有调查价值，每 1,000 个事件都会保留 1 个，用它代表另外 999 个被丢弃的事件。要在后端重建数据，必须记住每个事件代表 <code>sampleRate</code> 个事件，并在插桩收集器的接收端相应放大所有计数值。否则，工具报告的该时段实际事件总数就会出错。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="记录采样率"><div class="sect2" id="recording_the_sample_rate">
+<h2>记录采样率</h2>
+<p>在前面这个笨拙的示例中，必须手动记住采样率<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="采样率" data-tertiary="记录" id="sprat"/>，并在接收端设置它。如果以后需要改变采样率，插桩收集器无法确切知道数值何时发生了变化。更好的做法是在发送样本事件时显式传递当前 <code>sampleRate</code>（参见<a data-type="xref" href="#different_events_may_be_sampled_at_diff">图 17-1</a>），表明从统计意义上说，该事件代表 <code>sampleRate</code> 个相似事件。请注意，不同服务之间的采样率可以不同，同一服务内部的采样率也可以变化。</p>
+<figure><div id="different_events_may_be_sampled_at_diff" class="figure">
+<img src="Images/oben_1701.png" width="705" height="514"/>
+<h6><span class="label">图 17-1　</span>不同事件可以采用不同的采样率</h6>
+</div></figure>
+<p>可以像下面这样在事件中记录采样率：</p>
+<pre data-type="programlisting">var sampleRate = flag.Int("sampleRate", 1000, "Service's sample rate")
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    start := time.Now()
+    i, err := callAnotherService()
+    resp.Write(i)
+
+    r := rand.Float64()
+    if r &lt; 1.0 / *sampleRate {
+        RecordEvent(req, *sampleRate, start, err)
+    }
+}</pre>
+<p>采用这种方式，可以追踪记录每个样本事件时采用的采样率。即使采样率动态变化，也拥有重建数据时准确计算各项数值所需的信息。例如，要计算满足 <code>"err != nil"</code> 等筛选条件的事件总数，就需要把看到的每个 <code>"err != nil"</code> 事件分别乘以自己的 <code>sampleRate</code>（参见<a data-type="xref" href="#total_events_can_be_calculated_using_we">图 17-2</a>）。要计算 <code>durationMs</code> 的总和，则需要对每个样本事件的 <code>durationMs</code> 加权，把它乘以 <code>sampleRate</code>，再将加权后的数值相加。</p>
+<figure><div id="total_events_can_be_calculated_using_we" class="figure">
+<img src="Images/oben_1702.png" width="822" height="323"/>
+<h6><span class="label">图 17-2　</span>可以用加权数值计算事件总数</h6>
+</div></figure>
+<p>这个示例过于简单，也很刻意。你可能已经看出，这种方法在处理追踪事件时存在缺陷。下一节将讨论让动态采样率与追踪协调工作时还需要考虑的问题<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="采样率" data-tertiary="记录" data-startref="sprat" id="idm45204353138944"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="一致采样"><div class="sect2" id="consistent_sampling">
+<h2>一致采样</h2>
+<p>前面的代码展示了<em>如何</em>作出采样决策，但还没有考虑对追踪事件采样时应当<em>何时</em>作出决策<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="一致性" id="spcon"/>。采样与追踪结合时，采用头部采样、尾部采样还是缓冲采样非常重要。本章末尾会介绍这些决策的实现方式。现在先看看如何向下游处理程序传播上下文，以便稍后作出决策。</p>
+<p>要正确管理追踪事件，应当集中生成一个<em>采样／追踪 ID</em>，并将其传播给所有下游处理程序，而不是让各个处理程序独立生成采样决策。这样就能针对同一最终用户请求在不同服务中的表现作出一致的采样决策（参见<a data-type="xref" href="#sampled_events_containing_a_traceid">图 17-3</a>）。换言之，可以确保为任何被采样的请求捕获完整的端到端追踪。如果采样到了下游深处的错误，却发现由于采样策略的实现方式丢弃了上游上下文，那会非常遗憾。</p>
+<figure><div id="sampled_events_containing_a_traceid" class="figure">
+<img src="Images/oben_1703.png" width="588" height="671"/>
+<h6><span class="label">图 17-3　</span>包含 <code>TraceId</code> 的样本事件</h6>
+</div></figure>
+<p>一致采样可以确保采样率不变时，一条追踪要么完整保留，要么全部丢弃。即使子跨度的采样率更高——例如嘈杂的 Redis 调用每 1,000 个保留 1 个，而父跨度每 10 个保留 1 个——也绝不会出现保留 Redis 子跨度却丢弃父跨度，进而产生残缺追踪的情况。</p>
+<p>下面修改前面的代码示例，从 <code>TraceID</code>/<code>Sampling-ID</code> 中读取采样概率，而不是在每一步生成随机值：</p>
+<pre data-type="programlisting">var sampleRate = flag.Int("sampleRate", 1000, "Service's sample rate")
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    // Use an upstream-generated random sampling ID if it exists.
+    // otherwise we're a root span. generate &amp; pass down a random ID.
+    var r float64
+    if r, err := floatFromHexBytes(req.Header.Get("Sampling-ID")); err != nil {
+          r = rand.Float64()
+    }
+
+    start := time.Now()
+    // Propagate the Sampling-ID when creating a child span
+    i, err := callAnotherService(r)
+    resp.Write(i)
+
+    if r &lt; 1.0 / *sampleRate {
+          RecordEvent(req, *sampleRate, start, err)
+    }
+}</pre>
+<p>现在，只要修改 <code>sampleRate</code> 功能标志，让系统采样不同比例的追踪，就可以在不重新编译的情况下调整采样率，包括在运行时调整。不过，如果采用下一节介绍的目标速率采样<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="一致性" data-startref="spcon" id="idm45204354067808"/>，就不必手动调整采样率。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="目标速率采样"><div class="sect2" id="target_rate_sampling">
+<h2>目标速率采样</h2>
+<p>随着流量涨落，不必通过标志手动调整每个服务的采样率<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" id="sptar"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" id="trsp2"/>。可以追踪收到的传入请求速率，使这个过程自动化（参见<a data-type="xref" href="#you_can_automate_the_calculation_of_ove">图 17-4</a>）。</p>
+<figure><div id="you_can_automate_the_calculation_of_ove" class="figure">
+<img src="Images/oben_1704.png" width="1441" height="319"/>
+<h6><span class="label">图 17-4　</span>可以自动计算总体采样量</h6>
+</div></figure>
+<p class="pagebreak-before less_space">下面看看如何在代码示例中实现：</p>
+<pre data-type="programlisting">var targetEventsPerSec = flag.Int("targetEventsPerSec", 5,
+    "The target number of requests per second to sample from this service.")
+
+// Note: sampleRate can be a float! doesn't have to be an integer.
+var sampleRate float64 = 1.0
+// Track requests from previous minute to decide sampling rate for the next 
+// minute.
+var requestsInPastMinute *int
+
+func main() {
+    // Initialize counters.
+    rc := 0
+    requestsInPastMinute = &amp;rc
+
+    go func() {
+        for {
+              time.Sleep(time.Minute)
+              newSampleRate = *requestsInPastMinute / (60 * *targetEventsPerSec)
+              if newSampleRate &lt; 1 {
+                   sampleRate = 1.0
+              } else {
+                   sampleRate = newSampleRate
+              }
+              newRequestCounter := 0
+              // Real production code would do something less prone to race 
+              // conditions
+              requestsInPastMinute = &amp;newRequestCounter
+        }
+    }()
+    http.Handle("/", handler)
+     [...]
+}
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    var r float64
+    if r, err := floatFromHexBytes(req.Header.Get("Sampling-ID")); err != nil {
+        r = rand.Float64()
+    }
+
+    start := time.Now()
+    *requestsInPastMinute++
+    i, err := callAnotherService(r)
+    resp.Write(i)
+
+    if r &lt; 1.0 / sampleRate {
+        RecordEvent(req, sampleRate, start, err)
+    }
+}</pre>
+<p>这个示例让资源成本变得可预测。不过，它仍然不够灵活<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" data-startref="sptar" id="idm45204353111584"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" data-startref="trsp2" id="idm45204353112736"/>，无法根据每个键的流量采用不同采样率。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="采用多个静态采样率"><div class="sect2" id="having_more_than_one_static_sample_rate">
+<h2>采用多个静态采样率</h2>
+<p>无论是动态还是静态设置，如果采样率很高，都必须考虑可能遗漏长尾事件<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="采样率" data-tertiary="多个静态采样率" id="idm45204353106592"/><a contenteditable="false" data-type="indexterm" data-primary="静态采样率" id="idm45204353107616"/>，例如错误或高延迟事件，因为第 99.9 百分位的离群事件被随机选中的概率很低。同样，你可能希望每个不同来源至少都有一些数据，而不是让高流量来源淹没低流量来源。</p>
+<p>解决办法是设置多个采样率。先从按键改变采样率开始。下面的示例代码每 1,000 个基线事件（非离群事件）采样 1 个，同时采用尾部采样，分别按全部保留和每 5 个保留 1 个的比例采样错误和慢查询：</p>
+<pre data-type="programlisting">var sampleRate = flag.Int("sampleRate", 1000, "Service's sample rate")
+var outlierSampleRate = flag.Int("outlierSampleRate", 5, "Outlier sample rate")
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    start := time.Now()
+    i, err := callAnotherService(r)
+    resp.Write(i)
+
+    r := rand.Float64()
+    if err != nil || time.Since(start) &gt; 500*time.Millisecond {
+        if r &lt; 1.0 / *outlierSampleRate {
+              RecordEvent(req, *outlierSampleRate, start, err)
+        }
+    } else {
+        if r &lt; 1.0 / *sampleRate {
+              RecordEvent(req, *sampleRate, start, err)
+        }
+    }
+}</pre>
+<p>这很好地展示了如何使用多个静态采样率，但仍然容易受到插桩流量峰值的影响。如果应用的错误率激增，每个错误都会被采样。下面用目标速率采样解决这个缺陷。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="按键和目标速率采样"><div class="sect2" id="sampling_by_key_and_target_rate">
+<h2>按键和目标速率采样</h2>
+<p>下面结合前面的两种技术，扩展现有方案，让插桩数据达到指定目标速率<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="键" data-tertiary="与目标速率" id="spkr"/><a contenteditable="false" data-type="indexterm" data-primary="键与采样" id="kysp"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" data-tertiary="与键" id="sptrky"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" data-secondary="与键" id="trkys"/>。如果请求出现异常，例如延迟超过 500 毫秒或发生错误，可以用独立的保证速率对它进行尾部采样；其他请求则受到速率限制，保持在每秒样本请求数的预算内：</p>
+<pre data-type="programlisting">var targetEventsPerSec = flag.Int("targetEventsPerSec", 4,
+    "The target number of ordinary requests/sec to sample from this service.")
+var outlierEventsPerSec = flag.Int("outlierEventsPerSec", 1,
+    "The target number of outlier requests/sec to sample from this service.")
+
+var sampleRate float64 = 1.0
+var requestsInPastMinute *int
+
+var outlierSampleRate float64 = 1.0
+var outliersInPastMinute *int
+
+func main() {
+    // Initialize counters.
+    rc := 0
+    requestsInPastMinute = &amp;rc
+    oc := 0
+    outliersInPastMinute = &amp;oc
+
+    go func() {
+         for {
+              time.Sleep(time.Minute)
+              newSampleRate = *requestsInPastMinute / (60 * *targetEventsPerSec)
+              if newSampleRate &lt; 1 {
+                   sampleRate = 1.0
+              } else {
+                   sampleRate = newSampleRate
+              }
+              newRequestCounter := 0
+              requestsInPastMinute = &amp;newRequestCounter
+
+              newOutlierRate = outliersInPastMinute / (60 * *outlierEventsPerSec)
+              if newOutlierRate &lt; 1 {
+                   outlierSampleRate = 1.0
+              } else {
+                   outlierSampleRate = newOutlierRate
+              }
+              newOutlierCounter := 0
+              outliersInPastMinute = &amp;newOutlierCounter
+         }
+    }()
+    http.Handle("/", handler)
+     [...]
+}
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    var r float64
+    if r, err := floatFromHexBytes(req.Header.Get("Sampling-ID")); err != nil {
+        r = rand.Float64()
+    }
+    start := time.Now()
+    i, err := callAnotherService(r)
+    resp.Write(i)
+    if err != nil || time.Since(start) &gt; 500*time.Millisecond {
+         *outliersInPastMinute++
+         if r &lt; 1.0 / outlierSampleRate {
+               RecordEvent(req, outlierSampleRate, start, err)
+         }
+    } else {
+         *requestsInPastMinute++
+         if r &lt; 1.0 / sampleRate {
+               RecordEvent(req, sampleRate, start, err)
+         }
+    }
+}</pre>
+<p>这个极其冗长的示例包含多段重复代码，为清楚起见才以这种方式呈现。如果还要支持第三类请求，更合理的做法是重构代码，以便为任意数量的键设置采样率<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="键" data-tertiary="与目标速率" data-startref="spkr" id="idm45204353098208"/><a contenteditable="false" data-type="indexterm" data-primary="键与采样" data-startref="kysp" id="idm45204353280704"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" data-tertiary="与键" data-startref="sptrky" id="idm45204353091632"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" data-secondary="与键" data-startref="trkys" id="idm45204353089680"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="对任意数量的键采用动态采样率"><div class="sect2" id="sampling_with_dynamic_rates_on_arbitrar">
+<h2>对任意数量的键采用动态采样率</h2>
+<p>实践中，通常无法预先确定一组有限的请求配额<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="动态" data-tertiary="与键" id="spdyrt"/><a contenteditable="false" data-type="indexterm" data-primary="动态采样" data-secondary="多个键" id="dykey"/>。前面的示例包含许多重复代码块，并且要为每种情况（错误／延迟与正常请求）手动指定目标速率。</p>
+<p>更现实的方法是重构代码，使用映射保存每个键的目标速率和已看到的事件数，再通过查找键来作出采样决策。示例代码会变成下面这样：</p>
+<pre data-type="programlisting">var counts map[SampleKey]int
+var sampleRates map[SampleKey]float64
+var targetRates map[SampleKey]int
+
+func neverSample(k SampleKey) bool {
+    // Left to your imagination. Could be a situation where we know request is a 
+    // keepalive we never want to record, etc.
+    return false
+}
+
+// Boilerplate main() and goroutine init to overwrite maps and roll them over 
+// every interval goes here.
+
+type SampleKey struct {
+    ErrMsg        string
+    BackendShard  int
+    LatencyBucket int
+}
+
+// This might compute for each k: newRate[k] = counts[k] / (interval * 
+// targetRates[k]), for instance.
+
+func checkSampleRate(resp http.ResponseWriter, start time.Time, err error,
+         sampleRates map[any]float64, counts map[any]int) float64 {
+    msg := ""
+    if err != nil {
+         msg = err.Error()
+    }
+    roundedLatency := 100 *(time.Since(start) / (100*time.Millisecond))
+    k := SampleKey {
+         ErrMsg:       msg,
+         BackendShard: resp.Header().Get("Backend-Shard"),
+         LatencyBucket: roundedLatency,
+    }
+    if neverSample(k) {
+         return -1.0
+    }
+
+    counts[k]++
+    if r, ok := sampleRates[k]; ok {
+         return r
+    } else {
+         return 1.0
+    }
+}
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    var r float64
+    if r, err := floatFromHexBytes(req.Header.Get("Sampling-ID")); err != nil {
+         r = rand.Float64()
+    }
+
+    start := time.Now()
+    i, err := callAnotherService(r)
+    resp.Write(i)
+
+    sampleRate := checkSampleRate(resp, start, err, sampleRates, counts)
+    if sampleRate &gt; 0 &amp;&amp; r &lt; 1.0 / sampleRate {
+         RecordEvent(req, sampleRate, start, err)
+    }
+}</pre>
+<p>到这里，代码示例已经相当庞大，却仍未涵盖更复杂的技术。这个示例的目的只是说明采样概念如何实现。</p>
+<p>幸运的是，现有代码库可以处理这类复杂的采样逻辑。在 Go 中，<a href="https://github.com/honeycombio/dynsampler-go"><em>dynsampler-go</em> 库</a>会为任意数量的采样键维护一张映射；只要某个键具有新颖性，就会为它公平分配采样份额。该库还包含计算采样率的更高级技术，既可以基于目标速率，也可以完全不显式设置目标速率。</p>
+<p>到这里，我们已经接近完成采样概念应用方法的入门介绍。结束前再作最后一项改进：把目前采用的尾部采样与头部采样结合起来，由头部采样要求所有下游服务都对追踪进行采样<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="动态" data-tertiary="与键" data-startref="spdyrt" id="idm45204353466000"/><a contenteditable="false" data-type="indexterm" data-primary="动态采样" data-secondary="多个键" data-startref="dykey" id="idm45204353464768"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="综合运用：按键进行头部和尾部目标速率采样"><div class="sect2" id="putting_it_all_together_head_and_tail_p">
+<h2>综合运用：按键进行头部和尾部目标速率采样</h2>
+<p>本章前面提到，头部采样需要设置标头，把采样决策传播到下游<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" data-tertiary="按键进行头部和尾部采样" id="sptrt"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" data-secondary="按键进行头部和尾部采样" id="tptky"/>。对于不断迭代的代码示例，这意味着父跨度必须把头部采样决策及其对应采样率传递给所有子跨度。这样会强制采样所有子跨度，即使该层的动态采样率原本不会选中这个请求：</p>
+<pre data-type="programlisting">var headCounts, tailCounts map[interface{}]int
+var headSampleRates, tailSampleRates map[interface{}]float64
+
+// Boilerplate main() and goroutine init to overwrite maps and roll them over
+// every interval goes here. checkSampleRate() etc. from above as well
+
+func handler(resp http.ResponseWriter, req *http.Request) {
+    var r, upstreamSampleRate, headSampleRate float64
+    if r, err := floatFromHexBytes(req.Header.Get("Sampling-ID")); err != nil {
+         r = rand.Float64()
+    }
+
+    // Check if we have a non-negative upstream sample rate; if so, use it.
+    if upstreamSampleRate, err := floatFromHexBytes(
+         req.Header.Get("Upstream-Sample-Rate")
+    ); err == nil &amp;&amp; upstreamSampleRate &gt; 1.0 {
+         headSampleRate = upstreamSampleRate
+    } else {
+         headSampleRate := checkHeadSampleRate(req, headSampleRates, headCounts)
+         if headSampleRate &gt; 0 &amp;&amp; r &lt; 1.0 / headSampleRate {
+              // We'll sample this when recording event below; propagate the 
+              // decision downstream though.
+         } else {
+              // Clear out headSampleRate as this event didn't qualify for 
+              // sampling. This is a sentinel value. 
+              headSampleRate = -1.0
+         }
+    }
+
+    start := time.Now()
+    i, err := callAnotherService(r, headSampleRate)
+    resp.Write(i)
+
+    if headSampleRate &gt; 0 {
+         RecordEvent(req, headSampleRate, start, err)
+    } else {
+         // Same as for head sampling, except here we make a tail sampling 
+         // decision we can't propagate downstream.
+         tailSampleRate := checkTailSampleRate(
+              resp, start, err, tailSampleRates, tailCounts,
+         )
+         if tailSampleRate &gt; 0 &amp;&amp; r &lt; 1.0 / tailSampleRate {
+              RecordEvent(req, tailSampleRate, start, err)
+         }
+    }
+}</pre>
+<p>此时代码示例已经相当复杂。不过，即使达到这种程度，它仍有力地展示了采样的灵活性：可以捕获调试代码所需的全部上下文。在高吞吐量的现代分布式系统中，可能还需要进一步细化，采用更复杂的采样技术。</p>
+<p>例如，每当下游的尾部启发式规则在响应中捕获错误时，可以调整头部样本的 <code>sampleRate</code>，提高采样概率。在这种情况下，收集器侧的缓冲采样可以把采样决策推迟到整条追踪完成缓冲之后，从而结合头部采样与仅在尾部才能获知的属性所带来的优势<a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="代码" data-startref="spcod" id="idm45204353070768"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="目标速率" data-tertiary="按键进行头部和尾部采样" data-startref="sptrt" id="idm45204354028880"/><a contenteditable="false" data-type="indexterm" data-primary="目标速率采样" data-secondary="按键进行头部和尾部采样" data-startref="tptky" id="idm45204353069312"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000018">
+<h1>结语</h1>
+<p>采样是精炼可观测性数据的有效技术。大规模运行时必须采样，即使规模较小，它在多种场景中仍然很有用。本章的代码示例展示了各种采样策略的实现方式。OTel 等开源插桩库越来越多地代为实现这类采样逻辑。随着这些库成为生成应用遥测数据的标准，需要在自己的代码中重新实现采样策略的情况应该会越来越少。</p>
+<p>不过，即使依赖第三方库管理采样策略，也必须理解采样实现背后的机制，才能判断哪种方法适合自己的具体情况。理解各种策略——静态与动态、头部与尾部，以及它们的组合——在实践中如何工作，才能明智地运用它们，在优化资源使用的同时保持数据保真度。</p>
+<p class="pagebreak-before less_space">与决定在代码中插桩什么、如何插桩类似，采样的<em>内容</em>、<em>时机</em>和<em>方式</em>最好根据组织自身的独特需求来确定。事件中哪些字段会影响其采样价值，很大程度上取决于它们对理解环境状态有多大帮助，以及它们对实现业务目标有何影响。</p>
+<p>下一章将考察一种路由海量遥测数据的方法：使用流水线管理遥测数据。</p>
+</div></section>
+</div></section></div></body>
+</html>

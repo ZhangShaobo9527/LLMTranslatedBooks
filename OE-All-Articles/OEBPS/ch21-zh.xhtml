@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 21 章 可观测性成熟度模型"><div class="chapter" id="an_observability_maturity_model">
+<h1><span class="label">第 21 章　</span>可观测性成熟度模型</h1>
+<p>传播可观测性文化的最佳方式，是制定计划来衡量进展，并确定重点投资领域的优先级。本章不再只讨论可观测性的收益和具体技术步骤，而是引入可观测性成熟度模型，用它建立基准、衡量进展。你将了解组织可以衡量并优先改进的关键能力，以此推动可观测性采用。</p>
+<section data-type="sect1" data-pdf-bookmark="关于成熟度模型的说明"><div class="sect1" id="a_note_about_maturity_models">
+<h1>关于成熟度模型的说明</h1>
+<p>20 世纪 90 年代初，卡内基梅隆大学软件工程研究所推广了<a href="https://oreil.ly/zc9DP">能力成熟度模型</a>，用于评估不同厂商有效交付软件开发项目的能力。该模型定义了一系列逐步提升的成熟阶段<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" id="idm45204352728832"/><a contenteditable="false" data-type="indexterm" data-primary="能力成熟度模型" id="idm45204352672016"/><a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="能力成熟度模型" id="idm45204352304432"/>和一套分类体系，根据特定厂商的流程与各阶段的匹配程度打分。这些分数随后用于影响采购决策、合作模式和其他活动。</p>
+<p>此后，成熟度模型颇受软件营销行业青睐。它的用途早已超越采购决策范围，如今被广泛用作组织实践的通用建模方式。成熟度模型确实可以帮助组织与同行比较自身能力，或确定一组期望实践，但它也存在局限。</p>
+<p>衡量组织实践时，软件工程团队的表现没有上限。实践不同于固定流程，它代表不断演进、持续改善的技术与方法；实践永远不会彻底完成、达到完美，而成熟度模型的最高等级似乎暗示了这种终点。此外，所谓终态只是理想未来的静态快照，只反映模型创建时已知的内容，其众多假设中往往还包含作者偏见。目标会转移，优先级会变化，更好的方法会出现；更重要的是，每种方法都因组织而异，无法用统一标准打分。</p>
+<p>查看成熟度模型时，必须始终记住，不存在适合所有组织的万能模型。不过，它可以作为起点，帮助你批判而系统地权衡自身需求和期望结果，创造适合自己的方法。成熟度模型还能帮助识别和量化具体、可衡量的目标，用于推动长期计划。必须在自己的组织内提出假设，检验任何成熟度模型的前提，并根据具体约束判断哪些路径可行、哪些不可行。随着获得更多数据，这些假设以及模型本身都应持续改善。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性为什么需要成熟度模型"><div class="sect1" id="why_observability_needs_a_maturity_mode">
+<h1>可观测性为什么需要成熟度模型</h1>
+<p>在软件开发和运维领域，推动工程团队进入高生产力状态的实践<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="必要性" id="mmnec"/>很少得到正式整理和记录。它们通常源自各家公司独特的文化历史，由资深工程师非正式地传给初级工程师。这种组织知识的传承，形成了若干可以辨认的工程理念流派或习惯集合，并冠以表明其来源的名称，例如“Etsy 方式”“Google 方式”等。拥有相同传承的人熟悉这些理念，没有这种背景的人却可能视其为异端。</p>
+<p>几位作者合计拥有六十多年经验，亲眼见证工程团队失败、成功，再次失败。我们看到各种类型、规模和地区的组织，只要采用正确文化并专注关键技术，都能成功建立高绩效团队。软件工程的成功不只属于有幸生活在硅谷的人，也不只属于曾在 FAANG 公司（Facebook、Amazon、Apple、Netflix 和 Google）工作的人<a contenteditable="false" data-type="indexterm" data-primary="FAANG 公司" id="idm45204352549200"/>。团队身处何地、员工过去供职于哪些公司，都不应成为决定因素。</p>
+<p>本书反复提到，生产软件系统带来的是社会技术挑战。可观测性工具能够解决软件系统中的技术挑战，但还必须考虑技术之外的因素。可观测性成熟度模型会考虑工程组织的背景、约束和目标。可观测性的技术与社会特征，共同影响模型识别出的各项团队特征和能力。</p>
+<p>成熟度模型要广泛适用，就必须不依赖组织背景或所用工具。它不应列举具体软件方案或技术实现细节，而应从人的角度关注这段旅程的成本与收益：“如何判断自己在这个领域很薄弱？”“如何判断已经表现良好，应当优先改进其他领域？”</p>
+<p>根据我们观察团队采用可观测性的经验，出现了一些共同的定性趋势，例如团队与生产环境交互时更有信心，也能把更多时间用于开发新产品功能。为了量化这些认识，我们调查了处于可观测性采用各阶段的团队，以及尚未开始或不采用可观测性的团队。结果发现，与未采用可观测性的团队相比，采用它的团队对保障生产软件质量有信心的概率高出三倍。<sup><a data-type="noteref" id="ch01fn18-marker" href="ch21-zh.xhtml#ch01fn18">1</a></sup>此外，未采用可观测性的团队有超过一半时间耗费在不能带来新产品功能发布的琐事上。</p>
+<p>这些模式是现代复杂社会技术系统的涌现属性。分析保障生产软件质量、投入功能创新的时间等能力，可以同时暴露群体行为的病症及其解决办法。采用可观测性实践，能帮助团队解决个人仅靠“把代码写得更好”或“把工作做得更好”无法解决的问题。建立可观测性成熟度模型，把本书介绍的各项能力联系起来，可以作为起点<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="必要性" data-startref="mmnec" id="idm45204352378800"/>，帮助团队建立以结果为导向的自身目标，引导采用过程。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性成熟度模型简介"><div class="sect1" id="about_the_observability_maturity_model">
+<h1>可观测性成熟度模型简介</h1>
+<p>我们最初围绕工程组织的以下目标，制定了<em>可观测性成熟度模型</em>（<em>OMM</em>）<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="OMM（可观测性成熟度模型）" id="mmomm"/><a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" id="OMM"/>：<sup><a data-type="noteref" id="ch01fn19-marker" href="ch21-zh.xhtml#ch01fn19">2</a></sup></p>
+<dl>
+<dt>可持续的系统和工程师的生活质量</dt>
+<dd>对一些人来说，这个目标也许显得过于理想，但工程师的生活质量与系统的可持续性其实紧密相连。可观测的系统更容易负责和维护，因此能改善系统负责人的生活质量。若工程师有超过一半时间都花在不能为客户创造价值的工作（琐事）上，他们会表现出更高的职业倦怠和冷漠程度，工程团队士气也会更低。可观测系统能够减少琐事，进而提高员工留任率，减少团队招聘和培养新工程师所需的时间与资金。</dd>
+<dt>通过提高客户满意度满足业务需求</dt>
+<dd>可观测性让工程团队更深入地理解客户如何与其开发的服务交互。有了这种理解，工程师便能聚焦客户需求，交付令客户满意的性能、稳定性和功能。归根结底，可观测性的目的在于让企业成功运营。</dd>
+</dl>
+<p>这里介绍的框架只是一个起点。借助它提供的结构和工具，组织可以开始自我提问，并获得用于解释和描述自身处境的背景：既包括现在身处何处，也包括应当追求什么。</p>
+<p>可观测性实践的质量取决于技术和社会因素。可观测性既不是计算机系统单方面的属性，也不是人员单方面的属性。关于可观测性的讨论往往只关注插桩、存储和查询的技术细节，却忽视这些技术能让团队做到什么。OMM 把改善软件交付和运维视为一个社会技术问题。</p>
+<p>如果团队成员觉得使用工具解决问题并不安全，他们就无法取得成果。工具质量取决于添加插桩是否容易、摄取数据的粒度，以及它能否回答人提出的任意问题等因素。各项能力不必通过同一套工具来解决；某套工具善于支持一项能力<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="OMM（可观测性成熟度模型）" data-startref="mmomm" id="idm45204352650064"/><a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-startref="OMM" id="idm45204352589264"/>，也不代表它同样善于支持建议的所有其他能力。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="OMM 涉及的能力"><div class="sect1" id="capabilities_referenced_in_the_omm">
+<h1>OMM 涉及的能力</h1>
+<p>本节详述的能力会直接受到可观测性实践质量<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="OMM（可观测性成熟度模型）" data-tertiary="能力" id="mmomcap"/><a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" id="commcap"/>的影响。OMM 的清单并未穷尽所有情况，而是希望体现潜在业务需求的广度。这里列出的能力及其对应的业务成果，与打造卓越生产能力所需的许多原则有所重叠。</p>
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>若想进一步了解卓越生产能力，推荐阅读 Liz Fong-Jones 于 2019 年发表在 InfoQ 的博客文章 <a href="https://oreil.ly/fWiPD">“Sustainable Operations in Complex Systems with Production Excellence”（通过卓越生产能力实现复杂系统的可持续运维）</a>。</p>
+</div>
+<p><em>这些事情不存在唯一正确的顺序，也没有一套必须遵循的做法。</em>每个组织都面对多条可能的旅程。每走一步，都应专注于自己希望取得的成果，并确认现在推进这个领域，而不是留到以后，能够带来恰当的业务影响。</p>
+<p>还必须理解，培养这些能力永远没有“完成”的一天，始终存在持续改善的空间。不过从务实角度看，如果组织已经形成肌肉记忆，让这些能力成为自然而然的行为，并把它们作为文化的一部分加以系统支持，通常就说明已经达到较高的成熟度。例如，在 CI 系统出现以前，人们提交代码时往往不会认真考虑是否应同时包含测试；如今，在任何实践 CI/CD 的现代组织中，工程师都不会考虑提交不含配套测试的代码。与此类似，可观测性实践<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-startref="commcap" id="idm45204352283072"/><a contenteditable="false" data-type="indexterm" data-primary="CI/CD（持续集成/持续交付）" id="idm45204353837504"/><a contenteditable="false" data-type="indexterm" data-primary="持续集成/持续交付（CI/CD）" id="idm45204353902368"/>也必须成为开发团队的自然习惯。</p>
+<section data-type="sect2" data-pdf-bookmark="以韧性应对系统故障"><div class="sect2" id="respond_to_system_failure_with_resilien">
+<h2>以韧性应对系统故障</h2>
+<p><em>韧性</em>是团队及其所支持的系统共同具备的适应能力，使其能够<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="韧性" id="omcpre"/>恢复服务，并尽量减小对用户的影响。韧性不只是某个孤立运维团队的能力，也不只是软件的健壮性和容错能力。衡量韧性的成熟度，还必须同时考察应急响应过程取得的技术成果和社会成果。</p>
+<div data-type="note" epub:type="note"><h6>注意</h6>
+<p>若想进一步了解韧性工程，推荐观看 John Allspaw 于 2019 年在伦敦 QCon 大会发表的演讲 <a href="https://oreil.ly/gDN3S">“Amplifying Sources of Resilience”（增强韧性来源）</a>。</p>
+</div>
+<p>粗略衡量技术成果时，可以考察系统发生故障后恢复服务需要多长时间，以及有多少人参与响应。例如，DORA 的 2018 年<a href="https://oreil.ly/H0Pn5"><em>《Accelerate State of DevOps》报告</em></a>把 MTTR 不足一小时的团队定义为精英团队，把 MTTR 介于一周到一个月的团队定义为低绩效团队。</p>
+<p>应急响应是运行可扩展、可靠服务不可或缺的一部分，但不同团队对它的理解可能不同。一个团队或许认为令人满意的应急响应就是“重启机器”，另一个团队则可能认为这意味着“准确理解为跨多块磁盘的条带化数据恢复冗余的自动修复机制为何失效，并降低未来风险”。这里需要衡量三个不同方面：发现问题需要多长时间、初步缓解问题需要多长时间，以及彻底弄清事件经过并处理相关风险需要多长时间。</p>
+<p>不过，团队管理者更需要关注的维度，是实际运行服务的人。团队的值班轮换是否可持续，能否让员工保持警觉和投入，并愿意长期留任？是否有系统化计划，以有序而安全的方式培训并安排所有生产负责人参与，还是无论经验如何，每次响应都要全员紧急出动？如果服务需要很多人值班，或频繁切换上下文处理故障维修，他们就无法把这些时间和精力用于交付新功能、创造业务价值。如果大部分工程时间长期耗费在包括故障维修在内的琐事上，团队士气必然受损。</p>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现良好"><div class="sect3" id="if_your_team_is_doing_wel">
+<h3>如果团队表现良好</h3>
+<ul>
+<li><p>系统正常运行时间达到业务目标，并且还在改善。</p></li>
+<li><p>值班人员能够高效响应告警，不会忽视告警。</p></li>
+<li><p>值班不会带来过大压力，工程师也不排斥在需要时增加班次。</p></li>
+<li><p>工程师无需加班或承受过度压力，就能应对事件工作量。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现不佳"><div class="sect3" id="if_your_team_is_doing_poorl">
+<h3>如果团队表现不佳</h3>
+<ul>
+<li><p>组织为安排值班轮换额外投入大量时间和资金。</p></li>
+<li><p>事件频繁发生，而且持续时间很长。</p></li>
+<li><p>值班人员深受告警疲劳困扰，或者真正发生故障时反而收不到告警。</p></li>
+<li><p>事件响应人员很难诊断问题。</p></li>
+<li><p>少数团队成员承担了不成比例的应急工作。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="可观测性与此有何关系"><div class="sect3" id="how_observability_is_relat">
+<h3>可观测性与此有何关系</h3>
+<p>告警与问题相关、重点明确且可以采取行动，从而减轻告警疲劳；错误预算与客户需求之间存在清晰关系。事件调查人员开始响应时，包含丰富上下文的事件可以帮助他们有效排查故障。深入分析高基数数据并即时快速聚合结果的能力，有助于准确定位错误来源、更快解决事件。为响应人员准备有效调试复杂系统所需的工具，可以减轻值班的压力和苦差感。过去的调查路径能够轻松共享，使故障排查技术不再掌握在少数人手中，事件解决能力得以在团队内传播<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="韧性" data-startref="omcpre" id="idm45204352227408"/>，任何人都能在事件发生时有效响应。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="交付高质量代码"><div class="sect2" id="deliver_high_quality_code">
+<h2>交付高质量代码</h2>
+<p>衡量<em>高质量代码</em>，不能只看代码是否易于理解和维护，也不能只看在与现实隔绝的实验室环境（例如 CI 测试套件）中发现错误的频率<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="代码质量" id="omcqy"/>。代码可读性和传统验证技术固然有用，却无法验证代码在生产系统固有的混乱条件下究竟如何运行。代码必须能够适应不断变化的业务需求，而不是脆弱僵化、功能固定。因此，应当结合客户和业务真正关心的运行表现与扩展能力来衡量代码质量。</p>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现良好"><div class="sect3" id="if_your_team_is_doing_we">
+<h3>如果团队表现良好</h3>
+<ul>
+<li><p>代码稳定，在生产环境发现的错误更少，服务中断也更少。</p></li>
+<li><p>代码部署到生产环境后，团队可以专注于为客户提供解决方案，而不是忙于支持工作。</p></li>
+<li><p>从开发阶段编写代码，到全面发布规模下排查生产事件，工程师在任何阶段都能直观地调试问题。</p></li>
+<li><p>出现孤立问题时，通常可以在不触发级联故障的情况下修复。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现不佳"><div class="sect3" id="if_your_team_is_doing_poor">
+<h3>如果团队表现不佳</h3>
+<ul>
+<li><p>客户支持成本很高。</p></li>
+<li><p>工程师把很大一部分时间用于修复错误，而不是开发新功能。</p></li>
+<li><p>团队成员认为风险很高，因此经常不愿部署新功能。</p></li>
+<li><p>识别问题、构造故障复现方法并完成修复需要很长时间。</p></li>
+<li><p>代码发布后，开发者对其可靠性缺乏信心。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="可观测性与此有何关系"><div class="sect3" id="how_observability_is_related">
+<h3>可观测性与此有何关系</h3>
+<p>得到良好监控和跟踪的代码，可以让人轻松看出进程在何时、以何种方式失败，也能轻松识别并修复薄弱环节。高质量的可观测性让工程师可以使用同一套工具调试运行在一台机器或一万台机器上的代码。相关且包含丰富上下文的遥测数据，使工程师能够在部署期间观察代码的实际运行，迅速收到告警，并在用户察觉之前修复问题。即使出现错误<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="代码质量" data-startref="omcqy" id="idm45204352206944"/>，也可以轻松验证它是否已经修复。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="管理复杂性和技术债务"><div class="sect2" id="manage_complexity_and_technical_debt">
+<h2>管理复杂性和技术债务</h2>
+<p><em>技术债务</em>并不一定是坏事。工程组织总要<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="复杂性" id="idm45204353511840"/><a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="技术债务" id="idm45204352200096"/>在短期收益和长期成果之间做选择。如果已经制定具体计划来偿还债务，或通过其他方式减轻选择带来的负面影响，那么争取短期收益有时就是正确决定。所谓技术债务很高的代码，是指优先选择快速方案，而不是架构上更稳定的方案。如果不加管理，这些选择会产生长期成本：维护越来越昂贵，未来修改也会受到既有成本的制约。</p>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现良好"><div class="sect3" id="if_your_team_is_doing_w">
+<h3>如果团队表现良好</h3>
+<ul>
+<li><p>工程师把大部分时间用于推进核心业务目标。</p></li>
+<li><p>修复错误和其他被动响应工作只占团队的一小部分时间。</p></li>
+<li><p>工程师很少因缺乏方向而浪费时间，也不必费力寻找需要在代码库哪些位置贯穿修改。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现不佳"><div class="sect3" id="if_your_team_is_doing_poo">
+<h3>如果团队表现不佳</h3>
+<ul>
+<li><p>系统达到扩展极限或遇到边界情况时，工程时间被浪费在推倒重建上。</p></li>
+<li><p>团队经常修错对象，或选择错误的修复方式，因而偏离重点。</p></li>
+<li><p>局部修改经常产生无法控制的连锁影响。</p></li>
+<li><p>人们害怕修改代码，也就是所谓的“闹鬼墓地”效应。<sup><a data-type="noteref" id="ch01fn20-marker" href="ch21-zh.xhtml#ch01fn20">3</a></sup></p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="可观测性与此有何关系"><div class="sect3" id="how_observability_is">
+<h3>可观测性与此有何关系</h3>
+<p>可观测性帮助团队理解系统的端到端性能，并且不浪费时间就能调试故障和性能下降。排障人员探索系统中陌生的部分时，可以找到正确线索，也能轻松追踪行为。工程师不必随机猜测应从哪里入手，而是可以确定真正需要优化的系统部分，并在寻找性能瓶颈时有针对性地修改代码。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="按照可预测的节奏发布"><div class="sect2" id="release_on_a_predictable_cadence">
+<h2>按照可预测的节奏发布</h2>
+<p>只有发布新功能和优化之后，软件开发的价值才能到达用户。发布流程<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="发布周期" id="omrcy"/>从开发者向代码库提交一组更改开始，经过测试、验证和交付，直到发布被认为足够稳定和成熟，可以继续推进下一轮工作时结束。许多人把持续集成和持续部署看作发布工作的理想终点，但 CI/CD 工具和流程只是建立稳健发布周期所需的基本构件。每家企业都需要可预测、稳定而频繁的<em>发布节奏</em>，才能满足客户需求，并在市场中保持竞争力。<sup><a data-type="noteref" id="ch01fn21-marker" href="ch21-zh.xhtml#ch01fn21">4</a></sup></p>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现良好"><div class="sect3" id="if_your_team_is_doing_well">
+<h3>如果团队表现良好</h3>
+<ul>
+<li><p>发布节奏符合业务需求和客户期望。</p></li>
+<li><p>代码编写完成后很快就能进入生产环境。经过同行评审、满足控制要求并提交后，工程师可以自行触发代码部署。</p></li>
+<li><p>无需部署就能立即启用或禁用代码路径。</p></li>
+<li><p>部署和回滚都很迅速。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现不佳"><div class="sect3" id="if_your_team_is_doing_po">
+<h3>如果团队表现不佳</h3>
+<ul>
+<li><p>发布频率很低，而且需要大量人工干预。</p></li>
+<li><p>大量更改被一次性发布。</p></li>
+<li><p>发布必须按照特定顺序进行。</p></li>
+<li><p>销售团队只能围绕特定发布列车决定能否向客户作出承诺。</p></li>
+<li><p>团队会避开一年中的某些日期或时段部署。由于管理不善的发布周期经常侵占非工作时间、影响生活质量，他们对部署心存顾虑。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="可观测性与此有何关系"><div class="sect3" id="how_observability_is_re">
+<h3>可观测性与此有何关系</h3>
+<p>可观测性不仅用于理解生产环境，也用于理解构建流水线。它能显示测试中的性能退化，以及构建和发布过程中出现的错误。借助插桩，你可以知道构建结果是否正常、新增功能是否按预期运行，以及是否还有其他异常；插桩还能收集复现任何错误所需的上下文。</p>
+<p>可观测性和插桩也能增强你对发布的信心。如果插桩得当，就能按新旧构建 ID 分解数据并排比较。你可以验证不同部署之间的生产性能是否始终稳定流畅，也可以判断新代码是否产生预期影响、是否还有其他可疑现象。还可以深入查看具体事件，例如找出错误数量突然上升时<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="发布周期" data-startref="omrcy" id="idm45204352169840"/>共有的维度或值。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="理解用户行为"><div class="sect2" id="understand_user_behavior">
+<h2>理解用户行为</h2>
+<p>产品经理、产品工程师和系统工程师都需要了解自己开发的软件对用户产生了什么影响<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="用户行为" id="ombhv"/>。这样既能实现产品与市场的匹配，也能让工程师感受到工作的目标和影响。用户对产品体验不佳时，既要理解他们原本想完成什么，也要了解最终结果。</p>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现良好"><div class="sect3" id="if_your_team_is_doing">
+<h3>如果团队表现良好</h3>
+<ul>
+<li><p>可以轻松添加和扩充插桩。</p></li>
+<li><p>开发者能够轻松取得反映客户成果以及系统利用率和成本的关键绩效指标（KPI），并把它们并排可视化。</p></li>
+<li><p>借助功能标志或类似机制，可以先面向少量用户快速迭代，再全面发布。</p></li>
+<li><p>产品经理可以有效了解客户反馈和行为。</p></li>
+<li><p>更容易实现产品与市场的匹配。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="如果团队表现不佳"><div class="sect3" id="if_your_team_is_doing_poorly">
+<h3>如果团队表现不佳</h3>
+<ul>
+<li><p>产品经理没有足够数据来正确决定下一步构建什么。</p></li>
+<li><p>开发者觉得自己的工作没有产生影响。</p></li>
+<li><p>产品功能的范围膨胀失控，由委员会集体设计，或者直到开发周期后期才获得客户反馈。</p></li>
+<li><p>无法实现产品与市场的匹配。</p></li>
+</ul>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="可观测性与此有何关系"><div class="sect3" id="how_observability_is_rela">
+<h3>可观测性与此有何关系</h3>
+<p>有效的产品管理需要获得相关数据。可观测性可以生成必要数据，鼓励团队提出开放式问题，并支持团队持续迭代。在可观测性的帮助下，事件驱动的数据分析带来了足够的可见性，发布也拥有可预测的节奏；产品经理因而能够探索并迭代功能方向，真正理解自己的更改在多大程度上实现了业务目标<a contenteditable="false" data-type="indexterm" data-primary="成熟度模型" data-secondary="OMM（可观测性成熟度模型）" data-tertiary="能力" data-startref="mmomcap" id="idm45204352143232"/><a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="能力" data-tertiary="用户行为" data-startref="ombhv" id="idm45204352204192"/>。</p>
+</div></section>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="在组织中使用 OMM"><div class="sect1" id="using_the_omm_for_your_organization">
+<h1>在组织中使用 OMM</h1>
+<p>在评估组织有效运用可观测性的能力时，OMM 是一种很有用的工具。这个模型提供了一个起点，用于衡量团队的能力<a contenteditable="false" data-type="indexterm" data-primary="OMM（可观测性成熟度模型）" data-secondary="组织能力" id="idm45204352307472"/>在哪些方面不足、又在哪些方面表现出色。制定计划，在组织内采用并传播可观测性文化时，最好优先培养那些对企业利润和绩效改善影响最直接的能力。</p>
+<p>必须记住，建立成熟的可观测性实践并非线性过程，这些能力也不是彼此孤立的。可观测性与每项能力都相互交织，改善一项能力有时也会帮助其他能力取得成果。这个过程如何展开取决于每个组织的独特需求，而从哪里开始，则取决于你当前擅长的领域。</p>
+<p><em>Wardley 映射</em>是一种分析方法，可以结合组织当前的能力，帮助你理清这些能力之间的优先级和依赖关系。了解哪些能力对业务最为关键，有助于确定必要步骤的优先级、清除阻碍，继续推进可观测性采用之旅。</p>
+<p>审查各项能力并确定优先级时，应当明确指定负责人，由他们推动团队内的改变。与负责人共同审查相关计划，确保制定清晰、以成果为导向并符合组织具体需求的衡量指标。如果没有明确的所有权、问责机制，以及资金和时间方面的支持，就很难取得进展。没有管理层支持，团队或许能在自己的孤岛内做出少量渐进改善；然而，如果整个组织无法表现出这些能力，只能依赖少数关键人物，那么无论这些人多么先进、多么有才华，组织都不可能进入成熟的高绩效状态。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结论"><div class="sect1" id="conclusion-id000027">
+<h1>结论</h1>
+<p>可观测性成熟度模型提供了一个起点，组织可以据此衡量期望成果，并制定自己的定制采用路径。推动可观测性实践成熟的高绩效团队具备若干关键能力，可以从以下方面衡量：</p>
+<ul>
+<li><p>能否以韧性应对系统故障</p></li>
+<li><p>能否轻松交付高质量代码</p></li>
+<li><p>能否妥善管理复杂性和技术债务</p></li>
+<li><p>软件发布节奏是否可以预测</p></li>
+<li><p>能否深入理解用户行为</p></li>
+</ul>
+<p>OMM 综合了我们在采用可观测性的各类组织中观察到的定性趋势，以及通过调查软件工程专业人士得出的定量分析。本章结论反映了 2020 年和 2021 年开展的研究。必须记住，成熟度模型只是理想未来的静态快照，经过充分概括，以便适用于整个行业。随着可观测性采用范围继续扩大，成熟度模型本身也会演进。</p>
+<p>同样，可观测性实践也会不断演进，每个组织走向成熟的路径都独一无二。不过，本章为组织制定自己的务实方法提供了基础。下一章将以一些关于后续行动的补充建议结束全书。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn18"><sup><a href="ch21-zh.xhtml#ch01fn18-marker">1</a></sup> Honeycomb，《可观测性成熟度报告》，<a href="https://hny.co/wp-content/uploads/2020/04/observability-maturity-report-4-2-2020-1-1-1.pdf">2020 年版</a>及<a href="https://hny.co/wp-content/uploads/2021/06/Observability_Maturity_Report.pdf">2021 年版</a>。</p><p data-type="footnote" id="ch01fn19"><sup><a href="ch21-zh.xhtml#ch01fn19-marker">2</a></sup> Charity Majors 和 Liz Fong-Jones，<a href="https://hny.co/wp-content/uploads/2019/06/Framework-for-an-Observability-Maturity-Model.pdf">“Framework for an Observability Maturity Model”（可观测性成熟度模型框架）</a>，Honeycomb，2019 年 6 月。</p><p data-type="footnote" id="ch01fn20"><sup><a href="ch21-zh.xhtml#ch01fn20-marker">3</a></sup> Betsy B. Beyer 等，<a href="https://oreil.ly/4bfLc">“Invent More, Toil Less”（多创新，少做琐事）</a>，<em>;login:</em>，第 41 卷第 3 期（2016 年秋季）。</p><p data-type="footnote" id="ch01fn21"><sup><a href="ch21-zh.xhtml#ch01fn21-marker">4</a></sup> Darragh Curran，<a href="https://oreil.ly/3PFX8">“Shipping Is Your Company’s Heartbeat”（交付是公司的心跳）</a>，Intercom，最后修改于 2021 年 8 月 18 日。</p></div></div></section></div></body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 10 章 在团队中应用可观测性实践"><div class="chapter" id="applying_observability_practices_in_you">
+<h1><span class="label">第 10 章　</span>在团队中应用<span class="keep-together">可观测性实践</span></h1>
+<p>下面转换视角，从社会和文化实践方面关注可观测性的基础。本章提供多项建议，帮助你开始实践可观测性。如果你在工程团队中担任领导角色，例如团队负责人、经理，或者团队里的可观测性爱好者与推动者，那么在管理层批准之后，制定可观测性实施策略时最难回答的问题，就是究竟该从哪里开始。</p>
+<p>对我们而言，这一章尤其难写。<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="应用实践" id="obsapps"/>在帮助许多团队踏上这条道路后，我们知道不存在普遍适用的成功配方。如何开始、从哪里开始，始终取决于许多因素。“视情况而定”这个答案也许不尽如人意，但事实是，可观测性之旅取决于许多具体情况，包括你和团队最关心的问题、现有工具的缺口、组织其他部门的支持和认同程度、团队规模，以及其他类似考量。</p>
+<p>最适合你的方法，无论是什么，按定义都不会错。本章建议并不是说这就是开始采用可观测性的唯一正确道路，因为根本不存在唯一道路。不过，我们确实观察到几种逐渐形成的模式。如果你不知该从何处着手，其中一些建议也许能提供帮助。请自由选用本章中适合自己的任何建议。</p>
+<section data-type="sect1" data-pdf-bookmark="加入社区群体"><div class="sect1" id="join_a_community_group">
+<h1>加入社区群体</h1>
+<p>可观测性是一项新兴实践，各种方法仍然相对年轻，还有大量探索空间。当社会技术<a contenteditable="false" data-type="indexterm" data-primary="社区群体" id="idm45204354539584"/>系统背后的实践和技术快速演化时，最好的学习和改进方式之一，是参与一个社区；其中的人们正面对与你主题相同、表现略有不同的问题。社区群体能让你结识其他专业人士，他们很快就可能成为有帮助的朋友和熟人网络。</p>
+<p>当你和社区面对相似挑战时，仅仅待在 Slack 群组中，与正在处理同类问题的人交谈，就能在很短时间内学到很多。社区群体让你突破日常圈子，与背景各异的人建立联系。积极参与并了解其他团队如何处理与你相同的挑战，可以进行比较观察，借鉴他人的经验。</p>
+<p>随着时间推移，你还会发现一些社区成员，在技术栈、团队规模、组织动态等方面与你有共同点。这些联系会为你提供讨论想法、了解背景，或询问某种候选方案和方法亲身体验的对象。在真正启动新实验前拥有这种共享上下文，价值难以估量。积极参与社区群体，会为你节省大量时间和痛苦。</p>
+<p>参与社区还能让你持续了解原本可能错过的发展动态。不同可观测性工具提供商会参与不同社区，以便更好地理解用户挑战、收集新想法的反馈，或者总体把握正在发生什么。参与与你所选可观测性工具相关的社区，也能让你实时掌握最新情况。</p>
+<p>加入社区时，请记住社区关系是双向的。不要忘记承担自己那份劈柴挑水的工作：先出现并帮助别人，从贡献开始。成为良好社区成员，意味着先参与并帮助群体一段时间，再提出需要他人大量投入的求助。换句话说，不要只在需要别人时才发言。社区能有多强，<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="聊天群组" id="idm45204354861120"/>取决于成员把它建设得多强。</p>
+<p>如果需要一个起点，推荐查看 CNCF 的<a contenteditable="false" data-type="indexterm" data-primary="TAG（技术咨询组）" id="idm45204354784304"/><a href="https://github.com/cncf/tag-observability">可观测性技术咨询组（TAG）</a>，那里既有 Slack 聊天群组，也会定期举办在线会议。<a href="https://opentelemetry.io/community">OpenTelemetry 社区页面</a>也列出了实用资源。更广泛地说，Twitter 上有大量围绕可观测性的讨论，搜索“observability”即可找到值得关注的人和主题。更具体地说，还有以产品为中心的 Slack 群组，例如 Honeycomb 的 <a href="https://hny.co/blog/spread-the-love-appreciating-our-pollinators-community">Pollinators Slack</a>，其中兼有通用信息和厂商特定信息。我们还推荐 Michael Hausenblas 的简报 <a href="https://o11y.news">o11y news</a>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="从最大的痛点开始"><div class="sect1" id="start_with_the_biggest_pain_points">
+<h1>从最大的痛点开始</h1>
+<p>引入任何新技术都可能存在风险。因此，<a contenteditable="false" data-type="indexterm" data-primary="痛点" id="ppts"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="痛点" id="idm45204354485904"/>新技术计划通常会选择小型且不起眼的服务作为起点。但有些反直觉的是，在可观测性实践中，从小处开始恰恰是我们经常看到的一个重大错误。</p>
+<p>可观测性工具旨在帮助你迅速找到隐蔽问题。从不显眼、相对不重要的服务开始，与证明可观测性价值的目标完全相反。如果选择一项本来就运行良好的服务，团队会经历开始采用可观测性所需的全部工作，却得不到任何收益。</p>
+<p>领导一项新计划时，必须相对迅速地取得成果。开局就解决困难或隐蔽的问题，用这种方式证明价值、激发好奇心并吸引关注。是否有一项不稳定、告警反复触发的服务连续几周把人从睡梦中叫醒，却始终无人找到正确修复方法？从那里开始。数据库是否持续拥塞，却没人查得出原因？从那里开始。是否有一项服务被来源不明的负载拖慢，而产生负载的用户尚未识别？那就是最佳起点。</p>
+<p>迅速证明价值会赢得反对者、获得更多支持，并进一步推动可观测性普及。不要选择简单问题作为起点，而要选择一项可观测性本来就擅长彻底解决的困难问题。从那项服务开始，为代码插桩、部署到生产环境，带着强烈好奇心探索，找出答案，再把成功经验传播出去。在每周团队会议上展示解决方案。写下发现和方法，再与全公司分享。确保负责该服务值班的人知道如何找到这个解决方案。</p>
+<p>推动采用的最快方式，是解决生产服务管理团队最大的痛点。瞄准这些痛苦，抵制从小处开始的冲动。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="购买而不是自建"><div class="sect1" id="buy_instead_of_build">
+<h1>购买而不是自建</h1>
+<p>与从最大痛点开始类似，究竟自行构建可观测性工具，还是购买商业方案，<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="购买与自建" id="buybld"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="购买与自建" id="rollby"/>归根结底也取决于如何迅速证明投资回报率（ROI）。<a data-type="xref" href="ch15-zh.xhtml#build_versus_buy_and_return_on_investme">第 15 章</a>会更仔细地考察这个问题。这里先把决策原则设定为：用最少投入证明最大价值。先构建一整套方案，投入最大，获得价值所需的时间也最长。</p>
+<p>要做好尝试多种可观测性方案的准备，判断它们能否满足<a data-type="xref" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">第 1 章</a>列出的功能要求。请记住，可观测性允许你理解并解释系统可能进入的任何状态，无论状态多么新奇或反常。你必须能够临时沿系统状态数据的所有维度和维度组合进行比较调试，而不需要提前定义或预测调试需求。</p>
+<p>遗憾的是，本书写作时，能够满足这些要求的工具屈指可数。虽然各家厂商的市场部门乐于给产品套件中的工具贴上“可观测性”标签，但很少有工具真正能够实现本书描述的工作流和收益。因此，作为用户，应该准备尝试多种工具，判断哪些确实兑现了承诺，哪些只是重新包装多年来销售的传统监控工具。</p>
+<p>最佳做法是使用 OpenTelemetry 为应用插桩（参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）。使用 OTel 也许不如某家厂商的专有代理或库那么快捷容易，但也不应该缓慢而困难。从一开始就正确完成这项工作，只需预先投入少量时间；日后尝试多个方案、判断哪个最符合需求时，这项投入会带来巨大回报。</p>
+<p>错误信息和不确定性，是当今厂商生态系统中令人遗憾的现实。因此，人们很容易产生自行构建方案、绕过整片混乱的想法。然而，这个选择同样伴随着几个不幸的现实（参见<a data-type="xref" href="ch15-zh.xhtml#build_versus_buy_and_return_on_investme">第 15 章</a>）。</p>
+<p>首先，即使你愿意自行运行，现成的开源可观测性工具也很少。最常遇到的三个领先候选方案是 Prometheus、ELK 技术栈（Elasticsearch、Logstash 和 Kibana）以及 Jaeger。它们各自都提供了有价值的特定方案，但没有一个能独立成为完整方案，满足本书列出的可观测性功能要求。</p>
+<p><em>Prometheus</em> 是用于指标监控的时序数据库。Prometheus 可以说是<a contenteditable="false" data-type="indexterm" data-primary="Prometheus" id="idm45204354796064"/>最先进的指标监控系统之一，拥有活跃的开发社区，但它仍然完全运行在基于指标的监控世界中。使用粗粒度度量发现细粒度问题的固有局限依然存在（参见<a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>）。</p>
+<p><em>ELK 技术栈</em>主要提供<a contenteditable="false" data-type="indexterm" data-primary="ELK 技术栈" id="idm45204354531952"/>日志存储和查询方案。日志存储后端针对纯文本搜索进行了优化，但牺牲了其他搜索和聚合方式。寻找已知错误时，纯文本搜索很有用；但要回答“谁遇到了这个问题，他们又在什么时候遇到？”这类复合问题时，就会变得不切实际。在纯日志方案中，要从海量纯文本日志里分析并识别对可观测性至关重要的<span class="keep-together">相关</span>模式十分困难（参见<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>）。</p>
+<p><em>Jaeger</em> 是一款基于事件的<a contenteditable="false" data-type="indexterm" data-primary="Jaeger" id="idm45204354468224"/>分布式追踪工具，可以说是当今最先进的开源分布式追踪工具之一。如<a data-type="xref" href="ch06-zh.xhtml#stitching_events_into_trace">第 6 章</a>所述，追踪事件是可观测系统的基础构件。但另一个必要组件，是在调查期间判断哪些追踪事件值得关注的分析能力。Jaeger 支持筛选部分数据，却缺少分析和细分全部追踪数据的高级能力（参见<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>）。</p>
+<p>这些工具分别提供系统视图的不同部分，可以用于实现可观测性。如今使用它们面临的挑战是：要么运行多个彼此分离的系统，把在系统之间维持上下文的负担交给操作人员的大脑；要么自行构建定制方案，把这些独立组件粘合起来。如今还没有一款开源工具能够以开箱即用的方式，在单一方案中提供可观测性能力。希望这种情况不会永远持续，但它确实是当前现实。</p>
+<p>最后，无论选择哪条道路，都要确保最终结果真正为你提供了<a contenteditable="false" data-type="indexterm" data-primary="压力测试方案" id="idm45204354514208"/>可观测性。对方案进行压力测试。再次强调，抵制从小处开始的冲动，处理重大而困难的问题。可观测性要求能够跨所有高基数字段，以高维度、交互式且性能良好的实时探索来调试系统状态。这个方案能否提供前面几章所述的分析和迭代调查？如果答案是肯定的，恭喜，你找到了一款优秀的可观测性方案。如果答案是否定的，那么所用产品很可能被误导性地贴上了“可观测性方案”标签，实际上并不是。</p>
+<p>开始采用可观测性的关键是迅速行动，并在早期证明价值。选择购买方案，可以让团队专注于使用可观测性工具解决问题，而不是自行构建工具。如果使用 OTel 为应用插桩，就能避开厂商锁定陷阱，把遥测<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="购买与自建" data-startref="buybld" id="idm45204355870928"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="购买与自建" data-startref="rollby" id="idm45204355131712"/>数据发送到最终决定使用的任何工具。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="迭代完善插桩"><div class="sect1" id="flesh_out_your_instrumentation_iterativ">
+<h1>迭代完善插桩</h1>
+<p>为应用妥善插桩需要时间。OTel 等项目提供的自动插桩是一个良好起点，但价值最高的插桩将<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="逐步完善" id="idm45204354585136"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="插桩" id="rollinst"/>针对单个应用的具体需求。开始时尽可能加入有用插桩，但要计划在后续过程中不断完善。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>如需了解自动插桩与手工插桩的更多示例，推荐阅读 Mike Goldsmith 的博客文章 <a href="https://hny.co/blog/what-is-auto-instrumentation">《什么是自动插桩？》</a>。</p>
+</div>
+<p>在整个组织中推广可观测性，一项最佳策略是在刚开始时先为一两项问题严重的服务插桩。把这次插桩实践作为试点团队其他成员的参考点和学习练习。试点团队熟悉新工具后，每次出现新的调试情况，都可以借机添加越来越多有用的插桩。</p>
+<p>每当值班工程师因为生产问题收到告警，首先应该使用新工具，为应用的问题区域插桩。利用新插桩查明问题发生在哪里。人们采用这种方法两三次后，通常就会意识到先引入插桩再调试，难度和耗时都小得多。从插桩开始调试，能让你看到真正发生了什么。</p>
+<p>试点团队成员掌握方法后，可以帮助其他人学习。他们可以指导如何创建有用插桩、建议实用查询，或者为其他人提供更多有效故障排查模式的示例。每个新调试问题都可以用来完善所需插桩。无须先拥有一套完全成熟的插桩，便能立即从可观测性中获得价值。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_note_on_instrumentation_conventions">
+<h5>关于插桩约定</h5>
+<p>刚开始插桩时，重点应该是使用所选可观测性工具证明尽可能多的价值。<a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="约定" id="idm45204354759136"/>迭代完善插桩这个事实，比具体采用什么方式更加重要。</p>
+<p>不过需要记住，随着插桩不断增长、采用范围扩展到多个团队，应该为所生成的自定义遥测数据引入命名<a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="插桩" data-startref="rollinst" id="idm45204354491904"/>约定。关于组织级标准的示例，参见<a data-type="xref" href="ch14-zh.xhtml#observability_and_the_software_supply_c">第 14 章</a>。</p>
+</div></aside>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="寻找利用既有投入的机会"><div class="sect1" id="look_for_opportunities_to_leverage_exis">
+<h1>寻找利用既有投入的机会</h1>
+<p>采用任何新技术时，最大的障碍之一是<em>沉没成本谬误</em>。当个人或组织因为已经投入的时间、金钱或精力，而继续某种行为或事业时，<a contenteditable="false" data-type="indexterm" data-primary="沉没成本谬误" id="idm45204354424256"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="与既有投入" id="rollext"/>就犯了沉没成本谬误。<sup><a data-type="noteref" id="ch01fn7-marker" href="ch10-zh.xhtml#ch01fn7">1</a></sup>组织已经在不再满足需求的传统方法上投入了多少时间、金钱和精力？</p>
+<p>当人们开始觉得已有资源会被浪费时，对根本性变革的抵触往往会遇到路障。那些用于理解旧方案、为旧方案插桩的多年投入怎么办？沉没成本谬误虽然不合逻辑，背后的感受却真实存在；如果置之不理，它们会让你的努力戛然而止。</p>
+<p>要始终寻找并抓住机会，把其他工作整体搬入可观测性计划。例如，如果已经有一条数据流可以复制到第二个目的地，或者关键数据能够以另一种方式查看，就抓住机会把这些数据发送到可观测性方案。可以利用的情况包括：</p>
+<ul>
+<li><p>如果使用 ELK 技术栈，甚至只使用其中的 Logstash，只需添加一小段代码，就能把源数据流的输出分叉到第二个目的地。把这条数据流发送到可观测性工具，并邀请用户比较两种体验。</p></li>
+<li><p>如果已经使用结构化日志，只需在日志事件传播经过整个技术栈时，为它们添加唯一 ID。可以继续把日志保留在现有日志分析工具中，同时把它们作为追踪事件发送到可观测性工具。</p></li>
+<li><p>尝试让可观测性插桩，例如 Honeycomb 的 Beelines 或 OTel，与现有 APM 方案并行运行，并邀请用户比较两种体验。</p></li>
+<li><p>如果使用 Ganglia，可以编写每分钟运行一次的 cronjob，解析它存放在 <em>/var/tmp</em> 中的可扩展标记语言（XML）转储，再把数据作为事件送入可观测性工具，从而利用现有数据。这不是可观测性的理想用法，但一定能让 Ganglia 用户产生熟悉感。</p></li>
+<li><p>在新可观测性工具中，把旧监控仪表板中最实用的部分重新创建成便于引用的查询。仪表板当然存在不足（参见<a data-type="xref" href="ch02-zh.xhtml#how_debugging_practices_differ_between">第 2 章</a>），但这样可以为新用户提供一个落脚点，让他们一眼看懂自己关心的系统性能，同时也有机会继续探索并了解更多信息。</p></li>
+</ul>
+<p>任何能够融合新旧世界的做法，都会降低采用障碍。其他人需要理解自己的关注点如何映射到新方案中。帮助他们在你为其构建的新世界里看到当前熟悉的世界。这个预览并不完美也没关系，即使体验相当粗糙，你追求的也是熟悉感。以这种方式使用新工具可能很糟糕，但只要事物名称熟悉、数据也是人们认识的内容，就会比一套完全从零开始的数据集更能吸引人们<a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="与既有投入" data-startref="rollext" id="idm45204354459184"/>与它交互。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="为最困难的最后冲刺做好准备"><div class="sect1" id="prepare_for_the_hardest_last_push">
+<h1>为最困难的最后冲刺做好准备</h1>
+<p>使用前述策略，先处理最大痛点并采用迭代方法，可以帮助你在起步阶段<a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="最后冲刺" id="rollpu"/>迅速取得进展。但这些策略没有考虑实施可观测性方案最困难的部分之一：冲过终点线。已经形成一些势头之后，还需要一套策略来完成余下工作。</p>
+<p>根据工作范围和团队规模，把新插桩作为值班方法的一部分迭代推广，通常可以让大多数团队完成计划在整个技术栈中引入可观测性所需工作的二分之一到三分之二。团队不可避免地会发现，技术栈中的某些部分开发活跃度低于其他部分。对于这些很少触碰的部分，需要制定可靠的完工计划，否则实施工作很可能拖延。</p>
+<p>即使项目管理意图再好，随着推动采用可观测性的部分痛苦开始减轻，完成实施工作的紧迫感也可能随之下降。大多数团队面对的现实是：工程周期稀缺，各种需求始终在争夺资源；解决眼前痛点后，拐角处永远还有另一个痛点等待处理。</p>
+<p>完整实施的目标，是构建一套可靠的首选调试方案；生产应用出现任何异常时，都能用它充分理解应用状态。在达到最终状态前，你很可能拥有多种工具，它们各自最适合解决不同问题。实施阶段可以容忍这种割裂，因为团队正在走向更加统一的未来。但长期来看，如果始终没有完成实施，就会不断消耗团队的时间、认知能力和注意力。</p>
+<p>此时必须制定时间表，迅速推进剩余工作。目标里程碑应该是完成剩余插桩，使团队能够把可观测性工具作为调试生产问题的首选。可以组织一次专门冲刺来抵达终点，例如举办一周黑客活动，并以有奖派对收尾，或者安排同样轻松有趣的活动，把项目推过终点、彻底完成。</p>
+<p>这个阶段还需要注意，团队应尽可能把插桩通用化，使其能够在其他应用中复用，或者供组织内其他团队使用。一项常见策略是创建通用可观测性库，避免重复最初的实施工作；这类库允许替换<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="应用实践" data-startref="obsapps" id="idm45204354479216"/><a contenteditable="false" data-type="indexterm" data-primary="推广" data-secondary="最后冲刺" data-startref="rollpu" id="idm45204354402256"/>底层方案，而无须深入代码内部，类似 OTel 采用的方法（参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000009">
+<h1>结语</h1>
+<p>可观测性之旅究竟应该从哪里、以什么方式开始，取决于团队的具体情况。希望这些通用建议能帮助你找到起点。积极参与同行社区，是一个非常有价值的切入点。开始行动时，应集中解决最大痛点，而不是选择本来就运行得足够顺畅的地方。在整个实施过程中，始终倾向于迅速行动、证明高价值和投资回报率，并以迭代方式推进工作。寻找机会，让组织尽可能多的部门参与进来。也不要忘记规划一次最后的大冲刺，完成剩余工作，让实施项目越过终点线。</p>
+<p>本章建议可以帮助你完成开始采用可观测性所需的工作。完成这些工作后，日常使用可观测性会自然开启其他新的工作方式。本部分余下章节将详细探讨这些方式。下一章将考察可观测性驱动开发如何彻底改变你对新代码在生产环境中行为的理解。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn7"><sup><a href="ch10-zh.xhtml#ch01fn7-marker">1</a></sup> Hal R. Arkes 和 Catherine Blumer，《沉没成本心理学》，<em>Organizational Behavior and Human Decision Processes</em> 35（1985）：124–140。</p></div></div></section></div></body>
+</html>

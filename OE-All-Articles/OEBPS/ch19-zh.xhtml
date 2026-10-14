@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 19 章 可观测性的商业论证"><div class="chapter" id="the_business_case_for_observability">
+<h1><span class="label">第 19 章　</span>可观测性的商业论证</h1>
+<p>可观测性往往从组织中的某个特定团队或业务单元起步。要传播可观测性文化，团队需要获得企业内各类利益相关方的支持。</p>
+<p>本章将通过阐明可观测性的商业价值，分析这些支持如何汇聚起来。有些组织为了应对传统方法无法解决的严峻挑战而采用可观测性实践；另一些组织则需要以更主动的方式改变传统实践。无论你处于可观测性旅程的哪个阶段，本章都会说明如何在自己的公司内为可观测性建立商业论证。</p>
+<p>我们首先考察推动变革的被动方式与主动方式，分析非紧急情境，找出一些迹象：即使尚未发生灾难性服务中断，组织也已经迫切需要采用可观测性。随后介绍建立可观测性实践所需的步骤、各种工具的评估方式，以及如何判断组织的可观测性已经“足够好”，可以把注意力转向其他计划。</p>
+<section data-type="sect1" data-pdf-bookmark="推动变革的被动方式"><div class="sect1" id="the_reactive_approach_to_introducing_ch">
+<h1>推动变革的被动方式</h1>
+<p>变革很难。许多组织倾向于选择阻力最小的道路：没有坏掉（或者看起来没坏）的东西<a contenteditable="false" data-type="indexterm" data-primary="变革" data-secondary="被动方式" id="chrapp"/><a contenteditable="false" data-type="indexterm" data-primary="以被动方式推动变革" id="reappch"/>，为什么要修？过去几十年里，生产系统没有可观测性也照样运行，为什么现在要打破现状？</p>
+<p>对于较简单的系统，熟悉架构细节的工程师可以推理其行为。正如<a data-type="xref" href="ch03-zh.xhtml#lessons_from_scaling_without_observabil">第 3 章</a>所示，有些组织直到传统方法突然严重失效，才意识到可观测性已经不可或缺。但以膝跳反射般的<em>被动</em>方式在组织内推动根本变革，可能产生意外后果。匆忙解决关键业务问题，往往会导致过度简化的方案，很少真正带来有用结果。</p>
+<p>以关键服务中断后被动推动变革为例。组织可能通过根因分析查明中断原因，而分析结果可能指向某个单一因素。在业务关键情境中，高管常常希望围绕这个原因采取简单的补救措施，以证明问题已迅速解决。假如根因分析中一句“我们没有备份”被视为导致中断的确凿证据，就可以据此把删除重要文件的员工降职、聘请顾问制定新的备份策略；高管认为漏洞已补上后，也终于松了一口气。</p>
+<p>这种做法看似带来安全感，实际上却是虚假的。为什么一个文件就能引发级联系统故障？如此关键的文件为什么能轻易删除？如果采用更多不可变基础设施，是否能更好地缓解问题？在这个假想场景中，很多方法都可能比处理最明显的症状更能解决深层原因。但急于快速修复问题时，过度简化的方案往往最有诱惑力。</p>
+<p>组织中另一类被动方式，源于没有意识到某些失调现象已经无须继续忍受<a contenteditable="false" data-type="indexterm" data-primary="容忍失调" id="idm45204352664992"/>。传统工具最常见的过时失调，是给软件工程和运维团队造成过重负担，使其无法专注于交付创新工作。</p>
+<p>正如<a data-type="xref" href="ch03-zh.xhtml#lessons_from_scaling_without_observabil">第 3 章</a>所示，缺少可观测性的团队经常浪费时间，反复追查症状（乃至根本原因）完全相同的事故。问题一再触发紧急救火，给工程团队和企业都造成压力。工程团队经历告警疲劳<a contenteditable="false" data-type="indexterm" data-primary="告警疲劳" id="idm45204352674768"/>，继而倦怠，最终人员流失；企业不仅损失员工的专业知识，还要花时间重新积累。遇到问题的客户会放弃交易，企业因此损失收入和客户忠诚度。团队长期困在持续救火和高压模式中，会形成恶性循环：工程师不再有信心修改生产环境，系统因而更加脆弱，需要投入更多时间维护，最终拖慢能够创造业务价值的新功能交付。</p>
+<p>遗憾的是，许多业务领导者把这些障碍当成正常运行状态。他们引入自认为能够缓解问题的流程，例如变更咨询委员会，或禁止团队在周五部署代码变更。他们预期值班轮换偶尔会耗尽工程师精力，于是允许明星工程师免于值班。工程团队中的许多有害文化实践，都可以追溯到对生产系统缺乏基本理解这一源头。</p>
+<p>如果系统缺乏可观测性，以下情况可能表明企业已接近临界点<a contenteditable="false" data-type="indexterm" data-primary="临界点迹象" id="idm45204352976944"/>，但迹象并不限于这些：</p>
+<ul>
+<li><p>生产服务中的严重缺陷早已被客户发现并报告，内部却迟迟未能检测和处理。</p></li>
+<li><p>发生轻微事故后，检测和恢复耗时过长，最终升级为长时间服务中断。</p></li>
+<li><p>新问题积累的速度超过复盘和分诊速度，排查事故与缺陷所需的待调查工作不断增加。</p></li>
+<li><p>团队花在故障修复运维工作上的时间，超过交付新功能的时间。</p></li>
+<li><p>服务反复表现不佳，而支持团队无法验证、复现或解决问题，导致客户满意度很低。</p></li>
+<li><p>工程团队需要投入过多意外工作来厘清各项服务如何相互作用，导致新功能推迟数周甚至数月。</p></li>
+</ul>
+<p>造成这些情况的其他因素，可能需要额外的缓解方法。不过，同时出现多种症状的团队，很可能必须解决系统性缺乏可观测性的问题。以这种方式运行的团队，从根本上不了解生产系统行为，以至于实现业务目标的能力受到负面影响<a contenteditable="false" data-type="indexterm" data-primary="变革" data-secondary="被动方式" data-startref="chrapp" id="idm45204352977296"/><a contenteditable="false" data-type="indexterm" data-primary="以被动方式推动变革" data-startref="reappch" id="idm45204352702144"/>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性的投资回报"><div class="sect1" id="the_return_on_investment_of_observabili">
+<h1>可观测性的投资回报</h1>
+<p>可观测性的核心，是让团队能够回答过去无法回答的问题，也就是处理我们常说的“未知的未知”<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="ROI（投资回报率）" id="obsvroi"/><a contenteditable="false" data-type="indexterm" data-primary="ROI（投资回报率）" data-secondary="可观测性" id="roionob"/>。借助核心分析循环，以数据驱动且可重复的方式调试应用问题（参见<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>），团队就能有效管理经常以不可预测方式失败的系统。复杂分布式系统已经成为当今事实上的应用架构——异构环境可能混合云基础设施、本地系统、容器与编排平台、无服务器函数和各种 SaaS 组件等——因此，有效调试未知的未知，可能直接决定公司关键数字服务的成败。</p>
+<p>作为可观测性工具厂商，我们从非正式反馈和行业研究中了解到，采用可观测性实践的公司能够获得非常切实的商业收益。我们委托 Forrester Research 在自己的客户群中量化这些收益。<sup><a data-type="noteref" id="ch01fn16-marker" href="ch19-zh.xhtml#ch01fn16">1</a></sup>尽管该研究的衡量结果针对我们的解决方案，但我们相信，只要工具具备本书所述的同等可观测性能力，无论使用哪种工具，其中某些特征都应普遍存在。</p>
+<p>我们认为，可观测性会从四个重要方面普遍影响企业利润<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="对利润的影响" id="idm45204353130320"/>：</p>
+<dl>
+<dt>提高增量收入</dt>
+<dd>可观测性工具帮助团队提高正常运行时间和性能；代码质量改善后，会直接带来增量收入增长。</dd>
+<dt>加快事故响应所节省的成本</dt>
+<dd>可观测性可以缩短平均检测时间（MTTD）<a contenteditable="false" data-type="indexterm" data-primary="MTTD（平均检测时间）" id="idm45204352637936"/><a contenteditable="false" data-type="indexterm" data-primary="MTTR（平均解决时间）" id="idm45204353002160"/><a contenteditable="false" data-type="indexterm" data-primary="平均检测时间（MTTD）" id="idm45204352631664"/><a contenteditable="false" data-type="indexterm" data-primary="平均解决时间（MTTR）" id="idm45204352630688"/>和平均解决时间（MTTR），改善查询响应时间，更快发现瓶颈，减少值班时间，并通过避免回滚节省时间，从而大幅降低人力成本。</dd>
+<dt>避免事故所节省的成本</dt>
+<dd>可观测性工具让开发者能够在问题变得严重、持久之前找到原因，从而帮助预防事故。</dd>
+<dt>减少员工流失所节省的成本</dt>
+<dd>实施可观测性可以提高工作满意度，减少开发者倦怠、告警疲劳和值班疲劳，并降低人员流失率。</dd>
+</dl>
+<p>根据工具的实现方式，也可能存在其他可量化收益。但对于使用满足可观测性功能要求的工具（参见第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">1</a> 章和第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">8</a> 章），并采用本书所述实践的企业<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="ROI（投资回报率）" data-startref="obsvroi" id="idm45204352651568"/><a contenteditable="false" data-type="indexterm" data-primary="ROI（投资回报率）" data-secondary="可观测性" data-startref="roionob" id="idm45204352623168"/>，上述收益应当普遍存在。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="推动变革的主动方式"><div class="sect1" id="the_proactive_approach_to_introducing_c">
+<h1>推动变革的主动方式</h1>
+<p>以<em>主动</em>方式推动变革<a contenteditable="false" data-type="indexterm" data-primary="变革" data-secondary="主动方式" id="chprapp"/><a contenteditable="false" data-type="indexterm" data-primary="以主动方式推动变革" id="proappch"/>，就是认识到前述被动情境中的症状并不正常，而且可以预防。要尽早获得支持、为可观测性建立商业论证，可以突出它对缩短服务问题检测时间（TTD）和解决时间（TTR）等常见指标的影响<a contenteditable="false" data-type="indexterm" data-primary="TTD（检测时间）" id="idm45204352616512"/><a contenteditable="false" data-type="indexterm" data-primary="检测时间（TTD）" id="idm45204352822736"/><a contenteditable="false" data-type="indexterm" data-primary="解决时间（TTR）" id="idm45204352821632"/><a contenteditable="false" data-type="indexterm" data-primary="TTR（解决时间）" id="idm45204352612768"/>。这些衡量方式远非完美，但许多组织都在使用，高管利益相关方通常也很熟悉。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>Adaptive Capacity Labs 在 <a href="https://oreil.ly/pZd4m">John Allspaw 撰写的一篇博客文章</a>中，对如何超越浅层事故数据提出了精彩见解；可观测性也能以更细致的方式展示成效。出于本章的需要，我们将重点放在虽有缺陷、但理解更广泛的 TTD 和 TTR 指标上。</p>
+</div>
+<p>把可观测性引入系统的初步商业论证可以分为两方面。第一，它让团队能够发现传统监控工具通常会掩盖的单个用户问题，从而缩短 TTD（参见<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>）。第二，自动化核心分析循环可以大幅减少定位问题真正来源所需的时间，从而缩短 TTR（参见<a data-type="xref" href="ch08-zh.xhtml#analyzing_events_to_achieve_observabili">第 8 章</a>）。</p>
+<p>一旦证明这些方面取得了早期成效，就更容易获得支持，在整个应用技术栈和组织内引入更多可观测性。我们经常看到团队最初以被动状态接触可观测性，通常是为了寻找更好的问题检测和解决方式。在这些情况下，可观测性能够立即提供帮助。但建立商业论证时，也应衡量并展示二阶收益。</p>
+<p>更快检测和解决问题的上游影响，是减少团队意外的故障修复运维工作。问题分诊负担减轻，值班压力随之下降，团队通常能直接感受到这种定性改善。同样的问题检测和解决能力还能减少应用问题积压，让团队少花时间修复缺陷，多花时间创造和交付新功能。即使只用非正式案例衡量这种定性改善，也能帮助建立商业论证：可观测性会让工程团队更快乐、更健康，进而提高员工留任率和满意度。</p>
+<p>三阶收益来自理解单个用户请求性能和瓶颈原因的能力：团队可以迅速确定如何优化服务。加载时间超过三秒后，超过一半的移动用户会放弃交易。<sup><a data-type="noteref" id="ch01fn17-marker" href="ch19-zh.xhtml#ch01fn17">2</a></sup>在具备可观测性的应用中，可以衡量用户交易成功率，并把它与服务性能提升关联起来，而且这种提升也很可能真正发生。提高客户满意度和留存率，是可观测性的另一项显著商业用途。</p>
+<p>如果上述结果对企业很重要，就有充分的商业理由在组织中引入可观测性。主动方式不会等待一系列灾难性故障迫使企业处理不可观测系统的症状，而是以规模小、可以实现却影响巨大的步骤<a contenteditable="false" data-type="indexterm" data-primary="变革" data-secondary="主动方式" data-startref="chprapp" id="idm45204352992880"/><a contenteditable="false" data-type="indexterm" data-primary="以主动方式推动变革" data-startref="proappch" id="idm45204352699088"/>，把可观测性引入社会技术系统。下面看看如何迈出这些步骤。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="把可观测性作为一项实践引入"><div class="sect1" id="introducing_observability_as_a_practice">
+<h1>把可观测性作为一项实践引入</h1>
+<p>与在应用中引入安全性或可测试性类似，可观测性是一项持续实践<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="作为实践" id="obprac"/>，所有负责开发和运行生产服务的人都共同承担责任。构建有效的可观测系统不是一次性工作。不能用勾选清单的方式引入技术能力，就宣称组织已经“实现”可观测性；正如安全性和可测试性也不能如此实现。可观测性必须作为一项<em>实践</em>引入。</p>
+<p>可观测性最初是一项可以作为系统技术属性来衡量的能力：系统能否被观察（参见<a data-type="xref" href="ch01-zh.xhtml#what_is_observabilityquestion_mark">第 1 章</a>）？本书多次强调，生产系统是社会技术系统。系统在技术上具备可观测性后，下一步要衡量团队与系统能否良好协作（参见<a data-type="xref" href="part03.xhtml#observability_for_teams">第三部分</a>）。系统能够被观察，并不意味着人们正在<em>有效地</em>观察它。</p>
+<p>可观测性的目标，是让工程团队具备开发、运行、彻底调试和报告系统状态的能力。团队应当能够出于好奇自由探索，任意询问系统问题，以更好理解其行为。工具设计和管理层支持都应鼓励团队主动审视系统。如果团队被复杂界面压得无所适从，或者担心产生巨额费用而不敢查询，再先进的分析平台也毫无用处。</p>
+<p>运转良好的可观测性实践，不仅让工程师能够提出有助于检测和解决生产问题的问题，还应鼓励他们开始实时回答商业智能问题（参见<a data-type="xref" href="ch20-zh.xhtml#observabilityapostrophes_stakeholders_a">第 20 章</a>）。如果无人使用工程团队构建的新功能，或者某位客户因持续遇到问题而可能流失，就会威胁企业健康。可观测性实践应鼓励工程师采用跨职能方式衡量服务健康，而不只关注性能和可用性。</p>
+<p>随着 DevOps 实践不断成为主流，有远见的工程领导团队会消除工程与运维团队之间的障碍。消除这些人为障碍，让团队能够对软件开发和运行承担更多责任。可观测性帮助缺少值班经验的工程师更好地理解故障发生在哪里、如何缓解，从而削弱软件开发与运维之间的人为高墙。同样，它也削弱软件开发、运维与业务成果之间的高墙。可观测性为软件工程团队提供适当工具，用于调试并理解系统的使用方式，帮助他们摆脱对职能交接、过量手工工作、运行手册、猜测，以及影响业务目标的外部系统健康视图的依赖。</p>
+<p>完整列举高绩效工程团队共有的所有实践和特征，超出了本章范围。<a name="_Hlk99987447">DORA 2019</a> <a href="https://oreil.ly/2Gqjz"><em>Accelerate State of DevOps</em> 报告</a>描述了区分精英团队与低绩效团队的许多关键特征。引入可观测性的团队同样会受益于报告所述的许多实践。</p>
+<p>引入可观测性实践时，工程领导者首先应确保建立心理安全文化。无责文化能够营造支持实验、奖励好奇协作的心理安全环境。鼓励实验是传统实践演进的必要条件。DORA 的逐年报告既证明了无责文化的收益，也揭示了它与高绩效团队不可分割的联系。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>PagerDuty 的<a href="https://postmortems.pagerduty.com">无责事故复盘文档</a>提供了一份更详细的无责文化实践指南。</p>
+</div>
+<p>在践行无责文化的同时，业务领导者还应确保引入可观测性时存在明确的工作范围，例如完全限定在一个首批采用团队或一条业务线内。可以用 TTD 和 TTR 的基线表现作为基准，衡量该范围内的改善。为支持这项工作，应识别所需的基础设施和平台任务，为其分配资源并编列预算<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="作为实践" data-startref="obprac" id="idm45204352690288"/>。完成这些准备之后，才能开始为团队软件插桩和分析的技术工作。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="使用适当的工具"><div class="sect1" id="using_the_appropriate_tools">
+<h1>使用适当的工具</h1>
+<p>可观测性主要是一项文化实践，但工程团队仍须具备相应技术能力：为代码插桩，存储发出的遥测数据，并根据提出的问题分析数据。引入可观测性之初，很大一部分技术工作都用于搭建工具和插桩。</p>
+<p>有些团队此时会尝试自行构建可观测性方案。正如<a data-type="xref" href="ch15-zh.xhtml#build_versus_buy_and_return_on_investme">第 15 章</a>所述，如果定制可观测性平台与公司的核心能力不一致，自建投资通常得不偿失。大多数组织会发现，构建定制方案难度极大、耗时很长而且成本高昂。市场上已有大量方案可供选择，需要考虑各种取舍，例如商业与开源、本地部署与托管，或者结合购买和自建来满足需求。</p>
+<section data-type="sect2" data-pdf-bookmark="插桩"><div class="sect2" id="instrumentation">
+<h2>插桩</h2>
+<p>首先要考虑应用如何发出遥测数据<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="插桩" id="idm45204352990048"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="插桩" id="idm45204352580112"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="工具" id="idm45204352578736"/>。过去，唯一选择是厂商专用代理和插桩库，而这些选择会造成严重的厂商锁定。如今，无论框架还是应用代码插桩，<a href="http://opentelemetry.io">OpenTelemetry</a> 都正在成为标准（参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）。它支持所有开源指标和追踪分析平台，该领域几乎所有商业厂商也都支持它。再也没有理由锁定某一家厂商的插桩框架，也无须自行编写代理和库。</p>
+<p>OTel 允许配置插桩<a contenteditable="false" data-type="indexterm" data-primary="OpenTelemetry" data-secondary="插桩" id="idm45204352615072"/><a contenteditable="false" data-type="indexterm" data-primary="OTel" data-see="OpenTelemetry" id="idm45204352552992"/>，把数据发送到自行选择的分析工具。采用通用标准后，只需同时把插桩数据发送到多个后端，就能轻松演示任何分析工具的能力。</p>
+<p>考虑团队必须分析的数据时，如果只是把可观测性分成指标、日志和追踪几类，就过于简单化了。它们当然可以作为可观测性数据类别，但实现可观测性要求这些数据类型相互作用，为团队提供适当的系统视图。把可观测性描述为<em>三大支柱</em>很适合用作营销标题，却忽略了全局。更有意义的问题是：哪一种或哪些数据类型<a href="https://thenewstack.io/how-the-3-pillars-of-observability-miss-the-big-picture">最适合</a>当前使用场景，以及哪些数据可以根据其他类型按需生成。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据存储与分析"><div class="sect2" id="data_storage_and_analytics">
+<h2>数据存储与分析</h2>
+<p>获得遥测数据后，需要考虑如何存储和分析。数据存储与分析通常打包在同一套方案中<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="数据存储" id="obsdsto"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="数据存储" id="tosrg"/><a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="工具" id="dstool"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="分析" id="obsdany"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="分析" id="toany"/><a contenteditable="false" data-type="indexterm" data-primary="分析工具" id="anytool"/>，但具体取决于选择开源方案还是专有方案。</p>
+<p>商业厂商通常把存储和分析打包提供。各家厂商在存储和分析方面都有差异化功能，应当考虑哪些功能最有助于团队实现可观测性目标。本书写作时，专有一体化方案的厂商包括 Honeycomb、Lightstep、New Relic、Splunk、Datadog 等。</p>
+<p>开源方案通常需要分别解决数据存储和分析。开源前端包括 Grafana、Prometheus、Jaeger 等；它们负责分析，但要扩展规模，都需要独立的数据存储。常见开源数据存储层包括 Cassandra、Elasticsearch、M3 和 InfluxDB。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>应当考虑所选开源软件采用何种许可证，以及许可证会如何影响使用。例如，Elasticsearch 和 Grafana 最近都更改了许可证，使用这些工具前需要仔细考虑。</p>
+</div>
+<p>选择众多当然是好事，但也必须认真考虑并警惕自行运行数据存储集群带来的运维负担。例如，ELK 技术栈广受欢迎，是因为它能满足日志管理和分析需求；但最终用户经常反映，维护和照料 ELK 集群会吞噬大量系统工程时间，相关管理与基础设施成本也会迅速增长。因此，托管式开源遥测数据存储（例如 ELK 即服务）形成了竞争激烈的市场。</p>
+<p>考虑数据存储时，我们也不建议为每类（或每根<em>支柱</em>）可观测性数据分别寻找方案。同样，把现代可观测性功能生硬地附加到传统监控系统上，很可能危机重重。可观测性源于工程师如何与数据交互、回答问题，因此，一套无缝运行的统一方案优于维护三四套独立系统。使用彼此割裂的系统分析，会把跨系统携带上下文和转换数据的负担推给工程师，造成糟糕的易用性和故障排查体验<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="数据存储" data-startref="obsdsto" id="idm45204352913312"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="数据存储" data-startref="tosrg" id="idm45204352911904"/><a contenteditable="false" data-type="indexterm" data-primary="数据存储" data-secondary="工具" data-startref="dstool" id="idm45204352807584"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="分析" data-startref="obsdany" id="idm45204352805936"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="分析" data-startref="toany" id="idm45204352526944"/><a contenteditable="false" data-type="indexterm" data-primary="分析工具" data-startref="anytool" id="idm45204352525488"/>。有关各种方法如何共存的更多详情，请参见<a data-type="xref" href="ch09-zh.xhtml#how_observability_and_monitoring_come_t">第 9 章</a>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="向团队推广工具"><div class="sect2" id="rolling_out_tools_to_your_teams">
+<h2>向团队推广工具</h2>
+<p>考虑工具选项时，必须确保把宝贵的工程时间投入对核心业务需求至关重要的差异化能力<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="工具" data-tertiary="推广" id="idm45204352520992"/><a contenteditable="false" data-type="indexterm" data-primary="工具" data-secondary="推广" id="idm45204352519296"/>。应当判断所选工具是在增加创新能力，还是把这种能力消耗在管理定制方案上。所选工具是否要求建立一个更大、更独立的管理团队？可观测性的目标不是在工程组织内部制造定制工作，而是在提高质量的同时为企业节省时间和资金。</p>
+<p>这并不是说任何组织都不应建立可观测性团队。不过，尤其在大型组织中，优秀的可观测性团队会专注于帮助各产品团队在自己的平台上实现可观测性，或在最初的集成过程中与其合作。评估出最适合试点团队需求的平台后，可观测性团队可以帮助整个工程组织更方便地采用相同方案。有关可观测性团队结构的更多详情，请参见<a data-type="xref" href="ch15-zh.xhtml#build_versus_buy_and_return_on_investme">第 15 章</a>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="判断可观测性何时已经足够"><div class="sect1" id="knowing_when_you_have_enough_observabil">
+<h1>判断可观测性何时已经足够</h1>
+<p>与安全性和可测试性一样，可观测性永远还有工作可做。业务领导者可能难以判断<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="足够" id="idm45204352535392"/>何时应优先投资可观测性，又何时已经“足够好”，可以优先处理其他问题。我们鼓励应用实现完整的插桩覆盖，但也承认可观测性必须与其他需求竞争资源。从务实角度看，学会识别可观测性何时已经足够，可以作为判断试点项目是否成功的实用检查点。</p>
+<p>如果缺乏可观测性、盲目运行的症状是过量返工，那么拥有充分可观测性的团队应当能够可预测地交付，并保持足够可靠性。下面从文化实践和关键结果两方面识别这一里程碑。</p>
+<p>可观测性成为团队的基础实践后，为维持系统优秀可观测性而进行的额外干预，应当成为日常工作中极少且例行的一部分。团队不会考虑在没有相关测试的情况下提交新代码；同样，践行可观测性的团队也应在每次代码审查中考虑相关插桩。一天结束时，他们不应只是合并代码、关掉笔记本电脑；观察代码抵达各部署阶段后的行为，应成为自然而然的习惯。</p>
+<p>生产环境中的代码行为不应再是“别人的问题”。拥有充分可观测性的团队，应当期待看到真实用户如何从所交付功能中受益。每次代码审查都应判断变更附带的遥测数据是否足以理解其在生产环境中的影响。可观测性也不应只服务工程师；随变更提供的遥测数据应当让产品经理和客户成功人员能够自行回答生产环境问题（参见<a data-type="xref" href="ch20-zh.xhtml#observabilityapostrophes_stakeholders_a">第 20 章</a>）。两个能够表明可观测性已经足够的实用指标是：对生产行为的一次性数据请求，其自助满足率显著提高；产品管理中的猜测显著减少。</p>
+<p>团队从可观测性中获益后，理解和操作生产环境的信心应当提高。未解决的“神秘”事故比例应当下降，整个组织检测和解决事故的时间也应缩短。不过，此时衡量成功的常见错误，是过度关注检测到的事故总数等浅层指标。团队更加理解生产环境行为后，发现更多事故，并能从容深入调查险些发生的事故，其实是积极进展。这往往意味着过去未检测到的问题现在得到了更充分的理解。当工程团队日常依靠现代可观测性工具理解问题，而彼此割裂的旧工具不再是主要故障排查方式时，就说明已经达到平衡。</p>
+<p>每当团队遇到数据无法回答的新问题时，他们会发现，花时间填补遥测空缺比猜测哪里出了问题更加容易。例如，如果一个神秘追踪跨度无缘无故耗时过长，他们会添加子跨度来捕获其中更小的工作单元，或增加属性来理解是什么触发了缓慢行为。随着新增集成或代码覆盖面变化，可观测性始终需要维护。但即便如此，选择正确的可观测性平台仍会大幅降低整体运维负担和总体拥有成本。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000020">
+<h1>结语</h1>
+<p>团队会出于各种原因认识到可观测性的必要性。无论这种需求是关键中断后被动产生的，还是主动意识到缺乏可观测性正在扼杀团队创新后产生的，都必须建立商业论证来支持可观测性计划。</p>
+<p>与安全性和可测试性类似，可观测性必须被视为持续实践。践行可观测性的团队必须养成习惯，确保任何代码变更都附带适当插桩，就像必须附带测试一样。代码审查应当确保新代码的插桩达到适当的可观测性标准，正如它也要确保代码符合安全标准。可观测性需要持续照料和维护；观察本章列出的文化行为和关键结果，就能判断可观测性是否已经实现到足够好的程度。</p>
+<p>下一章将介绍工程团队如何与其他内部团队建立联盟，帮助加快可观测性文化的采用。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn16"><sup><a href="ch19-zh.xhtml#ch01fn16-marker">1</a></sup> Evelyn Chea 的博客文章<a href="https://hny.co/blog/forrester-tei-benefits-observability-roi-2021">“What Is Honeycomb’s ROI? Forrester’s Study on the Benefits of Observability”</a>概述了 Forrester Consulting 使用总体经济影响（TEI）框架对 Honeycomb 得出的研究结果。</p><p data-type="footnote" id="ch01fn17"><sup><a href="ch19-zh.xhtml#ch01fn17-marker">2</a></sup> Tammy Everts，<a href="https://oreil.ly/FOkr4">“Mobile Load Time and User Abandonment”</a>，Akamai Developer Blog，2016 年 9 月 9 日。</p></div></div></section></div></body>
+</html>

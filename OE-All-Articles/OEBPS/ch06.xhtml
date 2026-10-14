@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="Chapter 6. Stitching Events into Traces"><div class="chapter" id="stitching_events_into_trace">
+<h1><span class="label">Chapter 6. </span>Stitching Events into Traces</h1>
+<p>In the previous chapter, we explored why events are the fundamental building blocks of an observable system. This chapter examines how you can stitch events together into a trace. Within the last decade, distributed tracing has become an indispensable troubleshooting tool for software engineering teams.</p>
+<p><em>Distributed traces</em> are simply an <a contenteditable="false" data-type="indexterm" data-primary="distributed tracing" id="idm45204355607808"/><a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="distributed" data-see="distributed traces" id="idm45204355259744"/>interrelated series of events. Distributed tracing systems provide packaged libraries that “automagically” create and manage the work of tracking those relationships. The concepts used to create and track the relationships between discrete events can be applied far beyond traditional tracing use cases. To further explore what’s possible with observable systems, we must first explore the inner workings of tracing systems.</p>
+<p>In this chapter, we demystify distributed tracing by examining its core components and why they are so useful for observable systems. We explain the components of a trace and use code examples to illustrate the steps necessary to assemble a trace by hand and how those components work. We present examples of adding relevant data to a trace event (or span) and why you may want that data. Finally, after showing you how a trace is assembled manually, we’ll apply those same techniques to nontraditional tracing use cases (like stitching together log events) that are possible with observable systems.</p>
+<section data-type="sect1" data-pdf-bookmark="Distributed Tracing and Why It Matters Now"><div class="sect1" id="distributed_tracing_and_why_it_matters">
+<h1>Distributed Tracing and Why It Matters Now</h1>
+<p><em>Tracing</em> is a fundamental software debugging technique wherein various bits of information are logged <a contenteditable="false" data-type="indexterm" data-primary="tracing" id="idm45204355368208"/>throughout a program’s execution for the purpose of diagnosing problems. Since the very first day that two computers were linked together to exchange information, software engineers have been discovering the gremlins lurking within our programs and protocols. Those issues in the seams persist despite our best efforts, and in an age when distributed systems are the norm, the debugging techniques we use must adapt to meet more complex needs.</p>
+<p><em>Distributed tracing</em> is a method of <a contenteditable="false" data-type="indexterm" data-primary="distributed tracing" id="idm45204355308432"/><a contenteditable="false" data-type="indexterm" data-primary="tracing" data-secondary="distributed" id="idm45204355276448"/>tracking the progression of a single request—called a <em>trace</em>—as it is handled by various services that make up an application. Tracing in this sense is “distributed” because in order to fulfill its functions, a singular request must often traverse process, machine, and network boundaries. The popularity of microservice architectures has led to a sharp increase in debugging techniques that pinpoint where failures occur along that route and what might be contributing to poor performance. But anytime a request traverses boundaries—such as from on-premises to cloud infrastructure, or from infrastructure you control to SaaS services you don’t, and back again—distributed tracing can be incredibly useful to diagnose problems, optimize code, and build more reliable services.</p>
+<p>The rise in popularity of distributed tracing also means that several approaches and competing standards for accomplishing that task have emerged. Distributed tracing first gained mainstream traction after Google’s <a contenteditable="false" data-type="indexterm" data-primary="distributed tracing" data-secondary="Dapper paper" id="idm45204355102576"/><a contenteditable="false" data-type="indexterm" data-primary="Dapper paper" id="idm45204355287568"/>publication of the <a href="https://ai.google/research/pubs/pub36356">Dapper paper</a> by Ben Sigelman et al. in 2010. Two notable open source tracing projects emerged shortly after: <a href="https://zipkin.io">Twitter’s Zipkin in 2012</a> and <a href="https://eng.uber.com/distributed-tracing">Uber’s Jaeger in 2017</a>, in addition to several commercially available solutions such as <a href="https://hny.co">Honeycomb</a> or <a href="https://lightstep.com">Lightstep</a>.</p>
+<p>Despite the implementation differences in these tracing projects, the core methodology and the value they provide are the same. As explored in <a data-type="xref" href="part01.xhtml#the_path_to_observability">Part I</a>, modern distributed systems have a tendency to scale into a tangled knot of dependencies. Distributed tracing is valuable because it clearly shows the relationships among various services and components in a distributed system.</p>
+<p>Traces help you understand system <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="interdependencies" id="idm45204355396016"/>interdependencies. Those interdependencies can obscure problems and make them particularly difficult to debug unless the relationships between them are clearly understood. For example, if a downstream database service experiences performance bottlenecks, that latency can cumulatively stack up. By the time that latency is detected three or four layers upstream, identifying which component of the system is the root of the problem can be incredibly difficult because now that same latency is being seen in dozens of other services.</p>
+<p>In an observable system, a trace is simply a series of interconnected events. To understand how traces relate to the fundamental building blocks of observability, let’s start by looking at how traces are assembled.</p>
+</div></section>
+<section data-type="sect1" class="pagebreak-before" data-pdf-bookmark="The Components of Tracing"><div class="sect1" id="the_components_of_tracing">
+<h1 class="less_space">The Components of Tracing</h1>
+<p>To understand the mechanics of how tracing works in practice, we’ll use an example to illustrate the various components <a contenteditable="false" data-type="indexterm" data-primary="tracing" data-secondary="components" id="tracom"/>needed to collect the data necessary for a trace. First, we’ll consider the outcome we want from a trace: to clearly see relationships among various services. Then we’ll look at how we might modify our existing code to get that outcome.</p>
+<p>To quickly understand where bottlenecks may <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="waterfall method and" id="idm45204355210224"/><a contenteditable="false" data-type="indexterm" data-primary="waterfall technique, traces and" id="idm45204355235344"/>be occurring, it’s useful to have waterfall-style visualizations of a trace, as shown in <a data-type="xref" href="#this_waterfall_style_trace_visualizatio">Figure 6-1</a>. Each stage of a request is displayed as an individual chunk in relation to the start time and duration of a request being debugged.</p>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p><a href="https://w.wiki/56wd">Waterfall visualizations</a> show how an initial value is affected by a series of intermediate values, leading to a final cumulative value.</p>
+</div>
+<figure><div id="this_waterfall_style_trace_visualizatio" class="figure">
+<img src="Images/oben_0601.png" width="1432" height="416"/>
+<h6><span class="label">Figure 6-1. </span>This waterfall-style trace visualization displays four trace spans during one request</h6>
+</div></figure>
+<p>Each chunk of this waterfall is called a <em>trace span</em>, or <em>span</em> for short. Within any given trace, spans <a contenteditable="false" data-type="indexterm" data-primary="trace spans" data-see="spans" id="idm45204355084096"/><a contenteditable="false" data-type="indexterm" data-primary="spans" id="idm45204355083104"/>are either the <em>root span</em>—the top-level span in that trace—or are nested within the root span. Spans <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="root span" id="idm45204355081616"/><a contenteditable="false" data-type="indexterm" data-primary="root span" id="idm45204355080400"/><a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="nested" id="idm45204355079424"/><a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="parent spans" id="idm45204355078208"/><a contenteditable="false" data-type="indexterm" data-primary="parent spans" id="idm45204355076992"/>nested within the root span may also have nested spans of their own. That relationship is sometimes referred to as <em>parent-child</em>. For example, in <a data-type="xref" href="#a_trace_that_has_two_parent_spansdot_sp">Figure 6-2</a>, if Service A calls Service B, which calls Service C, then for that trace, Span A is the parent of Span B, which is in turn the parent of Span C.</p>
+<figure><div id="a_trace_that_has_two_parent_spansdot_sp" class="figure">
+<img src="Images/oben_0602.png" width="905" height="353"/>
+<h6><span class="label">Figure 6-2. </span>A trace that has two parent spans. Span A is the root span and is also the parent of Span B. Span B is a child of Span A and also the parent of Span C. Span C is a child of Span B and has no child spans of its own.</h6>
+</div></figure>
+<p>Note that a service might be called and appear multiple times within a trace as separate spans, such as in <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="services" id="idm45204355174176"/><a contenteditable="false" data-type="indexterm" data-primary="services, traces and" id="idm45204355070512"/>the case of circular dependencies or intense calculations broken into parallel functions within the same service hop. In practice, requests often traverse messy and unpredictable paths through a distributed system. To construct the view we want for any path taken, no matter how complex, we need five pieces of data for each component:</p>
+<dl>
+<dt>Trace ID</dt>
+<dd>We need a unique identifier for the trace we’re <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="trace ID" id="idm45204355148928"/>about to create so that we can map it back to a particular request. This ID is created by the root span and propagated throughout each step taken to fulfill the request.</dd>
+<dt>Span ID</dt>
+<dd>We also need a unique identifier for <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="span ID" id="idm45204355137328"/>each individual span created. Spans contain information captured while a unit of work occurred during a single trace. The unique ID allows us to refer to this span whenever we need it.</dd>
+<dt>Parent ID</dt>
+<dd>This field is used to properly <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="parent ID" id="idm45204355482112"/>define nesting relationships throughout the life of the trace. A Parent ID is absent in the root span (that’s how we know it’s the root).</dd>
+<dt>Timestamp</dt>
+<dd>Each span must indicate when its work began.</dd>
+<dt>Duration</dt>
+<dd>Each span must also record how long that work took to finish.</dd>
+</dl>
+<p>Those fields are absolutely required in order to assemble the structure of a trace. However, you will likely find a few other fields helpful when identifying these spans or how they relate to your system. Any additional data added to a span is essentially a series of tags.</p> 
+<p class="pagebreak-before less_space">These are some examples:</p>
+<dl>
+<dt>Service Name</dt>
+<dd>For investigative purposes, you’ll want to <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="services" data-tertiary="names" id="idm45204355201328"/>indicate the name of the service where this work occurred.</dd>
+<dt>Span Name</dt>
+<dd>To understand the <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="names" id="idm45204355054608"/>relevancy of each step, it’s helpful to give each span a name that identifies or differentiates the work that was being done—e.g., names could be <code>intense_computation1</code> and <code>intense_computation2</code> if they represent different work streams within the same service or network hop.</dd>
+</dl>
+<p>With that data, we should be able to construct the type of waterfall visualization we want for any request in order to quickly diagnose any issues. Next, let’s look at how we would instrument <a contenteditable="false" data-type="indexterm" data-primary="tracing" data-secondary="components" data-startref="tracom" id="idm45204355320768"/>our code to generate that data.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Instrumenting a Trace the Hard Way"><div class="sect1" id="instrumenting_a_trace_the_hard_way">
+<h1>Instrumenting a Trace the Hard Way</h1>
+<p>To understand how the core components of a trace <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="system, manual example" id="trsysex"/>come together, we’ll create a manual example of an overly simple tracing system. In any distributed tracing system, quite a bit more information is being added to traces to make the data more usable. For example, you may wish to enrich a trace with additional metadata prior to sending it to a backend data store (see <a data-type="xref" href="ch16.xhtml#efficient_data_storage">Chapter 16</a>).</p>
+<blockquote data-type="epigraph" epub:type="epigraph">
+<p>If you wish to make an apple pie from scratch, you must first invent the universe.</p>
+<p data-type="attribution">Carl Sagan</p>
+</blockquote>
+<p>For illustration purposes, we’ll presume that a backend for collection of this data already exists and will focus on just the client-side instrumentation necessary for tracing. We’ll also presume that we can send data to that system via HTTP.</p>
+<p>Let’s say that we have a simple web endpoint. For quick illustrative purposes, we will create this example with Go as our language. When we issue a GET request, it makes calls to two other services to retrieve data based on the payload of the request (such as whether the user is authorized to access the given endpoint) and then it returns the results:</p>
+<pre data-type="programlisting">func rootHandler(r *http.Request, w http.ResponseWriter) {
+   authorized := callAuthService(r)
+   name := callNameService(r)
+
+   if authorized {
+       w.Write([]byte(fmt.Sprintf(`{"message": "Waddup %s"}`, name)))
+   } else {
+       w.Write([]byte(`{"message": "Not cool dawg"}`))
+   }
+}</pre>
+<p>The main purpose of distributed tracing is to follow a request as it traverses multiple services. In this example, because this request makes calls to two other services, we would expect to see a minimum of three spans when making this request:</p>
+<ul>
+<li><p>The originating request to <code>rootHandler</code></p></li>
+<li><p>The call to our authorization service (to authenticate the request)</p></li>
+<li><p>The call to our name service (to get the user’s name)</p></li>
+</ul>
+<p>First, let’s generate a unique <em>trace ID</em> so we <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="trace ID" data-tertiary="generating" id="idm45204355045456"/>can group any subsequent spans back to the originating request. We’ll use <a href="https://w.wiki/8G6">UUIDs</a> to avoid any data duplication issues and store the attributes and data for this span in a map (we could then later serialize that data as JSON <a contenteditable="false" data-type="indexterm" data-primary="JSON (JavaScript Object Notation)" id="idm45204355043376"/>to send it to our data backend). We’ll also generate a <em>span ID</em> that can be used as an identifier for relating different spans in the same trace together:</p>
+<pre data-type="programlisting">func rootHandler(...) {
+   traceData := make(map[string]interface{})
+   traceData["trace_id"] = uuid.String()
+   traceData["span_id"] = uuid.String()
+  
+   // ... main work of request ...
+}</pre>
+<p>Now that we have IDs that can be used to string our requests together, we’ll also want to know when this span started and how long it took to execute. We do that by capturing a <em>timestamp</em>, both when the request starts and when it ends. Noting the difference between those two timest<a contenteditable="false" data-type="indexterm" data-primary="Remote Procedure Call (RPC)" id="idm45204355064880"/>amps, we will calculate <em>duration</em> in milliseconds:</p>
+<pre data-type="programlisting">func rootHandler(...) {
+   // ... trace id setup from above ...
+  
+   startTime := time.Now()
+   traceData["timestamp"] = startTime.Unix()
+
+   // ... main work of request ...
+
+   traceData["duration_ms"] = time.Now().Sub(startTime)
+}</pre>
+<p>Finally, we’ll add two descriptive fields: <code>service_name</code> indicates which service the work occurred in, and span <code>name</code> indicates the type of work we did. Additionally, we’ll set up this portion of our code to send all of this data to our tracing backend <a contenteditable="false" data-type="indexterm" data-primary="RPC (Remote Procedure Call)" id="idm45204355370736"/>via a remote procedure call (RPC) once it’s all complete:</p>
+<pre data-type="programlisting">func loginHandler(...) {
+   // ... trace id and duration setup from above ...
+
+   traceData["name"] = "/oauth2/login"
+   traceData["service_name"] = "authentication_svc"
+
+   // ... main work of request ...
+  
+   sendSpan(traceData)
+}</pre>
+<p>We have the portions of data we need for this one singular trace span. However, we don’t yet have a way to relay any of this trace data to the other services that we’re calling as part of our request. At the very least, we need to know which span this is within our trace, which parent this span belongs to, and that data should be propagated throughout the life of the request.</p>
+<p>The most common way that information is shared in distributed tracing systems is by setting it in HTTP headers on outbound requests. In our example, we could expand our helper functions <code>callAuthService</code> and <code>callNameService</code> to accept the <code>traceData</code> map and use it to set special HTTP headers on their outbound requests.</p>
+<p>You could call those headers anything you want, as long as the programs on the receiving end understand those same names. Typically, HTTP headers follow a particular standard, such as those of the World Wide Web Consortium (<a href="https://www.w3.org/TR/trace-context">W3C</a>) or <a href="https://github.com/openzipkin/b3-propagation">B3</a>. For our example, we’ll use the B3 standard. We would need to send the following headers (as in <a data-type="xref" href="#our_example_app_would_now_propagate_tra">Figure 6-3</a>) to ensure that child spans are able to build and send their spans correctly:</p>
+<dl>
+<dt><code>X-B3-TraceId</code></dt>
+<dd>Contains the trace ID for the entire trace (from the preceding example)</dd>
+<dt><code>X-B3-ParentSpanId</code></dt>
+<dd>Contains the current span ID, which will be set as the parent ID in the child’s generated span</dd>
+</dl>
+<p>Now let’s ensure that those headers are sent in our outbound HTTP request:</p>
+<pre data-type="programlisting">func callAuthService(req *http.Request, traceData map[string]interface{}) {
+   aReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+   aReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+   aReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+   // ... make the request ...
+}</pre>
+<p>We would also make a similar change to our <code>callNameService</code> function. With that, when each service is called, it can pull the information from these headers and add them to <code>trace_id</code> and <code>parent_id</code> in their own generation of <code>traceData</code>. Each of those services would also send their generated spans to the tracing backend. On the backend, those traces are stitched together to create the waterfall-type visualization we want to see.</p>
+<figure><div id="our_example_app_would_now_propagate_tra" class="figure">
+<img src="Images/oben_0603.png" width="1184" height="493"/>
+<h6><span class="label">Figure 6-3. </span>Our example app would now propagate <code>traceID</code> and <code>parentID</code> to each child span</h6>
+</div></figure>
+<p>Now that you’ve seen what goes into instrumenting and creating a useful trace view, let’s see what else we might <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="system, manual example" data-startref="trsysex" id="idm45204355014800"/>want to add to our spans to make them more useful for debugging.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Adding Custom Fields into Trace Spans"><div class="sect1" id="adding_custom_fields_into_trace_spans">
+<h1>Adding Custom Fields into Trace Spans</h1>
+<p>Understanding parent-child relationships and <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="fields, custom" id="tspfct"/>execution duration is a good start. But you may want to add other fields in addition to the necessary trace data to better understand what’s happening in each span whose operation is typically buried deeply within your distributed systems.</p>
+<p>For example, in addition to storing the service name for ease of identification , it might be useful to know the exact host on which the work was executed and whether it was related to a particular user. Let’s modify our example to capture those details as part of our trace span by adding them as key-value pairs:</p>
+<pre data-type="programlisting">hostname, _ := os.Hostname()
+traceData["tags"] = make(map[string]interface{})
+traceData["tags"]["hostname"] = hostname
+traceData["tags"]["user_name"] = name</pre>
+<p>You could further extend this example to capture any other system information you might find relevant for debugging such as the application’s <code>build_id</code>, <code>instance_type</code>, information about your runtime, or any plethora of details like any of the examples in <a data-type="xref" href="ch05.xhtml#structured_events_are_the_building_bloc">Chapter 5</a>. For now, we’ll keep it simple.</p>
+<p>Putting this all together, our full example app that creates a trace from scratch would look something like this (the code is repetitive and verbose for clarity):</p>
+<pre data-type="programlisting">func rootHandler(r *http.Request, w http.ResponseWriter) {
+
+   traceData := make(map[string]interface{})
+   traceData["tags"] = make(map[string]interface{})
+
+   hostname, _ := os.Hostname()
+   traceData["tags"]["hostname"] = hostname
+   traceData["tags"]["user_name"] = name
+
+   startTime := time.Now()
+   traceData["timestamp"] = startTime.Unix()
+   traceData["trace_id"] = uuid.String()
+   traceData["span_id"] = uuid.String()
+   traceData["name"] = "/oauth2/login"
+   traceData["service_name"] = "authentication_svc"
+
+   func callAuthService(req *http.Request, traceData map[string]interface{}) {
+      aReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+      aReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+      aReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+      // ... make the auth request ...
+   }
+
+   func callNameService(req *http.Request, traceData map[string]interface{}) {
+      nReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+      nReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+      nReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+      // ... make the name request ...
+   }
+
+   authorized := callAuthService(r)
+   name := callNameService(r)
+
+   if authorized {
+       w.Write([]byte(fmt.Sprintf(`{"message": "Waddup %s"}`, name)))
+   } else {
+       w.Write([]byte(`{"message": "Not cool dawg"}`))
+   }
+
+   traceData["duration_ms"] = time.Now().Sub(startTime)
+   sendSpan(traceData)
+}</pre>
+<p>The code examples used in this section are a bit contrived to illustrate how these concepts come together in practice. The good news is that you would typically not have to generate all of this code yourself. Distributed tracing systems commonly have their own supporting <a contenteditable="false" data-type="indexterm" data-primary="distributed tracing" data-secondary="libraries" id="idm45204355206976"/><a contenteditable="false" data-type="indexterm" data-primary="libraries" data-secondary="distributed tracing systems" id="idm45204355058496"/>libraries to do most of this boilerplate setup work.</p>
+<p>These shared libraries are typically unique to the particular needs of the tracing solution you wish to use. Unfortunately, vendor-specific solutions do not work well with other tracing solutions, meaning that you have to re-instrument your code if you want to try a different solution. In the next chapter, we’ll look at the open source OpenTelemetry project and how it enables you to instrument only once and use a wide variety of solutions.</p>
+<p>Now that you have a complete view of what goes into instrumenting and creating useful trace views, let’s apply that to what you learned in the preceding chapter to understand why tracing is such a <a contenteditable="false" data-type="indexterm" data-primary="spans" data-secondary="fields, custom" data-startref="tspfct" id="idm45204355366192"/>key element in observable systems.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Stitching Events into Traces"><div class="sect1" id="stitching_events_into_trac">
+<h1>Stitching Events into Traces</h1>
+<p>In <a data-type="xref" href="ch05.xhtml#structured_events_are_the_building_bloc">Chapter 5</a>, we examined the use of structured events as the building blocks of an observable system. We defined an <em>event</em> as a record of everything <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="events" data-tertiary="stitching in" id="trevst"/><a contenteditable="false" data-type="indexterm" data-primary="events" data-secondary="traces, stitching in" id="evtrst"/>that occurred while one particular request interacted with your service. During the lifetime of that request, any interesting details about what occurred in order to return a result should be appended to the event.</p>
+<p>In the code examples, our functions were incredibly simple. In a real application, each service call made throughout the execution of a single request would have its own interesting details about what occurred: variable values, parameters passed, results returned, associated context, etc. Each event would capture those details along with the <code>traceData</code> that later allows you to see and debug the relationships among various services and components in your distributed systems.</p>
+<p>In our examples—as well as in distributed tracing systems in general—the instrumentation we used was added at the remote-service-call level. However, in an observable system, you could use the same approach to tie together any number of correlated events from different sources. For example, you could take a first step toward observability by migrating your current single-line logging solution toward a more cohesive view by applying these same trace concepts.</p>
+<p>To do that, you could migrate from generating unstructured multiline logs to generating structured logs (see <a data-type="xref" href="ch05.xhtml#structured_events_are_the_building_bloc">Chapter 5</a>). Then you could add the same required fields for <code>traceData</code> to your structured logs. Having done so, you could generate the same waterfall-style view from your log data. We wouldn’t recommend that as a long-term approach, but it can be useful, especially when first getting started (see <a data-type="xref" href="ch10.xhtml#applying_observability_practices_in_you">Chapter 10</a> for more tips).</p>
+<p>A more common scenario for a nontraditional use of tracing is to do a chunk of work that is not distributed in nature, but that you want to split into its own span for a variety of reasons. For example, perhaps you find that your application is bottlenecked by JSON unmarshaling (or some other CPU-intensive operation) and you need to identify when that causes a problem.</p>
+<p>One approach is to wrap these “hot blocks” of code into their own separate spans to get an even more detailed waterfall view (see <a data-type="xref" href="ch07.xhtml#instrumentation_with_opentelemetry">Chapter 7</a> for more examples). That approach can be used to create traces in non-distributed (monolithic) or non-service-oriented programs. For example, you could create a span for every chunk of work in a batch job (e.g., every object uploaded to Amazon Simple Storage Service, or S3) or for each distinct phase of an AWS Lambda-based pipeline. Indeed, AWS <a contenteditable="false" data-type="indexterm" data-primary="AWS (Amazon Web Services)" data-secondary="SDKs (software development kits)" id="idm45204355072080"/>software development kits (SDKs) do this by default; see the <a href="https://oreil.ly/tQtvk">AWS Developer Guide</a> for more details.</p>
+<p>In an observable system, any set of events can be stitched into traces. Tracing doesn’t have to be limited to service-to-service calls. So far, we’ve focused only on gathering the data in these events and sending them to our observability backend. In later chapters, we’ll look at the analysis methods that allow you to arbitrarily slice and dice that data to <a contenteditable="false" data-type="indexterm" data-primary="traces" data-secondary="events" data-tertiary="stitching in" data-startref="trevst" id="idm45204355165984"/><a contenteditable="false" data-type="indexterm" data-primary="events" data-secondary="traces, stitching in" data-startref="evtrst" id="idm45204355680528"/>find patterns along any dimension you choose.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Conclusion"><div class="sect1" id="conclusion-id000007">
+<h1>Conclusion</h1>
+<p>Events are the building blocks of observability, and traces are simply an interrelated series of events. The concepts used to stitch together spans into a cohesive trace are useful in the setting of service-to-service communication. In observable systems, those same concepts can also be applied beyond making RPCs to any discrete events in your systems that are interrelated (like individual file uploads all created from the same batch job).</p>
+<p>In this chapter, we instrumented a trace the hard way by coding each necessary step by hand. A more practical way to get started with tracing is to use an instrumentation framework. In the next chapter, we’ll look at the open source and vendor-neutral OpenTelemetry project as well as how and why you would use it to instrument your production applications.</p>
+</div></section>
+</div></section></div></body>
+</html>

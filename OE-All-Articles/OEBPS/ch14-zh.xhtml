@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 14 章 可观测性与软件供应链"><div class="chapter" id="observability_and_the_software_supply_c">
+<h1><span class="label">第 14 章　</span>可观测性与<span class="keep-together">软件供应链</span></h1>
+<p class="byline">本章由 Slack 高级主任软件工程师 <span class="keep-together">Frank Chen 撰写</span></p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_note_from_charitycomma_lizcomma_and">
+<h5>Charity、Liz 和 George 的说明</h5>
+<p>截至目前，本书一直在考察可观测性与所编写代码的关系<a contenteditable="false" data-type="indexterm" data-primary="Chen, Frank" id="idm45204353919376"/>，以及代码如何在生产环境中运行。但生产运行只是代码生命周期的一个阶段。代码进入生产环境之前，通常还要通过构建流水线自动测试和部署。具体的持续集成（CI）/持续部署（CD）架构与实践<a contenteditable="false" data-type="indexterm" data-primary="CI/CD（持续集成/持续交付）" id="cicd"/><a contenteditable="false" data-type="indexterm" data-primary="持续集成/持续交付（CI/CD）" id="coco"/><a contenteditable="false" data-type="indexterm" data-primary="持续部署（CD）" id="idm45204354374912"/><a contenteditable="false" data-type="indexterm" data-primary="CD（持续部署）" id="idm45204353960560"/>超出了本书范围，不过我们会说明如何使用可观测性调试流水线问题。</p>
+<p>生产环境并不是代码会遇到的唯一一个不断变化的环境。运行构建流水线的系统也可能以意外且往往无法预测的方式发生变化。与本书讨论的应用一样，构建系统的架构差异很大，从单节点单体系统到大规模并行处理的庞大构建集群都有。架构简单的系统，也许可以通过推理潜在故障来调试；但系统复杂到一定程度后，可观测性就会成为不可或缺、有时甚至必需的调试工具，帮助理解 CI/CD 流水线中发生了什么。与生产环境一样，集成不良、不可见的瓶颈、无法发现问题或调试根因等问题，同样会困扰构建系统。</p>
+<p>本章由 Frank Chen 撰写，详细介绍 Slack 如何使用可观测性管理软件供应链。我们非常高兴能够收录 Chen 的工作，因为这是使用可观测性构建大规模运行系统的绝佳案例。你将了解在何处、以何种方式使用追踪和可观测性调试构建流水线问题，以及哪些插桩在这种场景中特别有用。</p>
+<p>Slack 的故事从拥有大规模软件供应链的组织视角展开<a contenteditable="false" data-type="indexterm" data-primary="Slack" id="idm45204355656016"/>，但我们相信其中的经验适用于任何规模。<a data-type="xref" href="part04.xhtml#observability_at_scale">第四部分</a>将专门讨论大规模实施可观测性时出现的挑战。</p>
+</div></aside>
+<p>我很高兴在本章分享把可观测性融入软件供应链<a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="供应链" id="idm45204354612016"/>的实践与用例。<em>软件供应链</em>包括“从开发开始，经过 CI/CD 流水线，直到部署到生产环境为止，进入软件或对软件产生影响的一切事物”。<sup><a data-type="noteref" id="ch01fn10-marker" href="ch14-zh.xhtml#ch01fn10">1</a></sup></p>
+<p>过去三年，我一直在构建和研究相关系统与人员流程，以频繁、可靠地发布高质量版本，为 Slack 客户提供更简单、愉快且高效的体验。对于软件供应链团队而言，整个组织用来支持 CI/CD 的流水线和工具，就是我们的生产工作负载。</p>
+<p>Slack 很早就投资于 CI 开发<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="CI 开发" id="idm45204353875104"/>以支持协作，也投资于 CD，把软件交付到客户手中。CI 是一种开发方法，要求工程师尽可能频繁地构建、测试新代码，并把它集成到共享代码库。在共享代码库中集成并验证新代码，可以增强信心，确保新代码不会给客户带来意外故障。CI 系统让开发者提交新代码时能够自动触发构建和测试，并接收反馈。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>若要深入了解持续集成，请参阅 ScienceDirect 网站上 Murat Erder 和 Pierre Pureur 的<a href="https://oreil.ly/ewm0i">“Continuous Architecture and Continuous Delivery”</a>。此外，Atlassian 网站上 Sten Pittet 的<a href="https://oreil.ly/Dv4Zm">“How to Get Started with Continuous Integration”</a>也是一份非常好的指南。</p>
+</div>
+<p>Slack 从单一 Web 应用 PHP 单体仓库<a contenteditable="false" data-type="indexterm" data-primary="PHP 单体仓库" id="idm45204354294192"/>（现在大部分使用 <a href="https://hacklang.org">Hack</a>），演进为包含多种语言、服务和客户端的拓扑，以满足不同需求。Slack 的核心业务逻辑<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="核心业务逻辑" id="idm45204353864304"/>仍在 Web 应用中，并路由到 <a href="https://slack.engineering/flannel-an-application-level-edge-cache-to-make-slack-scale">Flannel</a> 等下游服务。Slack 的 CI 工作流包括多种代码库的单元测试、集成测试<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="CI 工作流" id="idm45204353865472"/>和端到端功能测试。</p>
+<p>本章主要关注 CI/CD 系统和 Web 应用 CI 的可观测性，因为 Slack 的许多工程师大部分时间都花在这里。Web 应用 CI 生态横跨 Checkpoint<a contenteditable="false" data-type="indexterm" data-primary="Checkpoint" id="idm45204353977232"/>、Jenkins 构建/测试执行器<a contenteditable="false" data-type="indexterm" data-primary="Jenkins 构建/测试执行器" id="idm45204353946816"/>和 QA 环境；每种环境都能运行 Slack Web 应用代码库，并把请求路由到支持它的依赖服务。Checkpoint 是内部开发的 CI/CD 工作流编排服务，提供 API 和前端，用于编排测试执行、部署等复杂工作流的各个阶段。测试失败和拉取请求（PR）审查<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="分享更新" id="idm45204353878240"/><a contenteditable="false" data-type="indexterm" data-primary="PR（拉取请求）" id="idm45204354057312"/>等事件发生时，它还会通过 Slack 向用户分享更新。</p>
+<p><a data-type="xref" href="#an_example_end_to_end_workflow_for_test">图 14-1</a>展示 Web 应用端到端测试的示例工作流。用户向 GitHub 推送提交后，Checkpoint 接收 GitHub 针对新提交等代码库事件发送的 Webhook，再向 Jenkins 发送请求，由 Jenkins 执行器完成构建和测试工作流。Jenkins 构建与测试执行器内部使用名为 CIBot 的代码库；它先把代码与主分支合并，再执行构建和测试脚本，随后与 Checkpoint 通信，以便进行编排并发布测试结果<a contenteditable="false" data-type="indexterm" data-primary="CI/CD（持续集成/持续交付）" data-startref="cicd" id="idm45204353859248"/><a contenteditable="false" data-type="indexterm" data-primary="持续集成/持续交付（CI/CD）" data-startref="coco" id="idm45204354047008"/>。</p>
+<figure><div id="an_example_end_to_end_workflow_for_test" class="figure">
+<img src="Images/oben_1401.png" width="1441" height="564"/>
+<h6><span class="label">图 14-1　</span>测试 Web 应用的端到端工作流示例</h6>
+</div></figure>
+<section data-type="sect1" data-pdf-bookmark="Slack 为什么需要可观测性"><div class="sect1" id="why_slack_needed_observability">
+<h1>Slack 为什么需要可观测性</h1>
+<p>在整个生命周期中，Slack 的客户数量和代码库规模都大幅增长。增长令人振奋<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="与可观测性" id="slobserv"/>，却也有阴暗面：复杂性增加、边界模糊、系统被推到极限。测试套件的每日执行次数从几千增长到数十万。这些工作负载横跨许多代码库和团队，性质多样且不断变化。在这种规模下，必须使用自适应容量和超额分配等策略控制成本与计算资源。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>有关 Slack CI 系统和成本控制策略的更多细节，请参阅 Slack Engineering 博客文章<a href="https://slack.engineering/infrastructure-observability-for-changing-the-spend-curve">“Infrastructure Observability for Changing the Spend Curve”</a>。</p>
+</div>
+<p>因此，我们在开发环境中测试和部署代码的工作流，复杂程度往往超过一些生产服务。基础设施类型或运行时版本等底层依赖可能意外改变，引入非预期故障。例如，Slack 使用 Git 进行版本控制，不同 Git 版本在合并代码时可能呈现截然不同的性能。调查 CI 表面出现的异常，可能需要调试自己的代码、测试逻辑、依赖服务、底层基础设施，或者它们的任何组合。发生问题时，根因可能藏在无数无法预测的位置。Slack 很快意识到，软件供应链需要可观测性。</p>
+<p>为软件供应链插桩，无论对 Slack 还是你的企业，都是一项竞争优势。开发越快、发布周期越短，就越能为客户提供更好的服务。可观测性在 Slack 理解问题和规划 CI/CD 投资时发挥了重要作用。后面各节将介绍 Slack 在 2019 年如何用更好的分布式追踪为 Checkpoint 插桩，以及 2020 和 2021 年解决具体问题的案例。</p>
+<p>内部工具通常与生产系统一样，要经过多个关键系统；此外还要针对开发系统执行，并合并代码以进行构建和测试，复杂度更高。内部工具呈现出不同于生产服务的特征：基数显著更低，但每个事件和跨度的重要性显著更高。任何依赖系统发生故障，都会降低开发速度、给团队带来挫败感，最终减慢向客户交付软件的速度。换言之，如果软件供应链的第一环节缓慢或容易失败，依赖这一关键环节的后续供应链都会遭遇瓶颈。</p>
+<p>“它很慢”是分布式系统中最难调试的问题，“它不稳定”则是内部工具支持团队听得最多的问题。两者的共同挑战，是如何关联彼此交互的高复杂度系统中的问题。例如，基础设施或测试不稳定时，开发者编写代码的能力下降，对工具的信任遭到侵蚀，最终产生挫败感。这类复杂性促使 Slack 投资构建共享可观测性流水线<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="与可观测性" data-startref="slobserv" id="idm45204353879840"/>。Slack 的 Suman Karumuri 和 Ryan Katkov 撰写的<a data-type="xref" href="ch18-zh.xhtml#telemetry_management_with_pipelines">第 18 章</a>将详细介绍可观测性流水线。下一节将说明维度如何帮助解决这个问题。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="插桩：共享客户端库与维度"><div class="sect1" id="instrumentation_shared_client_libraries">
+<h1>插桩：共享客户端库与维度</h1>
+<p>Slack CI 面临的首要挑战是复杂性。端到端测试失败可能源于多个彼此交互的代码库<a contenteditable="false" data-type="indexterm" data-primary="Slack 的 CI（持续集成）" id="cisllib"/><a contenteditable="false" data-type="indexterm" data-primary="Slack 的持续集成（CI）" id="cisk"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="共享库" id="inslib"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="维度" id="instdim"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="CI 开发" data-tertiary="复杂性" id="idm45204353828352"/>，需要同时查看代码库变更、基础设施变更和平台运行时。2020 年，一位 Web 应用开发者提交一次代码，CI 流水线就会运行 30 多个测试套件；它们依赖 GitHub 和三个平台团队（性能、后端、前端）的构建流水线，并横跨需求与专业领域各异的 20 个团队或服务。到 2020 年中，测试执行量每月增长 10%，多个下游服务难以扩容满足额外需求，CI 基础设施开始逼近极限。</p>
+<p>Slack 尝试使用分布式追踪解决这一系列瓶颈。2019 年的 Slack CI 基础设施主要由 CTO 和早期员工编写，多年来基本保持可用；但它逐渐暴露出成长的阵痛，许多工作流也缺少可观测性。</p>
+<p>把追踪应用到多跳构建系统后，团队在完成插桩的几小时内，就解决了 CI 工作流中的多项挑战：</p>
+<ul>
+<li><p>2019 年第二季度，我们用一个下午做出的原型为 CI 运行器插桩。与其他追踪用例一样，拿到追踪数据几分钟后，就发现 Git checkout 运行时间异常。检查底层主机后，我们发现它们没有像其他主机一样在自动扩缩容组（ASG）<a contenteditable="false" data-type="indexterm" data-primary="ASG（自动扩缩容组）" id="idm45204354105728"/>中更新，于是迅速将其停用。这为一类工作流提供了简单解决方案：它们虽未产生错误或失败，却非常缓慢，因而造成糟糕的用户体验。</p></li>
+<li><p>2019 年第三季度，多个团队正在处理一场持续数天的事故。我们在 CI 运行器与测试环境之间实现首个跨服务追踪，发现 Git 大文件存储（LFS）<a contenteditable="false" data-type="indexterm" data-primary="LFS（大文件存储）" id="idm45204353944928"/>问题拖慢了系统吞吐量。最初，系统一部分的故障级联到其他系统，团队忙于控制多个过载系统。我们借用 CI 运行器的方案增加简单插桩，发现一组主机无法从 Git LFS 获取制品，在不到两小时内解决了事故。</p></li>
+</ul>
+<p><a data-type="xref" href="#a_simplified_view_of_a_single_end_to_en">图 14-2</a>简化展示用户向 GitHub 推送提交后的一次测试运行。Checkpoint 编排这次运行，随后依次交给构建步骤和测试步骤，均由 Jenkins 执行器完成。每个阶段都会增加维度，为 CI 中的执行提供上下文。生产环境出现性能或可靠性问题时，Slack 工程师把单个或多个维度组合当作面包屑<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="维度" id="idm45204354025904"/>，沿途探索执行过程。每增加一个维度，就为问题调查增加一个方向和线索；组合这些线索，就能逐步下钻，定位已部署代码中的具体问题。</p>
+<figure><div id="a_simplified_view_of_a_single_end_to_en" class="figure">
+<img src="Images/oben_1402.png" width="1441" height="1339"/>
+<h6><span class="label">图 14-2　</span>由 CI 编排层编排的单次端到端测试运行的简化视图，突出显示整个工作流共享的常见维度</h6>
+</div></figure>
+<p>每条追踪都会配置客户端维度（<a data-type="xref" href="#common_dimensions_in_our_hack_codebased">图 14-3</a>给出示例）。Slack 使用 TraceContext 单例设置这些维度<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="TraceContext" id="idm45204353875536"/><a contenteditable="false" data-type="indexterm" data-primary="TraceContext 与 Slack" id="idm45204353817504"/>。每个 TraceContext 都会建立包含常见维度的初始追踪和一条新追踪。每条追踪包含多个跨度，每个跨度都有一组特定维度。单个跨度（例如<a data-type="xref" href="#a_trace_for_the_ci_execution_of_a_backe">图 14-4</a>中的 <code>runner.test_execution</code>）可以包含原始请求的上下文，并在根跨度上增加值得关注的维度。维度越多，问题调查可利用的上下文就越丰富。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>若想进一步了解宽跨度，可以观看 Honeycomb 网站上 Glen Mailer 的视频<a href="https://hny.co/resources/the-unreasonable-effectiveness-of-a-single-wide-event">“CircleCI: The Unreasonable Effectiveness of a Single Wide Event”</a>。</p>
+</div>
+<figure><div id="common_dimensions_in_our_hack_codebased" class="figure">
+<img src="Images/oben_1403.png" width="1446" height="1080"/>
+<h6><span class="label">图 14-3　</span>Hack 代码库中的常见维度，可作为在 CI 中跨跨度和服务组织维度的示例</h6>
+</div></figure>
+<p>例如，Slack 工程师可能希望沿主机名或 Jenkins 工作节点组等常见维度识别并发问题<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="维度" data-tertiary="并发" id="idm45204353961648"/>。TraceContext 已经提供主机名标签，CI 运行器客户端再追加 Jenkins 工作节点标签。组合两个维度后，工程师便能把存在运行时问题的单台主机或 Jenkins 工作节点组归到一起。</p>
+<p>类似地，Slack 工程师也许希望识别常见构建故障<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="构建故障" id="idm45204354218752"/>。CI 运行器客户端会为提交头或提交所在主分支追加标签，组合后便能判断损坏的构建可能来自哪些提交。</p>
+<p><a data-type="xref" href="#common_dimensions_in_our_hack_codebased">图 14-3</a>中的维度随后会用于各种脚本和服务调用；它们相互通信，共同完成一次测试运行（<a data-type="xref" href="#a_trace_for_the_ci_execution_of_a_backe">图 14-4</a>）。</p>
+<figure><div id="a_trace_for_the_ci_execution_of_a_backe" class="figure">
+<img src="Images/oben_1404.png" width="1432" height="831"/>
+<h6><span class="label">图 14-4　</span>名为 backend-php-unit 的后端测试套件的 CI 执行追踪</h6>
+</div></figure>
+<p>后面几节将介绍 Slack 如何使用追踪工具和查询理解供应链，以及来源信息如何产生可操作告警、帮助解决问题<a contenteditable="false" data-type="indexterm" data-primary="Slack 的 CI（持续集成）" data-startref="cisllib" id="idm45204353801888"/><a contenteditable="false" data-type="indexterm" data-primary="Slack 的持续集成（CI）" data-startref="cisk" id="idm45204353800192"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="共享库" data-startref="inslib" id="idm45204353798976"/><a contenteditable="false" data-type="indexterm" data-primary="插桩" data-secondary="维度" data-startref="instdim" id="idm45204353797280"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="查询" id="idm45204353795824"/>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="案例研究：让供应链投入运维"><div class="sect1" id="case_studies_operationalizing_the_suppl">
+<h1>案例研究：让供应链投入运维</h1>
+<p>通过分析指标、事件、日志和追踪等遥测数据建立可观测性，是塑造内部客户体验的关键组成部分<a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="供应链" data-tertiary="运维化" id="softoper"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="软件供应链案例研究" id="slsoft"/>。对 Slack 的基础设施工具和人员而言，关键是持续学习，并把可观测性嵌入工具。本节通过案例说明如何把可观测性融入 Slack 开发者工作流。希望分享 Slack 处理这些问题的方法后，你也能把相同模式复用于自己的内部开发。</p>
+<section data-type="sect2" data-pdf-bookmark="通过工具理解上下文"><div class="sect2" id="understanding_context_through_tooling">
+<h2>通过工具理解上下文</h2>
+<p>CI 运行在复杂的分布式系统中，多项微小变更可能叠加起来影响 CI 用户体验<a contenteditable="false" data-type="indexterm" data-primary="上下文与工具" id="contool"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="追踪工具" id="sltt"/>。过去，后端、前端和中间件等多个团队各自封闭运作，分别调试性能与韧性问题，以便更好地服务客户。然而，对于先开发再运行测试的 CI 客户，表现最差或最不稳定的测试，最能代表整体用户体验。相同代码多次运行却得到不同结果，就称测试<em>不稳定</em>。理解上下文是识别瓶颈的关键。</p>
+<p>本节余下部分将介绍 Slack 各团队如何协作，从不稳定测试问题中理解上下文。团队围绕几项关键原则，显著减轻了内部客户遇到的问题：</p>
+<ul>
+<li><p>使用追踪为测试平台插桩，捕获此前很少探索的运行时变量</p></li>
+<li><p>交付小型、由可观测性驱动的反馈循环，探索值得关注的维度</p></li>
+<li><p>针对与不稳定测试配置相关的维度开展可逆实验</p></li>
+</ul>
+<p>2020 年，不稳定的端到端测试让 Slack 工程部门的开发者越来越沮丧。单次提交的测试周转时间（p95）持续超过 30 分钟，即从工程师向 GitHub 推送提交到全部测试返回结果之间的时间。在这段时期，工程师把代码合并到主线以前，Slack 大部分代码测试都依赖端到端测试。许多端到端测试套件的平均不稳定率接近 15%。这些最终被丢弃的不稳定测试执行，每周累计浪费的计算时间最高达到 10 万小时。</p>
+<p>到 2020 年中，这些指标促使 Slack 各自动化团队每天共同参加 30 分钟的分诊会议，深入研究具体测试问题。Cypress 是一套端到端测试平台，自动化团队负责人不愿再给 Slack 的 Cypress 使用方式增加任何变量。他们认为不稳定来自测试代码本身，却始终没有显著进展来验证或排除这一判断。</p>
+<p>到 2020 年底，追踪带来的可观测性已经在其他内部工具中展现出识别基础设施瓶颈的巨大潜力和影响。内部工具与自动化团队开始为 Cypress 的若干运行时参数和跨度增加追踪。</p>
+<p>插桩几天后，多个维度显示出与高不稳定率测试套件的强相关。工程师检查插桩数据后发现，测试平台用户与测试套件所有者采用的配置截然不同。在探索过程中，他们又向 Docker 运行时增加遥测，为某些不稳定情况补充上下文。有了数据支持，工程师通过实验为平台设置更合理的默认值，并为容易导致不稳定的配置设置护栏。初步调整后，许多用户的测试套件不稳定率显著下降，从 15% 降到 0.5% 以下，如<a data-type="xref" href="#time_spent_on_flaking_test_runs_between">图 14-5</a>所示。</p>
+<p>不同端到端测试套件的运行时差异很大，又没有一个中心团队能够看到全貌，因此跨套件收集上下文，成为识别造成不稳定的具体维度的关键。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>若想进一步了解 Slack 如何演进测试策略和安全文化<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="测试策略" id="idm45204353983088"/>，请参阅 Slack 博客文章<a href="https://slack.engineering/balancing-safety-and-velocity-in-ci-cd-at-slack">“Balancing Safety and Velocity in CI/CD at Slack”</a>。文章介绍工程师如何发起项目改造测试流水线，降低端到端测试在代码安全中的权重。这项工作在 2021 年大幅减少了用户面对的不稳定问题，并提高了开发速度。</p>
+</div>
+<figure><div id="time_spent_on_flaking_test_runs_between" class="figure">
+<img src="Images/oben_1405.png" width="3202" height="724"/>
+<h6><span class="label">图 14-5　</span>Web 应用各大类测试运行在不稳定测试上花费的时间。浅色柱表示 Cypress 平台测试中的不稳定测试执行</h6>
+</div></figure>
+<p>借助工具形成对上下文的共同理解后，Slack 下一步是通过告警嵌入可操作的工作流<a contenteditable="false" data-type="indexterm" data-primary="上下文与工具" data-startref="contool" id="idm45204353819184"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="追踪工具" data-startref="sltt" id="idm45204353765664"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="嵌入可操作告警"><div class="sect2" id="embedding_actionable_alerting">
+<h2>嵌入可操作告警</h2>
+<p>Slack 把自己的产品融入工程师处理开发问题和基础设施分诊问题的方式<a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="嵌入可操作告警" id="alacem"/><a contenteditable="false" data-type="indexterm" data-primary="嵌入可操作告警" id="acalem"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="可操作告警" id="slacaler"/>。追踪带来的可观测性通过 Slack 消息和配置好的仪表板引导相关人员，在帮助工程师完成工作时发挥关键作用。</p>
+<p>来看一个测试执行案例。根据代码、基础设施或产品功能，人们可能从不同角度理解同一次测试套件执行。每个团队或平台都可能针对测试执行的不同环节设置多项 SLO，例如：</p>
+<ul>
+<li><p>测试套件所有者或平台团队可能关心不稳定性、可靠性或内存使用量。</p></li>
+<li><p>测试基础设施团队可能关心特定操作的性能和可靠性，例如 Docker 操作或每次测试的成本。</p></li>
+<li><p>部署负责人可能关心测试了什么，或者即将通过 CI 的热修复。</p></li>
+<li><p>内部工具团队可能关心 CI 处理测试结果的吞吐量。</p></li>
+</ul>
+<p>促使人们识别问题的信号<a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="异常检测" id="idm45204353766368"/><a contenteditable="false" data-type="indexterm" data-primary="异常检测告警" id="idm45204353752624"/>，可能是高级业务指标的异常检测告警，也可能是测试套件的特定问题，如<a data-type="xref" href="#identifying_runtime_increase_for_test_s">图 14-6</a>。消息中的可观测性工具链接，可以把用户带到一组根据 <code>test_suite</code> 维度生成的视图。</p>
+<figure><div id="identifying_runtime_increase_for_test_s" class="figure">
+<img src="Images/oben_1406.png" width="1296" height="476"/>
+<h6><span class="label">图 14-6　</span>识别测试套件高于 p50 的运行时间增长</h6>
+</div></figure>
+<p>Slack 鼓励团队根据具体用例制作仪表板。Honeycomb 链接会打开 CI Service Traces 仪表板（<a data-type="xref" href="#slackapostrophes_ci_service_traces_dash">图 14-7</a>）中的一项查询，其参数已设置为检查某个测试套件的潜在问题。消息向响应者说明具体问题，例如名为 <em>backend-php-integration</em> 的测试套件显示运行时间变长；响应者随后可以使用 Honeycomb 查看相关追踪，寻找潜在问题。</p>
+<figure><div id="slackapostrophes_ci_service_traces_dash" class="figure">
+<img src="Images/oben_1407.png" width="3186" height="1434"/>
+<h6><span class="label">图 14-7　</span>Slack 的 CI Service Traces 仪表板，显示可用于查看 CI 各部分交互的查询</h6>
+</div></figure>
+<p><a data-type="xref" href="#this_sample_drill_down_query_approximat">图 14-8</a>给出响应团队可能使用的查询示例，从宏观层面查看速率、错误和持续时间。</p>
+<figure><div id="this_sample_drill_down_query_approximat" class="figure">
+<img src="Images/oben_1408.png" width="1696" height="516"/>
+<h6><span class="label">图 14-8　</span>这项下钻查询通过对 Checkpoint 服务之间的各个方法分组并可视化，近似构成速率、错误和持续时间（RED）仪表板</h6>
+</div></figure>
+<p>嵌入可操作告警后，现在就能理解发生了什么变化<a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="嵌入可操作告警" data-startref="alacem" id="idm45204353814480"/><a contenteditable="false" data-type="indexterm" data-primary="嵌入可操作告警" data-startref="acalem" id="idm45204353739632"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="可操作告警" data-startref="slacaler" id="idm45204353738416"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="理解发生了什么变化"><div class="sect2" id="understanding_what_changed">
+<h2>理解发生了什么变化</h2>
+<p>再来看 2021 年 8 月的一次事故，它结合了前面的几个观点。Slack 检测到服务中断或退化时，会使用<a href="https://response.pagerduty.com">事故指挥系统</a>处理事故<a contenteditable="false" data-type="indexterm" data-primary="事故指挥系统" id="idm45204353742992"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="事故指挥系统" id="slkcom"/>。事故响应从新建一个公开 Slack 频道开始，事故指挥官把多个团队的响应者加入频道，协调中断响应和修复。</p>
+<p>这次事故中，多位用户报告受到阻塞，因为后端单元和集成测试套件执行时出现大量内存耗尽（OOM）错误<a contenteditable="false" data-type="indexterm" data-primary="OOM（内存耗尽错误）" id="idm45204353728720"/><a contenteditable="false" data-type="indexterm" data-primary="内存耗尽错误（OOM）" id="idm45204353728080"/>。每个后端单元测试套件都可能运行数万个测试，单独执行时偶尔又能够通过。</p>
+<p>事故早期，一名响应者发现前一天出现异常，不稳定率有所上升（异常类型参见<a data-type="xref" href="#the_conditions_section_of_a_conditionss">图 14-9</a>），可能表明当时发生了某种变化。事故期间，响应者检查后端测试的测试用例追踪，寻找测试用例内存占用的跃升。我们看到过去几个月 p50、p95 和 p99 内存使用量多次跃升，并能精确到小时判断变化发生的时间。</p>
+<p>利用这些数据，专家找出前一天乃至前几个月中似乎与内存增长相关的潜在 PR。大型代码库或测试套件退化的因果关系通常很难判断，因为变更速度极快，而且代码库与基础设施中都有许多变量可能引发变化。</p>
+<figure><div id="the_conditions_section_of_a_conditionss" class="figure">
+<img src="Images/oben_1409.png" width="1153" height="370"/>
+<h6><span class="label">图 14-9　</span>该事故“状况/行动/需求”（CAN）流程中的“状况”部分：中断症状是多个测试套件因 OOM 失败，同时团队正在调查一种解释这一现象的假设</h6>
+</div></figure>
+<p>团队回滚了几个可能造成问题的提交。事故调查中潜在变量很多，因此作出变更后，往往必须等待遥测数据报告系统是否恢复健康。<a data-type="xref" href="#a_slack_thread_of_questions_during_inci">图 14-10</a>展示领域专家之间的一段长讨论；他们能够迅速检验假设，并使用分布式追踪近实时地观察系统健康状况。</p>
+<figure><div id="a_slack_thread_of_questions_during_inci" class="figure">
+<img src="Images/oben_1410.png" width="1440" height="943"/>
+<h6><span class="label">图 14-10　</span>事故调查期间的 Slack 讨论串：从检验假设开始，随后采取行动，并使用可观测性验证假设（为保护隐私，响应者姓名已模糊处理）</h6>
+</div></figure>
+<p>这些数据让 Slack 能够结合上下文，沿时间轴查看遥测信息。这只是 Slack 日常运维中使用可观测性的众多例子之一。你也可以采用类似方法，把可观测性嵌入自己的调查，以识别变更和故障<a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="供应链" data-tertiary="运维化" data-startref="softoper" id="idm45204353826576"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="软件供应链案例研究" data-startref="slsoft" id="idm45204353719296"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="事故指挥系统" data-startref="slkcom" id="idm45204353716304"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000013">
+<h1>结语</h1>
+<p>本章说明了可观测性如何在软件供应链中发挥作用。我分享了 Slack 如何为 CI 流水线插桩，以及近期调试分布式系统的案例。应用开发者试图理解代码在生产环境中的行为时，通常最先想到的是调试分布式系统的复杂性；但在进入生产环境以前，其他分布式系统同样可能难以正确理解和调试。</p>
+<p>在软件供应链中使用适当工具和维度后，Slack 工程师得以解决贯穿 CI 工作流、此前不可见或未被发现的复杂问题。无论调试的是应用缓慢，还是 CI 测试不稳定，可观测性都能帮助开发者关联彼此交互的高复杂度系统中的问题。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn10"><sup><a href="ch14-zh.xhtml#ch01fn10-marker">1</a></sup> Maya Kaczorowski，<a href="https://oreil.ly/3UZm4">“Secure at Every Step: What is Software Supply Chain Security and Why Does It Matter?”</a>，GitHub Blog，2020 年 9 月 2 日。</p></div></div></section></div></body>
+</html>

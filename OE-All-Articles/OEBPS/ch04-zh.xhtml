@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 4 章 可观测性与 DevOps、SRE 和云原生有何关系"><div class="chapter" id="how_observability_relates_to_devopscomm">
+<h1><span class="label">第 4 章　</span>可观测性与 <span class="keep-together">DevOps、SRE 和云原生</span>有何关系</h1>
+<p>到目前为止，我们一直在现代软件系统的语境中讨论可观测性。因此，有必要说明可观测性在 DevOps、站点可靠性工程（SRE）和云原生等其他现代实践浪潮中处于什么位置。本章将考察这些浪潮如何放大了对可观测性的需求，又如何把可观测性纳入自身实践。</p>
+<p>可观测性并非孤立存在；它既是 DevOps、SRE 和云原生浪潮产生的结果，也是这些浪潮不可或缺的一部分。与可测试性一样，可观测性也是系统的一种属性，可以帮助人们更好地理解系统。可观测性和可测试性都需要持续投入，而不是一次性添加就一劳永逸，也不存在适用于所有场景的统一方案。随着两者不断改善，作为开发者的你以及系统的最终用户都会持续受益。理解这些浪潮为何产生了对可观测性的需求，又为何把它融入实践，可以帮助你认识可观测性为什么成为主流话题，以及为什么越来越多不同类型的团队开始采用这种实践。</p>
+<section data-type="sect1" data-pdf-bookmark="简述云原生、DevOps 与 SRE"><div class="sect1" id="cloud_nativecomma_devopscomma_and_sre_i">
+<h1>简述云原生、DevOps 与 SRE</h1>
+<p>20 世纪 90 年代到 21 世纪初，软件交付团队通常采用单体架构<a contenteditable="false" data-type="indexterm" data-primary="云原生计算" id="clnaco"/><a contenteditable="false" data-type="indexterm" data-primary="DevOps" id="devo"/><a contenteditable="false" data-type="indexterm" data-primary="SRE（站点可靠性工程）" id="sereng"/><a contenteditable="false" data-type="indexterm" data-primary="站点可靠性工程（SRE）" data-see="SRE（站点可靠性工程）" id="idm45204355500944"/>和瀑布式开发。与之相比，现代软件开发与运维团队越来越多地使用云原生和敏捷方法。这些方法尤其能够让团队自主发布功能，而不必让其影响与其他团队紧密耦合。松耦合释放了多项关键业务收益，包括提高生产力和盈利能力。例如，可以按需调整单个服务组件的规模，并在大量虚拟和物理服务器之间共享资源，这意味着企业能够更好地控制成本，也拥有更强的扩展能力。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>如需了解敏捷<a contenteditable="false" data-type="indexterm" data-primary="DORA（DevOps Research and Assessment）2019" id="idm45204355428944"/><a contenteditable="false" data-type="indexterm" data-primary="DevOps Research and Assessment（DORA）" id="idm45204355334848"/>和云原生<span class="keep-together">方法</span>带来收益的更多示例，请参阅 Nicole Forsgren 等人撰写的 DevOps Research and Assessment（DORA）2019 年<a href="https://oreil.ly/2Gqjz"><em>《Accelerate State of DevOps》报告</em></a>。</p>
+</div>
+<p>不过，云原生也以显著增加复杂性为代价。引入这些能力时，一个经常被忽略的方面是管理成本。具有动态控制能力的抽象系统，会带来涌现复杂性和非层级通信模式等新挑战。旧式单体系统的涌现复杂性较低，<a contenteditable="false" data-type="indexterm" data-primary="单体应用" data-secondary="复杂性" id="idm45204355421952"/>使用较简单的监控方法便已足够；你很容易推断这些系统内部正在发生什么，以及不可见的问题可能出现在哪里。如今，要以切实可行的方式大规模运行云原生系统，就需要持续交付和可观测性等更加先进的社会技术实践。</p>
+<p>云原生计算基金会（CNCF）<a contenteditable="false" data-type="indexterm" data-primary="CNCF（云原生计算基金会）" id="idm45204355507600"/>将<a href="https://github.com/cncf/toc/blob/main/DEFINITION.md"><em>云原生</em></a>定义为：“在现代动态环境中构建和运行可扩展的应用程序……云原生技术使松耦合系统能够具备<em>韧性</em>、<em>可管理性</em>和<em>可观测性</em>。配合强大的自动化，它们让工程师能够<em>以最少的琐事，频繁且可预测地作出影响重大的变更</em>。”云原生系统通过尽量减少琐事，也就是重复性的人工工作，并强调可观测性，让开发者有更多空间发挥创造力。这个定义不仅关注可扩展性，也把开发速度和可运维性列为目标。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>如需进一步了解消除琐事意味着什么，推荐阅读 Betsy Beyer 等人编著、O’Reilly 出版的<a href="https://sre.google/sre-book/eliminating-toil"><em>《站点可靠性工程》</em>第 5 章</a>。</p>
+</div>
+<p>转向云原生不仅要求采用一整套新技术，还要求改变人们的工作方式。这种转变本质上属于社会技术变革。从表面看，使用微服务工具链本身并没有明确要求采用新的社会实践。但要获得技术所承诺的收益，工作习惯也必须改变。云原生的定义和目标已经清楚说明了这一点，可团队通常要走出好几步以后才意识到，旧有工作习惯无法帮助他们应对新技术带来的管理成本。这正是为什么成功采用云原生设计模式，必然与建设可观测系统以及实践 DevOps 和 SRE 紧密相连。</p>
+<p>同样，DevOps 和 SRE 的定义与实践都强调缩短反馈循环、减少运维琐事。DevOps 通过开发与运维团队之间的文化和协作，更好、更快、更安全、更愉快地交付价值。<sup><a data-type="noteref" id="ch01fn4-marker" href="ch04-zh.xhtml#ch01fn4">1</a></sup>SRE 将系统工程能力与软件技能结合起来，通过开发软件系统而不是依赖人工琐事来解决复杂的运维问题。本章将进一步说明，云原生技术、DevOps 与 SRE 方法以及可观测性<a contenteditable="false" data-type="indexterm" data-primary="云原生计算" data-startref="clnaco" id="idm45204355541760"/><a contenteditable="false" data-type="indexterm" data-primary="DevOps" data-startref="devo" id="idm45204355431216"/><a contenteditable="false" data-type="indexterm" data-primary="SRE（站点可靠性工程）" data-startref="sereng" id="idm45204355418656"/>结合在一起时，比各自独立发挥作用更加强大。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性：过去与现在的调试方式"><div class="sect1" id="observability_debugging_then_versus_now">
+<h1>可观测性：过去与现在的调试方式</h1>
+<p>可观测性的目标是提供一定程度的自省能力，帮助人们推断系统<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与自省" id="idm45204355772032"/>和应用的内部状态。实现这种状态的方法可以有很多。例如，可以把日志、指标和追踪结合起来作为调试信号。但可观测性本身只关心目标，并不限定必须通过什么手段实现。</p>
+<p>在单体系统中，你可以预见潜在故障区域，因此凭借详细的应用日志，或者 CPU 和磁盘利用率等粗粒度系统指标<a contenteditable="false" data-type="indexterm" data-primary="CPU 利用率" data-secondary="与调试" id="idm45204355439760"/>再加上灵光一现，就能自行调试系统并获得足够的可观测性。然而，云原生系统带来的机会也创造了一系列新的管理挑战，旧式工具和依靠本能的技巧已经无法应对。</p>
+<p>云原生定义提到的示例技术包括容器、服务网格、微服务和不可变基础设施。与虚拟机和单体架构等旧式技术相比，容器化微服务<a contenteditable="false" data-type="indexterm" data-primary="微服务" data-secondary="容器化" id="idm45204355773728"/>天然会引入新问题，例如组件相互依赖造成的认知复杂性、容器重启后被丢弃的瞬时状态，以及独立发布的组件版本之间不兼容。不可变基础设施<a contenteditable="false" data-type="indexterm" data-primary="基础设施" data-secondary="不可变" id="idm45204355573488"/>意味着不宜再通过 <code>ssh</code> 登录主机调试，因为这样可能扰动主机状态。服务网格则增加了<a contenteditable="false" data-type="indexterm" data-primary="服务网格" id="idm45204355303072"/>额外的路由层，为收集服务调用方式的信息提供了强大能力；但如果之后无法分析，这些数据的用途仍然有限。</p>
+<p>要调试异常问题，需要一套新的能力，帮助工程师从系统<em>内部</em>检测并理解问题。分布式追踪等工具可以捕获特定事件发生时的系统内部状态。为每个事件添加大量键值对形式的上下文后，就能获得一个宽广而丰富的视图，看清系统各部分中那些通常隐藏起来、无法推断的活动。</p>
+<p>例如，在分布式云原生系统中，如果问题横跨多台主机，仅靠日志或其他互不关联的信号可能很难调试。但把多种信号结合起来后，就可以从服务指标的高层视角出发，系统地逐层深入异常行为，反复迭代，直到找出关系最密切的主机。按主机对日志分片，意味着<a contenteditable="false" data-type="indexterm" data-primary="日志分片" id="idm45204355300640"/><a contenteditable="false" data-type="indexterm" data-primary="日志" data-secondary="分片" id="idm45204355325984"/>不再需要像单体系统那样，集中保留并索引所有日志。过去，无论单体系统还是分布式系统，要理解子组件和服务之间的关系，可能都必须把所有系统组件之间的联系记在脑中。</p>
+<p>如果改用分布式追踪<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="分布式" id="idm45204355411072"/><a contenteditable="false" data-type="indexterm" data-primary="分布式追踪" id="idm45204362992400"/>拆解并可视化每一个步骤，你只需理解依赖关系的复杂性如何影响某个具体请求的执行。了解调用方与接收方的代码路径分别关联各服务的哪个版本，就能找出向后兼容问题，以及破坏兼容性的变更。</p>
+<p>可观测性提供共享上下文，使团队无论面对多么复杂的系统，都能以连贯、理性的方式调试问题，而不必要求某个人在脑中保存整个系统的全部状态。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="可观测性增强 DevOps 与 SRE 实践"><div class="sect1" id="observability_empowers_devops_and_sre_p">
+<h1>可观测性增强 DevOps 与 SRE 实践</h1>
+<p>理解生产系统并驯服复杂性，是 DevOps 和 SRE 团队的职责。因此，他们自然会<a contenteditable="false" data-type="indexterm" data-primary="DevOps" data-secondary="与可观测性" id="devobs"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 DevOps" id="obvsdevs"/><a contenteditable="false" data-type="indexterm" data-primary="SRE（站点可靠性工程）" data-secondary="与可观测性" id="sreobvs"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 SRE 实践" id="obvssre"/>关心自己构建和运行的系统是否可观测。SRE 以服务等级目标（SLO）和错误预算为依据管理服务（参见第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">12</a> 章和第 <a data-type="xref" data-xrefstyle="select:labelnumber" href="ch13-zh.xhtml#acting_on_and_debugging_slo_based_alert">13</a> 章）。DevOps 通过跨职能实践管理服务，并要求开发者继续对自己在生产环境中运行的代码负责。成熟的 DevOps 和 SRE 团队不会先设置大量告警来枚举事故的潜在原因，而是测量用户痛苦的各种可见症状，再使用可观测性工具逐层深入，理解事故本身。</p>
+<p>从基于原因的监控转向基于症状的监控，意味着你需要解释实践中实际看到的故障，而不是继续沿用传统方法，不断扩充已知故障模式清单。团队无须把大部分时间耗在与最终用户可见性能毫无关系的大量误报上，而可以集中精力系统地淘汰假设，并为真实系统故障设计缓解措施。第 <a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">12 章</a>将对此作更详细的介绍。</p>
+<p class="pagebreak-before less_space">除了用可观测性处理发生故障后的修复场景，具有前瞻性的 DevOps 和 SRE 团队还会采用功能标志、持续验证和事故分析等工程技术。可观测性提供有效实践这些技术所需的数据，极大增强了它们的能力。下面分别说明可观测性如何为这些实践赋能：</p>
+<dl>
+<dt>混沌工程与持续验证</dt>
+<dd>这些实践要求具备可观测性，以便“检测系统何时处于正常状态，以及在执行实验方法时，系统如何偏离该稳定状态”。<sup><a data-type="noteref" id="ch01fn5-marker" href="ch04-zh.xhtml#ch01fn5">2</a></sup>如果不能理解系统的基线状态、预测测试中的预期行为并解释实际行为为何偏离预期，就无法开展有意义的混沌实验。“如果在注入混沌之前，你根本不知道系统当前如何运行，那么开展混沌工程毫无意义。”<sup><a data-type="noteref" id="ch01fn6-marker" href="ch04-zh.xhtml#ch01fn6">3</a></sup></dd>
+<dt>功能标志</dt>
+<dd>功能标志会在生产环境中形成各种前所未见的状态组合，而你无法在预生产环境中穷尽测试所有组合。因此，需要借助可观测性逐个用户地理解每项功能标志单独以及共同产生的影响。当同一个端点会根据调用用户和启用的功能标志，以多种不同方式执行时，逐个组件监控行为的理念就不再成立。</dd>
+<dt>渐进式发布模式</dt>
+<dd>金丝雀发布和蓝绿部署等模式需要可观测性，才能有效判断何时应该停止发布，并分析系统对预期状态的偏离是否由本次发布造成。</dd>
+<dt>事故分析与无责事故复盘</dt>
+<dd>这些实践要求你为社会技术系统构建清晰模型：不仅要说明出现故障的技术系统内部发生了什么，还要说明事故发生时，人工操作人员<em>认为</em>正在发生什么。因此，强大的可观测性工具会留下事后可查的完整记录和<a contenteditable="false" data-type="indexterm" data-primary="DevOps" data-secondary="与可观测性" data-startref="devobs" id="idm45204355351760"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 DevOps" data-startref="obvsdevs" id="idm45204355576912"/><a contenteditable="false" data-type="indexterm" data-primary="SRE（站点可靠性工程）" data-secondary="与可观测性" data-startref="sreobvs" id="idm45204355575264"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="与 SRE 实践" data-startref="obvssre" id="idm45204355476288"/>细节，为复盘作者提供线索，从而帮助团队完成高质量复盘。</dd>
+</dl>
+</div></section>
+<section data-type="sect1" class="pagebreak-before" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000005">
+<h1 class="less_space">结语</h1>
+<p>随着 DevOps 和 SRE 实践继续演化，平台工程逐渐成长为一门统领多种实践的学科，工具链中必然还会出现更多创新工程实践。但所有这些创新都将依赖可观测性，把它作为理解现代复杂系统的一项核心感知能力。转向 DevOps、SRE 和云原生实践，产生了对可观测性这类解决方案的需求；反过来，可观测性也极大增强了采用这项实践的团队。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn4"><sup><a href="ch04-zh.xhtml#ch01fn4-marker">1</a></sup> Jonathan Smart，<a href="https://oreil.ly/KQEy9">《想开展敏捷转型？不要这样做。请关注流动、质量、幸福、安全与价值》</a>，2018 年 7 月 21 日。</p><p data-type="footnote" id="ch01fn5"><sup><a href="ch04-zh.xhtml#ch01fn5-marker">2</a></sup> Russ Miles，<a class="orm:hideurl" href="https://oreil.ly/4uYoR"><em>《混沌工程可观测性》</em></a>（加利福尼亚州塞瓦斯托波尔：O’Reilly，2019 年）。</p><p data-type="footnote" id="ch01fn6"><sup><a href="ch04-zh.xhtml#ch01fn6-marker">3</a></sup> Ana Medina，<a href="https://oreil.ly/KdUW9">《与 Gremlin 的 Ana Medina 谈混沌工程》</a>，<em>o11ycast</em> 播客，2019 年 8 月 15 日。</p></div></div></section></div></body>
+</html>

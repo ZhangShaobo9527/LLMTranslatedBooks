@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="preface" epub:type="preface" data-pdf-bookmark="Preface"><div class="preface" id="preface">
+<h1>Preface</h1>
+<p>Thank you for picking up our book on observability engineering for modern software systems. Our goal is to help you develop a practice of observability within your engineering organization. This book is based on our experience as practitioners of observability, and as makers of observability tooling for users who want to improve their own observability practices.</p>
+<p>As outspoken advocates for driving observability practices in software engineering, our hope is that this book can set a clear record of what observability means in the context of modern software systems. The term “observability” has seen quite a bit of recent uptake in the software development ecosystem. This book aims to help you separate facts from hype by providing a deep analysis of the following:</p>
+<ul>
+<li><p>What observability means in the context of software delivery and operations</p></li>
+<li><p>How to build the fundamental components that help you achieve observability</p></li>
+<li><p>The impact observability has on team dynamics</p></li>
+<li><p>Considerations for observability at scale</p></li>
+<li><p>Practical ways to build a culture of observability in your organization</p></li>
+</ul>
+<section data-type="sect1" data-pdf-bookmark="Who This Book Is For"><div class="sect1" id="who_this_book_is_for">
+<h1>Who This Book Is For</h1>
+<p>Observability predominantly focuses on achieving a better understanding of the way software operates in the real world. Therefore, this book is most useful for software engineers responsible for developing production applications. However, anyone who supports the operation of software in production will also greatly benefit from the content in this book.</p>
+<p class="pagebreak-before less_space">Additionally, managers of software delivery and operations teams who are interested in understanding how the practice of observability can benefit their organization will find value in this book, particularly in the chapters that focus on team dynamics, culture, and scale.</p>
+<p>Anyone who helps teams deliver and operate production software (for example, product managers, support engineers, and stakeholders) and is curious about this new thing called “observability” and why people are talking about it should also find this book useful.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Why We Wrote This Book"><div class="sect1" id="why_we_wrote_this_book">
+<h1>Why We Wrote This Book</h1>
+<p>Observability has become a popular topic that has quickly garnered a lot of interest and attention. With its rise in popularity, “observability” has been unfortunately mischaracterized as a synonym for “monitoring” or “system telemetry.” Observability is a characteristic of software systems. Further, it’s a characteristic that can be effectively utilized only in production software systems when teams adopt new practices that support its ongoing development. Thus, introducing observability into your systems is both a technical challenge and a cultural challenge.</p>
+<p>We are particularly passionate and outspoken about the topic of observability. We are so passionate about it that we started a company whose sole purpose is to bring the power of observability to all teams that manage production software. We spearheaded a new category of observability tools, and other vendors have followed suit.</p>
+<p>While we all work for <a href="https://honeycomb.io">Honeycomb</a>, our intention here is not to sell you on our tools. We have written this book to explain how and why we adapted the original concept of observability to manage modern software systems. You can achieve observability with different tools and in different ways. However, we believe that our dedication to advancing the practice of observability in the software industry makes us uniquely qualified to write a guide that describes—in great detail—the common challenges and effective solutions. You can apply the concepts in this book, regardless of your tool choices, to practice building production software systems with observability.</p>
+<p>This book aims to give you a look at the various considerations, capabilities, and challenges associated with teams that practice using observability to manage their production software systems. At times, we may provide a look at what Honeycomb does as an example of how a common challenge has been addressed. These are not intended as endorsements of Honeycomb but rather as practical illustrations of abstract concepts. It is our goal to show you how to apply these same principles in other environments, regardless of the tools you use.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="What You Will Learn"><div class="sect1" id="what_you_will_learn">
+<h1>What You Will Learn</h1>
+<p>You will learn what observability is, how to identify an observable system, and why observability is best suited for managing modern software systems. You’ll learn how observability differs from monitoring, as well as why and when a different approach is necessary. We will also cover why industry trends have helped popularize the need for observability and how that fits into emerging spaces, like the cloud native ecosystem.</p>
+<p>Next, we’ll cover the fundamentals of observability. We’ll examine why structured events are the building blocks of observable systems and how to stitch those events together into traces. Events are generated by telemetry that is built into your software, and you will learn about open source initiatives, like OpenTelemetry, that help jumpstart the instrumentation process. You will learn about the data-based investigative process used to locate the source of issues in observable systems, and how it differs substantially from the intuition-based investigative process used in traditional monitoring. You will also learn how observability and monitoring can coexist.</p>
+<p>After an introduction to these fundamental technical concepts, you will learn about the social and cultural elements that often accompany the adoption of observability. Managing software in production is a team sport, and you will learn how observability can be used to help better shape team dynamics. You will learn about how observability fits into business processes, affects the software supply chain, and reveals hidden risks. You will also learn how to put both these technical and social concepts into practice when we examine how to use service-level objectives for more effective alerting and dive into the technical details behind why they make alerts both actionable and debuggable when using observability data.</p>
+<p>Then, you’ll learn about inherent challenges when implementing observability solutions at scale. We’ll start with the considerations you should take into account when deciding whether to buy or build an observability solution. An essential property of observability solutions is that they must provide fast answers during iterative investigations. Therefore, we will show you how to address the inherent challenges of efficient data storage and retrieval when managing extremely large data sets. You will also learn when to introduce solutions like event sampling and how to navigate its trade-offs to find the right approach to fit your needs. You will also learn how to manage extremely large quantities of data with telemetry pipelines.</p>
+<p>Finally, we look at organizational approaches to adopting a culture of observability. Beyond introducing observability to your team, you will learn practical ways to scale observability practices across an entire organization. You will learn how to identify and work with key stakeholders, use technical approaches to win allies, and make a business case for adopting observability practices.</p>
+<p>We started writing this book nearly three years ago. Part of the reason it has taken so long to produce is that the observability landscape has been changing rapidly and practices are advancing. We believe this book is the most up-to-date and comprehensive look at the state of the art in observability practices as of the time of its publication. We hope you find the journey as fascinating as we have.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Conventions Used in This Book"><div class="sect1" id="_conventions_used_in_this_book">
+<h1>Conventions Used in This Book</h1>
+<p>The following typographical conventions are used in this book:</p>
+<dl>
+<dt><em>Italic</em></dt>
+<dd>
+<p>Indicates new terms, URLs, email addresses, filenames, and file extensions.</p>
+</dd>
+<dt><code>Constant width</code></dt>
+<dd>
+<p>Used for program listings, as well as within paragraphs to refer to program elements such as variable or function names, databases, data types, environment variables, statements, and keywords.</p>
+</dd>
+</dl>
+<div data-type="note" epub:type="note"><h6>Note</h6>
+<p>This element signifies a general note.</p>
+</div>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Using Code Examples"><div class="sect1" id="_using_code_examples">
+<h1>Using Code Examples</h1>
+<p>Supplemental material (code examples, exercises, etc.) is available for download at <a href="https://oreil.ly/7IcWz"><em>https://oreil.ly/7IcWz</em></a>.</p>
+<p>If you have a technical question or a problem using the code examples, please send an email to <a class="email" href="mailto:bookquestions@oreilly.com"><em>bookquestions@oreilly.com</em></a>.</p>
+  <p>This book is here to help you get your job done. In general, if example code is offered with this book, you may use it in your programs and documentation. You do not need to contact us for permission unless you’re reproducing a significant portion of the code. For example, writing a program that uses several chunks of code from this book does not require permission. Selling or distributing examples from O’Reilly books does require permission. Answering a question by citing this book and quoting example code does not require permission. Incorporating a significant amount of example code from this book into your product’s documentation does require permission.</p>
+<p class="pagebreak-before less_space">We appreciate, but generally do not require, attribution. An attribution usually includes the title, author, publisher, and ISBN. For example: “<em>Observability Engineering</em> by Charity Majors, Liz Fong-Jones, and George Miranda (O’Reilly). Copyright 2022 Hound Technology Inc., 978-1-492-07644-5.”</p>
+<p>If you feel your use of code examples falls outside fair use or the permission given above, feel free to contact us at <a class="email" href="mailto:permissions@oreilly.com"><em>permissions@oreilly.com</em></a>.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="O’Reilly Online Learning"><div class="sect1" id="_safari_books_online">
+<h1>O’Reilly Online Learning</h1>
+<div data-type="note" epub:type="note" class="ormenabled"><h6>Note</h6>
+<p>For more than 40 years, <a href="https://oreilly.com" class="orm:hideurl"><em class="hyperlink">O’Reilly Media</em></a> has provided technology and business training, knowledge, and insight to help companies succeed.</p>
+</div>
+<p>Our unique network of experts and innovators share their knowledge and expertise through books, articles, and our online learning platform. O’Reilly’s online learning platform gives you on-demand access to live training courses, in-depth learning paths, interactive coding environments, and a vast collection of text and video from O’Reilly and 200+ other publishers. For more information, visit <a href="https://oreilly.com" class="orm:hideurl"><em>https://oreilly.com</em></a>.</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="How to Contact Us"><div class="sect1" id="_how_to_contact_us">
+<h1>How to Contact Us</h1>
+<p>Please address comments and questions concerning this book to the publisher:</p>
+<ul class="simplelist">
+  <li>O’Reilly Media, Inc.</li>
+  <li>1005 Gravenstein Highway North</li>
+  <li>Sebastopol, CA 95472</li>
+  <li>800-998-9938 (in the United States or Canada)</li>
+  <li>707-829-0515 (international or local)</li>
+  <li>707-829-0104 (fax)</li>
+</ul>
+<p>We have a web page for this book, where we list errata, examples, and any additional information. You can access this page at <a href="https://oreil.ly/observability-engineering"><em>https://oreil.ly/observability-engineering</em></a>.</p>
+<!--Don't forget to update the link above.-->
+<p>Email <a class="email" href="mailto:bookquestions@oreilly.com"><em>bookquestions@oreilly.com</em></a> to comment or ask technical questions about this book.</p>
+
+<p>For news and information about our books and courses, visit <a href="https://oreilly.com"><em>https://oreilly.com</em></a>.</p>
+<p>Find us on LinkedIn: <a href="https://linkedin.com/company/oreilly-media"><em>https://linkedin.com/company/oreilly-media</em></a></p>
+<p>Follow us on Twitter: <a href="https://twitter.com/oreillymedia"><em>https://twitter.com/oreillymedia</em></a></p>
+<p>Watch us on YouTube: <a href="https://youtube.com/oreillymedia"><em>https://youtube.com/oreillymedia</em></a></p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="Acknowledgments"><div class="sect1" id="acknowledgments">
+<h1>Acknowledgments</h1>
+<p>This book would not have been possible without the support of executive sponsors at Honeycomb: many thanks to Christine Yen, Deirdre Mahon, and Jo Ann Sanders. Nor would this book have been possible without the domestic sponsors who put up with many odd hours, lost weekends, sleepless weeknights, and cranky partners: many thanks to Rebekah Howard, Elly Fong-Jones, and Dino Miranda. Without all of them, we would probably still be trying to find the time to fully develop and tie together the many ideas expressed in this book.</p>
+<p>We’d especially like to thank additional contributors who have made the content in this book much stronger by sharing their varied perspectives and expertise. <a data-type="xref" data-xrefstyle="chap-num-title" href="ch16.xhtml#efficient_data_storage">Chapter 16, “Efficient Data Storage”</a>, was made possible by Ian Wilkes (author of Honeycomb’s Retriever engine, the basis of the case study), and Joan Smith (reviewing for technical accuracy of references to external literature). <a data-type="xref" data-xrefstyle="chap-num-title" href="ch14.xhtml#observability_and_the_software_supply_c">Chapter 14, “Observability and the <span class="keep-together">Software Supply Chain</span>”</a>, was authored by Frank Chen, and <a data-type="xref" data-xrefstyle="chap-num-title" href="ch18.xhtml#telemetry_management_with_pipelines">Chapter 18, “Telemetry Management with Pipelines”</a>, was authored by Suman Karumuri, and Ryan Katkov—all of whom we thank for sharing their knowledge and the lessons they’ve learned from managing incredibly large-scale applications with observability at Slack. Many thanks to Rachel (pie) Perkins for contributions to several early chapters in this book. And thanks to the many bees at Honeycomb who, over the years, have helped us explore what’s achievable with observability.</p>
+<p>Finally, many thanks to our many external reviewers: Sarah Wells, Abby Bangser, Mads Hartmann, Jess Males, Robert Quinlivan, John Feminella, Cindy Sridharan, Ben Sigelman, and Daniel Spoonhower. We’ve revised our takes, incorporated broader viewpoints, and revisited concepts throughout the authoring process to ensure that we’re reflecting an inclusive state of the art in the world of observability. Although we (the authors of this book) all work for Honeycomb, our goal has always been to write an objective and inclusive book detailing how observability works in practice, regardless of specific tool choices. We thank our reviewers for keeping us honest and helping us develop a stronger and all-encompassing narrative.</p>
+</div></section>
+</div></section></div></body>
+</html>

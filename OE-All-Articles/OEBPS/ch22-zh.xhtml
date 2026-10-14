@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 22 章 下一步去往何处"><div class="chapter" id="where_to_go_from_here">
+<h1><span class="label">第 22 章　</span>下一步去往何处</h1>
+<p>本书从许多角度审视了软件系统的可观测性。我们介绍了可观测性是什么，以及把这个概念应用于软件系统后如何发挥作用，内容涵盖功能需求、实际成果，以及为支持采用而必须改变的社会技术实践。</p>
+<p>先来回顾本书开头对<em>可观测性</em>的定义：</p>
+<blockquote>
+<p>软件系统的可观测性衡量的是：无论系统进入多么新颖或怪异的状态，你能在多大程度上理解并解释它。你必须能够在临时开展的迭代调查中，跨系统状态数据的所有维度及维度组合，对这种怪异或新颖状态进行比较调试，而不需要预先定义或预测这些调试需求。如果无需发布新代码就能理解任何怪异或新颖状态，你就拥有了可观测性。</p>
+</blockquote>
+<p>本书已经介绍了与可观测性相互交织的诸多概念和实践，现在可以把这个定义收紧一些：</p>
+<blockquote>
+<p>如果你能任意切分和组合高基数、高维度遥测数据，得到所需的任何视图，从而理解软件系统的任何状态，无论它多么新颖或怪异；并且能运用核心分析循环进行比较调试，迅速隔离问题的真正来源，而无需预先定义或预测调试需求，那么你就拥有了可观测性。</p>
+</blockquote>
+<section data-type="sect1" data-pdf-bookmark="可观测性的过去与现在"><div class="sect1" id="observabilitycomma_then_versus_now">
+<h1>可观测性的过去与现在</h1>
+<p>我们在三年多以前就开始撰写本书。你可能会问，究竟为什么花了这么长时间才走到这里。</p>
+<p>首先，可观测性的现状<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="演进" id="idm45204352137040"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="过去" id="idm45204352135664"/>一直在变化。刚开始写作时，只要和别人讨论这个主题，我们都必须先停下来定义“可观测性”。每当谈到数据的基数或维度时，几乎没人真正理解我们的意思。我们经常需要激烈地争辩：所谓可观测性的<em>三大支柱</em>只是在讨论数据类型，完全忽略了获得新洞见所需的分析和实践。</p>
+<p>正如 Cindy Sridharan 在前言中所说，“可观测性”一词日益流行，也不可避免而又令人遗憾地导致它与相邻概念“监控”混用。我们经常需要解释，“可观测性”并不是“监控”“遥测”，甚至也不是“可见性”的同义词。</p>
+<p>当时 OpenTelemetry 尚处于萌芽阶段，这又带来一系列需要解释的问题：它与 OpenTracing、OpenCensus 有什么不同，又继承了什么？为什么不用厂商更成熟、安装即可工作的代理，而要使用需要多做一些设置的新开放标准？为什么大家应当关心它？</p>
+<p>如今，我们接触的许多人已经不再需要这些解释。人们对可观测性与监控的区别有了更多共识，更多人理解了基本概念，也明白只有数据而没有分析就偏离了重点。他们还从众多同行的成果中了解到可观测性的收益和所谓的理想境界。今天与我们交流的许多人，想寻找的是更复杂的分析方法，以及细致具体的底层指导，帮助他们从当前位置走向成功实践可观测性的状态。</p>
+<p>其次，本书最初规划的章节少得多，内容更基础，范围也更小。随着我们更深入地理解哪些顾虑具有共性、哪些成功模式会自然涌现，书中加入了更多深度和细节。越来越多组织开始大规模使用可观测性后，我们得以比较学习，并邀请它们直接参与本书，把经验融入其中（说的就是你，Slack！）。</p>
+<p>第三，本书是我们与多位审阅者合作的成果，其中甚至包括供职于竞争对手的人。在整个写作过程中，我们不断修正观点、纳入更广泛的视角、重新审视各种概念，以确保本书反映可观测性领域包容而先进的整体水平。虽然本书作者都在 Honeycomb 工作，但我们的目标始终是不受特定工具选择限制，客观而全面地介绍可观测性在实践中如何发挥作用。感谢审阅者督促我们忠于事实，并帮助我们建立了更有力的论述。</p>
+<p>根据读者反馈，我们补充了更多有关采用可观测性时所遇社会技术挑战的内容。与任何同时要求改变相关实践的技术转型一样，仅仅购买工具并不能获得可观测性。采用可观测性实践，意味着改变理解软件行为的思考方式，进而改变与客户的关系。可观测性让你准确理解每天所做的更改如何影响客户体验，从而与客户产生共情、保持目标一致。随着可复用模式不断出现并持续演进，我们花了很长时间，才展现这些模式如何在组织内多个团队的实际工作中展开，并从中筛选出对初学者有用的建议。</p>
+<p>那么接下来应去往何处？首先，我们会推荐一些补充资源，介绍本书范围之外的重要主题；然后对可观测性领域的未来作出若干预测。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="补充资源"><div class="sect1" id="additional_resources">
+<h1>补充资源</h1>
+<p>我们推荐以下资源：</p>
+<dl>
+<dt>Betsy Beyer 等著（O’Reilly）的 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/site-reliability-engineering/9781491929117"><em>《Site Reliability Engineering》（站点可靠性工程）</em></a></dt>
+<dd>本书多次引用这项资源<a contenteditable="false" data-type="indexterm" data-primary="资源" id="resr"/>。它也被称为“Google SRE 图书”，详细介绍 Google 如何在 SRE 团队中实施 DevOps 实践。书中阐述了管理生产系统时与采用可观测性实践密切相关的若干概念和实践，重点关注如何让生产软件系统更具扩展性、可靠性和效率。它介绍 SRE 实践，详细说明它与传统行业方法的区别，同时探讨构建和运行大规模分布式系统的理论与实践。书中还包括管理实践，可用于指导组织自己的 SRE 采用计划。其中许多技术在管理分布式系统时最有价值。如果组织尚未开始采用 SRE 原则，这本书可以帮助建立相应实践，并与本书介绍的知识相互补充。</dd>
+<dt>Alex Hidalgo 著（O’Reilly）的 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/implementing-service-level/9781492076803"><em>《Implementing Service Level Objectives》（实施服务等级目标）</em></a></dt>
+<dd>这本书深入探讨了本书只作简要介绍的 SLO（参见<a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">第 12 章</a>和<a data-type="xref" href="ch13-zh.xhtml#acting_on_and_debugging_slo_based_alert">第 13 章</a>）。Hidalgo 是站点可靠性工程师、SLO 各方面的专家，也是 Honeycomb 的朋友。他介绍了更多与 SLO 领域有关的概念、理念和定义，提供继续深入所需的基础知识。他使用数学和统计模型，非常详细地讲解 SLO 的实施，有助于进一步理解可观测性数据为什么尤其适合 SLO，这也是<a data-type="xref" href="ch13-zh.xhtml#acting_on_and_debugging_slo_based_alert">第 13 章</a>的基础。书中还讨论了采用 SLO 后必须改变的文化实践，进一步阐释本书介绍的一些概念。</dd>
+<dt>Alex Boten 著（Packt Publishing）的 <a class="orm:hideurl" href="https://learning.oreilly.com/library/view/cloud-native-observability-with/9781801077705"><em>《Cloud Native Observability with OpenTelemetry》（使用 OpenTelemetry 实现云原生可观测性）</em></a></dt>
+<dd>这本书对 OTel 的探讨比本书更深入、更详尽。Boten 详细介绍了 OTel 的核心组件（API、库和工具），以及基本概念和信号类型。如果你有兴趣使用流水线管理遥测数据，书中会说明如何利用 OpenTelemetry Collector 实现。本书虽然也提到 OpenTelemetry Collector，但这项资源的讲解要详尽得多。如果想深入了解 OTel 的核心概念、发现更多可能性，我们建议阅读这本书。</dd>
+<dt>Austin Parker 等著（O’Reilly）的<em><a class="orm:hideurl" href="https://www.oreilly.com/library/view/distributed-tracing-in/9781492056621">《Distributed Tracing in Practice》（分布式追踪实践）</a></em></dt>
+<dd>这本书深入介绍了如何为应用程序添加追踪插桩、收集插桩生成的数据，并从中挖掘运维洞见。虽然主题集中于追踪，但书中也讨论插桩最佳实践，以及如何选择跨度特征来产生有价值的追踪。它由我们在 Lightstep 的朋友撰写，还从其他角度展望分布式追踪的发展方向，内容翔实而实用。</dd>
+<dt><a href="https://hny.co/blog">Honeycomb 博客</a></dt>
+<dd>可观测性实践仍在不断涌现和变化，你可以在这里找到我们提供的最新信息。博客偶尔会专门讨论 Honeycomb 自己的可观测性工具，但更多时候是在探讨通用可观测性概念、建议（例如可观测性问答专栏“Ask Miss o11y”），以及 Honeycomb 工程团队撰写的文章。这些文章经常展示可观测性如何塑造我们自己不断演进的实践。</dd>
+</dl>
+<p>此外，本书各处的脚注和说明还会引向许多其他有趣的相关信息来源。我们尊重这些资料和作者，并在形成自己的观点与看法时向其学习<a contenteditable="false" data-type="indexterm" data-primary="资源" data-startref="resr" id="idm45204352128992"/>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="对可观测性未来方向的预测"><div class="sect1" id="predictions_for_where_observability_is">
+<h1>对可观测性未来方向的预测</h1>
+<p>把预测写进出版物需要勇气，日后再回头检验这些预测是否经受住时间考验<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="未来与预测" id="futpre"/>，则更加大胆。不过，我们身处可观测性生态系统的中心，自认为有条件对这个行业未来几年的方向作出一些有根据的预测。以下预测作于 2022 年 3 月。</p>
+<p>我们认为，三年后 OTel 与可观测性将成功结合，甚至显得不可分割。现在已经可以看到，对开发和采用 OTel 感兴趣的人群，与希望继续发展符合本书可观测性定义的工具类别的人群存在大量重叠。OTel 成为应用程序插桩事实标准的势头和崛起，很大程度上得益于追踪数据是它支持最成熟的格式。指标、日志数据和剖析<a contenteditable="false" data-type="indexterm" data-primary="剖析" id="idm45204352101920"/>仍处于较早的发展阶段，但我们预计它们很快会达到同等成熟度，为更多场景的广泛采用打开大门。我们还认为，只需更改少量配置就能轻松切换不同后端方案，这件事将比现在更加容易，而现在其实已经相当简单。<sup><a data-type="noteref" id="ch01fn22-marker" href="ch22-zh.xhtml#ch01fn22">1</a></sup>我们预测，详细讲解如何从一家厂商切换到另一家厂商的操作指南会大量涌现，成为热门资源。</p>
+<p>本书大部分示例都集中于调试后端应用程序和基础设施，但我们预测可观测性也会逐渐进入更多前端应用程序。如今，理解和测试浏览器应用程序的先进方法，是使用真实用户监控（RUM）或合成监控<a contenteditable="false" data-type="indexterm" data-primary="RUM（真实用户监控）" id="idm45204352373520"/><a contenteditable="false" data-type="indexterm" data-primary="真实用户监控（RUM）" id="idm45204352135248"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="RUM（真实用户监控）" id="idm45204352372608"/><a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="合成监控" id="idm45204352370240"/><a contenteditable="false" data-type="indexterm" data-primary="合成监控" id="idm45204352144880"/>。</p>
+<p>顾名思义，RUM 从浏览器端测量并记录真实应用用户的体验。它关注的是确定实际交付给用户的服务等级质量、检测应用错误或性能下降，并判断代码更改是否按预期影响用户体验。RUM 收集和记录 Web 流量，但不影响代码性能。大多数情况下，会向页面注入 JavaScript 片段，或在应用程序中加入原生代码，以取得浏览器或客户端的反馈。为了管理如此庞大的数据量，RUM 工具通常使用采样或聚合来归并数据。这样往往可以从整体上理解总体性能，却无法进一步分解，详细了解某个特定用户的性能体验。</p>
+<p>尽管存在这些限制，RUM 的确拥有衡量真实用户体验的优势，因此能够发现应用行为中各种意料之外的现实问题。它可以揭示仅在某种小众移动浏览器的新版本中出现的性能回归，而你的开发团队可能从未听说过这种浏览器；也可以发现地球另一端某个国家或地区的特定 IP 地址所遇到的网络延迟。RUM 有助于识别和排查最后一公里问题。它与合成监控的区别在于，RUM 必须由真实用户点击页面才会产生测量数据。</p>
+<p>合成监控采用另一种方法：让自动化测试执行一组给定的测试步骤，从而取得测量结果。这些工具在受控环境中详细测量应用程序的性能和体验。人们会创建行为脚本（或路径），模拟客户可能在应用程序中执行的操作，然后按照指定间隔持续监控这些路径的性能。这些路径有些类似代码中的单元测试，通常由开发者自己负责和运行。路径，也就是用户使用前端应用程序时典型行为的<span class="keep-together">模拟</span>，必须开发和维护，需要投入时间和精力。通常只有使用频繁的路径或业务关键流程才会受到性能监控。由于合成测试必须预先编写脚本，不可能衡量用户可能采用的每一种导航路径组合。</p>
+<p>不过，合成监控工具虽然无法显示真实用户体验的性能，却也拥有一些优势。它可以针对你关心的各种已知条件（例如特定设备类型或浏览器版本）进行主动测试。由于结果通常具有一定的可复现性，合成监控可以纳入自动回归测试套件。这样就能在代码部署给真实用户之前运行测试，在性能问题可能影响真实用户之前发现它们。</p>
+<p>RUM 和合成监控服务于具体而不同的使用场景。可观测性的使用场景是在生产环境衡量真实用户体验，这一点与 RUM 相似，但保真度高得多，能够调试单个客户的体验。如<a data-type="xref" href="ch14-zh.xhtml#observability_and_the_software_supply_c">第 14 章</a>所述，许多团队会在 CI/CD 构建流水线或测试套件中使用可观测性数据。这意味着你可以运行端到端测试脚本，实际执行用户在系统中的路径；只需在遥测数据中给测试发起的请求添加相应标记，就能监控这些路径的性能。我们预测，几年后前端应用程序不再需要在 RUM 和合成监控之间二选一，而是直接使用可观测性满足两种场景。</p>
+<p>我们还预测，三年内 OTel 的自动插桩会迎头赶上，达到各种厂商专用库和代理所提供的非 OTel 自动插桩包的水平。如今，大多数团队仍需要在是否使用 OTel 之间作出选择，因为 OTel 附带的自动插桩可能不如特定厂商的专有方案，具体情况取决于所用语言。OTel 的开源性质，加上极其活跃的开发者生态，意味着这种情况最终会成为过去。OTel 自动插桩至少会和那些带有厂商锁定陷阱的替代方案一样丰富。随着时间推移，使用 OTel 将成为无需多想的选择，也是任何应用程序可观测性计划事实上的起点；如今，这一变化已经开始发生。</p>
+<p>但这并不意味着自动插桩会成为可观测性工具生成有用遥测数据所需的唯一手段。自定义插桩（参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）仍将不可或缺，因为只有它才能调试与驱动业务逻辑的代码最为相关的问题。我们预测，未来缺少自定义插桩的代码会像没有注释的代码一样令人难以想象。作为工程师，我们都会习惯在编写新代码时同步思考所需的插桩。</p>
+<p class="pagebreak-before less_space">三年后，构建流水线会快得多，反馈循环会更短，更多团队会在 CI/CD 流水线的最后阶段把更改自动部署到生产环境，真正开始实践 <em>CI/CD</em> 缩写中的 <em>D</em>。持续部署可能很棘手，但把功能发布与功能部署解耦，会使大多数组织都能实现它。功能标志会得到更广泛的采用，渐进式交付等部署模式也会更加普遍。</p>
+<p>我们个人会密切关注开发者工作流这个领域。整个行业需要找到更多方法，尽早把可观测性与编写、交付代码的行为联系起来（参见<a data-type="xref" href="ch11-zh.xhtml#observability_driven_development">第 11 章</a>）。我们必须继续缩短输入（编写代码）与输出（运行代码）之间的距离。如今很少有开发者拥有相应工具，可以在每次部署后快速获得代码行为变化的反馈。开发者需要在每次迭代时深入理解代码更改如何影响生产环境中的用户，真正具备这种能力的人却少得惊人。但对已经拥有这种能力的开发者而言，工作体验发生了根本转变。</p>
+<p>从个人经历来看，我们听这些开发者讲述，这种体验已经变成不可或缺的基础，他们再也无法想象失去这种能力后如何工作。从定量角度看，切实收益也开始显现：推进速度更快、浪费时间更少、犯错更少，而且少数错误出现时也能更快发现（参见<a data-type="xref" href="ch19-zh.xhtml#the_business_case_for_observability">第 19 章</a>）。简而言之，学习使用可观测性帮助他们成为更优秀的软件工程师。我们认为，行业需要从根本上改善生产环境中的开发者工作流，而可观测性将成为许多人实现这一目标的路径。</p>
+<p>可观测性能否降低门槛，让更多开发者获得这种脱胎换骨的体验？每当解决过去无法解决的生产问题时，那种仿佛自己是神奇巫师的多巴胺冲击，是否足以维持可观测性采用的增长势头？整个行业能否让每支工程团队都更容易获得可观测性<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="未来与预测" data-startref="futpre" id="idm45204352276032"/>？</p>
+<p>时间会给出答案。请继续关注，也欢迎告诉我们你的进展。你随时可以在 Twitter 上联系我们：<em>@mipsytipsy</em>、<em>@lizthegrey</em> 和 <em>@gmiranda23</em>。</p>
+<p class="byline">Charity、Liz 和 George</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn22"><sup><a href="ch22-zh.xhtml#ch01fn22-marker">1</a></sup> 例如，Vera Reynolds 在教程 <a href="https://oreil.ly/416OA">“OpenTelemetry (OTel) Is Key to Avoiding Vendor Lock-in”（OpenTelemetry 是避免厂商锁定的关键）</a>中介绍了如何使用 OTel 向 Honeycomb 和 New Relic 发送追踪数据。</p></div></div></section></div></body>
+</html>

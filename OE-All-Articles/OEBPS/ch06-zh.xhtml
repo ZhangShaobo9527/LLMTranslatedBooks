@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 6 章 将事件串联成追踪"><div class="chapter" id="stitching_events_into_trace">
+<h1><span class="label">第 6 章　</span>将事件串联成追踪</h1>
+<p>上一章介绍了为什么事件是可观测系统的基础构件。本章将考察如何把事件串联成追踪。在过去十年里，分布式追踪已经成为软件工程团队不可或缺的故障排查工具。</p>
+<p><em>分布式追踪</em>其实就是一系列<a contenteditable="false" data-type="indexterm" data-primary="分布式追踪" id="idm45204355607808"/><a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="分布式" data-see="分布式追踪" id="idm45204355259744"/>相互关联的事件。分布式追踪系统提供封装好的库，近乎“自动神奇地”创建并管理这些关系的追踪工作。离散事件之间关系的建立和追踪概念，远不止适用于传统追踪场景。要进一步探索可观测系统能够实现什么，必须先了解追踪系统的内部工作方式。</p>
+<p>本章将通过考察分布式追踪的核心组件及其对可观测系统的价值，揭开分布式追踪的神秘面纱。我们会解释追踪由哪些组件构成，并使用代码示例说明手工组装追踪所需的步骤，以及这些组件如何协作。我们还会示范如何向追踪事件（即跨度）添加相关数据，并说明为什么需要这些数据。最后，在展示如何手工组装追踪后，我们会把同样的技术应用到非传统追踪场景，例如串联日志事件；可观测系统使这类做法成为可能。</p>
+<section data-type="sect1" data-pdf-bookmark="分布式追踪及其当下的重要性"><div class="sect1" id="distributed_tracing_and_why_it_matters">
+<h1>分布式追踪及其当下的重要性</h1>
+<p><em>追踪</em>是一项基础的软件调试技术：在程序执行期间记录<a contenteditable="false" data-type="indexterm" data-primary="追踪" id="idm45204355368208"/>各种信息，以便诊断问题。从两台计算机首次连接起来交换信息的那一天起，软件工程师就一直在寻找潜伏于程序和协议中的小故障。尽管我们竭尽所能，接缝处的问题仍然存在；如今分布式系统已成为常态，调试技术也必须适应更加复杂的需求。</p>
+<p><em>分布式追踪</em>是一种<a contenteditable="false" data-type="indexterm" data-primary="分布式追踪" id="idm45204355308432"/><a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="分布式" id="idm45204355276448"/>追踪单个请求处理进程的方法。这个请求称为一条<em>追踪</em>，由组成应用的各项服务依次处理。这里之所以称为“分布式”，是因为单个请求为了完成自身功能，往往必须跨越进程、计算机和网络边界。微服务架构日益普及，使能够精确定位请求沿途何处发生故障、哪些因素可能导致性能不佳的调试技术迅速发展。但只要请求需要跨越边界——例如从本地基础设施进入云基础设施，或者从你控制的基础设施进入不受你控制的 SaaS 服务，再返回原处——分布式追踪就能在诊断问题、优化代码和构建更可靠服务方面发挥巨大作用。</p>
+<p>分布式追踪日益流行，也意味着围绕如何完成这项工作，出现了多种方法和相互竞争的标准。2010 年，Google 发布了 Ben Sigelman 等人撰写的 <a href="https://ai.google/research/pubs/pub36356">Dapper 论文</a>，<a contenteditable="false" data-type="indexterm" data-primary="分布式追踪" data-secondary="Dapper 论文" id="idm45204355102576"/><a contenteditable="false" data-type="indexterm" data-primary="Dapper 论文" id="idm45204355287568"/>此后分布式追踪首次得到主流关注。随后出现了两个著名的开源追踪项目：<a href="https://zipkin.io">Twitter 于 2012 年推出的 Zipkin</a> 和 <a href="https://eng.uber.com/distributed-tracing">Uber 于 2017 年推出的 Jaeger</a>；与此同时，还有 <a href="https://hny.co">Honeycomb</a>、<a href="https://lightstep.com">Lightstep</a> 等多种商业解决方案。</p>
+<p>尽管这些追踪项目的实现不同，核心方法和提供的价值却完全相同。如<a data-type="xref" href="part01.xhtml#the_path_to_observability">第一部分</a>所述，现代分布式系统往往会扩展成一团相互依赖的乱麻。分布式追踪之所以有价值，是因为它能清晰展示分布式系统中不同服务与组件之间的关系。</p>
+<p>追踪帮助你理解系统的<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="相互依赖关系" id="idm45204355396016"/>相互依赖关系。如果不能清楚理解这些关系，它们就可能掩盖问题，使调试格外困难。例如，下游数据库服务出现性能瓶颈时，延迟会逐层累积。等到上游三四层检测到延迟时，由于同样的延迟已经出现在其他数十项服务中，要识别究竟哪个系统组件才是问题根源就会极其困难。</p>
+<p>在可观测系统中，一条追踪只是一系列相互连接的事件。要理解追踪与可观测性基础构件之间的关系，先来看看追踪如何组装。</p>
+</div></section>
+<section data-type="sect1" class="pagebreak-before" data-pdf-bookmark="追踪的组成部分"><div class="sect1" id="the_components_of_tracing">
+<h1 class="less_space">追踪的组成部分</h1>
+<p>为了理解追踪在实践中的工作机制，我们将通过一个示例，说明收集追踪所需数据必须具备哪些组件。<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="组成部分" id="tracom"/>首先考虑希望从追踪中获得什么结果：清楚看到不同服务之间的关系。然后再看如何修改现有代码来得到这个结果。</p>
+<p>要迅速了解瓶颈可能出现在哪里，采用追踪的瀑布图式可视化非常有用，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="与瀑布图方法" id="idm45204355210224"/><a contenteditable="false" data-type="indexterm" data-primary="瀑布图技术、与追踪" id="idm45204355235344"/>如<a data-type="xref" href="#this_waterfall_style_trace_visualizatio">图 6-1</a> 所示。请求的每个阶段都显示为一个独立区块，其位置与正在调试的请求开始时间和持续时间相对应。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p><a href="https://w.wiki/56wd">瀑布图</a>展示初始值如何受到一系列中间值的影响，最终形成累计值。</p>
+</div>
+<figure><div id="this_waterfall_style_trace_visualizatio" class="figure">
+<img src="Images/oben_0601.png" width="1432" height="416"/>
+<h6><span class="label">图 6-1　</span>这张瀑布图式追踪可视化展示了一个请求中的四个追踪跨度</h6>
+</div></figure>
+<p>瀑布图中的每个区块称为一个<em>追踪跨度</em>，简称<em>跨度</em>。在任意一条追踪中，跨度<a contenteditable="false" data-type="indexterm" data-primary="追踪跨度" data-see="跨度" id="idm45204355084096"/><a contenteditable="false" data-type="indexterm" data-primary="跨度" id="idm45204355083104"/>要么是<em>根跨度</em>，也就是追踪的顶层跨度；要么嵌套在根跨度之内。嵌套在根跨度中的跨度<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="根跨度" id="idm45204355081616"/><a contenteditable="false" data-type="indexterm" data-primary="根跨度" id="idm45204355080400"/><a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="嵌套" id="idm45204355079424"/><a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="父跨度" id="idm45204355078208"/><a contenteditable="false" data-type="indexterm" data-primary="父跨度" id="idm45204355076992"/>也可以继续拥有自己的嵌套跨度。这种关系有时称为<em>父子关系</em>。例如在<a data-type="xref" href="#a_trace_that_has_two_parent_spansdot_sp">图 6-2</a> 中，如果服务 A 调用服务 B，服务 B 再调用服务 C，那么对这条追踪而言，跨度 A 是跨度 B 的父跨度，而跨度 B 又是跨度 C 的父跨度。</p>
+<figure><div id="a_trace_that_has_two_parent_spansdot_sp" class="figure">
+<img src="Images/oben_0602.png" width="905" height="353"/>
+<h6><span class="label">图 6-2　</span>一条包含两个父跨度的追踪。跨度 A 是根跨度，也是跨度 B 的父跨度。跨度 B 是跨度 A 的子跨度，同时也是跨度 C 的父跨度。跨度 C 是跨度 B 的子跨度，本身没有子跨度。</h6>
+</div></figure>
+<p>请注意，同一项服务可能被多次调用，并以不同跨度的形式在一条追踪中多次出现。<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="服务" id="idm45204355174176"/><a contenteditable="false" data-type="indexterm" data-primary="服务、与追踪" id="idm45204355070512"/>例如，系统可能存在循环依赖，或者在同一次服务跳转中把大量计算拆成多个并行函数。实践中，请求在分布式系统中经过的路径往往混乱而且不可预测。无论实际路径多么复杂，要构建出我们需要的视图，每个组件都必须提供五项数据：</p>
+<dl>
+<dt>追踪 ID</dt>
+<dd>我们需要为即将创建的追踪提供唯一标识符，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="追踪 ID" id="idm45204355148928"/>以便把它映射回某个具体请求。这个 ID 由根跨度创建，并传播到完成请求所经历的每一个步骤。</dd>
+<dt>跨度 ID</dt>
+<dd>创建的每个跨度也需要一个唯一标识符。<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="跨度 ID" id="idm45204355137328"/>跨度包含一次追踪期间某个工作单元执行时捕获的信息。借助唯一 ID，我们可以在需要时引用这个跨度。</dd>
+<dt>父 ID</dt>
+<dd>这个字段用于在整条追踪的生命周期中正确<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="父 ID" id="idm45204355482112"/>定义嵌套关系。根跨度没有父 ID，我们正是据此判断它是根跨度。</dd>
+<dt>时间戳</dt>
+<dd>每个跨度都必须表明自身工作何时开始。</dd>
+<dt>持续时间</dt>
+<dd>每个跨度还必须记录完成这项工作耗费了多长时间。</dd>
+</dl>
+<p>上述字段是组装追踪结构绝对不可缺少的。不过，为了识别这些跨度，或者理解它们与系统有何关系，你可能还会发现另外一些字段很有帮助。添加到跨度中的其他数据，本质上都是一系列标签。</p> 
+<p class="pagebreak-before less_space">下面是一些示例：</p>
+<dl>
+<dt>服务名称</dt>
+<dd>为了便于调查，需要<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="服务" data-tertiary="名称" id="idm45204355201328"/>标明这项工作发生在哪项服务中。</dd>
+<dt>跨度名称</dt>
+<dd>要理解每个步骤有什么意义，最好为每个跨度指定一个名称，<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="名称" id="idm45204355054608"/>用于识别或区分当时执行的工作。例如，如果同一项服务或同一次网络跳转中有不同工作流，可以分别命名为 <code>intense_computation1</code> 和 <code>intense_computation2</code>。</dd>
+</dl>
+<p>有了这些数据，我们就能为任意请求构建所需的瀑布图式可视化，从而迅速诊断问题。接下来看看应该如何为代码进行插桩，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="组成部分" data-startref="tracom" id="idm45204355320768"/>以生成这些数据。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="用困难方式为追踪插桩"><div class="sect1" id="instrumenting_a_trace_the_hard_way">
+<h1>用困难方式为追踪插桩</h1>
+<p>为了理解追踪的核心组件如何<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="系统、手工示例" id="trsysex"/>组合起来，我们将手工创建一个过于简单的追踪系统示例。任何真正的分布式追踪系统都会向追踪添加更多信息，使数据更加实用。例如，在把追踪发送到后端数据存储前，可能需要用额外的元数据来丰富它（参见<a data-type="xref" href="ch16-zh.xhtml#efficient_data_storage">第 16 章</a>）。</p>
+<blockquote data-type="epigraph" epub:type="epigraph">
+<p>如果你想从零开始做一个苹果派，首先必须创造整个宇宙。</p>
+<p data-type="attribution">卡尔·萨根</p>
+</blockquote>
+<p>为了便于说明，我们假设收集这些数据的后端已经存在，只关注追踪所需的客户端插桩。我们还假设可以通过 HTTP 向该系统发送数据。</p>
+<p>假设我们有一个简单的 Web 端点。为了快速演示，这个示例使用 Go 语言编写。收到 GET 请求后，它会根据请求载荷调用另外两项服务来获取数据，例如检查用户是否有权访问指定端点，随后返回结果：</p>
+<pre data-type="programlisting">func rootHandler(r *http.Request, w http.ResponseWriter) {
+   authorized := callAuthService(r)
+   name := callNameService(r)
+
+   if authorized {
+       w.Write([]byte(fmt.Sprintf(`{"message": "Waddup %s"}`, name)))
+   } else {
+       w.Write([]byte(`{"message": "Not cool dawg"}`))
+   }
+}</pre>
+<p>分布式追踪的主要目的，是跟随请求跨越多项服务。在这个示例中，请求会调用另外两项服务，因此执行请求时，预期至少看到三个跨度：</p>
+<ul>
+<li><p>发往 <code>rootHandler</code> 的初始请求</p></li>
+<li><p>对授权服务的调用，用于验证请求</p></li>
+<li><p>对名称服务的调用，用于获取用户名</p></li>
+</ul>
+<p>首先生成唯一的<em>追踪 ID</em>，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="追踪 ID" data-tertiary="生成" id="idm45204355045456"/>以便把后续所有跨度归入初始请求。我们使用 <a href="https://w.wiki/8G6">UUID</a> 避免数据重复问题，并在映射中存储这个跨度的属性和数据，之后可以把数据序列化为 JSON，<a contenteditable="false" data-type="indexterm" data-primary="JSON（JavaScript Object Notation）" id="idm45204355043376"/>再发送到数据后端。我们还会生成一个<em>跨度 ID</em>，作为标识符把同一条追踪中的不同跨度关联起来：</p>
+<pre data-type="programlisting">func rootHandler(...) {
+   traceData := make(map[string]interface{})
+   traceData["trace_id"] = uuid.String()
+   traceData["span_id"] = uuid.String()
+  
+   // ... main work of request ...
+}</pre>
+<p>现在已经有了串联请求所需的 ID，我们还希望知道这个跨度何时开始、执行了多长时间。为此，要在请求开始和结束时分别捕获一个<em>时间戳</em>。计算两个时间戳之间的差值，<a contenteditable="false" data-type="indexterm" data-primary="远程过程调用（RPC）" id="idm45204355064880"/>即可得到以毫秒为单位的<em>持续时间</em>：</p>
+<pre data-type="programlisting">func rootHandler(...) {
+   // ... trace id setup from above ...
+  
+   startTime := time.Now()
+   traceData["timestamp"] = startTime.Unix()
+
+   // ... main work of request ...
+
+   traceData["duration_ms"] = time.Now().Sub(startTime)
+}</pre>
+<p>最后添加两个描述性字段：<code>service_name</code> 表示工作发生在哪项服务中，跨度的 <code>name</code> 表示所执行工作的类型。此外，我们会让这段代码在全部工作完成后，通过远程过程调用（RPC）把所有数据发送到追踪后端：<a contenteditable="false" data-type="indexterm" data-primary="RPC（远程过程调用）" id="idm45204355370736"/></p>
+<pre data-type="programlisting">func loginHandler(...) {
+   // ... trace id and duration setup from above ...
+
+   traceData["name"] = "/oauth2/login"
+   traceData["service_name"] = "authentication_svc"
+
+   // ... main work of request ...
+  
+   sendSpan(traceData)
+}</pre>
+<p>现在，我们已经收集了这一个追踪跨度所需的各项数据。但是，还没有办法把这些追踪数据传递给请求过程中调用的其他服务。至少需要知道这是追踪中的哪个跨度、这个跨度属于哪个父跨度，而且这些数据应该在请求的整个生命周期中持续传播。</p>
+<p>分布式追踪系统共享这类信息最常用的方法，是把它写入出站请求的 HTTP 请求头。在示例中，可以扩展辅助函数 <code>callAuthService</code> 和 <code>callNameService</code>，让它们接收 <code>traceData</code> 映射，并用映射内容设置出站请求的特殊 HTTP 请求头。</p>
+<p>只要接收端程序理解相同的名称，这些请求头可以任意命名。通常，HTTP 请求头会遵循某项特定标准，例如万维网联盟（<a href="https://www.w3.org/TR/trace-context">W3C</a>）标准或 <a href="https://github.com/openzipkin/b3-propagation">B3</a> 标准。本例使用 B3 标准。为了确保子跨度能够正确构建并发送自身跨度，需要发送以下请求头（如<a data-type="xref" href="#our_example_app_would_now_propagate_tra">图 6-3</a> 所示）：</p>
+<dl>
+<dt><code>X-B3-TraceId</code></dt>
+<dd>包含整条追踪的追踪 ID，即前一个示例中的 ID</dd>
+<dt><code>X-B3-ParentSpanId</code></dt>
+<dd>包含当前跨度 ID；子跨度生成时会把它设置为自己的父 ID</dd>
+</dl>
+<p>现在确保出站 HTTP 请求会发送这些请求头：</p>
+<pre data-type="programlisting">func callAuthService(req *http.Request, traceData map[string]interface{}) {
+   aReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+   aReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+   aReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+   // ... make the request ...
+}</pre>
+<p>还要对 <code>callNameService</code> 函数进行类似修改。这样，每项服务被调用时，都能从请求头中取出这些信息，并分别添加为自己生成数据中的 <code>trace_id</code> 和 <code>parent_id</code> 字段；这份数据保存在 <code>traceData</code> 中。每项服务也会把自己生成的跨度发送到追踪后端。在后端，这些跨度会被串联起来，形成我们希望看到的瀑布图式可视化。</p>
+<figure><div id="our_example_app_would_now_propagate_tra" class="figure">
+<img src="Images/oben_0603.png" width="1184" height="493"/>
+<h6><span class="label">图 6-3　</span>现在，示例应用会把 <code>traceID</code> 和 <code>parentID</code> 传播到每个子跨度</h6>
+</div></figure>
+<p>了解如何通过插桩创建实用的追踪视图后，下面看看还可以向跨度添加什么数据，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="系统、手工示例" data-startref="trsysex" id="idm45204355014800"/>使它们更有助于调试。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="向追踪跨度添加自定义字段"><div class="sect1" id="adding_custom_fields_into_trace_spans">
+<h1>向追踪跨度添加自定义字段</h1>
+<p>理解父子关系和<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="自定义字段" id="tspfct"/>执行持续时间是一个良好开端。不过，除了必要的追踪数据，还可以添加其他字段，从而更好地理解每个跨度中正在发生什么；这些操作通常深藏于分布式系统内部。</p>
+<p>例如，除了存储服务名称以便识别，了解工作究竟在哪台主机上执行、是否与某个特定用户有关，也可能很有帮助。下面修改示例，把这些细节作为键值对添加到追踪跨度中：</p>
+<pre data-type="programlisting">hostname, _ := os.Hostname()
+traceData["tags"] = make(map[string]interface{})
+traceData["tags"]["hostname"] = hostname
+traceData["tags"]["user_name"] = name</pre>
+<p>还可以进一步扩展示例，捕获其他可能与调试有关的系统信息，例如应用的 <code>build_id</code>、<code>instance_type</code>、运行时信息，或者<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>示例中的大量其他细节。这里暂且保持简单。</p>
+<p>把所有内容组合起来，从零创建追踪的完整示例应用大致如下。为了便于理解，代码有意写得重复而详细：</p>
+<pre data-type="programlisting">func rootHandler(r *http.Request, w http.ResponseWriter) {
+
+   traceData := make(map[string]interface{})
+   traceData["tags"] = make(map[string]interface{})
+
+   hostname, _ := os.Hostname()
+   traceData["tags"]["hostname"] = hostname
+   traceData["tags"]["user_name"] = name
+
+   startTime := time.Now()
+   traceData["timestamp"] = startTime.Unix()
+   traceData["trace_id"] = uuid.String()
+   traceData["span_id"] = uuid.String()
+   traceData["name"] = "/oauth2/login"
+   traceData["service_name"] = "authentication_svc"
+
+   func callAuthService(req *http.Request, traceData map[string]interface{}) {
+      aReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+      aReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+      aReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+      // ... make the auth request ...
+   }
+
+   func callNameService(req *http.Request, traceData map[string]interface{}) {
+      nReq, _ = http.NewRequest("GET", "http://authz/check_user", nil)
+      nReq.Header.Set("X-B3-TraceId", traceData["trace.trace_id"])
+      nReq.Header.Set("X-B3-ParentSpanId", traceData["trace.span_id"])
+
+      // ... make the name request ...
+   }
+
+   authorized := callAuthService(r)
+   name := callNameService(r)
+
+   if authorized {
+       w.Write([]byte(fmt.Sprintf(`{"message": "Waddup %s"}`, name)))
+   } else {
+       w.Write([]byte(`{"message": "Not cool dawg"}`))
+   }
+
+   traceData["duration_ms"] = time.Now().Sub(startTime)
+   sendSpan(traceData)
+}</pre>
+<p>本节使用的代码示例有些刻意简化，目的是说明这些概念在实践中如何组合。好消息是，通常无须亲自生成所有这些代码。分布式追踪系统一般会提供自己的支持<a contenteditable="false" data-type="indexterm" data-primary="分布式追踪" data-secondary="库" id="idm45204355206976"/><a contenteditable="false" data-type="indexterm" data-primary="库" data-secondary="分布式追踪系统" id="idm45204355058496"/>库，负责完成大部分样板设置工作。</p>
+<p>这些共享库通常只适用于你所选择的特定追踪方案。遗憾的是，厂商专有方案往往不能与其他追踪方案良好协作，这意味着如果想尝试不同方案，就必须重新为代码插桩。下一章将介绍开源 OpenTelemetry 项目，以及它如何让你只插桩一次，就能使用多种不同方案。</p>
+<p>现在，你已经全面了解如何通过插桩创建实用的追踪视图。接下来把它与上一章的知识结合起来，理解为什么追踪是可观测系统中的一个<a contenteditable="false" data-type="indexterm" data-primary="跨度" data-secondary="自定义字段" data-startref="tspfct" id="idm45204355366192"/>关键组成部分。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="将事件串联成追踪"><div class="sect1" id="stitching_events_into_trac">
+<h1>将事件串联成追踪</h1>
+<p>在<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>中，我们考察了如何把结构化事件作为可观测系统的基础构件。我们把<em>事件</em>定义为某一个具体请求与服务交互期间所发生一切的记录。<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="事件" data-tertiary="串联" id="trevst"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="串联成追踪" id="evtrst"/>在请求的整个生命周期中，为了返回结果而发生的所有值得关注的细节，都应该追加到事件中。</p>
+<p>代码示例中的函数极其简单。在真实应用中，执行单个请求期间进行的每一次服务调用，都有自己值得关注的细节：变量值、传入参数、返回结果、相关上下文，等等。每个事件都会捕获这些细节，同时记录 <code>traceData</code>；后者使你日后能够查看和调试分布式系统中不同服务与组件之间的关系。</p>
+<p>无论在本章示例还是一般的分布式追踪系统中，我们都在远程服务调用层面添加插桩。但在可观测系统中，可以使用同样的方法，把不同来源中任意数量的相关事件连接起来。例如，可以应用这些追踪概念，把现有的单行日志方案迁移为更加连贯的视图，迈出走向可观测性的第一步。</p>
+<p>具体做法是，先从生成非结构化多行日志，迁移到生成结构化日志（参见<a data-type="xref" href="ch05-zh.xhtml#structured_events_are_the_building_bloc">第 5 章</a>），然后把 <code>traceData</code> 所需的相同字段添加到结构化日志中。这样，就能利用日志数据生成同样的瀑布图式视图。我们不建议把它作为长期方案，但它确实很实用，尤其适合刚开始采用可观测性时（更多建议参见<a data-type="xref" href="ch10-zh.xhtml#applying_observability_practices_in_you">第 10 章</a>）。</p>
+<p>追踪还有一种更常见的非传统用途：某项工作本身并不分布，但出于各种原因，你希望把它单独拆成一个跨度。例如，应用的瓶颈可能是 JSON 反序列化，或者其他占用大量 CPU 的操作，你需要识别它在什么情况下造成问题。</p>
+<p>一种方法是把这些代码“热点区块”分别包装成独立跨度，获得更加详细的瀑布图式视图（更多示例参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）。这种方法可以在非分布式的单体程序或非面向服务的程序中创建追踪。例如，可以为批处理作业中的每一块工作分别创建跨度，如上传到 Amazon Simple Storage Service（S3）的每个对象；也可以为基于 AWS Lambda 的流水线中的每个独立阶段创建跨度。事实上，AWS <a contenteditable="false" data-type="indexterm" data-primary="AWS（Amazon Web Services）" data-secondary="SDK（软件开发工具包）" id="idm45204355072080"/>软件开发工具包（SDK）默认就会这样做；详情参见 <a href="https://oreil.ly/tQtvk">AWS 开发者指南</a>。</p>
+<p>在可观测系统中，任意一组事件都能串联成追踪。追踪不必局限于服务之间的调用。目前，我们只关注如何收集这些事件中的数据，并把它们发送到可观测性后端。后续章节将介绍相应分析方法，使你能够任意切分和细查这些数据，<a contenteditable="false" data-type="indexterm" data-primary="追踪" data-secondary="事件" data-tertiary="串联" data-startref="trevst" id="idm45204355165984"/><a contenteditable="false" data-type="indexterm" data-primary="事件" data-secondary="串联成追踪" data-startref="evtrst" id="idm45204355680528"/>沿自己选择的任何维度寻找模式。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000007">
+<h1>结语</h1>
+<p>事件是可观测性的基础构件，而追踪不过是一系列相互关联的事件。把跨度串联成连贯追踪所使用的概念，非常适合服务间通信场景。在可观测系统中，同样的概念还可以超越 RPC，应用于系统中相互关联的任何离散事件，例如同一批处理作业创建的各个独立文件上传事件。</p>
+<p>本章采用困难方式为追踪插桩，手工编写了每个必要步骤。更实用的追踪入门方式是使用插桩框架。下一章将介绍开源且厂商中立的 OpenTelemetry 项目，以及如何使用它为生产应用插桩，又为什么应该这样做。</p>
+</div></section>
+</div></section></div></body>
+</html>

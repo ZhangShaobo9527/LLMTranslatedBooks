@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 13 章 响应和调试基于 SLO 的告警"><div class="chapter" id="acting_on_and_debugging_slo_based_alert">
+<h1><span class="label">第 13 章　</span>响应和调试基于 SLO 的告警</h1>
+<p>上一章介绍了 SLO，以及如何采用基于 SLO 的监控方法产生更有效的告警。本章将仔细考察如何使用可观测性数据，使这些告警既可以采取行动，又可以调试。使用传统监控数据（也就是指标）的 SLO 会产生无法行动的告警，因为它们不能指导人们修复底层问题。把可观测性数据用于 SLO，还能让告警更加精确、更易调试。</p>
+<p>虽然 SLO 与可观测性实践相互独立，但用 SLO 驱动告警，能够有效减少告警噪声，使其更便于行动。SLI 可以用直接符合业务目标的方式衡量客户对服务的体验。错误预算<a contenteditable="false" data-type="indexterm" data-primary="错误预算" data-secondary="消耗告警" data-see="消耗告警" id="idm45204354139120"/>在业务利益相关者与工程团队之间确立明确预期。错误预算<em>消耗告警</em>让团队既能维持很高的客户满意度、与业务目标保持一致，又能适当响应生产问题，避免传统症状告警中告警风暴已成常态的嘈杂局面。</p>
+<p>本章将考察错误预算的作用，以及使用 SLO 时可以采用哪些机制触发告警。我们会说明 SLO 错误预算是什么、如何工作，有哪些预测计算能够判断错误预算是否即将耗尽，以及为什么可靠计算必须使用基于事件的可观测性数据，而不是基于时间的指标。</p>
+<section data-type="sect1" data-pdf-bookmark="在错误预算耗尽前发出告警"><div class="sect1" id="alerting_before_your_error_budget_is_em">
+<h1>在错误预算耗尽前发出告警</h1>
+<p><em>错误预算</em><a contenteditable="false" data-type="indexterm" data-primary="错误预算" id="idm45204354269328"/>表示企业愿意容忍的系统不可用时间上限。如果 SLO 要求 99.9% 的请求成功，那么按时间计算，一个标准年内系统不可用时间不得超过 8 小时 45 分 57 秒（每月 43 分 50 秒）。如上一章所示，事件型计算会逐个对照标准判断事件，并持续统计“好”事件与“坏”事件（即错误事件）的数量。</p>
+<p>由于可用性目标用百分比表示，与 SLO 对应的错误预算取决于相应时间段内收到的请求数量。在任何给定时段<a contenteditable="false" data-type="indexterm" data-primary="请求与错误预算" id="idm45204354457104"/><a contenteditable="false" data-type="indexterm" data-primary="错误预算" data-secondary="请求" id="idm45204354427664"/>，系统只能容忍一定数量的错误。全部错误预算都被消耗后，系统便不再符合 SLO。用计算出的错误预算总量减去失败（即被<em>消耗</em>）的请求数量，所得结果通常称为<em>剩余错误预算</em>。</p>
+<p>要主动管理 SLO 达标情况，必须早在错误预算完全耗尽以前就发现并解决应用与系统问题。时间至关重要。为了采取纠正措施阻止预算继续消耗，需要提前知道当前趋势是否会耗尽全部预算。SLO 目标越高，可以响应的时间就越少。<a data-type="xref" href="#a_simple_graph_showing_error_budget_bur">图 13-1</a>给出了错误预算消耗的示例图。</p>
+<figure><div id="a_simple_graph_showing_error_budget_bur" class="figure">
+<img src="Images/oben_1301.png" width="1344" height="773"/>
+<h6><span class="label">图 13-1　</span>一张简单图表，展示大约三周内的错误预算消耗情况</h6>
+</div></figure>
+<p>如果 SLO 目标不高于约 99.95%（即每月最多允许完全停机 21 分 54 秒），团队通常有足够合理的时间收到潜在问题告警，并在全部错误预算耗尽之前主动采取行动。</p>
+<p>错误预算消耗告警旨在提前警告：如果当前消耗速率持续下去，未来将违反 SLO。因此，有效的消耗告警必须预测系统在未来某个时刻（从几分钟到几天以后）会消耗多少错误预算。人们通常使用多种方法进行计算，并决定应在何时针对错误预算消耗速率触发告警。</p>
+<p>在继续之前需要指出，这类预防性计算最适合避免目标不高于 99.95% 的 SLO 发生违规，如上一个例子。目标高于 99.95% 时，计算的预防作用会减弱，但仍能用于报告和警告系统退化。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>有关这种情况下缓解措施的更多信息，请参阅 Betsy Beyer 等人主编的 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/the-site-reliability/9781492029496/"><em>The Site Reliability Workbook</em> 第 5 章</a>中的“Alerting on SLOs”（O’Reilly）。如果希望从其他角度深入理解这个主题，我们实际上建议阅读完整的一章。</p>
+</div>
+<p>本章余下部分将仔细考察并比较多种有效计算方法，用来触发错误预算消耗告警。先看看让这种告警正常工作需要什么。第一步，是为“时间”这个高度相对的维度设定观察框架。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="用滑动窗口界定时间"><div class="sect1" id="framing_time_as_a_sliding_window">
+<h1>用滑动窗口界定时间</h1>
+<p>首先需要选择使用固定窗口还是滑动窗口分析 SLO<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="固定窗口" id="slofix"/><a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="滑动窗口" id="sloslwin"/>。<em>固定窗口</em>可以按照日历划分，例如从每月 1 日开始、30 日结束。与之相对，<em>滑动窗口</em>会观察此前任意连续 30 天（参见<a data-type="xref" href="#a_rolling_three_day_window_left_parenth">图 13-2</a>）。</p>
+<figure><div id="a_rolling_three_day_window_left_parenth" class="figure">
+<img src="Images/oben_1302.png" width="1030" height="199"/>
+<h6><span class="label">图 13-2　</span>滚动的三天窗口（左）与定期重置的三天窗口（右）</h6>
+</div></figure>
+<p>对于大多数 SLO，30 天窗口是最务实的选择。7 天或 14 天等较短窗口既不符合客户对服务可靠性的记忆，也不契合产品规划周期。90 天窗口又往往太长：即使一天内消耗 90% 的预算，从技术上看仍可能满足 SLO，但客户恐怕不会认同。窗口过长还意味着事故影响无法及时移出统计范围。</p>
+<p>一开始也许会选择固定窗口，但实践中，固定窗口的可用性目标不符合客户预期。假设月末 31 日发生严重故障，你为客户退款；这并不会像挥动魔杖一样，让客户突然愿意容忍次月 2 日再次发生故障，即便从协议角度看，第二次故障属于另一个窗口。</p>
+<p>正如<a data-type="xref" href="ch12-zh.xhtml#using_service_level_objectives_for_reli">第 12 章</a>所述，SLO 应用于衡量客户体验和满意度，而不是充当法律约束。更好的 SLO 会考虑人的情绪、记忆和近因偏误。人类情绪不会在日历月份结束时神奇地重置。</p>
+<p>如果使用固定窗口设置错误预算，预算重置会产生剧烈结果。每次错误都消耗一小部分预算，累积效果让预算逐渐趋近于零。持续退化不断蚕食团队主动响应问题的时间；随后到了新月份第一天，一切突然重置，整个周期重新开始。</p>
+<p>相比之下，使用滑动窗口追踪过去一段时间内消耗的错误预算，更加平滑，也更符合人类行为。在每个时间间隔，预算都可能消耗一点或恢复一点。持续但较低的消耗不会彻底耗尽错误预算；即使预算出现中等幅度下降，经过足够长的<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="趋势计算" id="idm45204354271520"/>稳定期后，也会逐步恢复。</p>
+<p>计算消耗趋势时，正确的第一项选择是使用滑动窗口界定时间，而不是静态固定窗口。否则窗口重置后数据不足<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="固定窗口" data-startref="slofix" id="idm45204354388368"/><a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="滑动窗口" data-startref="sloslwin" id="idm45204354253728"/>，无法作出有意义的判断。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="通过预测创建预见性消耗告警"><div class="sect1" id="forecasting_to_create_a_predictive_burn">
+<h1>通过预测创建预见性消耗告警</h1>
+<p>选定时间范围后，就可以设置触发器，针对关心的错误预算状态发出告警。最容易设置的是<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" id="burnpred"/><a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" id="prebn"/><em>零位告警</em>：全部错误预算耗尽时触发。</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="what_happens_when_you_exhaust_your_erro">
+<h5>错误预算耗尽后会发生什么</h5>
+<p>错误预算从正数变成负数后，必须停止优先开发新功能，转而优先保障服务稳定性。错误预算耗尽后究竟应该如何处理<a contenteditable="false" data-type="indexterm" data-primary="错误预算" data-secondary="超支" id="idm45204354093008"/>，超出了本章范围；但团队的目标应当是避免预算被完全耗尽。</p>
+<p>错误预算超支会带来严格措施，例如长期冻结生产环境中的功能发布。SLO 模型会形成激励，让团队在预算耗尽后尽量减少危及服务稳定性的行为。若要深入了解这种情况下工程实践应如何改变，以及怎样制定适当政策，推荐阅读 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/implementing-service-level/9781492076803/"><em>Implementing Service Level Objectives</em></a>。</p>
+</div></aside>
+<p>更难配置的是预防性告警。如果能预见错误预算即将耗尽，就有机会采取行动、实施修复，防止它真正发生。尽早修复最严重的错误来源，可以推迟甚至避免暂停新功能开发、全面转向可靠性改进的决定。要持续保障团队士气和稳定性，规划与预测远胜于依赖英雄主义。</p>
+<p>因此，一种方案是追踪错误预算消耗速率，监视可能耗尽全部预算的剧烈变化。至少有两种模型可以在预算降至零以前触发消耗告警。第一种是选择一个非零阈值，例如在剩余错误预算低于 30% 时告警，如<a data-type="xref" href="#in_this_modelcomma_an_alert_triggers_wh">图 13-3</a>所示。</p>
+<figure><div id="in_this_modelcomma_an_alert_triggers_wh" class="figure">
+<img src="Images/oben_1303.png" width="1344" height="773"/>
+<h6><span class="label">图 13-3　</span>在这种模型中，剩余错误预算（实线）低于选定阈值（虚线）时触发告警</h6>
+</div></figure>
+<p>这种模型的问题是，它实际上只是另设一个代表“耗尽”的阈值，移动了终点线。这类“预警”系统虽有一定效果，却很粗糙。实践中，一旦越过阈值，团队就会像全部错误预算已经耗尽一样行动。这种模型通过预留少量空间，尽量确保团队达成目标，却以放弃原本可用于交付新功能的额外时间为代价。团队不得不冻结功能，等待剩余错误预算重新升到任意设定的阈值以上。</p>
+<p>第二种在零位以上触发告警的模型，是创建<em>预见性</em>消耗告警（<a data-type="xref" href="#for_predictive_burn_alertscomma_you_nee">图 13-4</a>）。它会预测当前状态是否将导致全部错误预算耗尽。</p>
+<figure><div id="for_predictive_burn_alertscomma_you_nee" class="figure">
+<img src="Images/oben_1304.png" width="1344" height="773"/>
+<h6><span class="label">图 13-4　</span>预见性消耗告警需要把近期历史数据的基线窗口用于模型，并用前瞻窗口决定预测延伸到未来多远</h6>
+</div></figure>
+<p>使用预见性消耗告警时，需要考虑<em>前瞻窗口</em>和<em>基线</em>（又称<em>回看</em>）<em>窗口</em>：模型要预测多远的未来，又应使用多少近期数据作出预测？前瞻窗口较为简单，我们先从它开始。</p>
+<section data-type="sect2" data-pdf-bookmark="前瞻窗口"><div class="sect2" id="the_lookahead_window">
+<h2>前瞻窗口</h2>
+<p>从预测模型可以看出，并非每一个影响错误预算的错误都值得叫醒工程师<a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" data-secondary="前瞻窗口" id="prelook"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" data-tertiary="前瞻窗口" id="burlook"/><a contenteditable="false" data-type="indexterm" data-primary="前瞻窗口与预见性消耗告警" id="lookburn"/>。例如，假设引入了性能回归，目标为 99.9% 的服务按当前趋势将在一个月后只能达到 99.88% 的可靠性。这并非必须立刻处理的紧急状况，可以等到下一个工作日再由工程师调查，把整月可靠性的趋势纠正到 99.9% 以上。</p>
+<p>反之，如果服务有相当一部分请求失败，按当前趋势将在一小时内降至 98%，就应该呼叫值班工程师。如果不加纠正，这种故障可能在短短几小时内大量消耗整个月、整个季度甚至整年的错误预算。</p>
+<p>两个例子都说明，根据当前趋势判断错误预算是否会在未来某个时刻耗尽十分重要。第一个例子需要数天，第二个只需几分钟或几小时。但在这里，“根据当前趋势”究竟意味着什么？</p>
+<p>当前趋势应覆盖多大范围，取决于要预测多远的未来。宏观来看，大多数生产流量模式既呈现周期性，其利用率曲线也会平滑变化。周期可能以分钟或小时为单位。例如，一个定期运行、以固定数量且没有抖动的事务调用应用的 cron 作业，会以每几分钟重复一次的可预测方式影响流量。周期也可能按日、周或年出现，例如零售业会呈现季节性购物模式，在重大节日前后出现明显峰值。</p>
+<p>实践中，这种周期性意味着某些基线窗口比其他窗口更合适。过去 30 分钟或一小时的数据，在一定程度上能代表未来几小时；但把视野拉远到每日尺度，逐分钟的小变化就会被平滑掉。如果用过去 30 分钟或一小时的微观性能，推断未来几天的宏观性能，告警很可能反复抖动，时而进入、时而退出触发状态。</p>
+<p>反过来也同样危险。出现新的错误状态后，如果要等积累满一天的历史性能数据，才能预测接下来几分钟会发生什么，显然不切实际；等到预测完成，整年的错误预算可能已经耗尽。因此，基线窗口与前瞻窗口应处于大致相同的数量级。</p>
+<p>实践表明，如果不额外补偿季节性因素，例如一天中的高峰与低谷、工作日与周末或者月初与月末，给定基线窗口最多可以按四倍长度向前作线性预测。因此，把过去一小时观察到的性能外推四倍，就能足够准确地预测四小时内是否会耗尽错误预算。后面的<a data-type="xref" href="#context_aware_burn_alerts">“上下文感知消耗告警”</a>将更详细地讨论这种外推机制。</p>
+<section data-type="sect3" data-pdf-bookmark="根据当前消耗速率外推未来"><div class="sect3" id="extrapolating_the_future_from_current_b">
+<h3>根据当前消耗速率外推未来</h3>
+<p>至少在初步估算消耗速率时，计算前瞻窗口内可能发生什么并不复杂<a contenteditable="false" data-type="indexterm" data-primary="错误预算" data-secondary="根据消耗速率外推未来" id="idm45204354450304"/>。正如上一节所述，方法是根据当前消耗速率外推未来结果：还要多久会耗尽错误预算？</p>
+<p>知道基线应采用的大致数量级后，就能外推结果、预测未来。<a data-type="xref" href="#this_graph_shows_the_level_of_error_bud">图 13-5</a>说明如何从选定基线计算趋势，判断全部错误预算将在何时彻底耗尽。</p>
+<figure><div id="this_graph_shows_the_level_of_error_bud" class="figure">
+<img src="Images/oben_1305.png" width="1234" height="731"/>
+<h6><span class="label">图 13-5　</span>图中显示剩余错误预算（y 轴）随时间（x 轴）的变化。外推基线窗口，可以预测错误预算耗尽的时刻</h6>
+</div></figure>
+<p>同样的线性外推技术常见于容量规划或项目管理。例如，如果工单系统使用加权方法估算任务耗时，你很可能也在未来的冲刺规划中用同样方法推算功能何时能够交付。SLO 与错误预算消耗告警应用相似逻辑，帮助确定哪些生产问题需要立即优先处理。</p>
+<p>进行初步估算相对简单，但在预测预见性消耗告警时，还必须权衡其他细节；它们决定未来预测的质量与准确性。</p>
+<p>实践中，可以使用两种方法计算预见性消耗告警的趋势。<em>短期消耗告警</em>只使用最近时段的基线数据外推趋势，不考虑其他信息。<em>上下文感知消耗告警</em>会考虑历史性能，使用 SLO 整个滚动窗口内成功和失败事件的总数进行计算。</p>
+<p>选择哪一种方法通常取决于两个因素。第一是在计算成本与敏感度或特异度之间权衡。上下文感知消耗告警的计算成本高于短期消耗告警。第二个因素则涉及一个理念问题：剩余错误预算总量是否应该影响你对服务退化的响应速度？如果只剩 10% 预算时解决严重错误，比还剩 90% 时更加紧迫，你可能更倾向于上下文感知消耗告警。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>接下来两节中的<em>单位</em>，指 SLO 消耗告警计算所依据的细粒度基本构件。单位可以由指标等时序数据组成。指标这类粗粒度度量经过聚合，会把一分钟或一秒等时间单位整体标记为好或坏。单位也可以由事件数据组成，每个单独事件对应一项用户事务，可以分别标记为好或坏。我们将在<a data-type="xref" href="#using_observability_data_for_slos_versu">“SLO 使用可观测性数据与时序数据的区别”</a>中考察不同数据类型带来的影响。现在的例子暂不区分数据类型，统一使用任意指定、每分钟对应一个数据点的<em>单位</em>。</p>
+</div>
+<p>下面通过示例看看使用两种方法时如何作出判断。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="短期消耗告警"><div class="sect3" id="short_term_burn_alerts">
+<h3>短期消耗告警</h3>
+<p>使用<em>短期</em>或<em>不考虑历史</em>的消耗告警时，需要记录基线窗口内实际失败的 SLI 单位数量<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="短期" id="burnsht"/><a contenteditable="false" data-type="indexterm" data-primary="短期消耗告警" id="shortburn"/>，以及观察到的、符合 SLI 条件的单位总数。然后利用这些数据向前外推，计算还需多少分钟、小时或星期会耗尽错误预算。计算时假定基线窗口中观察到的事件之前没有错误，同时采用该 SLO 通常会看到的典型度量单位数量。</p>
+<p>来看一个例子。假设某服务的 SLO 目标要求在滚动 30 天窗口内，99% 的单位成功。通常一个月有 43,800 个单位。过去 24 小时出现 1,440 个单位，其中 50 个失败；过去 6 小时出现 360 个单位，其中 5 个失败。要达到 99% 的目标，每月只能有 1% 的单位失败。按照 43,800 个单位的典型流量，只允许 438 个单位失败，这就是错误预算。现在要判断按当前速率，未来 24 小时是否会耗尽预算。</p>
+<p>简单的短期消耗告警会计算：过去 6 小时只消耗了 5 个单位，因此未来 24 小时还会消耗 20 个，总计 25 个。25 远低于 438 个单位的预算，所以可以合理预测 24 小时内不会耗尽错误预算。</p>
+<p>同一种简单计算也会考虑：过去一天已经消耗 50 个单位，因此未来 8 天还会消耗 400 个，总计 450 个。450 超过 438 个单位的错误预算，所以可以合理预测预算将在 8 天内耗尽。</p>
+<p>这些简单算术只是为了说明预测机制。实践中的情况几乎必然更加复杂，因为符合条件的流量总量通常会在一天、一周或一个月内波动。换言之，如果过去 6 小时的 1 个错误发生在夜间、周末，或者服务流量只有中位水平十分之一的任何时段，就不能可靠推断未来 24 小时会发生 4 个错误。如果错误发生时流量只有十分之一，那么随着流量上升、曲线恢复平滑，未来 24 小时可能会出现接近 30 个错误。</p>
+<p>到目前为止，为了简单起见，这个例子一直使用线性外推，但比例外推在生产环境中有用得多。对前面的例子作如下修改。</p>
+<p>仍假设服务的 SLO 目标要求滚动 30 天窗口内 99% 的单位成功，通常每月有 43,800 个单位。过去 24 小时出现 1,440 个单位，其中 50 个失败。<em>过去 6 小时则出现 50 个单位，其中 25 个失败。</em>要达到 99% 的目标，每月只能有 1% 的单位失败；按照典型流量，只允许 438 个单位失败。现在仍要判断按此速率，未来 24 小时是否会耗尽预算。</p>
+<p>按线性方式外推，过去 6 小时失败 25 次，意味着未来 24 小时失败 100 次，总计 105 次，远低于 438。</p>
+<p>使用<em>比例外推</em><a contenteditable="false" data-type="indexterm" data-primary="比例外推与消耗告警" id="idm45204354049120"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="比例外推" id="idm45204354047984"/>时，任意 24 小时预计会出现 43,800 / 30，也就是 1,440 个单位。过去 6 小时内，50 个单位有 25 个失败，失败率为 50%。如果未来 24 小时继续保持 50% 的比例失败率，就会消耗 1,440 的 50%，即 720 个单位，远超 438 个单位的预算。根据比例计算，可以合理预测错误预算大约半天就会耗尽。此时应触发告警<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="短期" data-startref="burnsht" id="idm45204354033664"/><a contenteditable="false" data-type="indexterm" data-primary="短期消耗告警" data-startref="shortburn" id="idm45204354041152"/>，通知值班工程师立即调查。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="上下文感知消耗告警"><div class="sect3" id="context_aware_burn_alerts">
+<h3>上下文感知消耗告警</h3>
+<p>使用<em>上下文感知</em>或<em>考虑历史</em>的消耗告警时，需要持续累计 SLO 整个窗口内发生的好、坏事件数量<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="上下文感知" id="burcon"/><a contenteditable="false" data-type="indexterm" data-primary="上下文感知消耗告警" id="conxbrn"/>，而不只统计基线窗口。本节将逐一解释有效消耗告警所需的各种计算。不过，实践这些技术时务必谨慎：每个评估间隔都计算这些数值，计算开销很快也会变成高昂费用。Honeycomb 就付出过惨痛代价：一小批 SLO 数据突然每天产生超过 5,000 美元的 AWS Lambda 费用。:-)</p>
+<p>通过一个例子看看上下文感知消耗告警的考虑有何不同。假设服务的 SLO 要求滚动 30 天窗口内 99% 的单位成功，通常每月有 43,800 个单位。<em>此前 26 天的 37,960 个单位中已经有 285 个失败；过去 24 小时又出现 1,460 个单位，其中 130 个失败。</em>为达到 99% 的目标，每月只能有 1% 的单位失败；按照典型流量，错误预算为 438 个单位。现在要判断按此速率，未来四天是否会耗尽预算。</p>
+<p>本例要以天为尺度向前预测。按照前面提到的最大实用外推倍数 4，应设置一个检查最近一天数据的基线窗口，用它向前外推四天。</p>
+<p>还必须考虑所选尺度对滑动窗口的影响。如果 SLO 使用 30 天滑动窗口，调整后的回看窗口应为 26 天：回看 26 天 + 外推 4 天 = 30 天滑动窗口，如<a data-type="xref" href="#an_adjusted_slo_threezero_day_sliding_w">图 13-6</a>所示。</p>
+<figure><div id="an_adjusted_slo_threezero_day_sliding_w" class="figure">
+<img src="Images/oben_1306.png" width="1439" height="445"/>
+<h6><span class="label">图 13-6　</span>调整后的 SLO 30 天滑动窗口。向前预测 4 天时，需要把回看期缩短为今天以前的 26 天。预测通过复制基线窗口结果得到未来 4 天的数据，再将其加入调整后的滑动窗口</h6>
+</div></figure>
+<p>定义好调整后的时间范围，便可计算四天后的情况。计算步骤如下：</p>
+<ol>
+<li><p>检查过去 26 天内 SLO 事件映射中的每一个条目。</p></li>
+<li><p>保存过去 26 天的事件总数和错误总数。</p></li>
+<li><p>重新检查最近一天内出现的映射条目，确定基线窗口失败率。</p></li>
+<li><p>假定未来行为与一天基线窗口相似，外推未来四天的性能。</p></li>
+<li><p>计算四天后调整后的 SLO 30 天滑动窗口。</p></li>
+<li><p>如果届时错误预算将被耗尽，则触发告警。</p></li>
+</ol>
+<p>假设有一个包含各窗口成功和失败数量的时序映射，可以使用以下 Go 代码完成这项任务：</p>
+<pre data-type="programlisting">func isBurnViolation(
+  now time.Time, ba *BurnAlertConfig, slo *SLO, tm *timeseriesMap,
+) bool {
+  // For each entry in the map, if it's in our adjusted window, add its totals.
+  // If it's in our projection use window, store the rate.
+  // Then project forward and do the SLO calculation.
+  // Then fire off alerts as appropriate.
+
+  // Compute the window we will use to do the projection, with the projection
+  // offset as the earliest bound.
+  pOffset := time.Duration(ba.ExhaustionMinutes/lookbackRatio) * time.Minute
+  pWindow := now.Add(-pOffset)
+
+  // Set the end of the total window to the beginning of the SLO time period,
+  // plus ExhaustionMinutes.
+  tWindow := now.AddDate(0, 0, -slo.TimePeriodDays).Add(
+    time.Duration(ba.ExhaustionMinutes) * time.Minute)
+
+  var runningTotal, runningFails int64
+  var projectedTotal, projectedFails int64
+  for i := len(tm.Timestamps) - 1; i &gt;= 0; i-- {
+    t := tm.Timestamps[i]
+
+    // We can stop scanning backward if we've run off the end.
+    if t.Before(tWindow) {
+      break
+    }
+
+    runningTotal += tm.Total[t]
+    runningFails += tm.Fails[t]
+
+    // If we're within the projection window, use this value to project forward,
+    // counting it an extra lookbackRatio times.
+    if t.After(pWindow) {
+      projectedTotal += lookbackRatio * tm.Total[t]
+      projectedFails += lookbackRatio * tm.Fails[t]
+    }
+  }
+
+  projectedTotal = projectedTotal + runningTotal
+  projectedFails = projectedFails + runningFails
+
+  allowedFails := projectedTotal * int64(slo.BudgetPPM) / int64(1e6)
+  return projectedFails != 0 &amp;&amp; projectedFails &gt;= allowedFails
+}</pre>
+<p>回到示例进行计算：过去 26 天已经出现 37,960 个单位，其中 285 个失败。使用一天的基线窗口向前预测四天。基线窗口开始时，位于数据集的第 25 天，也就是一天以前。</p>
+<p>把结果绘制成图，如<a data-type="xref" href="#one_day_agocomma_sixfivepercent_of_the">图 13-7</a>所示：一天基线窗口开始时，还剩 65% 的错误预算；现在只剩 35%。一天内已经消耗 30%。如果继续保持这一速率<a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" data-secondary="前瞻窗口" data-startref="prelook" id="idm45204354231824"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" data-tertiary="前瞻窗口" data-startref="burlook" id="idm45204354098208"/><a contenteditable="false" data-type="indexterm" data-primary="前瞻窗口与预见性消耗告警" data-startref="lookburn" id="idm45204354084672"/>，预算将在远少于四天的时间内耗尽，应当触发警报。</p>
+<figure><div id="one_day_agocomma_sixfivepercent_of_the" class="figure">
+<img src="Images/oben_1307.png" width="1444" height="760"/>
+<h6><span class="label">图 13-7　</span>一天前还剩 65% 的错误预算，现在只剩 35%。按当前速率<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="上下文感知" data-startref="burcon" id="idm45204353992288"/><a contenteditable="false" data-type="indexterm" data-primary="上下文感知消耗告警" data-startref="conxbrn" id="idm45204353994304"/>，错误预算将在两天以内耗尽</h6>
+</div></figure>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="基线窗口"><div class="sect2" id="the_baseline_window">
+<h2>基线窗口</h2>
+<p>了解前瞻窗口及其用法后<a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" data-secondary="基线窗口" id="prebase"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" data-tertiary="基线窗口" id="burbase"/><a contenteditable="false" data-type="indexterm" data-primary="基线窗口与预见性消耗告警" id="baseburn"/>，现在把注意力转回基线窗口。</p>
+<p>向前外推时究竟应使用<em>多长</em>的基线，是个很有意思的问题。生产服务性能突然恶化时，你希望迅速得知；与此同时，窗口也不能小到制造嘈杂告警。用 15 分钟基线外推三天性能，短暂的错误波动就可能触发误报；反过来，用三天基线向前预测一小时，关键故障很可能等到为时已晚才被发现。</p>
+<p>前面给出的实用选择，是时间范围采用四倍系数。也许还能使用更复杂的算法，但经验表明四倍通常足够可靠。基线乘数 4 还提供了一条方便的经验法则：24 小时告警根据最近 6 小时数据判断，4 小时告警根据最近 1 小时数据判断，依此类推。初次使用 SLO 消耗告警时，这是很好的起点。</p>
+<p>按比例设置基线窗口还会产生一个看似古怪的结果，值得说明。人们经常为同一个 SLO 使用不同大小的前瞻窗口设置多项消耗告警，因此告警可能以看似不合逻辑的顺序触发。例如，系统问题可能触发“两小时内耗尽预算”的告警，却没有触发“一天内耗尽”的告警。这是因为两项告警从不同基线外推。换句话说，若保持最近 30 分钟的消耗速率，两小时就会耗尽；若保持最近一天的速率，未来四天仍然没问题。</p>
+<p>因此，两种尺度都应测量，任何一项预测触发告警都应采取行动。否则，以一天为消耗尺度时可能要等数小时才能暴露问题，而小时级消耗告警本可以更早发现；此时启动纠正措施，也可能避免一天尺度的预测告警触发。反过来，小时窗口虽然让团队能响应消耗速率的突然变化，却过于嘈杂，不适合冲刺规划等更长时间尺度的任务优先级安排。</p>
+<p>最后一点值得进一步讨论。为了理解为何两种时间尺度都要考虑，下面看看 SLO 消耗告警触发后应采取什么行动<a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" data-secondary="基线窗口" data-startref="prebase" id="idm45204354388960"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" data-tertiary="基线窗口" data-startref="burbase" id="idm45204354124688"/><a contenteditable="false" data-type="indexterm" data-primary="基线窗口与预见性消耗告警" data-startref="baseburn" id="idm45204354022736"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="响应 SLO 消耗告警"><div class="sect2" id="acting_on_slo_burn_alerts">
+<h2>响应 SLO 消耗告警</h2>
+<p>一般来说，消耗告警触发后<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="响应" id="burnres"/>，团队应该启动调查响应。有关各种响应方式的深入说明，请参阅 Hidalgo 的 <em>Implementing Service Level Objectives</em>。本节主要考察响应消耗告警时应提出的几个宏观问题。</p>
+<p>首先要诊断收到的是哪一类消耗告警：是否出现了新的、意料之外的消耗方式？还是较为渐进、符合预期的消耗？先看看错误预算的各种消耗模式。</p>
+<p>图 <a data-type="xref" data-xrefstyle="select:labelnumber" href="#a_gradual_error_budget_burn_ratecomma_w">13-8</a>、<a data-type="xref" data-xrefstyle="select:labelnumber" href="#an_error_budget_of_threeonedotfourperce">13-9</a> 和 <a data-type="xref" data-xrefstyle="select:labelnumber" href="#a_system_that_usually_burns_slowly_but">13-10</a> 展示 SLO 窗口期间<em>剩余错误预算</em>随<em>时间</em>的变化。错误预算以缓慢但稳定的速度逐渐消耗，是大多数现代生产系统的特征。系统通常达到预期性能阈值，只有少量例外；某些情况下，特定时段的扰动可能让例外集中爆发。</p>
+<figure><div id="a_gradual_error_budget_burn_ratecomma_w" class="figure">
+<img src="Images/oben_1308.png" width="1442" height="408"/>
+<h6><span class="label">图 13-8　</span>错误预算逐渐消耗，剩余 51.4%</h6>
+</div></figure>
+<figure><div id="an_error_budget_of_threeonedotfourperce" class="figure">
+<img src="Images/oben_1309.png" width="1440" height="417"/>
+<h6><span class="label">图 13-9　</span>错误预算以突发方式消耗，剩余 31.4%</h6>
+</div></figure>
+<figure><div id="a_system_that_usually_burns_slowly_but" class="figure">
+<img src="Images/oben_1310.png" width="1426" height="416"/>
+<h6><span class="label">图 13-10　</span>系统通常缓慢消耗预算，但一次事故突然消耗了很大一部分，最终只剩 1.3%</h6>
+</div></figure>
+<p>消耗告警触发后，应评估它属于突发状态，还是可能一次消耗大量错误预算的事故。把当前情况与历史速率比较，可以为判断其重要程度提供有用上下文。</p>
+<p><a data-type="xref" href="#an_error_budget_of_threeonedotfourperce">图 13-9</a>展示的是某一时刻剩余 31.4%，以及此前 30 天如何发展到这一状态；<a data-type="xref" href="#a_ninezero_day_sliding_window_for_an_sl">图 13-11</a>则拉远视角，观察过去 90 天中每一天的 SLO 30 天累计状态。二月初左右，SLO 开始恢复到目标阈值以上，部分原因很可能是一次严重性能下降已经随时间移出了 90 天窗口。</p>
+<figure><div id="a_ninezero_day_sliding_window_for_an_sl" class="figure">
+<img src="Images/oben_1311.png" width="1334" height="436"/>
+<h6><span class="label">图 13-11　</span>某 SLO 的 90 天滑动窗口一度低于 99% 目标，随后在二月初前后开始恢复</h6>
+</div></figure>
+<p>理解 SLO 的总体趋势，还能帮助判断事故有多紧迫，并为解决问题提供线索<a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="预见性" data-startref="burnpred" id="idm45204353942656"/><a contenteditable="false" data-type="indexterm" data-primary="预见性消耗告警" data-startref="prebn" id="idm45204353941600"/><a contenteditable="false" data-type="indexterm" data-primary="消耗告警" data-secondary="响应" data-startref="burnres" id="idm45204353940384"/>。预算一次性大量消耗，与随时间缓慢消耗，通常意味着不同类型的故障。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="SLO 使用可观测性数据与时序数据的区别"><div class="sect1" id="using_observability_data_for_slos_versu">
+<h1>SLO 使用可观测性数据与时序数据的区别</h1>
+<p>把时序数据用于 SLO 会带来一些复杂问题。前面各节的例子使用通用单位判断成功或失败<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="可观测性数据与时序数据" id="slotime"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性数据与时序数据" id="obvtimd"/><a contenteditable="false" data-type="indexterm" data-primary="时序数据" id="timdat"/>。在事件型世界中，这个单位是<em>单个用户请求</em>：请求成功还是失败？在时序世界中，单位则是<em>特定时间片</em>：整个系统在这段时间内成功还是失败？使用时序数据，衡量的是系统性能的聚合视图。</p>
+<p>对于可用性目标达到 99.99% 或更高的<em>严格 SLO</em>，时序数据的问题格外明显。这种 SLO 的错误预算可能在几分钟甚至几秒内耗尽，每一秒都很重要，必须采用自动修复等多项缓解措施才能达到目标。如果人工响应者需要三分钟来确认告警、解锁笔记本电脑、登录并手动执行临时想到的第一项缓解措施（问题复杂、需要继续调试时还会更久），那么一秒还是一分钟发现严重预算消耗，差别已经不大。</p>
+<p>另一项缓解措施，是让 SLO 使用事件数据而不是时序数据。考虑严格 SLO 下时序评估的工作方式：假设 SLI 规定请求的 p95 必须低于 300 毫秒，错误预算计算就需要把短时间段整体归类为好或坏。按分钟评估时，必须等一分钟结束后才能宣布好坏。如果这一分钟被判为坏，响应时间已经白白损失一分钟。错误预算可能在几秒或几分钟内耗尽时，这种机制根本无法启动快速告警流程。</p>
+<p>“好的一分钟”或“坏的一分钟”这种粒度，根本不足以衡量四个 9 的 SLO。在前一个例子中，如果只有 94% 的请求低于 300 毫秒，整整一分钟都会被判为坏。一次评估就足以消耗每月 4.32 分钟错误预算的 25%。如果监控数据只按五分钟窗口收集（Amazon CloudWatch 的免费默认设置就是如此），使用五分钟窗口判断好坏时，只要一个评估窗口失败，就会违反 SLO 目标。</p>
+<p>在使用时序数据计算 SLO 的系统中，一种缓解方案可能是：三次合成探针失败后自动实施修复，再由人工核查结果。另一种方法，是在流量足够大的情况下，使用指标衡量较短时间窗口内请求即时失败的百分比。</p>
+<p>使用事件数据计算 SLO，不必在“好的一分钟/坏的一分钟”之间作聚合判断，而能以请求级粒度评估系统健康状况。仍以刚才的 SLI 为例，持续时间低于 300 毫秒的单个请求视为好，高于 300 毫秒则视为坏。如果 94% 的请求低于 300 毫秒，事件型计算只会从 SLO 错误预算中扣除其余 6%，而 p95 等聚合时序度量会扣除整整 100%。</p>
+<p>在现代分布式系统中，100% 完全失败的整体中断，比部分失败的部分中断少见，因此事件型计算更有用。99.99% 可靠性系统发生 1% 的部分中断，与 99% 可靠性系统发生 100% 整体中断近似。衡量部分中断能争取更多响应时间，就像面对 SLO 宽松得多的系统完全中断一样。两种情况下，在每月错误预算耗尽前都有七个多小时用于修复。</p>
+<p>追踪用户对服务真实体验的可观测性数据，比粗粒度聚合时序数据更准确地反映系统状态。在选择可操作告警使用的数据时，可观测性数据让团队能够专注于更接近企业真正关心事实的状态：此时此刻客户的整体体验。</p>
+<p>可靠性目标必须与团队实际能力相匹配。对于五个 9 之类极其严格的 SLO，必须依据极细粒度、极准确的度量，采用包括自动修复在内的一切缓解策略，绕过需要人工介入、耗时数分钟或数小时的传统修复方式。即使 SLO 没那么严格，细粒度事件度量也能提供比时序度量通常更多的响应缓冲时间。无论团队的 SLO 目标如何，这些额外缓冲都能大幅提高可靠性目标的可行性<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="可观测性数据与时序数据" data-startref="slotime" id="idm45204353959696"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性数据与时序数据" data-startref="obvtimd" id="idm45204354268032"/><a contenteditable="false" data-type="indexterm" data-primary="时序数据" data-startref="timdat" id="idm45204354029040"/>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000012">
+<h1>结语</h1>
+<p>本章考察了错误预算的作用，以及使用 SLO 时可以采用哪些机制触发告警。多种预测方法都能判断错误预算何时会被耗尽，每种方法都有自己的注意事项与取舍。希望本章能够帮助你选择最符合自己组织需求的方法。</p>
+<p>SLO 是一种现代监控形式，能够解决前面所述嘈杂监控的许多问题。SLO 并非可观测性所独有；可观测性的独特作用，是事件数据为 SLO 模型增加的能力。计算错误预算消耗速率时，事件能够更准确地评估生产服务的真实状态。此外，只知道 SLO 面临违规风险，并不足以判断哪些用户受到影响、哪些依赖服务被波及，或者哪些用户行为组合正在触发服务错误。把可观测性数据与 SLO 结合起来，能在预算消耗告警触发后看清故障发生的时间和位置。</p>
+<p>把 SLO 与可观测性数据结合，是 SRE 方法和可观测性驱动开发方法的重要组成部分。正如前面几章所示，分析失败事件可以提供丰富、详细的信息，说明什么出了问题以及为什么出错，也能帮助区分系统性问题与偶发的零星故障。下一章将考察如何使用可观测性监控生产应用的另一个关键组成部分：软件供应链。</p>
+</div></section>
+</div></section></div></body>
+</html>

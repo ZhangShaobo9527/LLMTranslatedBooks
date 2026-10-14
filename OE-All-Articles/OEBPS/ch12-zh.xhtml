@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 12 章 使用服务等级目标保障可靠性"><div class="chapter" id="using_service_level_objectives_for_reli">
+<h1><span class="label">第 12 章　</span>使用服务等级<span class="keep-together">目标保障可靠性</span></h1>
+<p>可观测性可以与传统监控共存，同时也让我们能够采用更先进、与传统监控互补的方法。接下来的两章将说明，把可观测性与服务等级目标（SLO）结合起来<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" id="idm45204355141008"/>，如何提高系统可靠性。</p>
+<p>本章将介绍传统阈值监控给团队造成的常见问题、分布式系统如何加剧这些问题，以及改用基于 SLO 的监控方式为何能够解决它们。最后，我们会通过一个真实案例说明如何用 SLO 取代传统阈值告警。在<a data-type="xref" href="ch13-zh.xhtml#acting_on_and_debugging_slo_based_alert">第 13 章</a>中，我们还会讨论可观测性如何让基于 SLO 的告警变得可操作、可调试。</p>
+<p>首先来理解监控与告警的作用，以及过去采用的做法。</p>
+<section data-type="sect1" data-pdf-bookmark="传统监控会造成危险的告警疲劳"><div class="sect1" id="traditional_monitoring_approaches_creat">
+<h1>传统监控会造成危险的告警疲劳</h1>
+<p>采用监控方案时，告警往往衡量最容易测量的事物。人们使用指标<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="告警疲劳" id="monfat"/><a contenteditable="false" data-type="indexterm" data-primary="告警疲劳" id="alfat"/>追踪简单的系统状态，因为这些状态也许表明服务的底层进程运行不佳，或者预示即将出现问题。例如，CPU 超过 80%、可用内存低于 10%、磁盘空间即将耗尽、运行线程超过 <em>x</em> 个，或者其他简单的底层系统状态，都可能触发告警。</p>
+<p>这类“潜在原因”指标虽然容易收集，却无法产生值得采取行动的有效告警。CPU 利用率<a contenteditable="false" data-type="indexterm" data-primary="CPU 利用率" data-secondary="偏差" id="idm45204354314608"/>发生变化，也可能只是备份进程正在运行、垃圾收集器正在清理，或者系统中发生了其他现象。换言之，这些状态可能反映无数系统因素，不仅是我们真正关心的问题。根据底层硬件的这类指标触发告警，会产生大量假阳性。</p>
+<p>有经验、亲自负责生产软件运维的工程团队，往往会学着忽略甚至抑制这类告警，因为它们太不可靠。这些团队经常会说：“不用管那个告警，我们知道这个进程偶尔会耗尽内存。”</p>
+<p>习惯于容易产生<a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="假阳性" id="idm45204354397216"/><a contenteditable="false" data-type="indexterm" data-primary="偏差常态化" id="idm45204354525072"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="偏差常态化" id="idm45204354464448"/>假阳性的告警，是一个已知问题，也是一种危险做法。在其他行业，这称为<em>偏差常态化</em>；这个术语来自<a href="https://pubmed.ncbi.nlm.nih.gov/25742063">挑战者号灾难调查</a>。如果组织成员经常关闭警报，或者警报响起后不采取行动，他们最终会对这种偏离预期响应的行为彻底麻木，不再觉得它有问题。被视为“正常”并遭到忽视的故障，往好里说只是背景噪声，往坏里说则会让人漏掉级联系统故障，造成灾难性后果。</p>
+<p>在软件行业，监控告警的信噪比很低，常常造成<em>告警疲劳</em>：因为大量告警是误报、无法采取行动或者毫无用处，人们逐渐不再重视任何告警。更糟的是，发生事故后，基于监控的告警方式通常会让问题继续恶化。事故复盘往往产生新的行动项，要求增加据称能及时预警、避免问题的“更重要”告警。于是在下一次事故中，告警数量进一步增加。告警不断升级的模式制造出持续膨胀的告警洪流，也不断增加响应工程师判断哪些告警重要、哪些不重要时的认知负担。</p>
+<p>这种失灵在软件行业极为普遍，以至于许多监控和事故响应工具厂商自豪地提供各种标有“AIOps”的方案，替你对告警进行分组、抑制或其他处理（参见<a data-type="xref" href="ch08-zh.xhtml#this_misleading_promise_of_aiops">“AIOps 的误导性承诺”</a>）。工程团队太习惯告警噪声，已经把这种模式视作正常。如果未来的生产软件注定制造海量噪声，必须由人工智能加工处理，那么这种局面显然早已超越了偏差常态化。行业厂商甚至把这种偏差产品化，再高兴地向你出售管理它的方案。</p>
+<p>我们仍然认为，这种失灵源于指标和监控工具的局限；过去，它们曾是我们理解生产系统状态的最佳选择。如今，整个行业患上了集体斯德哥尔摩综合征，而由此产生的诸多问题中，这还只是失灵冰山的一角。现代系统架构日益复杂，人们对韧性的要求越来越高，终于把这种失灵局面从尚可忍受推向无法接受。</p>
+<p>如今的分布式系统需要另一种方法。下面看看监控单体系统的方法为何会在规模扩大后失效<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="告警疲劳" data-startref="monfat" id="idm45204354407696"/><a contenteditable="false" data-type="indexterm" data-primary="告警疲劳" data-startref="alfat" id="idm45204355655008"/>，以及我们能采取什么不同做法。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="阈值告警只能发现已知的未知"><div class="sect1" id="threshold_alerting_is_for_known_unknown">
+<h1>阈值告警只能发现已知的未知</h1>
+<p>与分布式系统相比，自包含系统的故障模式更容易预见。因此，增加监控<a contenteditable="false" data-type="indexterm" data-primary="已知的未知" data-secondary="阈值告警" id="knth"/><a contenteditable="false" data-type="indexterm" data-primary="阈值告警" id="thral"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="阈值告警与已知的未知" id="alalkn"/>，假定每一种已知故障模式都可能发生，看起来很合理。负责自包含生产系统的运维团队，可以为每一种精确状态编写特定监控检查。</p>
+<p>然而，随着系统复杂度提高，潜在故障模式会发生组合爆炸。习惯较简单系统的运维团队，只能依靠直觉、最合理的猜测和对既往事故的记忆，预测所有能够想象的系统故障。传统监控在较小规模下或许有效，但面对现代系统爆炸式增长的复杂性，团队不得不编写和维护数百甚至数千项精确状态检查，尝试覆盖每一种可以想象的情形。</p>
+<p>这种做法无法持续。检查难以维护，知识通常无法传递，过去的行为也未必能预测未来可能发生的故障。传统监控思维通常着眼于防止故障；但在由数百或数千个组件承载生产流量的分布式系统中，<em>故障不可避免</em>。</p>
+<p>如今，工程团队经常把负载分散到多个不同系统上。他们拆分数据，对其分片、水平分区，再跨地域分布式系统进行复制。这些架构决策优化了性能、韧性和可扩展性，却也可能让系统性故障无法检测或预测。新涌现的故障模式可能早已影响用户，传统上作为指示器的粗粒度合成探针却还没有任何反应。传统服务健康度量突然失去价值，因为它们与整个系统的行为几乎无关。</p>
+<p>传统系统指标经常漏掉分布式系统中意料之外的故障模式。某个组件上运行线程的数量异常<a contenteditable="false" data-type="indexterm" data-primary="分布式系统" data-secondary="故障模式" id="idm45204354309776"/>，可能表明正在进行垃圾收集，也可能预示上游服务即将响应缓慢；系统指标检测到的状态甚至可能与服务变慢完全无关。可是，半夜收到线程数异常告警的系统操作人员不知道哪一种解释才是真的，只能靠自己猜测其中的关联。</p>
+<p>此外，分布式系统使用松耦合组件来实现韧性。借助现代基础设施工具，过去需要叫醒工程师的许多常见问题，现在都能自动修复。你的系统可能已经使用了一些常见的韧性机制<a contenteditable="false" data-type="indexterm" data-primary="分布式系统" data-secondary="与自动化" id="idm45204354358800"/><a contenteditable="false" data-type="indexterm" data-primary="自动修复的故障" id="idm45204354406896"/>，例如自动扩缩容、负载均衡和故障转移。自动化系统可以暂停错误版本的后续推广，或者将其回滚。采用双活配置，或者自动把被动节点提升为主动节点，可以确保可用区<a contenteditable="false" data-type="indexterm" data-primary="AZ（可用区）" data-secondary="故障" id="idm45204354465312"/>故障只造成短暂影响。能够自动修复的故障<em>不应该触发警报</em>。（有些团队可能恰恰这样做，希望由此建立对服务内部工作方式的宝贵“直觉”。实际上，这些噪声只会挤占团队的时间；他们原本可以用这些时间理解那些不具备自动修复能力的服务组件。）</p>
+<p>这并不是说自动修复的故障不必调试。你当然应该调试，只是应当安排在<em>正常工作时间</em>。告警的全部意义，在于引起人们对不能等待的紧急状况的注意。为短暂故障触发告警，在半夜叫醒工程师，只会制造噪声并导致倦怠。因此，我们需要一种界定问题紧迫程度的策略。</p>
+<p>在系统复杂且彼此依赖的时代，海量告警很容易让团队疲惫不堪。这些告警也许能够、但很可能无法可靠表明，客户当前使用企业所依赖的服务时遇到了问题。没有直接关联客户体验的状态告警，很快就只会成为背景噪声。它们不仅不再履行预期职责，更危险的是，它们实际上起到了相反作用：让团队分心，无法关注真正重要的告警。</p>
+<p>要运营可靠的服务，团队必须删除所有不可靠或嘈杂的告警。然而，许多团队害怕删除这些多余干扰，通常担心删除后就无法获知服务退化。必须认识到，这类传统告警只能帮助你发现<em>已知的未知</em>：你知道某个问题可能发生，却不确定它当前是否正在发生。这种告警覆盖范围制造了虚假的安全感，因为它丝毫不能帮助你应对新颖、前所未见的故障，也就是<em>未知的未知</em>。</p>
+<p>可观测性的实践者寻找的正是这些未知的未知，因为他们面对的系统已经不再只有固定的一组故障。对于组件很少的传统自包含软件系统，把所有未知缩减为已知的未知，也许接近可行；现代系统显然不是如此。即便这样，组织仍迟迟不愿删除许多与传统监控相伴的旧告警。</p>
+<p>本章稍后会介绍如何放心删除无用告警。现在先定义怎样的告警才算有用。Google SRE 图书指出，好的告警必须反映紧迫的用户影响，必须可以采取行动，必须是新情况，而且必须需要调查，而不是照章执行固定动作。<sup><a data-type="noteref" id="ch01fn9-marker" href="ch12-zh.xhtml#ch01fn9">1</a></sup></p>
+<p>我们把告警标准简化为其中两项。第一，它必须可靠表明服务的用户体验正在退化。第二，告警必须可以解决：响应者应能按照系统化但并非纯粹机械、可自动化的方式调试和采取行动，而不必凭空猜测正确做法。如果这两个条件不成立，你配置的任何告警<a contenteditable="false" data-type="indexterm" data-primary="已知的未知" data-secondary="阈值告警" data-startref="knth" id="idm45204354272272"/><a contenteditable="false" data-type="indexterm" data-primary="阈值告警" data-startref="thral" id="idm45204354398112"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="阈值告警与已知的未知" data-startref="alalkn" id="idm45204354625504"/>都已无法发挥预期作用。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="以用户体验为北极星指标"><div class="sect1" id="user_experience_is_a_north_star">
+<h1>以用户体验为北极星指标</h1>
+<p>再次借用 Google SRE 图书的观点：潜在原因告警与真实问题的相关性很低，而针对用户痛苦症状的告警，更能帮助你理解用户受到的影响，以及客户实际体验到的系统状态。</p>
+<p>那么，怎样才能集中设置<a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="与用户体验" id="alux"/><a contenteditable="false" data-type="indexterm" data-primary="用户体验与告警" id="idm45204354222672"/>告警，检测影响用户体验的故障？这正是必须脱离传统监控方法的地方。传统的指标监控依靠静态阈值定义理想系统状态，但现代系统的性能即使在基础设施层，也经常随不同工作负载动态改变。静态阈值根本无法胜任监控用户体验影响的任务。</p>
+<p>用传统告警机制监控用户体验，意味着系统工程师必须任意选择常量，用来预测体验何时变差。例如，可以设置“有 10 位用户遇到页面加载缓慢”或者“请求的第 95 百分位延迟持续高于某个毫秒数”时触发告警。采用指标方法时，系统工程师只能猜测究竟哪个静态数值意味着出现了不可接受的问题。</p>
+<p>然而，来自不同时区的不同用户以不同方式使用服务，系统性能因而在一天中显著变化。流量较低时，系统可能只有数百个并发会话，此时 10 位用户页面加载缓慢可能是一项重要指标；在数万个并发会话运行的峰值时段，其重要性则会急剧下降。</p>
+<p>请记住，分布式系统中的故障不可避免。细小的短暂故障一直都在发生，只是你未必注意到。常见例子包括：请求首次失败、重试后成功；关键进程最初失败，但路由到新配置的主机后只是延迟完成；服务一度无响应，直到请求被路由到备用服务。这类短暂故障增加的延迟，在流量高峰期可能融入正常运行，但在低流量时段，p95 响应时间会对单个数据点更加敏感。</p>
+<p>类似地，这些例子也说明了基于时间的指标<a contenteditable="false" data-type="indexterm" data-primary="指标" data-secondary="基于时间" id="idm45204354227248"/><a contenteditable="false" data-type="indexterm" data-primary="基于时间的指标" id="idm45204354577680"/>有多么粗糙。假设每五分钟计算一次 p95 响应时间。系统每隔五分钟报告此前五分钟的性能值，超过静态阈值就触发告警。一旦超过阈值，整个五分钟区间都被视为坏；反之，未超过阈值的整个五分钟区间都被视为好。针对这种指标发出告警，会产生大量假阳性和假阴性；它的粒度也不足以诊断问题究竟在何时、何处发生。</p>
+<p>在动态环境中，静态阈值过于僵硬、粗糙，无法可靠表明用户体验已经退化。它们缺少上下文。可靠告警需要更细的粒度和更高的可靠性，而 SLO 正好可以提供帮助。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="什么是服务等级目标？"><div class="sect1" id="what_is_a_service_level_objectivequesti">
+<h1>什么是服务等级目标？</h1>
+<p><em>服务等级目标</em>（<em>SLO</em>）是衡量服务健康状况的内部目标。SLO 因 <a href="https://landing.google.com/sre/sre-book/chapters/service-level-objectives">Google SRE 图书</a>而普及<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" id="idm45204354261744"/>，也是服务提供商与客户制定外部服务等级协议的重要组成部分。这些内部指标通常比对外协议或可用性承诺更加严格。额外的严格程度形成了一道安全网，帮助团队在外部用户体验恶化到不可接受之前发现并修复问题。</p>
+<div data-type="note" epub:type="note"><h6>说明</h6>
+<p>若想深入理解这一主题，推荐阅读 Alex Hidalgo 的著作 <a class="orm:hideurl" href="https://www.oreilly.com/library/view/implementing-service-level/9781492076803"><em>Implementing Service Level Objectives</em></a>（O’Reilly）。</p>
+</div>
+<p>关于使用 SLO 保障服务可靠性，人们已经写过很多内容；SLO 也并非可观测性领域所独有。然而，采用基于 SLO 的方法监控服务健康状况，需要应用本身具备可观测性。没有可观测性的系统也能够、而且有时确实会实施 SLO，但这样做可能引发严重的意外后果。</p>
+<section data-type="sect2" data-pdf-bookmark="使用 SLO 实现可靠告警"><div class="sect2" id="reliable_alerting_with_slos">
+<h2>使用 SLO 实现可靠告警</h2>
+<p>SLO 不以系统指标为依据，而是根据关键最终用户旅程，量化各方商定的服务可用性目标<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="与告警" id="sloalt"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="基于 SLO" id="altslo"/>。这一目标使用服务等级指标（SLI）衡量<a contenteditable="false" data-type="indexterm" data-primary="SLI（服务等级指标）" id="idm45204354192352"/><a contenteditable="false" data-type="indexterm" data-primary="基于时间的 SLI" id="idm45204354191712"/><a contenteditable="false" data-type="indexterm" data-primary="基于事件的 SLI" id="idm45204354192864"/>，由 SLI 把系统状态归类为好或坏。SLI 分为两类：<em>基于时间的度量</em>，例如“每个五分钟窗口内第 99 百分位延迟低于 300 毫秒”；以及<em>基于事件的度量</em>，例如“在给定滚动时间窗口内，耗时低于 300 毫秒的事件占比”。</p>
+<p>两者都试图表达最终用户受到的影响，区别在于是否已经按时间桶预聚合传入的用户流量数据。我们建议为 SLI 使用基于事件而不是基于时间的度量，因为前者能够以更可靠、更细的粒度量化服务状态。下一章会讨论其中的原因。</p>
+<p>来看一个定义事件型 SLI 的例子。你可以把良好的客户体验定义为“用户应能成功加载主页，并迅速看到结果”。用 SLI 表达这一点，需要先筛选符合条件的事件，再判断它们是否满足要求。在本例中，SLI 会执行以下操作：</p>
+<ul>
+<li><p>查找请求路径为 <em>/home</em> 的所有事件。</p></li>
+<li><p>在符合条件的事件中，筛选持续时间 &lt; 100 毫秒的事件。</p></li>
+<li><p>如果事件持续时间 &lt; 100 毫秒，<em>并且</em>请求成功，则将其视为正常。</p></li>
+<li><p>如果事件持续时间 &gt; 100 毫秒，即使返回成功代码，也将其视为错误。</p></li>
+</ul>
+<p>任何被判定为错误的事件，都会消耗 SLO 允许的部分<a contenteditable="false" data-type="indexterm" data-primary="错误预算" id="idm45204354189936"/>错误预算。下一章会仔细研究主动管理 SLO 错误预算和触发告警的模式。现在只需知道，错误积累到一定程度，系统就可以针对 SLO 可能遭到违反发出告警。</p>
+<p>SLO 缩小了告警范围，只考虑会影响服务用户实际体验的症状。如果某种底层状态妨碍“用户加载主页并迅速看到结果”，就应该触发告警，因为需要有人调查原因。不过，告警并未把服务<em>为何</em>以及<em>如何</em>退化关联起来；我们只知道出现了问题。</p>
+<p>相比之下，传统监控<a contenteditable="false" data-type="indexterm" data-primary="监控" data-secondary="基于原因" id="idm45204362742048"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="基于原因的方法" id="idm45204354521120"/>依靠的是基于原因的方法：检测一个此前已知的原因，例如线程数异常，以此表明用户可能遇到页面加载缓慢等不良症状。这种方法把情况的“现象”与“原因”捆绑在一起，试图帮助人们确定从哪里开始调查。但正如你已经看到的，服务的状态绝不只是已知的正常、宕机甚至缓慢几种。新涌现的故障模式可能早已影响用户，粗粒度合成探针却还毫无反应。要编写信号最多、噪声最少的良好监控，最重要的区别之一就是把“现象”与“原因”解耦。</p>
+<p>告警有用的第二项标准，是必须<em>可以采取行动</em>。系统层面的潜在原因告警只告诉你 CPU 很高，却完全没有说明用户是否受到影响、你是否应该行动。基于 SLO 的告警则针对症状：它告诉你确实有问题。告警之所以可以行动，是因为响应者接下来应查明用户为何受到影响并缓解问题。然而，如果系统无法得到充分调试，解决问题仍会非常困难。因此，转向可观测性至关重要：在生产环境中调试必须安全而自然。</p>
+<p>在以 SLO 为基础的世界里，你需要可观测性，也就是无须增加新插桩，便能向系统提出前所未见的问题。正如全书反复说明的那样，可观测性使你能够从第一性原理出发调试。借助丰富的遥测数据，可以从宽广范围开始，再通过筛选不断缩小搜索空间。这样，无论故障多么新颖、如何突然涌现，你都能在响应过程中确定问题来源。</p>
+<p>对于自包含、很少变化，而且长期使用同一套告警的系统，可以积累大量告警，与所有已知故障一一对应。如果资源和时间充足，理论上甚至可以缓解并预防所有这些已知故障（可既然如此，为什么更多团队没有做到？）。现实是，无论自动修复多少已知故障，都无法预测现代分布式系统涌现出的故障模式。系统某一部分意外损坏后，你不可能回到过去，预先在周围增加指标。任何东西都可能随时损坏，因此你需要为一切收集<em>数据</em>，而不是为一切配置<em>告警</em>。为所有事物设置告警并不可行；软件行业整体早已淹没在噪声中。</p>
+<p>要响应新颖、涌现的故障模式，可观测性不可或缺。借助可观测性，你可以一步接一步、有条不紊地询问系统：提出一个问题并检查结果，再提出下一个问题，如此继续。不再受传统监控告警和仪表板限制，而是能够即兴调整解决方案，找出系统中的任何问题。</p>
+<p>能够提供丰富、有意义遥测数据的插桩，是这种方法的基础。迅速分析遥测数据、验证或证伪假设的能力，让你有信心删除嘈杂而无用的告警。将基于 SLO 的告警与可观测性结合起来，就能把告警中的“现象”与“原因”解耦。</p>
+<p>如果绝大多数告警都无法采取行动，很快就会造成告警疲劳。要消除这个问题，现在应该删除所有无法行动的告警。</p>
+<p>仍不确定能否说服团队删除所有这些无用告警？下面来看一个真实案例，了解推动这类文化变革<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="与告警" data-startref="sloalt" id="idm45204354544944"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="基于 SLO" data-startref="altslo" id="idm45204354197280"/>需要什么。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="转向基于 SLO 的告警文化：案例研究"><div class="sect2" id="changing_culture_toward_slo_based_alert">
+<h2>转向基于 SLO 的告警文化：案例研究</h2>
+<p>仅仅拥有包含丰富上下文、可以查询的遥测数据，未必足以让团队放心删除现有的所有无用告警<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="与告警" data-tertiary="案例研究" id="slocase"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="基于 SLO" data-tertiary="案例研究" id="alslob"/>。Honeycomb 就经历过这种情况。我们已经实施 SLO，团队却仍未完全信任它。SLO 告警被路由到低优先级收件箱，团队继续依赖传统监控告警。直到发生几次事故，基于 SLO 的告警都在传统告警给出任何有用信号<em>很久以前</em>就标出了问题，这份信任才建立起来。</p>
+<p>为了说明这种转变如何发生，来看 2019 年底的一次事故。Liz 开发了我们的 SLO 功能，因此一直关注 SLO 告警，而团队其他成员都盯着传统告警。在这次故障中，负责接收全部客户数据的 Shepherd 服务开始消耗 SLO 预算，并向 SLO 测试频道发送告警。服务很快恢复：它发生了持续 20 分钟、影响 1.5% 流量的部分中断。由于这次中断消耗了 30 天预算中的大部分，SLO 错误预算受到重创，但问题看起来自行消失了。</p>
+<p>值班工程师在当地时间凌晨 1:29 被 SLO 告警叫醒。看到服务仍在工作，他睡眼惺忪地判断这大概只是短暂波动。SLO 告警已经触发，但要求连续多次探针失败的传统监控没有发现问题。上午 9:55，SLO 告警第四次触发，此时显然不可能只是巧合。尽管传统监控仍未发现问题，工程团队还是决定宣布事故。</p>
+<p>调查事故时，另一位工程师想到检查进程正常运行时间（<a data-type="xref" href="#a_heatmap_showing_uptime_of_a_crashing">图 12-1</a>），由此发现一个进程存在内存泄漏。集群中的每台机器都在耗尽内存、同步故障并重新启动。问题确定后，很快就与一次新部署建立关联，我们得以回滚错误版本。上午 10:32，事故宣告解决。</p>
+<figure><div id="a_heatmap_showing_uptime_of_a_crashing" class="figure">
+<img src="Images/oben_1201.png" width="1016" height="491"/>
+<h6><span class="label">图 12-1　</span>热图显示一组发生故障的机器的正常运行时间：它们在 18:30 左右一同重启；内存剖析图则显示内存持续泄漏并触发<span class="keep-together">内存耗尽</span></h6>
+</div></figure>
+<p>说到这里，必须承认，许多读者可能会质疑：传统的原因型告警在这个案例中也完全够用。为什么不监控内存，在系统内存耗尽（OOM）时发出告警？回答这个问题需要考虑两点。</p>
+<p>第一，Honeycomb 的工程师早已不再追踪 OOM。缓存、垃圾收集和备份进程都会伺机<span class="keep-together">使用系统内存</span>，偶尔还会把它用完。“内存耗尽”对我们的应用来说很常见。考虑到系统架构，只要所有进程不是同时崩溃，偶尔有一个进程崩溃并不会造成致命后果。对我们而言，追踪这些单独故障毫无用处；我们更关心整个集群的可用性。</p>
+<p>在这种情况下，传统监控告警没有、也永远不会发现这种渐进式退化。简单、粗糙的合成探针只能检测整体中断，无法发现 50 次探测中有一次失败后恢复。当时机器仍然可用，服务仍在运行，大部分数据也都顺利通过。</p>
+<p>第二，即使能够引入足够复杂的逻辑，只在检测到一定数量、特定类型的 OOM 时发出告警，我们也必须在这个特殊问题真正发生很久以前，就精确预见这种故障模式，才能拼凑出触发有效告警的正确条件组合。理论上，这套条件也许能在这一次检测到这个特殊问题，但大多数时候恐怕只会制造噪声、加剧告警疲劳。</p>
+<p>传统监控从未发现这种渐进式退化，SLO 却没有说谎：用户确实受到了影响，部分传入的客户数据已经丢失。事故从一开始就几乎耗尽了 SLO 预算（<a data-type="xref" href="#the_slo_error_budget_burned_en_dashfive">图 12-2</a>）。</p>
+<figure><div id="the_slo_error_budget_burned_en_dashfive" class="figure">
+<img src="Images/oben_1202.png" width="1443" height="871"/>
+<h6><span class="label">图 12-2　</span>事故结束时，SLO 错误预算已经消耗至 –566%；达标率从 99.995% 的目标值降至 99.97%。时间线上的方框表示被标记为坏的事件；在问题修复前，它们以相当均匀、规律的间隔发生</h6>
+</div></figure>
+<p>到了那个阶段，如果团队已经把基于 SLO 的告警作为主要告警，就不会那么容易寻找外部或短暂因素来解释问题，而是会着手真正修复它，至少也会回滚最新部署。SLO 证明了自己能够发现部分中断，并促使团队作出适当响应。</p>
+<p>这次事故改变了我们的文化。SLO 预算消耗告警证明自身价值后，工程团队开始像尊重传统告警一样尊重基于 SLO 的告警。继续依赖一段时间后，团队越来越相信，完全依据 SLO 数据发出告警也很可靠。</p>
+<p>此后，我们删除了所有根据过去五分钟流量的错误百分比、错误绝对数量或底层系统行为触发的传统监控告警。现在，我们把基于 SLO 的告警作为主要<a contenteditable="false" data-type="indexterm" data-primary="SLO（服务等级目标）" data-secondary="与告警" data-tertiary="案例研究" data-startref="slocase" id="idm45204354519760"/><a contenteditable="false" data-type="indexterm" data-primary="告警" data-secondary="基于 SLO" data-tertiary="案例研究" data-startref="alslob" id="idm45204354851520"/>防线。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000011">
+<h1>结语</h1>
+<p>本章从宏观层面介绍了 SLO，说明它为何是一种比传统阈值监控更有效的告警策略。软件行业普遍存在告警疲劳，而传统监控方案采用的潜在原因方法为这一问题创造了条件。</p>
+<p>要解决告警疲劳，只应创建满足两项标准的有用告警。第一，告警必须可靠表明服务的用户体验已经退化。第二，告警必须可以采取行动。不满足这些标准的告警已经无法履行职责，应当删除。</p>
+<p>SLO 把事故告警背后的“现象”与“原因”解耦。关注用户痛苦症状，使 SLO 能够成为客户体验的可靠指示器。由事件型度量驱动的 SLO，产生假阳性和假阴性的概率都低得多。因此，基于 SLO 的告警可以减少干扰，让行动更明确、时机更及时，也能帮助区分系统性问题与偶发的零星故障。</p>
+<p>基于 SLO 的告警本身能告诉你用户正在遭受痛苦，却不能说明原因。要让这种告警真正可以行动，生产系统必须具备足够的可调试性。使用 SLO 时，在系统中建立可观测性是取得成功的关键。</p>
+<p>下一章将深入 SLO 错误预算消耗机制，从技术层面详细考察它们的使用方式。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn9"><sup><a href="ch12-zh.xhtml#ch01fn9-marker">1</a></sup> Betsy Beyer 等，<a href="https://oreil.ly/vRbQf">“Tying These Principles Together”</a>，载于 <em>Site Reliability Engineering</em>（加利福尼亚州塞瓦斯托波尔：O’Reilly，2016），第 63–64 页。</p></div></div></section></div></body>
+</html>

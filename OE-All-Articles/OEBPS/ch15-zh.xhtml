@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 15 章 自建还是购买与投资回报"><div class="chapter" id="build_versus_buy_and_return_on_investme">
+<h1><span class="label">第 15 章　</span>自建还是购买与投资回报</h1>
+<p>到目前为止，本书既考察了可观测性的技术基础，也介绍了启动实践所需的社会层面步骤。本部分将讨论大规模实施可观测性时必须考虑的问题，重点关注实现前面所述可观测性工作流所需的功能要求。</p>
+<p>规模足够大以后，许多团队都要面对一个问题：可观测性方案究竟应该自行构建，还是购买现成产品？表面看来，可观测性成本相对较低，小规模部署尤其如此。但用户流量增长时，基础设施占用和应用产生的事件量也会增长。需要处理的可观测性数据大幅增加、厂商账单越来越高时，团队就会考虑自行构建是否更省钱。</p>
+<p>还有一些组织考虑自建，是因为认为厂商无法充分满足自己的特殊需求。既然软件工程师能准确构建想要的东西，为什么要退而求其次？因此，判断某个团队究竟适合自建还是购买时，需要考虑多种因素。</p>
+<p>本章将逐一分析这些因素，帮助团队作出决定；还会从可量化和不可量化两方面考虑投资回报率（ROI）。自建与购买也不是非此即彼的二元选择；某些情况下，可以既购买<em>又</em>自建。</p>
+<p>我们先考察购买和自建的真实成本，再讨论哪些情况可能要求采用其中一种方案，还会研究如何在全部自行构建与只使用厂商方案之间取得平衡。本章建议最适合大型组织，但任何规模的团队权衡这项决定时都可以参考。</p>
+<section data-type="sect1" data-pdf-bookmark="如何分析可观测性的投资回报率"><div class="sect1" id="how_to_analyze_the_roi_of_observability">
+<h1>如何分析可观测性的投资回报率</h1>
+<p>首先必须承认，本书作者都是可观测性软件厂商的员工，我们显然有自己的偏向<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="ROI（投资回报率）" data-tertiary="分析" id="obroiana"/><a contenteditable="false" data-type="indexterm" data-primary="ROI（投资回报率）" data-secondary="分析" id="roianal"/>。即便如此，我们仍可以从量化成本开始，有条不紊地拆解这个问题。</p>
+<p>可观测性究竟要花多少钱，不存在适用于所有人的答案，但仍可作出一些宽泛归纳。最容易的起点是最显眼的因素：商业可观测性厂商开出的账单。与厂商合作时，财务成本更容易看见，因为它就列在费用明细中。</p>
+<p>初次研究厂商方案时，总价可能让人受到冲击；那些老牌监控和 APM 厂商只是给沿用几十年的传统工具贴上可观测性标签，尤其如此。震惊的部分原因，是新用户会把价格与开源、“免费”、似乎可以自行搭建的替代方案比较。然而，人们通常不习惯计算自己时间的价格。如果启动一些基础设施、配置软件只花一小时，DIY 方案就仿佛基本免费。</p>
+<p>现实中，持续维护成本几乎总被低估：上下文切换消耗的时间，工程师把时间投入不具备核心业务价值的事物所产生的机会成本，以及“免费”方案悄悄吞掉的所有工时。实践中，即使自认为已经把低估考虑进去，最终很可能仍会低估。面对维护成本，人类的直觉极其乐观，甚至乐观得有点可爱。作为起点，这既可以理解，也值得原谅。</p>
+<p>即使越过这个起点，自建冲动有时也来自预算错配。申请预算购买软件，可能比让已有工程师花时间构建、支持内部替代方案更难。但这类组织通常不愿承认，“免费”劳动实际给企业造成了多大成本。预算错配可能促成最初的自建决定，但长期来看，这项决定会给组织带来巨大成本，而最初决定作出后，这些成本通常不再有人追踪。</p>
+<p>分析自建或购买可观测性工具的 ROI，首先必须真正理解两项决定各自的成本。准确计算总体拥有成本（TCO）<a contenteditable="false" data-type="indexterm" data-primary="TCO（总体拥有成本）" id="idm45204353697936"/><a contenteditable="false" data-type="indexterm" data-primary="总体拥有成本（TCO）" id="idm45204353731168"/>需要考虑许多因素<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="ROI（投资回报率）" data-tertiary="分析" data-startref="obroiana" id="idm45204353675440"/><a contenteditable="false" data-type="indexterm" data-primary="ROI（投资回报率）" data-secondary="分析" data-startref="roianal" id="idm45204354168512"/>，但可以先从一些通用原则入手。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="自行构建的真实成本"><div class="sect1" id="the_real_costs_of_building_your_own">
+<h1>自行构建的真实成本</h1>
+<p>先从机会成本说起。资源有限，每一项花钱或投入时间的选择，都会影响企业还能完成什么<a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="成本" id="bobcost"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="成本" id="obbucos"/>。<em>机会成本</em>是作出决定时，次优替代方案原本具有的价值。选择当前道路后，你为此放弃了什么？</p>
+<p>你的业务是构建可观测性方案吗？如果不是，开发定制可观测性工具很可能让公司偏离核心目标。因此，选择自建的机会成本很高。</p>
+<p>地球上自然存在的最稀有元素是砹，在元素周期表中原子序数为 85；任何时刻，地壳深处都不到 1 克。第二稀有的元素是尚未分配的工程时间。当然，这是个玩笑；但如果你是产品或工程经理，听到这里大概会“边笑边哭”（各位经理，抱歉了！）。任何公司都有无穷无尽的竞争需求，争抢工程周期。领导者和工程师的职责，是滤除噪声，优先解决影响最大、能够推动业务前进的需求。</p>
+<p>软件工程师的工作是编写代码，但每当把这项才能用于解决遇到的所有随意问题时，机会成本就会出现。看到问题后的第一反应如果永远是写些代码修复，也许就没有考虑机会成本。编码快速而廉价，维护代码却极其耗时、昂贵。作为工程师，我们知道自己经常只顾着思考<em>能不能</em>做，却没有停下来想想<em>应不应该</em>做。</p>
+<p>计算机会成本，首先要计算每种选择的财务成本，量化各自收益，再加以比较。下面从自建成本的例子开始。</p>
+<section data-type="sect2" data-pdf-bookmark="使用“免费”软件的隐藏成本"><div class="sect2" id="the_hidden_costs_of_using_quotation_mar">
+<h2>使用“免费”软件的隐藏成本</h2>
+<p>你可以选择使用开源组件，再自行组装可观测性技术栈<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="免费软件" id="obbufrsw"/><a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="免费软件" id="bobswfr"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="构建可观测性" id="swob"/>。为了简单起见，我们假定采用这种方式。（另一个选项是从零构建技术栈的每个组件，但成本至少会高一个数量级。）下面用真实案例说明实际运营成本。</p>
+<p>我们曾与一位工程团队经理交谈。他已经在内部搭建 ELK 技术栈，正在考虑投资商业可观测性方案。我们为其组织提供的报价约为每月 8 万美元。他看到年费接近 100 万美元，立刻被价格吓退，并指着团队内部运行的“免费”ELK 技术栈作为反例。</p>
+<p>然而，他没有计算运行 ELK 集群的专用硬件成本，每月同样是 8 万美元；也没有计算为协助运维而额外招聘的三位工程师，每人每年 25 万到 30 万美元；更未包括所有一次性成本，例如招聘费为年薪的 15% 到 25%，即每人约 7.5 万美元，以及组织花在招聘和培训上的较难察觉、但仍可量化的时间成本。</p>
+<p>这个看似免费的方案每年实际花费超过 200 万美元，是商业方案的两倍多，只是支出方式不容易被组织看见。工程师成本很高，招聘也很难。为了省几个钱，就把他们的才华用于定制方案，尤其浪费；现实往往与“省钱”的判断相去甚远。</p>
+<p>LaunchDarkly 首席开发者倡导者 Heidi Waterhouse 打趣说，开源软件“免费得像免费送你一只小狗，而不是免费送你一杯啤酒”。确实如此：前例中的工程经理花了两倍的钱，完成不具备关键使命、也不能增强公司核心能力的工作。</p>
+<p>理解 ROI 的第一步，是彻底列出运行所谓免费软件时隐藏且不显眼的成本<a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="免费软件" data-startref="obbufrsw" id="idm45204354058352"/><a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="免费软件" data-startref="bobswfr" id="idm45204354058608"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="构建可观测性" data-startref="swob" id="idm45204354058480"/>。这并不是说不该运行开源软件，而是说使用时必须充分了解它的真实成本。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="自行构建的收益"><div class="sect2" id="the_benefits_of_building_your_own">
+<h2>自行构建的收益</h2>
+<p>在许多组织中，决定因素归根结底是能否为显眼的支出给出理由。预算与预期不一致时<a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="收益" id="buobben"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="收益" id="obbubene"/>，批准已有员工花时间、再招聘开发者构建和支持内部方案，往往比新增费用项目从外部购买软件容易。虽然这种情况下对真实成本的估算有误，但自行构建确实还有一项收益，能够稍微平衡局面。</p>
+<p>自建软件也会培养内部专业能力。决定采用定制方案后，深入理解组织需求、将其转化为一组功能要求就会成为某个人的职责。与内部利益相关者合作、支持其需求的过程中，团队将学会弥合技术与业务之间的鸿沟。</p>
+<p>自建可观测性方案时，必然需要吸收并实现本书详述的许多方案：从事件提供的必要数据粒度，到自动化核心分析循环，再到优化数据存储，使其能够针对大量、不可预测的高基数数据高性能返回结果。由于这些方案专门为组织需求实现，团队会对它们形成极其深入的理解。</p>
+<p>与自己的开发团队经历许多试验和有价值的错误后，你会学会如何让分布式追踪满足特定应用需求；在调试循环中正面撞上指标粒度粗糙的限制后，会准确理解指标在哪些地方能服务业务、哪些地方不能；因未能及时响应生产中断后，还会学会针对所实施的 SLO 调整错误预算消耗告警计算。</p>
+<p>随着时间推移，团队会深入理解组织挑战，最终组建一支专门为软件工程团队编写插桩库和实用抽象的团队。这个可观测性团队会在组织内统一命名约定，妥善处理更新和升级，并就如何以最高效方式为代码插桩向其他工程团队提供咨询。多年以后，随着团队壮大、定制实现经受实战考验并日趋成熟，团队甚至可以把重点从新功能开发和持续支持，转向简化系统、减少摩擦。</p>
+<p>可观测性是组织的竞争优势。<sup><a data-type="noteref" id="ch01fn11-marker" href="ch15-zh.xhtml#ch01fn11">1</a></sup>自建方案可以让可观测性深深融入自身实践与文化，并利用现有组织内部知识。不必采用为多种工作流和实现设计的通用预制软件，而能按照自己的规则定制方案，与业务的特殊部分深度集成<a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="收益" data-startref="buobben" id="idm45204354202688"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="收益" data-startref="obbubene" id="idm45204353682944"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="自行构建的风险"><div class="sect2" id="the_risks_of_building_your_own">
+<h2>自行构建的风险</h2>
+<p>自建可观测性方案能够培养深入的内部专业能力<a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="风险" id="bobrisk"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="风险" id="obburisk"/>，但也伴随风险。第一个也是最明显的风险，在于产品管理能力与精力。可观测性团队是否有一位名义上或事实上承担产品经理职责的人，负责访谈用户、确定用例、管理团队的功能开发、交付最小可行产品、收集反馈以持续迭代，并在约束与业务需求之间取舍，按照路线图交付企业所需功能？</p>
+<p>产品驱动的组织拥有内部产品能力，能够帮助定制可观测性产品取得成功；但是否愿意把这些产品管理能力从核心业务目标调走，投入内部工具建设，则是另一个问题。自建最大的风险，是最终交付的产品能否真正满足内部用户需求。</p>
+<p>把多种开源组件拼装成方案，可以在一定程度上缓解风险。然而，每个组件都有自己设计的用户体验和内置工作流假设。自建技术栈的工程团队必须编写集成库，减少组件之间的摩擦，实现自己团队所需的工作流；还必须构建易用的用户界面，否则采用率可能很低。</p>
+<p>决定自建时，必须实事求是地评估组织能力，以及开发出优于商业系统的产品的可能性。组织是否具备足够专业能力，能够交付用户界面、工作流灵活性和速度都足以推动全组织采用的系统？如果没有，很可能投入了时间、金钱并错失业务机会，最终方案却只有熟知其粗糙边角和变通方法的少数人使用。</p>
+<p>即使组织有能力交付更好的方案，还必须考虑时间。开发自己的方案和定制集成需要时间，会推迟可观测性采用计划。企业能否承受等待几个月才得到可用方案，而不是立即使用已经构建好的商业方案？这就像问企业是否应先盖一栋办公楼，再开始运营。某些情况下，考虑长期影响可能确实要求这样做；但在商业中，缩短价值实现时间通常更可取。</p>
+<p>自建产品也不是一次完成即可。它需要持续支持，定制软件需要维护；技术栈中的第三方组件会收到软件更新和补丁；组织工作流与系统也不断演进。底层组件更新或增强后，需要投入内部开发工作，这些都必须计入成本。组件和集成如果不能保持最新，定制方案就可能过时。持续支持与维护带来的风险同样必须考虑。</p>
+<p>许多企业不幸地采用一种常见模式：投入开发工作构建内部工具初版，随后就<span class="keep-together">转向</span>下一个项目。于是，开发停滞、采用率低，而让方案满足当前要求所需的时间精力与其他事项相比优先级不足时，企业往往会放弃定制方案<a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="成本" data-startref="bobcost" id="idm45204354384064"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="成本" data-startref="obbucos" id="idm45204354004240"/><a contenteditable="false" data-type="indexterm" data-primary="构建可观测性" data-secondary="风险" data-startref="bobrisk" id="idm45204354976736"/><a contenteditable="false" data-type="indexterm" data-primary="可观测性" data-secondary="自建" data-tertiary="风险" data-startref="obburisk" id="idm45204354601456"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="购买软件的真实成本"><div class="sect1" id="the_real_costs_of_buying_software">
+<h1>购买软件的真实成本</h1>
+<p>先看购买软件最明显的成本：财务成本。与厂商合作时，这项成本最具体；软件厂商每次开账单，都能看到确切金额。</p>
+<p>现实是，软件厂商必须赚钱才能生存，定价方案必然包含一定利润率。换言之，使用厂商软件支付的费用，会高于厂商为你构建和运营软件的成本。</p>
+<section data-type="sect2" data-pdf-bookmark="商业软件隐藏的财务成本"><div class="sect2" id="the_hidden_financial_costs_of_commercia">
+<h2>商业软件隐藏的财务成本</h2>
+<p>厂商通过定价收回交付成熟市场方案的成本，也许公平而且必要<a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="隐藏成本" id="sofcomhid"/><a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="隐藏成本" id="comhidd"/>；但掩盖真实成本、缺乏透明度，或者堆叠大量定价维度，使消费者无法合理预测未来使用模式的费用，就远没有那么公平。</p>
+<p>需要警惕的一种常见模式，是采用掩盖 TCO 的定价策略，例如按席位、主机、服务、查询，或者其他无法预测的计量机制收费。按用量付费最初可能显得容易接受<span class="keep-together">，直到</span>某项工具的使用量爆炸式增长，成本增长幅度远超它帮助产生的收入。</p>
+<p>这并不是说按用量付费不公平，只是更难预测未来。消费者应避免这样的定价：按照预期方式成功使用可观测性工具后，成本反而不成比例地增加。最初也许会选择进入门槛较低的价格，却在学会成功使用工具后，被不断膨胀的预算锁住。学会预测隐藏成本，可以避免这种情况。</p>
+<p>初创企业发展成功后，团队规模会变化吗？很可能会。因此，按席位授权看似合理：公司利润更高时，也愿意多付钱。未来主机数量会大幅增加吗？也许，很可能会，但实例大小调整也会产生影响。服务会增加吗？也许只增加少数；可能发布几个需要更多服务的新产品或功能，但很难确定。查询数量呢？如果工具使用成功，几乎必然增加。增长是线性还是指数级？如果把单体拆成微服务会怎样？如果此前未考虑的相邻团队也发现工具有用，又会怎样？</p>
+<p>未来无法预测。但对可观测性而言，无论生产服务如何变化，你都能够、也应该预测成功采用后使用模式会如何发展。面对同一组可观测性数据，推荐做法是以不断增长的好奇心分析它。随着可观测性文化在组织中传播，数据查询应呈指数增长。</p>
+<p>例如，可观测性适用于 CI/CD 构建流水线（参见<a data-type="xref" href="ch14-zh.xhtml#observability_and_the_software_supply_c">第 14 章</a>）。接下来几章还会看到，分析可观测性数据对产品、支持、财务、管理层以及远超工程部门的众多业务团队同样有用<a contenteditable="false" data-type="indexterm" data-primary="CI/CD（持续集成/持续交付）" id="idm45204353654416"/><a contenteditable="false" data-type="indexterm" data-primary="持续集成/持续交付（CI/CD）" id="idm45204353774832"/>。你会希望跨许多维度以多种方式切分可观测性数据，找出隐藏在应用系统中的性能离群值。</p>
+<p>因此，应避免采用会惩罚推广采用和好奇探索的定价方案。你会希望公司中尽可能多的人，都能以尽可能多的方式理解客户如何使用软件。</p>
+<p>作为消费者，应该要求厂商保持透明，帮助计算隐藏成本、预测使用模式。要求他们详细解释今天起点的成本估算，以及未来可能使用模式的成本估算。任何厂商如果不愿极其详细地说明业务需求增长时价格会如何变化，都应保持警惕。</p>
+<p>考虑商业可观测性方案隐藏的财务成本时，先从当前使用方式的真实成本出发，再应用合理规则：如果要让尽可能多的人以尽可能多的任意方式理解客户如何使用软件，这项工具会花多少钱<a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="隐藏成本" data-startref="sofcomhid" id="idm45204353705584"/><a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="隐藏成本" data-startref="comhidd" id="idm45204353644976"/>？这样就能用实际金额量化成本。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="商业软件隐藏的非财务成本"><div class="sect2" id="the_hidden_nonfinancial_costs_of_commer">
+<h2>商业软件隐藏的非财务成本</h2>
+<p>商业方案的另一项隐藏成本是时间。购买现成方案确实会缩短价值实现时间<a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="隐藏成本" data-tertiary="非财务" id="comhidfin"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="非财务成本" id="sofcomnon"/>，但这条路上还有一个隐藏陷阱：厂商锁定。选择使用商业方案后，迁移到另一个方案需要投入多少时间和精力？</p>
+<p>采用可观测性时，最耗费人力的部分是为应用插桩，使其发出遥测数据。许多厂商为了缩短采用时间，会提供专有代理或插桩库，预先以自家工具期望的专有方式生成遥测。某些专有代理也许能更快起步，但只要考虑评估其他可观测性方案，就必须重新付出让这些代理正常工作的全部时间和精力。</p>
+<p>开源 OpenTelemetry 项目（参见<a data-type="xref" href="ch07-zh.xhtml#instrumentation_with_opentelemetry">第 7 章</a>）提供许多可观测性工具都支持的开放标准，从而解决这个问题。OTel 还支持使用 OTel 发行版（<em>distro</em>），让专有工具同样能够缩短价值实现时间。厂商可以在标准 OTel 库之上，通过发行版添加样板配置和功能。</p>
+<p>作为消费者，避免厂商锁定的策略应该是：应用默认使用原生 OTel 功能，让发行版处理厂商配置。需要评估或迁移到其他工具时，可以用不同发行版替换配置，或者配置 OTel 导出器，把数据发送到多个后端。开始使用 OTel 会产生初始时间成本，任何插桩方式都是如此；但未来改用其他方案时，大部分时间投入仍可复用<a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="隐藏成本" data-tertiary="非财务" data-startref="comhidfin" id="idm45204354064704"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="非财务成本" data-startref="sofcomnon" id="idm45204353824304"/>。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="购买商业软件的收益"><div class="sect2" id="the_benefits_of_buying_commercial_softw">
+<h2>购买商业软件的收益</h2>
+<p>购买可观测性方案最明显的收益是缩短价值实现时间<a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="收益" id="commbene"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="收益" id="softcombe"/>。不必自行定制构建，而是购买已经可以使用的产品。大多数情况下，几分钟或几小时就能起步，并开始以没有可观测性时无法做到的方式理解生产环境。</p>
+<p>商业方案之所以能够快速上手，部分原因是用户体验通常比开源方案更流畅。开源方案一般被设计成构件，供用户组装进自己设计的工具链。商业软件则往往更有主见，通常是带有特定工作流的成品。产品设计师会努力简化使用方式、尽快实现价值。商业软件<em>必须</em>比免费替代品更快、更容易学习和使用，否则为什么要付钱？</p>
+<p>购买商业软件也可能是为了把维护和支持交给厂商，从而节省时间精力。你不再消耗自己的工程周期，而是付钱让别人承担负担，还能享受更好的规模经济。选择商业方案通常是用成本换取更高速度和更低组织风险。</p>
+<p>商业方案还有另一项大多被忽视的收益。向核心能力专注于某个特定问题的公司购买工具，可能获得一个在多种场景中积累多年问题解决经验的合作伙伴。借助商业关系，可以利用可观测性领域极具价值的专业能力<a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="收益" data-startref="commbene" id="idm45204353560832"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="收益" data-startref="softcombe" id="idm45204353642064"/>；自行培养这些能力可能要花数年。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="购买商业软件的风险"><div class="sect2" id="the_risks_of_buying_commercial_software">
+<h2>购买商业软件的风险</h2>
+<p>上一项收益同时也是购买商业软件的一大风险。把责任交给厂商<a contenteditable="false" data-type="indexterm" data-primary="商业软件" data-secondary="风险" id="idm45204353551040"/><a contenteditable="false" data-type="indexterm" data-primary="软件" data-secondary="商业" data-tertiary="风险" id="idm45204353550272"/>，可能导致组织无法培养自己的内部可观测性专业能力。只消费现成方案，组织也许不再需要深入问题领域，理解可观测性究竟如何适用于自己的特殊业务需求。</p>
+<p>商业产品面向广泛受众。它们虽有明确设计取向，通常也要适应多种用例。根据定义，商业产品并非专门为你的特殊需求构建。对你很重要的功能，对厂商也许没那么重要；厂商可能迟迟不在路线图中提高其优先级，让你只能等待对业务至关重要的功能。</p>
+<p>不过，采用可观测性工具时，有办法在缓解这些风险的同时培养内部专业能力。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="购买与自建并非二元选择"><div class="sect1" id="buy_versus_build_is_not_a_binary_choice">
+<h1>购买与自建并非二元选择</h1>
+<p>对于可观测性工具，自建还是购买是一个虚假的二分法。选择并不局限于两者之一，还有第三个选项：既购买<em>又</em>自建。事实上，我们建议大多数组织采用这种方法。它既能尽量降低内部机会成本，也能构建符合组织独特需求的方案。下面考察大多数组织中的<em>可观测性团队</em>应如何工作，看看混合模式的实际形态。</p>
+<p>购买厂商方案，并不意味着公司不再需要可观测性团队。团队无须从零构建工具或组装开源组件，而可以充当厂商与工程组织之间的集成中介，明确目标是让双方接口无缝、友好。</p>
+<p>行业研究已经表明<a contenteditable="false" data-type="indexterm" data-primary="DORA（DevOps 研究与评估）2019" id="idm45204353535008"/><a contenteditable="false" data-type="indexterm" data-primary="DevOps 研究与评估（DORA）" id="idm45204353846992"/>，外包工作取得成功的关键，是精心管理工作如何重新融入组织。<sup><a data-type="noteref" id="idm45204353886976-marker" href="ch15-zh.xhtml#idm45204353886976">2</a></sup>外包贡献应嵌入跨职能团队，由团队负责把工作集成回更广泛的组织。该研究具体考察的是合同交付成果，但同一种模型也适用于与厂商互动。</p>
+<p>高绩效组织会使用优秀工具。他们知道工程周期稀缺而宝贵，因此把最大火力集中于解决核心业务问题，并为工程师配备同类最佳工具，显著提高效果与效率。只有定制问题或定制工具已经阻碍核心业务价值交付时，他们才投入解决或构建。</p>
+<p>绩效较低的工程组织会满足于平庸工具，或者不加质疑地照搬旧工具。他们在采用和淘汰用于解决核心业务问题的工具时缺乏纪律与一致性。由于试图自行解决大多数问题，损失的工程周期散落在整个组织中；他们也缺乏聚焦，无法产生交付核心业务价值的强大影响。</p>
+<p>可观测性团队应该编写库和实用抽象，在组织内统一命名方案，妥善处理更新升级，并就如何以最高效方式为代码插桩向其他工程团队提供咨询（参见<a data-type="xref" href="ch18-zh.xhtml#use_case_telemetry_management_at_slack">“用例：Slack 的遥测管理”</a>）。他们还应管理厂商关系，决定何时采用新技术，并寻找简化系统、减少摩擦和成本的方法。</p>
+<p>对于因为能够满足特殊需求而考虑自建技术栈的组织，这种方式尤其有效。让可观测性团队在可扩展的厂商方案之上构建，可以尽量减少分散核心业务价值交付精力的沉没成本。团队不必重新发明轮子，而可以构建集成，把现成的轮子装到已经造好的高速汽车上。</p>
+<p>实现这种平衡的关键，是确保团队使用的产品拥有成熟 API，能够配置、管理和查询可观测性数据。团队应该能够以编程方式获取结果，再用于自己的定制工作流。解决最后一公里问题所需投入少得多：只构建真正需要的组件，同时购买公司无须自行构建的绝大多数部分。寻找商业工具时，应选择允许你按需操作、调整可观测性数据的灵活产品。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000014">
+<h1>结语</h1>
+<p>本章给出的是通用建议，你的具体情况当然可能不同。计算自建或购买时，首先必须确定两个选项的真实 TCO。先看较明显、可量化的成本：自建时是时间，购买时是金钱；再留意各自隐藏成本：自建时的机会成本和不显眼的资金支出，以及购买时未来使用模式和厂商锁定。</p>
+<p>考虑使用开源工具自建时，除了把工程师用于运行无法交付核心业务价值的工具所产生的机会成本，还要全面衡量招聘、雇用和培训开发维护定制方案所需工程师的隐藏成本，包括薪资和基础设施成本。购买方案时，则要确保厂商足够透明，使你能够理解复杂定价方案，并同时考虑系统架构和组织采用模式，以合理规则判断未来可能的成本。</p>
+<p>把这些不显眼的成本相加后，才能更充分地比较免费方案和商业方案的 TCO；随后再考虑两种方法较难量化的收益，判断哪一种适合自己。还要记住，可以既购买<em>又</em>自建，兼得两者收益。</p>
+<p>请记住，作者作为软件厂商员工，在这场讨论中存在隐性偏向。即便如此，我们相信本章建议公平而有条理，也符合我们过去作为可观测性工具消费者而非生产者的经验。大多数时候，对专注交付业务价值的团队而言，购买可观测性方案比自行构建更好。不过，这项建议有一个前提：团队仍应构建集成层，使商业方案能够适应自己的业务需求。</p>
+<p>下一章将假定你决定自建可观测性方案，考察如何优化数据存储，以满足可观测性工作负载。</p>
+</div></section>
+<div data-type="footnotes"><p data-type="footnote" id="ch01fn11"><sup><a href="ch15-zh.xhtml#ch01fn11-marker">1</a></sup> Dustin Smith，<a href="https://oreil.ly/h958I">“2021 Accelerate State of DevOps Report Addresses Burnout, Team Performance”</a>，Google Cloud Blog，2021 年 9 月 21 日。</p><p data-type="footnote" id="idm45204353886976"><sup><a href="ch15-zh.xhtml#idm45204353886976-marker">2</a></sup> Nicole Forsgren 等，<a href="https://oreil.ly/2Gqjz"><em>Accelerate State of DevOps</em></a>，DORA，2019。</p></div></div></section></div></body>
+</html>

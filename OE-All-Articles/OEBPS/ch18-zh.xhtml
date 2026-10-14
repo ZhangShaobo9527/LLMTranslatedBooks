@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2002/06/xhtml2/ http://www.w3.org/MarkUp/SCHEMA/xhtml2.xsd" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+<link href="Styles/Style00.css" rel="stylesheet" type="text/css" />
+
+<style type="text/css">body{margin:1em;background-color:transparent!important;}#sbo-rt-content *{text-indent:0pt!important;}#sbo-rt-content .bq{margin-right:1em!important;}#sbo-rt-content *{word-wrap:break-word!important;word-break:break-word!important;}#sbo-rt-content table,#sbo-rt-content pre{overflow-x:unset!important;overflow:unset!important;overflow-y:unset!important;white-space:pre-wrap!important;}</style></head>
+<body><div id="sbo-rt-content"><section data-type="chapter" epub:type="chapter" data-pdf-bookmark="第 18 章 使用流水线管理遥测数据"><div class="chapter" id="telemetry_management_with_pipelines">
+<h1><span class="label">第 18 章　</span>使用流水线管理遥测数据</h1>
+<p class="byline">本章由 Slack 高级首席软件工程师 Suman Karumuri 和 Slack 工程总监 Ryan Katkov 撰写</p>
+<aside data-type="sidebar" epub:type="sidebar"><div class="sidebar" id="a_note_from_charitycomma_lizcomma_an">
+<h5>Charity、Liz 和 George 的说明</h5>
+<p>本书这一部分介绍的可观测性概念，在大规模环境中感受最为强烈，但出于多种原因，在任何规模下都能发挥作用。上一章讨论了涓涓细流般的可观测性数据变成洪流时会发生什么，以及如何通过采样减少数据量。本章将介绍另一种管理海量遥测数据的方法：使用流水线。</p>
+<p>除了数据量，<em>遥测流水线</em>还能帮助管理应用复杂性。在简单系统中，应用的遥测数据可以直接发送到适当的数据后端<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" id="idm45204353313936"/>。在更复杂的系统中，可能需要把遥测数据路由到多个后端，以隔离工作负载、满足安全与合规要求、执行不同的数据保留要求，或实现其他目标。数据量再叠加其上，管理遥测数据生产者和消费者之间的多对多关系会变得极其复杂。遥测流水线可以把这种复杂性抽象掉。</p>
+<p>本章由 Suman Karumuri 和 Ryan Katkov 撰写，详细介绍 Slack 如何使用遥测流水线管理可观测性数据。与本书另一篇特邀章节<a data-type="xref" href="ch14-zh.xhtml#observability_and_the_software_supply_c">第 14 章</a>类似，Slack 的应用基础设施以优雅方式解决复杂性与规模问题<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="复杂性" id="idm45204353077376"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="规模" id="idm45204353459568"/>，其中体现的概念对任何规模下使用可观测性的工程师都有帮助。我们很高兴能在本书中与大家分享这些经验。</p>
+<p>本章其余内容将从 Suman 和 Ryan 的视角讲述。</p>
+</div></aside>
+<p>本章将介绍遥测流水线如何增强组织的可观测性能力，说明其基本结构和组件，并通过具体示例展示 Slack 如何主要借助开源软件组件使用遥测流水线。过去三年里，Slack 一直在生产环境采用这种模式，规模已扩大到每秒数百万个事件。</p>
+<p>对于希望推动可观测性落地、减少开发者为使服务具备充分可观测性而付出的工作量的组织，建立遥测管理实践至关重要。成熟的遥测管理实践可以为统一的插桩框架奠定基础，创造一致的开发者体验，并减少复杂性和反复改动；引入新软件产生的新遥测数据时尤其如此。</p>
+<p>Slack 设想理想遥测系统时，通常会寻找以下特征：流水线能够收集、路由并丰富来自应用和服务的数据流；对于作为数据流一部分运行的组件，我们采用明确统一的设计，并提供一套一致的端点或库；最后，应用可以迅速采用规定的通用事件格式，快速实现价值。</p>
+<p>随着组织发展，可观测性系统往往从简单模式——应用和服务直接向适当后端生成事件——演变为更复杂的使用场景。如果需要更强的安全性、工作负载隔离、数据保留要求执行能力，或更严格地控制数据质量，通过流水线管理遥测数据就能帮助满足这些需求。从高层来看，流水线由位于应用和后端之间的一系列组件组成，用于处理和路由可观测性数据。</p>
+<p>读完本章，你将理解应当如何以及何时设计遥测流水线，并掌握管理不断增长的可观测性数据需求所需的基本构件。</p>
+<section data-type="sect1" data-pdf-bookmark="遥测流水线的属性"><div class="sect1" id="attributes_of_telemetry_pipelines">
+<h1>遥测流水线的属性</h1>
+<p>构建遥测流水线可以从多个方面提供帮助。本节介绍遥测流水线的常见属性及其作用。</p>
+<section data-type="sect2" data-pdf-bookmark="路由"><div class="sect2" id="routing">
+<h2>路由</h2>
+<p>最简单地说，遥测流水线的主要目的<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="路由" id="idm45204353441424"/><a contenteditable="false" data-type="indexterm" data-primary="路由、遥测流水线" id="idm45204353547440"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="路由" id="idm45204353056720"/>，是把数据从生成位置<em>路由</em>到不同后端，同时集中控制各类遥测数据的去向。通常不适合在数据源处静态配置路由、把数据直接发送到数据存储，因为经常需要在不修改应用的情况下把数据改送到其他后端；在大规模系统中，修改应用往往负担沉重。</p>
+<p>例如，遥测流水线可以把追踪数据流路由到追踪后端，把日志数据流路由到日志后端。此外，还可以把同一追踪数据流的一部分复制到 Elasticsearch 集群，以便进行实时分析。灵活的路由和转换有助于提高数据流的价值，因为不同工具能从同一数据集中提供不同洞见。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="安全与合规"><div class="sect2" id="security_and_compliance">
+<h2>安全与合规</h2>
+<p>出于<em>安全</em>原因，也可能需要把遥测数据路由到不同后端。也许只希望特定团队能够访问遥测数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="安全" id="idm45204353184048"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="合规" id="idm45204353292480"/><a contenteditable="false" data-type="indexterm" data-primary="安全、遥测流水线" id="idm45204353012864"/><a contenteditable="false" data-type="indexterm" data-primary="合规、遥测流水线" id="idm45204353011888"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="安全" id="idm45204353010912"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="合规" id="idm45204353009456"/><a contenteditable="false" data-type="indexterm" data-primary="PII（个人身份信息）" id="idm45204353008000"/>。某些应用可能记录包含敏感个人身份信息（PII）的数据；允许广泛访问这些数据，可能导致违反合规要求。</p>
+<p>遥测流水线可能需要提供相关功能，帮助执行《通用数据保护条例》（GDPR）和联邦风险与授权管理计划（FedRAMP）等法律合规要求<a contenteditable="false" data-type="indexterm" data-primary="GDPR（通用数据保护条例）" id="idm45204353004384"/><a contenteditable="false" data-type="indexterm" data-primary="FedRAMP（联邦风险与授权管理）" id="idm45204353003744"/>。这些功能可以限制遥测数据的存储位置和访问者，并执行数据保留或删除生命周期。</p>
+<p>Slack 对合规要求并不陌生。我们结合模式匹配与遮盖处理来执行这些要求，并使用一项服务检测敏感信息或 PII，一旦发现便发出告警。除此之外，我们还提供工具，让用户自行删除不符合规定的数据。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="工作负载隔离"><div class="sect2" id="workload_isolation">
+<h2>工作负载隔离</h2>
+<p><em>工作负载隔离</em>可以在关键场景中保护数据集的可靠性和可用性<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="工作负载隔离" id="idm45204353142656"/><a contenteditable="false" data-type="indexterm" data-primary="工作负载隔离、遥测流水线" id="idm45204353141248"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="工作负载隔离" id="idm45204352998112"/><a contenteditable="false" data-type="indexterm" data-primary="隔离" data-secondary="工作负载隔离" id="idm45204352996464"/>。把遥测数据分区到多个集群，可以让工作负载彼此隔离。例如，可以把产生海量日志的应用与只产生少量日志数据的应用分开。如果把两者的日志放在同一集群，对高容量日志执行的昂贵查询可能经常拖慢集群性能，影响同一集群中其他用户的体验。对于主机日志等数据量较小的日志，则可能希望延长保留时间，以提供历史上下文。隔离工作负载可以提高灵活性和可靠性。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据缓冲"><div class="sect2" id="data_buffering">
+<h2>数据缓冲</h2>
+<p>可观测性后端不可能绝对可靠，也会发生中断。依赖该后端的服务，其 SLO 通常不会衡量这类中断<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="数据缓冲" id="idm45204353060944"/><a contenteditable="false" data-type="indexterm" data-primary="数据缓冲、遥测流水线" id="idm45204352994928"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="数据缓冲" id="idm45204352994192"/>。服务完全可能正常可用，而可观测性后端因无关原因不可用，导致无法看清服务自身状态。在这种情况下，为避免遥测数据出现空缺，可以暂时把数据<em>缓冲</em>到节点本地磁盘，或使用 Kafka、RabbitMQ 等消息队列系统<a contenteditable="false" data-type="indexterm" data-primary="Kafka" data-seealso="Apache Kafka" id="idm45204353444144"/><a contenteditable="false" data-type="indexterm" data-primary="RabbitMQ" id="idm45204352999968"/>，以便缓冲并重放消息。</p>
+<p>遥测数据量可能突然大幅增长。用户使用服务增多等自然模式，或关键数据库组件发生故障，往往会使所有基础设施组件报错，导致发出的事件数量增加并引发级联故障。增加缓冲区可以平滑后端的数据摄取；后端不会再被流量峰值压垮，数据摄取可靠性也随之提高。</p>
+<p>缓冲区还可以充当保存数据的中间环节，尤其适合数据发送到后端前还需进一步处理的情况。可以使用多个缓冲区，例如把应用本地磁盘缓冲区与死信队列结合起来，在流量激增期间保障数据时效性。</p>
+<p>Slack 广泛使用 Kafka 缓冲数据。集群最多保留三天的事件，确保后端从中断恢复后仍能保持数据一致性。除 Kafka 外，我们还在生产者组件中使用容量有限的磁盘缓冲区；如果 Kafka 集群不可用或达到饱和，摄取代理仍可缓冲事件。整条流水线都经过韧性设计，能够承受服务中断并最大限度减少数据丢失。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="容量管理"><div class="sect2" id="capacity_management">
+<h2>容量管理</h2>
+<p>出于容量规划或成本控制的考虑，往往需要为不同类别的遥测数据分配配额<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="容量管理" id="sktcap"/>，并通过速率限制、采样或排队执行配额。</p>
+<section data-type="sect3" data-pdf-bookmark="速率限制"><div class="sect3" id="rate_limiting">
+<h3>速率限制</h3>
+<p>遥测数据通常随自然发生的用户请求而产生<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="容量管理" data-tertiary="速率限制" id="idm45204353157488"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="速率限制" id="idm45204352971760"/>，因此应用产生遥测数据的模式往往不可预测。遥测流水线可以只按恒定速率向后端发送数据，为后端平滑数据峰值。如果数据量超过该速率，流水线通常可以先把数据保存在内存中，直到后端能够消费。</p>
+<p>如果系统持续以高于后端消费能力的速率产生数据，遥测流水线可以通过<em>速率限制</em>缓解影响。例如，可以设置硬性限制，丢弃超过上限的数据；也可以在软性限制以内摄取数据，但进行激进采样，直到触及硬性限制，从而保护可用性。如果事件数据存在冗余，这种取舍通常可以接受：即使丢弃一些事件，也不会丢失信号。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="采样"><div class="sect3" id="sampling">
+<h3>采样</h3>
+<p>正如<a data-type="xref" href="ch17-zh.xhtml#cheap_and_accurate_enough_sampling">第 17 章</a>所述，摄取组件<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="容量管理" data-tertiary="采样" id="idm45204353037200"/><a contenteditable="false" data-type="indexterm" data-primary="采样" data-secondary="遥测流水线" id="idm45204353042640"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="摄取组件" id="idm45204352961952"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="采样" id="idm45204352960736"/>可以采用移动平均<em>采样</em>，随着数据量增长逐步提高采样率，以保留信号并避免流水线下游后端达到饱和。</p>
+</div></section>
+<section data-type="sect3" data-pdf-bookmark="排队"><div class="sect3" id="queuing">
+<h3>排队</h3>
+<p>可以优先摄取较新的数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="容量管理" data-tertiary="排队" id="idm45204352956784"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="排队" id="idm45204352955200"/>，而不是旧数据，从而最大限度提高数据对开发者的效用。这项功能在日志系统发生日志风暴时尤其有用。系统收到的日志超过设计容量，就会形成<em>日志风暴</em>。</p>
+<p>例如，关键服务停机等大规模事故会使客户端报告更多错误，压垮后端。此时，优先处理新日志比追赶旧日志更重要，因为新日志反映系统当前状态；旧日志只说明过去的状态，离事故越远，相关性越低。等系统有了空余容量，再通过回填操作整理历史数据<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="容量管理" data-startref="sktcap" id="idm45204353066368"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据过滤与扩充"><div class="sect2" id="data_filtering_and_augmentation">
+<h2>数据过滤与扩充</h2>
+<p>对于 Prometheus 等指标系统，工程师可能会意外添加用户 ID 或 IP 地址等高基数字段<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="数据过滤" id="tpdatfil"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="数据扩充" id="tpdatau"/><a contenteditable="false" data-type="indexterm" data-primary="过滤、遥测流水线" id="idm45204352944096"/><a contenteditable="false" data-type="indexterm" data-primary="数据过滤器、遥测流水线" id="idm45204352943024"/><a contenteditable="false" data-type="indexterm" data-primary="数据扩充、遥测流水线" id="idm45204352941952"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="数据过滤器" id="idm45204352940880"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="数据扩充" id="idm45204352939232"/>，引发<em>基数爆炸</em>。指标系统通常不适合处理高基数字段，而流水线可以提供处理机制。最简单的做法，是丢弃包含高基数字段的时间序列。更高级的方法包括预聚合高基数字段中的数据，或丢弃包含无效数据的记录，例如错误或格式不正确的时间戳，从而减轻基数爆炸的影响。</p>
+<p>对于日志，需要过滤 PII 数据<a contenteditable="false" data-type="indexterm" data-primary="PII（个人身份信息）" id="idm45204353456608"/>和安全令牌等安全数据，或清理 URL，因为日志系统通常不应存储敏感数据。对于追踪数据，还可以采样高价值追踪，或阻止低价值跨度进入后端系统。</p>
+<p>除了过滤数据，遥测流水线还可以丰富遥测数据，提高其可用性。常见做法包括：添加进程外部可用的元数据，如区域信息或 Kubernetes 容器信息；把 IP 解析为主机名；或为日志和追踪数据补充 GeoIP 信息。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据转换"><div class="sect2" id="data_transformation">
+<h2>数据转换</h2>
+<p>健壮的遥测流水线可能需要摄取种类繁多的数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="数据转换" id="idm45204353127344"/><a contenteditable="false" data-type="indexterm" data-primary="数据转换、遥测流水线" id="idm45204353462992"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="数据转换" id="idm45204352928704"/>，包括非结构化日志、采用各种格式的结构化日志、指标时间序列数据点，以及追踪跨度形式的事件。流水线不仅需要识别数据类型，还可能通过各种线路格式向外部或内部提供 API。因此，转换这些数据类型的能力会成为流水线的关键组成部分。</p>
+<p>把每个数据点转换为通用事件格式可能需要大量计算，但收益超过处理数据所需的计算成本。这些收益包括：最大限度提高技术选择的灵活性，尽量避免以不同格式重复保存同一事件，以及继续丰富数据的能力。</p>
+<p>遥测后端通常各自拥有独立而独特的 API，并不存在标准模式。支持外部团队对特定后端的需求很有价值，实现起来可能只需为预处理组件编写插件，把通用格式转换为后端可摄取的格式。</p>
+<p>Slack 有多个这类转换的真实案例<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="数据转换" id="idm45204352976624"/>。我们把 Zipkin、Jaeger 等追踪格式转换为通用 SpanEvent 格式。该格式还能直接写入数据仓库，便于 Presto 等常见大数据工具查询，并支持连接和聚合。数据仓库中的这类追踪数据集支持长尾分析，能够产生非常有价值的洞见。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="确保数据质量与一致性"><div class="sect2" id="ensuring_data_quality_and_consistency">
+<h2>确保数据质量与一致性</h2>
+<p>从应用收集的遥测数据可能存在质量问题。保障数据质量的一种常见方法<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="质量保障" id="idm45204353050640"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="一致性" id="idm45204353049872"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="数据质量" id="idm45204353015744"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测流水线" data-tertiary="一致性" id="idm45204352918432"/>，是丢弃时间戳过早或过晚的数据。</p>
+<p>例如，配置错误的设备会报告时间戳不正确的数据，污染系统的整体数据质量。应当用摄取时的时间戳替换错误时间戳来修正数据，或者直接丢弃。一个真实案例是，安装了 Candy Crush 的移动设备经常报告远在未来的时间戳，因为用户会手动修改设备系统时间以获得游戏奖励。如果不能丢弃数据，流水线就应提供其他位置保存数据，供以后处理。</p>
+<p>以日志为例，流水线可以执行以下实用操作：</p>
+<ul>
+<li><p>提取特定字段，把非结构化日志转换为结构化数据</p></li>
+<li><p>检测并遮盖或过滤日志中的 PII 或敏感数据</p></li>
+<li><p>使用 MaxMind 等地理位置数据库，把 IP 地址转换为地理经纬度字段</p></li>
+<li><p>验证日志数据模式，确保预期数据存在，并且特定字段采用指定类型</p></li>
+<li><p>过滤低价值日志，不将其发送到后端</p></li>
+</ul>
+<p>对于 Slack 的追踪数据，我们通过简单的数据过滤来确保一致性，例如不让低价值跨度进入后端，从而提高数据集的整体价值。保障质量的其他方法还包括尾部采样：根据较高的报告延迟等值得关注的属性，只选择一小部分已报告追踪存入后端系统。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="遥测流水线的组成结构"><div class="sect1" id="managing_a_telemetry_pipeline_anatomy">
+<h1>遥测流水线的组成结构</h1>
+<p>本节介绍一条可用遥测流水线的基本组件和架构。简单来说，<em>遥测流水线</em>就是由接收器、缓冲区、处理器和导出器依次串联而成的链条。</p>
+<p>下面详细说明遥测流水线的这些关键组件：</p>
+<ul>
+<li><p><em>接收器</em>从数据源收集数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="接收器" id="tpipre"/><a contenteditable="false" data-type="indexterm" data-primary="接收器、遥测流水线" id="retpip"/>。</p>
+<p>接收器可以像 Prometheus 抓取器一样直接从应用收集数据，也可以从缓冲区摄取数据。</p>
+<p>接收器可以公开 HTTP API，让应用向其推送数据。</p>
+<p>接收器还可以把数据写入缓冲区，在发生中断时保障数据完整性。</p></li>
+<li><p><em>缓冲区</em>是存放数据的存储组件<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="缓冲区" id="idm45204352899824"/><a contenteditable="false" data-type="indexterm" data-primary="缓冲区、遥测流水线" id="idm45204352898608"/>，通常只短期保存数据。</p>
+<p>缓冲区临时保存数据，直到后端或下游应用能够消费。</p>
+<p>缓冲区通常采用 Kafka<a contenteditable="false" data-type="indexterm" data-primary="Kafka" id="idm45204352897248"/> 或 Amazon Kinesis 等发布—订阅系统。</p>
+<p>应用也可以把数据直接推送到缓冲区。在这种情况下，缓冲区同时充当接收器的数据源。</p></li>
+<li><p><em>处理器</em>通常从缓冲区取得数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="处理器" id="idm45204353019424"/><a contenteditable="false" data-type="indexterm" data-primary="处理器、遥测流水线" id="idm45204352892864"/>，对其进行转换，再把数据持久化回缓冲区。</p></li>
+<li><p><em>导出器</em>是充当遥测数据接收端的组件<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="导出器" id="idm45204352891344"/><a contenteditable="false" data-type="indexterm" data-primary="导出器" data-secondary="遥测流水线" id="idm45204352888992"/>。导出器通常从缓冲区取得数据，再将其写入遥测后端。</p></li>
+</ul>
+<p>在简单配置中，针对每类遥测后端的流水线通常采用“接收器 → 缓冲区 → 导出器”模式，如<a data-type="xref" href="#a_receivercomma_buffercomma_and_exporte">图 18-1</a>所示。</p>
+<figure><div id="a_receivercomma_buffercomma_and_exporte" class="figure">
+<img src="Images/oben_1801.png" width="1445" height="113"/>
+<h6><span class="label">图 18-1　</span>简单遥测流水线常用的接收器、缓冲区和导出器</h6>
+</div></figure>
+<p>复杂配置则可以采用“接收器 → 缓冲区 → 接收器 → 缓冲区 → 导出器”链条，如<a data-type="xref" href="#an_advanced_example_of_a_telemetry_pipe">图 18-2</a>所示。</p>
+<figure><div id="an_advanced_example_of_a_telemetry_pipe" class="figure">
+<img src="Images/oben_1802.png" width="1445" height="113"/>
+<h6><span class="label">图 18-2　</span>包含处理器的高级遥测流水线示例</h6>
+</div></figure>
+<p>流水线中的接收器或导出器通常只负责一种操作，例如容量规划、路由或数据转换。<a data-type="xref" href="#roles_of_the_rece">表 18-1</a>列出了可以对不同类型遥测数据执行的一些操作<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="处理器" id="idm45204353623936"/><a contenteditable="false" data-type="indexterm" data-primary="处理器、遥测流水线" id="idm45204353032496"/>。</p>
+<table class="border" id="roles_of_the_rece">
+<caption><span class="label">表 18-1　</span>流水线中接收器、处理器和导出器的职责</caption>
+<thead>
+<tr>
+<th>遥测数据类型</th>
+<th>接收器</th>
+<th>导出器或处理器</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>追踪数据</td>
+<td>
+<ul>
+<li><p>收集不同格式的追踪数据，例如 Zipkin、Jaeger、AWS X-Ray 和 OTel</p></li>
+<li><p>收集来自不同服务的数据，例如所有 Slack 移动客户端</p></li>
+</ul>
+</td>
+<td>
+<ul>
+<li><p>把数据摄取到各种追踪后端</p></li>
+<li><p>对数据进行尾部采样</p></li>
+<li><p>丢弃低价值追踪</p></li>
+<li><p>从追踪中提取日志</p></li>
+<li><p>为满足合规要求，把追踪数据路由到不同后端</p></li>
+<li><p>过滤数据</p></li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>指标数据</td>
+<td>识别并抓取目标</td>
+<td>
+<ul>
+<li><p>重新标记指标</p></li>
+<li><p>对指标降采样</p></li>
+<li><p>聚合指标</p></li>
+<li><p>把数据推送到多个后端</p></li>
+<li><p>检测高基数标签或时间序列</p></li>
+<li><p>过滤高基数标签或指标</p></li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>日志数据</td>
+<td>
+<ul>
+<li><p>收集不同服务产生的数据</p></li>
+<li><p>提供端点，收集不同服务推送的日志</p></li>
+</ul>
+</td>
+<td>
+<ul>
+<li><p>把日志数据解析为半结构化或结构化日志</p></li>
+<li><p>过滤日志中的 PII 和敏感数据</p></li>
+<li><p>为满足 GDPR 要求，把数据推送到多个后端</p></li>
+<li><p>把不常查询的日志或审计日志路由到平面文件，把高价值日志或经常查询的日志路由到索引系统</p></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>在开源系统中，接收器<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="接收器" data-startref="tpipre" id="idm45204352854848"/><a contenteditable="false" data-type="indexterm" data-primary="接收器、遥测流水线" data-startref="retpip" id="idm45204352854128"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="导出器" id="idm45204352852784"/><a contenteditable="false" data-type="indexterm" data-primary="导出器、遥测流水线" id="idm45204352851408"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="接收端" id="idm45204352850336"/><a contenteditable="false" data-type="indexterm" data-primary="接收端、遥测流水线" id="idm45204352848960"/><a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="源" id="idm45204352847888"/><a contenteditable="false" data-type="indexterm" data-primary="源、遥测流水线" id="idm45204352846512"/>也可能称为<em>源</em>，导出器通常称为<em>接收端</em>。不过，这种命名方式掩盖了这些组件可以串联的事实。</p>
+<p>不同类型的遥测数据往往采用不同的数据转换和过滤规则，因此需要彼此隔离的流水线。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="管理遥测流水线面临的挑战"><div class="sect1" id="challenges_when_managing_a_telemetry_pi">
+<h1>管理遥测流水线面临的挑战</h1>
+<p>大规模运行流水线会带来一系列挑战，Slack 对此非常熟悉，本节将逐一说明。规模较小时，遥测流水线的搭建和运行相当简单，通常只需配置 OpenTelemetry Collector 等进程，让它充当接收器和导出器。</p>
+<p>规模扩大后，流水线可能需要处理数百条数据流。要让它们持续正常运行，必须保障流水线的性能、正确性、可靠性和可用性，因而构成运维挑战。其中涉及少量软件工程工作，但可靠运行流水线的大部分工作属于控制理论范畴。</p>
+<section data-type="sect2" data-pdf-bookmark="性能"><div class="sect2" id="performance">
+<h2>性能</h2>
+<p>应用可能以任意格式生成数据<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="性能" id="idm45204354669600"/>，所生成数据的性质也会变化，因此维持流水线性能并不容易。例如，如果应用产生大量处理成本很高的日志，日志流水线就会变慢，需要扩容。流水线一处变慢，往往会在其他位置引发负载尖峰等问题，进而使整条流水线失稳。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="正确性"><div class="sect2" id="correctness">
+<h2>正确性</h2>
+<p>流水线由多个组件组成<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="正确性" id="idm45204352933824"/><a contenteditable="false" data-type="indexterm" data-primary="正确性、遥测流水线" id="idm45204352932256"/>，因此很难判断端到端运行结果是否正确。例如，在复杂流水线中，难以确认写入的数据是否经过了正确转换，也难以保证被丢弃的只有预期丢弃的数据。传入数据的格式又是未知的，调试问题会更加复杂。因此，必须监控流水线中的错误和数据质量问题。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="可用性"><div class="sect2" id="availability">
+<h2>可用性</h2>
+<p>流水线的后端或各种组件往往并不可靠<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="可用性" id="idm45204353691600"/><a contenteditable="false" data-type="indexterm" data-primary="可用性、遥测流水线" id="idm45204353667856"/>。只要软件组件和数据接收端的设计能够保障韧性与可用性，就可以承受流水线中断。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="可靠性"><div class="sect2" id="reliability">
+<h2>可靠性</h2>
+<p>可靠的变更管理实践<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="可靠性" id="idm45204352817056"/><a contenteditable="false" data-type="indexterm" data-primary="可靠性、遥测流水线" id="idm45204352815616"/>，必须确保软件或配置变更期间流水线仍然可用。部署组件新版本时，要把端到端延迟和饱和度维持在可接受范围并不容易。</p>
+<p>要可靠地管理数据流，必须充分理解处理流水线中的瓶颈，也就是做好容量规划。达到饱和的组件会成为瓶颈，拖慢整条流水线。找到瓶颈后，应当确保为其分配足够资源，或者让组件具备足够性能来跟上数据量。除了容量规划，流水线还应具备完善监控，以识别各组件之间的数据流速率差异。</p>
+<p>重新处理和回填数据，往往是管理数据流水线时最复杂、最耗时的工作之一。例如，如果流水线未能过滤日志中的某些 PII 数据，就需要从日志搜索系统中删除这些数据，再进行回填。大多数方案在正常情况下运行良好，却不擅长回填大量历史数据。因此，必须确保缓冲区保留了足够多的历史数据，以便重新处理。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="隔离"><div class="sect2" id="isolation">
+<h2>隔离</h2>
+<p>如果把高流量系统客户与低流量客户的日志或指标放在同一集群中<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="隔离" id="idm45204353246704"/><a contenteditable="false" data-type="indexterm" data-primary="隔离" data-secondary="遥测流水线" id="idm45204353237312"/>，大量日志可能使集群饱和，引发可用性问题。因此，遥测流水线应当能够隔离这些数据流，并在必要时将其写入不同后端。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="数据时效性"><div class="sect2" id="data_freshness">
+<h2>数据时效性</h2>
+<p>遥测流水线不仅要高性能、正确、可靠，还应当以实时或接近实时的速度运行<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="数据时效性" id="idm45204352800704"/><a contenteditable="false" data-type="indexterm" data-primary="数据时效性、遥测流水线" id="idm45204352799936"/>。从数据产生到可供消费，端到端延迟通常为数秒，最坏情况下也只是几十秒。不过，要监控流水线的数据时效性，必须拥有以稳定速率产生数据的已知数据源，这一点并不容易。</p>
+<p>Prometheus 等主机指标通常按固定间隔抓取，因此可以利用这些间隔衡量日志的数据时效性。对于日志或追踪，往往找不到稳定可靠的数据源；此时增加合成数据源会很有价值。</p>
+<p>在 Slack，我们向日志流添加合成日志<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="数据时效性" id="idm45204352798192"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="合成日志" id="idm45204352796720"/>，固定速率为每分钟 <em>N</em> 条消息。这些数据被摄取到数据接收端，我们定期查询这些已知日志，了解流水线的健康状况和时效性。例如，我们从一个数据源每分钟向最大的日志集群（每小时 100 GB 日志数据）生成 100 条合成日志。数据摄取后，每 10 秒监控并查询一次这些日志，确认流水线是否实时摄取数据。我们的时效性 SLO，是过去五分钟内有多少次收齐了某一分钟应收到的所有消息。</p>
+<p>应当确保合成数据具有唯一值，或者在查询中将其过滤掉，以免干扰用户查询正常日志。我们还会从基础设施的多个区域发出合成日志，确保监控覆盖整条遥测流水线。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="使用案例：Slack 的遥测管理"><div class="sect1" id="use_case_telemetry_management_at_slack">
+<h1>使用案例：Slack 的遥测管理</h1>
+<p>Slack 的遥测管理体系是逐步自然演化而来的，以适应公司内部各种可观测性使用场景<a contenteditable="false" data-type="indexterm" data-primary="遥测" data-secondary="Slack 使用案例" id="tmslack"/>。为了处理这些场景，系统由开源组件和使用 Go 编写的内部软件 Murron 组成。本节将介绍流水线中的独立组件，以及它们如何服务 Slack 内部不同部门。</p>
+<section data-type="sect2" data-pdf-bookmark="指标聚合"><div class="sect2" id="metrics_aggregation">
+<h2>指标聚合</h2>
+<p>Prometheus 是 Slack 的主要指标系统<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="指标聚合" id="idm45204352812896"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="Prometheus" id="idm45204352786080"/>。后端最初使用 PHP 编写，后来改用 Hack。PHP/Hack 采用每请求一进程模型，Prometheus 拉取模式只有主机上下文而没有进程上下文，因此无法适用。Slack 改用自定义 Prometheus 库，按请求向本地 Go 守护进程发送指标。</p>
+<p>该守护进程收集这些按请求生成的指标，并在一定时间窗口内进行本地聚合。它还公开一个指标端点，由 Prometheus 服务器抓取，如<a data-type="xref" href="#aggregation_of_metrics_from_a_per_reque">图 18-3</a>所示。这样便能从 PHP/Hack 应用服务器收集指标。</p>
+<figure><div id="aggregation_of_metrics_from_a_per_reque" class="figure">
+<img src="Images/oben_1803.png" width="1138" height="210"/>
+<h6><span class="label">图 18-3　</span>聚合采用每请求一进程模型的应用指标</h6>
+</div></figure>
+<p>除 PHP/Hack 外，Slack 还运行用 Go 或 Java 编写的应用；这些应用公开指标端点，Prometheus 可以直接抓取。</p>
+</div></section>
+<section data-type="sect2" data-pdf-bookmark="日志与追踪事件"><div class="sect2" id="logs_and_trace_events">
+<h2>日志与追踪事件</h2>
+<p>Murron 是 Slack 内部使用 Go 编写的应用<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="日志" id="slaogg"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="追踪事件" id="slev"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="Murron" id="slmur"/>，构成日志和追踪事件流水线的骨干。Murron 包含接收器、处理器和导出器三类组件。<em>接收器</em>通过 HTTP、gRPC API，以 JSON、Protobuf 或自定义二进制格式等多种形式从数据源接收数据，再发送到 Kafka 等缓冲区或其他摄取器。处理器把包含日志或追踪数据的消息从一种格式转换为另一种格式。消费者从 Kafka<a contenteditable="false" data-type="indexterm" data-primary="Kafka" id="kafkam"/> 消费消息，再发送到 Prometheus、Elasticsearch 或外部厂商等各类接收端。</p>
+<p>Murron 的核心原语是用于定义遥测流水线的<em>数据流</em>。一条数据流包含：从应用接收日志或追踪消息的<em>接收器</em>、处理消息的<em>处理器</em>，以及保存这些消息的<em>缓冲区</em>（如 Kafka 主题）。此外，还可以为每条数据流定义<em>导出器</em>；它从缓冲区消费消息，根据需要进行处理，再路由到适当后端（参见<a data-type="xref" href="#slack_telemetry_pipeline_with_receivers">图 18-4</a>）。</p>
+<p>为了便于路由和自定义处理，Murron 会把收到的所有消息包装在自定义信封消息中。信封包含消息所属数据流的名称等信息，用于在多个 Murron 组件之间路由消息；还包含主机名、Kubernetes 容器信息和进程名称等附加元数据，供流水线后续阶段扩充消息数据。</p>
+<figure><div id="slack_telemetry_pipeline_with_receivers" class="figure">
+<img src="Images/oben_1804.png" width="1266" height="444"/>
+<h6><span class="label">图 18-4　</span>Slack 包含追踪数据接收器、缓冲区和导出器的遥测流水线</h6>
+</div></figure>
+<p>在 OpenTelemetry 规范中，追踪数据结构是由相互链接的事件组成的有向无环图，这些事件称为<em>跨度</em>。这类数据结构通常封装在更高层的追踪 API 中来生成追踪，消费端再通过追踪界面访问数据。隐藏的结构使我们无法直接查询原始追踪数据，也就难以让追踪适用于多种使用场景。</p>
+<p>为了降低使用门槛、促进自然采用，我们实现了一种称为 <em>SpanEvent</em> 的简化跨度格式，更容易生成和消费。典型 SpanEvent 包含 ID、时间戳、持续时间、父 ID、追踪 ID、名称、类型、标签和一个特殊的跨度类型字段。与追踪一样，因果图也是由 SpanEvent 组成的有向无环图。让工程师能够在传统插桩之外轻松生成和分析追踪，会开辟许多新用途，例如<a data-type="xref" href="ch11-zh.xhtml#observability_driven_development">第 11 章</a>介绍的 CI/CD 系统插桩。</p>
+<p>为了支持因果图模型，我们为 PHP/Hack、JavaScript、Swift 和 Kotlin 等语言构建了自定义追踪库。此外，Java 和 Go 使用开源追踪库。</p>
+<p>Hack 应用使用<a href="https://opentracing.io">兼容 OpenTracing 的追踪器</a>插桩；我们曾在<a data-type="xref" href="ch07-zh.xhtml#open_instrumentation_standards">“开放插桩标准”</a>中介绍 OpenTracing。移动端和桌面端客户端追踪代码并发出 <span class="keep-together">SpanEvent</span>，具体方式是<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="Hack" id="idm45204352826592"/><a contenteditable="false" data-type="indexterm" data-primary="Hack" id="idm45204352752848"/>使用高层追踪器或底层跨度创建 API。生成的 SpanEvent 以 JSON 或 Protobuf 编码事件的形式通过 HTTP 发送到 Wallace。</p>
+<p>Wallace 基于 Murron，是一套接收器和处理器<a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="Wallace" id="idm45204352771632"/><a contenteditable="false" data-type="indexterm" data-primary="Wallace" id="idm45204352749424"/>，独立于核心云基础设施运行。因此，即使 Slack 核心基础设施发生全站中断，仍能捕获客户端和服务错误。Wallace 验证收到的跨度数据，再把事件转发给另一个 Murron 接收器，由它将数据写入 Kafka 缓冲区（参见<a data-type="xref" href="#slackapostrophes_tracing_infrastructure">图 18-5</a>）。</p>
+<figure><div id="slackapostrophes_tracing_infrastructure" class="figure">
+<img src="Images/oben_1805.png" width="1396" height="520"/>
+<h6><span class="label">图 18-5　</span>Slack 的追踪基础设施：应用为粉色（印刷版浅灰色），接收器和导出器为蓝色（中灰色）</h6>
+</div></figure>
+<p>内部 Java 和 Go 应用分别使用 Zipkin 与 Jaeger 的开源插桩库。为捕获这些应用的跨度，Wallace 为两种跨度数据公开接收器。这些接收器称为<em>追踪适配器</em>，负责把上报的跨度转换为 SpanEvent 格式并写入 Wallace；Wallace 随后把数据转发给 Murron 接收器，由后者写入 Kafka。</p>
+<p>写入 Kafka 的追踪数据主要由三个基于 Murron 和 Secor 的导出器消费；Secor 是 Pinterest 维护的开源项目：</p>
+<dl>
+<dt>Elasticsearch 导出器</dt>
+<dd>Murron 导出器从 Kafka 读取 SpanEvent<a contenteditable="false" data-type="indexterm" data-primary="Elastisearch 导出器" id="idm45204352787808"/><a contenteditable="false" data-type="indexterm" data-primary="导出器" data-secondary="Elastisearch" id="idm45204352740496"/>并发送到 Elasticsearch。这个事件存储允许我们在仪表板上显示事件（主要使用 Grafana），并为事件设置自定义告警。</dd>
+<dt>数据仓库导出器</dt>
+<dd>我们使用 Pinterest 的开源项目 Secor 转换来自 Kafka 的数据并上传到 Amazon S3，再摄取到 Presto 数据仓库。</dd>
+<dt>Honeycomb 导出器</dt>
+<dd>最后，Murron 导出器从 Kafka 消费事件<a contenteditable="false" data-type="indexterm" data-primary="Honeycomb" data-secondary="导出器" id="idm45204352750992"/><a contenteditable="false" data-type="indexterm" data-primary="导出器" data-secondary="Honeycomb" id="idm45204352735296"/>，过滤低价值跨度，把数据转换为 Honeycomb 专用的自定义事件格式，并路由到不同数据集，供 Honeycomb 查询。</dd>
+</dl>
+<p>借助这些导出器，我们几乎能立即访问追踪数据，端到端延迟只有数秒。我们使用 Honeycomb 和 Grafana（通过 Elasticsearch）可视化数据并进行简单分析，这对于让追踪真正服务于问题分诊非常重要。</p>
+<p>相比之下，数据通常需要两小时才能进入数据仓库。我们使用 Presto，通过 SQL 对更长时间范围执行复杂分析查询。Elasticsearch 通常保存 7 天事件，Honeycomb 最多支持 60 天，而 Presto 后端 Hive 可以把数据保存长达两年。因此，工程师能够可视化超出 Honeycomb 和 Elasticsearch 能力范围的长期趋势。</p>
+<p>Murron 管理 120 多条数据流，每秒处理数百万条消息。所有数据都通过分布在 20 个集群中的 200 多个 Kafka 主题缓冲<a contenteditable="false" data-type="indexterm" data-primary="遥测" data-secondary="Slack 使用案例" data-startref="tmslack" id="idm45204353214112"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="日志" data-startref="slaogg" id="idm45204352755232"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="追踪事件" data-startref="slev" id="idm45204352727696"/><a contenteditable="false" data-type="indexterm" data-primary="Slack" data-secondary="遥测管理使用案例" data-tertiary="Murron" data-startref="slmur" id="idm45204352726000"/><a contenteditable="false" data-type="indexterm" data-primary="Kafka" data-startrf="kafkam" id="idm45204352724272"/>。</p>
+</div></section>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="开源替代方案"><div class="sect1" id="open_source_alternatives_for_managing_a">
+<h1>开源替代方案</h1>
+<p>我们的遥测流水线经过多年自然演化，由开源组件<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="开源替代方案" id="tmops"/>和内部软件混合组成。细心的读者从上一节可能已经发现，部分软件的能力彼此重叠，整合系统会带来收益。相比三年前，可观测性遥测流水线领域已经成熟许多，如今出现了若干更新且切实可行的选择。本节将介绍其他开源替代方案。</p>
+<p>可观测性发展的早期，并没有专门用于搭建遥测流水线的工具。大多数工程师使用 rsyslog 等工具，自己编写工具或采用第三方厂商工具把数据发送到后端。后来，团队认识到这一空缺，开发出 Facebook 的 <a href="https://github.com/facebookarchive/scribe">Scribe</a> 等工具。Scribe 引入了用数据流把日志路由到不同后端的基本思想。为了在下游系统停机时可靠交付日志，它还引入本地磁盘持久化：下游跟不上日志量或无响应时，把日志持久化到本地磁盘。Scribe 还确立了串联多个实例、形成大规模遥测管理流水线的思路。</p>
+<p>后来，遥测流水线逐渐演变为更完整的系统，支持高级日志解析、字段操作、精细速率限制和动态采样。随着 Kinesis、Kafka 等现代发布—订阅系统兴起，大多数遥测流水线都支持把它们用作数据源和中间数据缓冲区。在日志领域，可以使用 timber、<a href="https://www.elastic.co/logstash">Logstash</a>/Filebeat、Fluentd 和 rsyslog 等常用服务把日志传输到接收器。指标场景中，<a href="https://github.com/prometheus/pushgateway">Prometheus<u/> Pushgateway</a> 和 <a href="https://m3db.io/docs/how_to/m3aggregator">M3 Aggregator</a> 等项目用于聚合指标。对于追踪数据，<a href="https://docs.honeycomb.io/manage-data-volume/refinery">Refinery</a> 等工具可以进一步过滤、采样和处理追踪。这些工具采用模块化设计，可以开发插件来增加对接收器和导出器的支持，与大量系统互相收发数据。</p>
+<p>越来越多的数据流经遥测流水线后，其效率和可靠性也变得越来越重要。因此，现代系统开始使用效率更高的语言编写，例如 C（Fluent Bit）、Go（Cribl）和 Rust（<a href="https://vector.dev">Vector</a>）。如果每秒需要处理数 TB 数据，遥测流水线的基础设施效率<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="开源替代方案" data-startref="tmops" id="idm45204353469456"/>就至关重要。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="管理遥测流水线：自建还是购买"><div class="sect1" id="managing_a_telemetry_pipeline_the_build">
+<h1>管理遥测流水线：自建还是购买</h1>
+<p>出于历史原因，Slack 使用开源和内部软件的组合来管理遥测流水线。如今，这些历史原因已不再那么重要，因为已有大量开源替代方案<a contenteditable="false" data-type="indexterm" data-primary="遥测流水线" data-secondary="自建还是购买" id="idm45204352705440"/>，很容易用来构成遥测流水线的基础。这些开源工具通常采用模块化设计，可以轻松扩展，为定制场景增加额外功能。既然工具已广泛可用，再投入工程资源开发内部软件来构建遥测管理流水线的基础，在经济上并不划算。</p>
+<p>开源软件本身当然免费，但仍需考虑维护和运营遥测流水线的成本。自建与购买决策的另一端是商业厂商，它们承诺减轻运维负担并提供良好用户体验。简化和易用性很有吸引力；是否经济合理，则取决于组织的成熟度。随着组织发展，这种平衡会不断变化，选择方案时应当牢记这一点。有关自建还是购买的更多考虑，请参见<a data-type="xref" href="ch15-zh.xhtml#build_versus_buy_and_return_on_investme">第 15 章</a>。</p>
+</div></section>
+<section data-type="sect1" data-pdf-bookmark="结语"><div class="sect1" id="conclusion-id000019">
+<h1>结语</h1>
+<p>现在就可以把多种现成服务组合起来开始实践。你可能很想从零编写新系统，但我们建议改造开源服务。小型流水线可以自动运行；随着组织发展，管理遥测流水线会变成复杂工作，并带来多项挑战。</p>
+<p>构建遥测管理系统时，应当满足当前业务需求，并预见未来的新需求，但不要提前实现。例如，今后可能需要增加合规功能，或引入高级数据扩充与过滤。保持流水线模块化，并遵循生产者、缓冲区、处理器和导出器模型，可以让可观测性职能顺畅运行，同时为业务创造价值。</p>
+</div></section>
+</div></section></div></body>
+</html>
